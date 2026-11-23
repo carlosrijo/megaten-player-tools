@@ -1024,3 +1024,24 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
   .sim-out > :first-child { order: 0; }
   .sim-edit { order: 1; }
 }
+
+/* Dungeon Explorer */
+.dun-detail { display: grid; gap: 8px; }
+.dun-detail .note { margin: 0; }
+.tbl.dun-mobs { background: var(--surface); border-radius: var(--radius-sm); }
+.tbl.dun-mobs tr.detail-row > td { background: var(--surface-2); padding-left: 34px; }
+.dun-mob { display: grid; gap: 8px; max-width: 900px; }
+.dun-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.dun-stat { display: grid; gap: 1px; padding: 5px 8px; border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--border); }
+.dun-stat-k { font-size: 11px; color: var(--text-3); }
+.dun-stat-v { font-variant-numeric: tabular-nums; font-weight: 600; }
+.dun-aff { display: grid; gap: 4px; }
+.dun-aff-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; align-items: center; }
+.dun-aff-k { font-size: 12px; color: var(--text-2); }
+.tag-boss { border-color: transparent; background: var(--selected); color: var(--text); font-weight: 600; }
+.dun-weak { border-color: transparent; background: var(--over-bg); color: var(--over-ink); }
+.dun-res { border-color: color-mix(in srgb, var(--aff-res) 60%, transparent); background: color-mix(in srgb, var(--aff-res) 12%, transparent); color: var(--text); }
+.dun-nra { border-color: color-mix(in srgb, var(--aff) 60%, transparent); background: color-mix(in srgb, var(--aff) 14%, transparent); color: var(--text); }
+.dun-skills li { display: grid; gap: 1px; }
+.dun-desc { color: var(--text-2); font-size: 12px; }
+.dun-rate { min-width: 56px; font-variant-numeric: tabular-nums; }

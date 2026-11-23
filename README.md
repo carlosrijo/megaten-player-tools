@@ -105,6 +105,26 @@ Stats and effects are read from the NewMoon client's current item tables, not fr
 rows matched no item in the game data (different spelling); they are listed with the sheet's own text, marked
 "sheet only". The cosmetic ticket tabs (Vanities) are left out.
 
+### Tools: Dungeon Explorer
+
+Under **Tools** in the left bar. Every dungeon (160), field and other place with enemies, and the enemies in it that
+can't be contracted (4,003 kinds): the ones you can't talk to at all, and the ones that talk but never join. Click a
+place for its enemies (picture, race, level, Max HP, boss mark, and the floor when the floors have names), and an
+enemy for its details:
+
+- **Stats**: Max HP and MP, STR to LUCK, and CLS-R, LNG-R, Spell, Support, P.Def, M.Def at that level.
+- **Affinities**: what it is weak to and resists (in %), and what it nulls, reflects or absorbs.
+- **Skills**, **enemy-only skills** and **traits**, each with the game's own description.
+- **Drops** with the chance per kill, and the XP it gives.
+
+Search a place, an enemy, a skill or a drop; the chips filter dungeons, fields and other places. Searching an enemy
+lists only the matching enemies inside each place.
+
+Names, stats, skills and traits are the NewMoon client's. Which enemies are where, their levels, whether they talk and
+their drops come from the public server data, so NewMoon may have changed them. Stats are the server's formula for an
+enemy at that level (with the extra HP the game gives enemies), before its passive skills and traits. Not checked in
+game.
+
 ### Tools: Simulator
 
 Under **Tools** in the left bar. Try other gear and expertise ranks and watch your stats change, without touching the
