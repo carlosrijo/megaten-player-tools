@@ -128,7 +128,8 @@ enemy for its details:
 
 - **Stats**: Max HP and MP, STR to LUCK, and CLS-R, LNG-R, Spell, Support, P.Def, M.Def at that level.
 - **Affinities**: what it is weak to and resists (in %), and what it nulls, reflects or absorbs.
-- **Skills**, **enemy-only skills** and **traits**, each with the game's own description.
+- **Skills**, **enemy-only skills** and **traits** as the game's icons; hover one for its name and the game's own
+  description. Skills the game has no icon for (most enemy-only moves and all traits) show their name instead.
 - **Drops** with the chance per kill, and the XP it gives.
 
 Search a place, an enemy, a skill or a drop; the chips filter dungeons, fields and other places. Searching an enemy

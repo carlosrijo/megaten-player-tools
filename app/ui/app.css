@@ -1099,8 +1099,6 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-weak { border-color: transparent; background: var(--over-bg); color: var(--over-ink); }
 .dun-res { border-color: color-mix(in srgb, var(--aff-res) 60%, transparent); background: color-mix(in srgb, var(--aff-res) 12%, transparent); color: var(--text); }
 .dun-nra { border-color: color-mix(in srgb, var(--aff) 60%, transparent); background: color-mix(in srgb, var(--aff) 14%, transparent); color: var(--text); }
-.dun-skills li { display: grid; gap: 1px; }
-.dun-desc { color: var(--text-2); font-size: 12px; }
 .dun-rate { min-width: 56px; font-variant-numeric: tabular-nums; }
 /* ---------- Demon Database (Tools) ---------- */
 .ddb-select { height: 28px; padding: 0 6px; font-size: 12px; }
@@ -1128,3 +1126,11 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .ddb-form { margin-top: 2px; }
 .dun-mobs td.dun-aff-cell { white-space: normal; min-width: 120px; }
 .dun-mobs .dun-aff-cell .chips { gap: 4px; }
+.dun-skill-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dun-skill-name { cursor: help; height: 22px; }
+.dun-skill-name:hover, .dun-skill-name:focus-visible { border-color: var(--focus); outline: none; }
+.dun-skill { display: inline-grid; border-radius: 6px; cursor: help; }
+.dun-skill:hover .dun-skill-pic, .dun-skill:focus-visible .dun-skill-pic { box-shadow: 0 0 0 2px var(--focus); }
+.dun-skill:focus-visible { outline: none; }
+.dun-skill-pic { display: block; width: 32px; height: 32px; border-radius: 6px; background: var(--hover); }
+.tt-head .dun-skill-pic { flex: none; }
