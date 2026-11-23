@@ -52,6 +52,18 @@ Working on the app's page:
   A stand-in for the app reads `data\dash`. Add `?empty=1` (first run), `?snap=fail` or `?snap=live` (snapshot results),
   `?game=1`, `?page=…`, `?theme=…`, `?mode=digi`.
 
+### Tools: DCM Locator
+
+Under **Tools** in the left bar. Lists every DCM (Demon Compendium Memory) and where the game data says it comes from:
+shops with prices, enemies with drop rates and zones, chests, event or NPC rewards, random boxes, and presents from the
+demon itself. Search by demon, enemy, zone or shop; the chips filter by kind of source. It works without a snapshot.
+
+The DCM list, zone names and shop stock are the NewMoon client's. Drops, chests, presents and events come from the
+public server data, so NewMoon may have changed them; DCMs with "No known source" are most likely NewMoon additions.
+To record what players confirmed on NewMoon, add notes to `app\ui\dcm-notes.json`
+(`"notes": { "<item id>": ["Sold by X in Y for Z"] }`; the item id is shown at the bottom of an opened row).
+They appear first, marked "NewMoon note".
+
 ## Commands
 
 ```
