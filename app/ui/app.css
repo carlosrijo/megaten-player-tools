@@ -1149,3 +1149,14 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-face { width: 22px; height: 22px; border-radius: 5px; object-fit: cover; object-position: 50% 20%; background: var(--surface-2); }
 .dun-face.boss { box-shadow: 0 0 0 1.5px var(--focus); }   /* the purple of the Boss tag */
 .dun-faces-more { margin-left: 3px; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.dun-loot-block { display: grid; gap: 6px; }
+.dun-loot { display: flex; flex-wrap: wrap; gap: 6px; }
+.dun-loot-item { display: inline-grid; justify-items: center; gap: 2px; padding: 4px; min-width: 40px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); cursor: help; }
+.dun-loot-item:hover, .dun-loot-item:focus-visible { border-color: var(--focus); outline: none; }
+.dun-loot-rate { font-size: 10px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1; }
+.dun-item-pic { display: inline-block; flex: none; border-radius: 4px; background: var(--hover); vertical-align: middle; }
+.dun-drop-list li { display: flex; align-items: center; gap: 6px; cursor: help; }
+.dun-drop-list li:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-radius: 4px; }
+.dun-drop-list .gdb-kind { margin-right: 2px; }
+.dun-tt-row { display: flex; justify-content: space-between; gap: 14px; }
+.tt-head .dun-item-pic { flex: none; }

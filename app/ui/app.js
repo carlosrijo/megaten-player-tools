@@ -2147,10 +2147,13 @@
       if (d) {
         const sk = (id) => (d.skills[id] ? d.skills[id][0] : '');
         Object.values(d.mobs).forEach((m) => { m.hay = [m.name, m.race || '', ...m.skills.map(sk), ...m.enemySkills.map(sk), ...m.traits.map(sk)].join(' ').toLowerCase(); });
+        // a drop points at d.items[id] = [name, the game's description, picture]
+        const item = (g) => { const [name, desc, icon] = d.items[g.i] || ['', '', null]; return Object.assign(g, { item: name, desc, icon }); };
         d.dungeons.forEach((x, i) => {
           x.key = i;
-          x.mobs.forEach((e) => { e.mob = d.mobs[e.m]; e.hay = [e.mob.hay, e.where || '', ...(e.drops || []).map((g) => g.item)].join(' ').toLowerCase(); });
-          x.hay = [x.name, x.from || ''].join(' ').toLowerCase();
+          (x.shared || []).forEach(item);
+          x.mobs.forEach((e) => { e.mob = d.mobs[e.m]; (e.drops || []).forEach(item); e.hay = [e.mob.hay, e.where || '', ...(e.drops || []).map((g) => g.item)].join(' ').toLowerCase(); });
+          x.hay = [x.name, x.from || '', ...(x.shared || []).map((g) => g.item)].join(' ').toLowerCase();
           x.bosses = x.mobs.filter((e) => e.boss).length;
         });
       }
@@ -2194,7 +2197,9 @@
     [skills('Skills', m.skills, 'Skill'), skills('Enemy-only skills', m.enemySkills, 'Enemy-only skill', 'Skills only this enemy version uses'),
       skills('Traits', m.traits, 'Trait', 'Its innate passive features')].forEach((b) => b && box.append(b));
     if (e.drops) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Drops' }),
-      h('ul', { class: 'gdb-list' }, e.drops.map((g) => h('li', null, h('span', { class: 'gdb-kind dun-rate', text: `${nf.format(g.rate)}%` }), g.item, g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null)))));
+      h('ul', { class: 'gdb-list dun-drop-list' }, e.drops.map((g) => withTip(h('li', { tabindex: 0 }, h('span', { class: 'gdb-kind dun-rate', text: `${nf.format(g.rate)}%` }),
+        dunItemPic(g, 20), g.item, g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null),
+        () => h('div', null, tipHead(dunItemPic(g, 32), g.item, `${nf.format(g.rate)}% per kill${g.max ? ` · up to ${fmt(g.max)}` : ''}`), ...tipLines(g.desc)))))));
     return box;
   }
   /** A cell of the enemy list with one tag per affinity (weaknesses, or null / reflect / absorb), so nobody has to open the enemy. */
@@ -2218,11 +2223,41 @@
           text: `${a.kind} ${a.el}${a.pct >= 100 ? '' : ` ${a.pct}%`}` }), 'None')));
       if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 5 }, dunMobDetail(e))));
     });
-    if (x.shared) box.append(h('p', { class: 'note', text: 'Every enemy here can also drop: ' + x.shared.slice(0, 12).map((g) => `${g.item} (${nf.format(g.rate)}%)`).join(', ') + (x.shared.length > 12 ? ` and ${x.shared.length - 12} more` : '') }));
+    const loot = dunLoot(x);
+    if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }),
+      h('div', { class: 'dun-loot' }, loot.map((l) => withTip(h('span', { class: 'dun-loot-item', tabindex: 0, role: 'img', 'aria-label': `${l.item}, up to ${nf.format(l.best)}%` },
+        dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => dunLootTip(l))))));
     box.append(h('table', { class: 'tbl dun-mobs' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }),
         h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
     return box;
+  }
+  /** An item's picture from the client (dungeon-icons\), or an empty box when it has none. */
+  const dunItemPic = (g, size) => (g.icon ? h('img', { class: 'dun-item-pic', src: g.icon, alt: '', width: size, height: size, loading: 'lazy' })
+    : h('span', { class: 'dun-item-pic', style: `width:${size}px;height:${size}px` }));
+  /**
+   * Everything that drops in a place, each item once: who drops it and at what rate (each enemy's own drops, and the
+   * place's own drop sets that every enemy there shares), best chance first.
+   */
+  function dunLoot(x) {
+    if (x.loot) return x.loot;
+    const by = new Map();
+    const add = (g, who) => {
+      if (!by.has(g.i)) by.set(g.i, { i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: 0, max: 0, from: [] });
+      const l = by.get(g.i); l.best = Math.max(l.best, g.rate); l.max = Math.max(l.max, g.max || 0); l.from.push({ who, rate: g.rate });
+    };
+    (x.shared || []).forEach((g) => add(g, null));
+    x.mobs.forEach((e) => (e.drops || []).forEach((g) => add(g, e)));
+    return (x.loot = [...by.values()].sort((a, b) => b.best - a.best || a.item.localeCompare(b.item)));
+  }
+  function dunLootTip(l) {
+    const rows = l.from.slice().sort((a, b) => b.rate - a.rate);
+    const shown = rows.slice(0, 10), more = rows.length - shown.length;
+    return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% per kill${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
+      ...tipLines(l.desc),
+      h('div', { class: 'tt-sec', text: 'Dropped here by' }),
+      shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who ? `${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
+      more > 0 ? h('div', { class: 'tt-line', text: `and ${more} more` }) : null);
   }
   /**
    * A place's enemies at a glance: small pictures beside its name, bosses first, then the strongest; each picture once

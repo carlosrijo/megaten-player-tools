@@ -134,7 +134,11 @@ enemy for its details:
 - **Affinities**: what it is weak to and resists (in %), and what it nulls, reflects or absorbs.
 - **Skills**, **enemy-only skills** and **traits** as the game's icons; hover one for its name and the game's own
   description. Skills the game has no icon for (most enemy-only moves and all traits) show their name instead.
-- **Drops** with the chance per kill, and the XP it gives.
+- **Drops** with the item's picture and the chance per kill, and the XP it gives.
+
+An opened place also shows **Drops here**: every item its enemies can drop, as the game's item pictures with the best
+chance under each. Hover one for the game's description and which enemies drop it there, at what rate ("Every enemy
+here" for the place's own drops).
 
 Places are grouped by where you enter them from (all of Dark Babel's floors under "Entered from Dark Babel", Celu
 Tower's Bronze, Silver and Gold under "Entered from Celu Tower"); click a group to open it. Fields, other places and
