@@ -1733,8 +1733,8 @@
     if (where.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Where to get it' }), h('ul', { class: 'gdb-list gdb-get' }, where)));
     // What players wrote down about it (the place is the name of the sheet's page, usually the dungeon).
     const notes = [...new Set(it.sources.map((s) => [s.tab, s.how].filter(Boolean).join(' · ')))];
-    if (notes.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Players\' notes' }), h('ul', { class: 'gdb-list' }, notes.map((n) => h('li', { text: n })))));
-    if (!where.length && !notes.length) box.append(h('p', { class: 'note', text: 'Neither the game data nor the players\' notes say where this piece comes from.' }));
+    if (notes.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Community notes' }), h('ul', { class: 'gdb-list' }, notes.map((n) => h('li', { text: n })))));
+    if (!where.length && !notes.length) box.append(h('p', { class: 'note', text: 'Neither the game data nor the community notes say where this piece comes from.' }));
     if (it.id) box.append(h('p', { class: 'note', text: `Item ${it.id}` }));
     return box;
   }
@@ -1747,7 +1747,7 @@
       return page;
     }
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Two sources. ' }),
-      'Stats, effects and sets are read from the NewMoon client\'s current item tables. "Where to get it" is traced through the public server data (drops, chests, shops, events), which NewMoon may have changed. "Players\' notes" are what the community wrote down for NewMoon, and can be imprecise.')));
+      'Stats, effects and sets are read from the NewMoon client\'s current item tables. "Where to get it" is traced through the public server data (drops, chests, shops, events), which NewMoon may have changed. "Community notes" are what the community wrote down for NewMoon, and can be imprecise.')));
     const items = D.data.items;
     const pass = (it, slot) => (!D.known || it.known) && (slot === 'all' || it.slot === slot);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by slot' });
