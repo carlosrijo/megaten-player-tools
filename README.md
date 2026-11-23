@@ -13,9 +13,25 @@ dotnet build app -c Release
 app\bin\Release\net10.0-windows\NewMoonTracker.exe
 ```
 
-"NewMoon Build Tracker": one window with Overview, Bonuses, Gear, Expertise and History, a Normal / Digitalized switch,
+After a change, with the app possibly open: `pwsh -NoProfile -File tools\rebuild-app.ps1` closes it, builds the reader
+and the app, and opens it again. (A build with the app open only updates the page files, not the program: Windows
+locks those.)
+
+"NewMoon Build Tracker": one window with Overview, Bonuses, Gear, Expertise and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
+
+- **Overview:** beside your picture, Max HP, Max MP and the 12 stats as compact bars (base, bonus and, in the
+  Digitalized view, what the digitalize demon adds). Then one line per key stat (a bar only where the stat has a cap,
+  showing how close you are; it changes colour past the cap). Click a line to see what gear, expertise and the
+  digitalize demon each add, and to jump to every source on Bonuses. Under it, the 5 biggest changes since an earlier
+  snapshot ("Show all" lists the rest); beside it, one radar chart per element with your affinity boost,
+  the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers. The digitalize demon's name is a dropdown to pick another one.
+- **Damage per shot** (to the right of the stats): the expected damage of the character's main skill against the
+  enemy its build is planned for, worked out by the gear analysis (`smt-gear-analysis`, the folder next to this repo
+  or `gearAnalysis` in `data\config.json`) from this reader's data, by `tools\damage.ps1`. It is recalculated after a
+  snapshot or a demon switch (about 5 s; the old number stays, dimmed, meanwhile). Only for characters the gear
+  analysis has a folder for (`characters\<name>\flags.ps1`); hover the number for what it assumes.
 
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
@@ -66,14 +82,15 @@ Enhancement - Iron Man" (read from the learned skills; `--mitama-boost yes|no` o
 digitalized with the Specter, Rubito's stats rose by exactly the computed amounts.
 
 **Digitalize demon on the page.** A snapshot taken while digitalized saves that demon as the character's digitalize
-demon (`data\cache\digitalize.json`). To pick one without digitalizing, use **Change** on the Overview's demon card (in the
-app), or `demon "<name>" --use`. The picker lists the COMP demons the game has loaded (all of them while the COMP or Demon
+demon (`data\cache\digitalize.json`). To pick one without digitalizing, click the demon's name on the Overview's demon line (in the
+app; a dropdown of "No demon" and the demons seen before, with "Load demons from the game" at the end to read the COMP again), or `demon "<name>" --use`. The picker lists the COMP demons the game has loaded (all of them while the COMP or Demon
 List is open, otherwise only the summoned one), plus every one seen before (`data\cache\comp-demons.json`, with icons in
-`data\cache\demon-icons\`), so it also works without the game. Picking one saves it, recalculates the latest snapshot's
+`data\cache\demon-icons\`), so it also works without the game. In the app, picking never reads the game: it uses the demons and the learned
+assists last read (by a snapshot, or by "Load demons from the game" in the dropdown). Picking one saves it, recalculates the latest snapshot's
 demon columns with it (the CSV is copied to `<csv>.backup-before-demon-switch.csv` first) and rebuilds the page. Later
-snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The Digitalized view then adds it: a demon card on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
-client's `Interface\tga` into `data\dash\demon.png` when the demon is saved; the stats it adds; its assists per level), a
-third (cyan) part in the key stats, and
+snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
+client's `Interface\tga` into `data\dash\demon.png` when the demon is saved; **Details** opens the stats it adds and its assists per level), a
+third part in each key stat's breakdown, and
 a demon column on Bonuses (rows only the demon gives appear in that view only). The CSV gets "Digitalize demon",
 "<stat> (demon, digitalized)" per key stat, and "Digitalize demon record" (so `recalc` can redo it). A snapshot taken
 while digitalized doesn't take the window's 12 stats/HP/MP (they include the demon); the saved normal ones are used.
@@ -119,6 +136,9 @@ Layouts are documented in `src/Game/ClientReader.cs`.
   `mitama-*.tsv`, `guardian-assist.tsv`, `guardian-levels.tsv`, `skills-digitize.tsv` the server's demon and digitalize tables;
   `tokusei-*.tsv`, `expertise-newmoon.tsv`, `traits-unresolved.tsv` NewMoon data from the client (see
   `reference/README.md`; `tools/sbinexport` regenerates them).
+- `tools/memdbg` is a read-only memory explorer for finding new data in the client (modes listed in its header).
+- `.claude/skills/` holds skills for AI agents working on this repo: dev workflow, memory investigation, checking
+  numbers against the game, the server's rules, and decoding game data.
 - `data/tooltips.txt` also saves each slot's item record (`(item …)` in the header) and the level; the CSV's
   "Gear records" column does the same per row, so `rebuild` and `recalc` work from ids too.
 - `data/dash/` page data: `snapshots.json`, `gear.json`, `expertise.json`, `bonuses.json`.

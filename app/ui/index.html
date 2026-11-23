@@ -30,12 +30,9 @@
           <span class="who-chev" data-icon="chevron" aria-hidden="true"></span>
         </button>
       </div>
+      <h1 class="top-title" id="page-title"></h1>
       <div class="top-actions">
-        <span class="game" id="game" hidden><i class="game-dot" aria-hidden="true"></i><span id="game-text"></span></span>
-        <div class="seg" id="mode" role="group" aria-label="Show numbers for">
-          <button type="button" data-mode="normal" aria-pressed="true" data-tip="Bonuses that always apply">Normal</button>
-          <button type="button" data-mode="digi" aria-pressed="false" data-tip="Adds the bonuses that only apply while digitalized">Digitalized</button>
-        </div>
+        <span class="game" id="game" tabindex="0" hidden><i class="game-dot" aria-hidden="true"></i><span id="game-text"></span></span>
         <button type="button" class="btn btn-primary" id="snap" data-tip="Read the game now (F5). Read-only.">
           <span class="btn-icon" data-icon="camera" aria-hidden="true"></span><span id="snap-label">Take snapshot</span>
         </button>
@@ -54,7 +51,7 @@
   </div>
 
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
-  <div class="tip" id="tip" hidden></div>
+  <div class="tip" id="tip" role="tooltip" hidden></div>
 
   <dialog class="dlg" id="settings" aria-labelledby="settings-title">
     <form method="dialog" class="dlg-body">
@@ -127,20 +124,15 @@
     </div>
   </dialog>
 
-  <dialog class="dlg" id="demons" aria-labelledby="demons-title">
-    <div class="dlg-body">
-      <div class="dlg-head">
-        <h2 id="demons-title">Digitalize demon</h2>
-        <button type="button" class="btn btn-ghost btn-square" id="demons-close" aria-label="Close"><span data-icon="x" aria-hidden="true"></span></button>
-      </div>
-      <p class="field-help" style="margin-top:-10px">The Digitalized view adds this demon. Picking one recalculates the latest snapshot with it (the spreadsheet is copied first).</p>
-      <div class="char-list" id="demons-list"></div>
-      <div class="chooser-foot">
-        <button type="button" class="btn" id="demons-rescan" data-tip="Read the COMP demons from the game again">Look again</button>
-        <span class="field-help" id="demons-status" role="status"></span>
-      </div>
+  <!-- the digitalize demon picker: a dropdown under the demon line's "Change" (a popover: a click outside or Esc closes it) -->
+  <div class="menu" id="demons" popover aria-label="Digitalize demon">
+    <div class="char-list" id="demons-list"></div>
+    <div class="menu-foot">
+      <button type="button" class="btn btn-sm btn-primary" id="demons-load">Load demons from the game</button>
+      <span class="field-help" id="demons-status" role="status"></span>
     </div>
-  </dialog>
+    <p class="field-help menu-note">Picking another demon recalculates the latest snapshot with it. The spreadsheet is copied first.</p>
+  </div>
 
   <dialog class="dlg dlg-wide" id="picture" aria-labelledby="picture-title">
     <div class="dlg-body">

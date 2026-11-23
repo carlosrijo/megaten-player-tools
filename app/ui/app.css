@@ -17,8 +17,10 @@
   --exp: #d96f0b;           /* series: expertise: Tokyo Night (Day) orange (swapped with the demon at the user's request) */
   --bonus: #0891b2;         /* series: stat bonus: Tokyo Night's cyan, a deeper step so it holds up on the light surface */
   --demon: #e0218a;         /* series: digitalize demon: pink, as the logo; apart from the stat-bonus cyan, gear violet and expertise orange */
-  --law: #2e7de9;           /* alignment colours (Tokyo Night Day): Law blue, Neutral grey-lavender, Chaos red, as the game marks them */
-  --neutral: #6172b0;
+  --aff: #7847bd;           /* affinity radar, boost: Tokyo Night (Day) purple; on its own chart, never beside the gear violet */
+  --aff-res: #118c74;       /* affinity radar, resistance: Tokyo Night (Day) teal. The pair passes the palette check (colour-blind separation, contrast) on both surfaces */
+  --law: #2e7de9;           /* alignment colours (Tokyo Night Day): Law blue, Neutral green, Chaos red, as the game marks them */
+  --neutral: #4d8a1c;       /* Neutral: green, as the game shows it (Tokyo Night Day's green, a step more vivid) */
   --chaos: #f52a65;
   --base: #b5b3aa;          /* de-emphasised: a stat's own base */
   --accent: #4c1d95;        /* the app's own colour: deep purple, as in the logo (blue stays the "gear" data colour) */
@@ -57,8 +59,10 @@
   --exp: #ff9e64;           /* Tokyo Night orange */
   --bonus: #2ac3de;         /* Tokyo Night cyan ("blue1") */
   --demon: #d55181;
-  --law: #7aa2f7;           /* Tokyo Night blue / comment-lavender / red */
-  --neutral: #a9b1d6;
+  --aff: #9d7cd8;           /* Tokyo Night (Storm) purple */
+  --aff-res: #3aa890;       /* Tokyo Night teal, a step deeper so it stays inside the dark lightness band */
+  --law: #7aa2f7;           /* Tokyo Night blue / green / red */
+  --neutral: #9ece6a;       /* Neutral: Tokyo Night green, as the game shows it (the comment-lavender #a9b1d6 looked white around a picture) */
   --chaos: #f7768e;
   --base: #5e5d58;
   --accent: #4c1d95;
@@ -89,7 +93,10 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 
 /* ---------- shell ---------- */
 .app { display: grid; grid-template: "top top" 56px "side main" 1fr / 196px 1fr; height: 100vh; }
-.top { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 16px 0 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+/* who | the page's name, in the middle | the game, the mode, snapshot, settings */
+.top { grid-area: top; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding: 0 16px 0 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.top-title { font: 600 16px/1.2 var(--font-display); white-space: nowrap; }
+.top .top-actions { justify-self: end; }
 .who { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .logo { display: block; width: 34px; height: 34px; flex: none; }
 .who-btn { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 8px 4px 6px; margin-left: -6px; border-radius: 8px; cursor: pointer; }
@@ -107,7 +114,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .portrait:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .char-pic { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: 50% 0; box-shadow: 0 0 0 2px var(--border-strong); }
 .char-pic.on { box-shadow: 0 0 0 2px var(--good); }
-.dlg-wide { width: min(860px, calc(100vw - 32px)); }
+.dlg.dlg-wide { width: min(860px, calc(100vw - 32px)); }   /* .dlg (further down) sets the usual width; this has to win over it */
 .pic-stage { position: relative; display: grid; place-items: center; min-height: 240px; background: #0b0b0d; border-radius: 10px; overflow: hidden; }
 .pic-frame { position: relative; line-height: 0; overflow: hidden; }
 .pic-frame img { display: block; max-width: 100%; max-height: min(52vh, 470px); user-select: none; -webkit-user-drag: none; }
@@ -155,11 +162,26 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .main { grid-area: main; overflow: auto; min-width: 0; outline: none; scrollbar-gutter: stable; }
 .page { max-width: 1180px; margin: 0 auto; padding: 22px 24px 40px; display: grid; gap: 18px; }
 .page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; }
-.page-title { font: 600 22px/1.2 var(--font-display); }
 .page-sub { color: var(--text-2); max-width: 110ch; margin-top: 3px; }
 .page-head-text { flex: 1 1 320px; min-width: 0; }
 .page-who { margin-top: 2px; font-size: 14px; color: var(--text-2); }
 .page-who b { color: var(--text); font-weight: 600; }
+/* Overview: the name with the compact stats under it, beside the picture */
+.page-head.with-portrait .page-head-text { display: grid; gap: 8px; align-content: center; }
+.who-line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.who-line .page-who { margin: 0; }
+.who-big { font: 600 19px/1.2 var(--font-display); letter-spacing: -.01em; }
+/* as many columns as fit, each wide enough for its label, bar and number (never squeezed into each other) */
+.dg-bars.who-stats { grid-template-rows: none; grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 2px 18px; }
+.who-stats .dg-row { grid-template-columns: 38px minmax(20px, 1fr) 40px; }
+/* to the right of the stats: the expected damage per shot (from the gear analysis) */
+.page-head.with-portrait .page-head-text { flex: 1 1 300px; }   /* the damage card stays beside the stats until the window is really narrow */
+.who-damage { flex: none; display: grid; gap: 2px; align-content: center; justify-items: end; min-width: 168px; margin-left: auto; padding: 10px 16px; align-self: stretch; text-align: right;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }   /* a card of its own, so it is found at a glance */
+.who-damage-value { font: 600 26px/1.1 var(--font-display); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.who-damage-sub { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.who-damage.stale .who-damage-value { color: var(--text-3); }   /* from before the latest change, while the new one is worked out */
+.who-damage:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
 /* ---------- controls ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; white-space: nowrap; }
@@ -201,8 +223,6 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .tag-off { border-style: dashed; }
 .tag-max { border-color: var(--border-strong); color: var(--text); }                             /* exactly at a cap */
 .tag-over { border-color: transparent; background: var(--warn-bg); color: var(--warn-ink); }      /* past a cap: wasted */
-.over-note { display: flex; gap: 8px; align-items: flex-start; color: var(--warn-ink); max-width: none; }
-.over-note svg.icon { flex: none; width: 15px; height: 15px; margin-top: 1px; color: var(--warn-mark); }
 .cmp .tbl tfoot td.capped { color: var(--warn-ink); }
 
 /* ---------- cards ---------- */
@@ -216,7 +236,6 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .swatch { width: 10px; height: 10px; border-radius: 3px; }
 .sw-gear { background: var(--gear); } .sw-exp { background: var(--exp); } .sw-demon { background: var(--demon); } .sw-base { background: var(--base); } .sw-bonus { background: var(--bonus); }
-.cols-2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 .note { color: var(--text-2); font-size: 12px; max-width: 80ch; }
 
 .notice { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
@@ -225,27 +244,64 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .notice-warn svg.icon { color: var(--warn-mark); }
 .notice b { font-weight: 600; }
 
-/* ---------- key stats ---------- */
-.ks { display: flex; flex-wrap: wrap; gap: 12px; }
-.ks-card { flex: var(--n) 1 calc(var(--n) * 118px + 32px); }
-.ks-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 14px 18px; }
-.stat { display: grid; gap: 5px; min-width: 0; align-content: start; }
+/* ---------- overview: the stat sheet ---------- */
+/* One line per key stat: name, a bar only where the stat has a cap (how close to it), the total. A click opens where
+   the total comes from, under the line. The changes card sits beside the sheet. */
 .stat-label { color: var(--text-2); font-size: 12px; }
-.stat-value { font: 600 24px/1.1 var(--font-display); letter-spacing: -.01em; white-space: nowrap; }
-.stat-note { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; min-height: 18px; }
-.src-pair { display: inline-flex; gap: 10px; }
-.src { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--text); }
-.src .swatch { width: 8px; height: 8px; }
-.bar { display: flex; gap: 2px; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
-.bar i { display: block; height: 100%; border-radius: 3px; min-width: 2px; }
-.bar i.gear { background: var(--gear); } .bar i.exp { background: var(--exp); } .bar i.demon { background: var(--demon); }
-.bar.share { background: transparent; }
-.bar.share:empty { background: var(--grid); }
+.over-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+.over-main { display: grid; gap: 18px; min-width: 0; }
+.sheet { padding: 12px 16px 6px; }
+.sheet-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px 32px; align-items: start; }   /* two columns when both fit with their labels in full, else one */
+.sheet-col { display: grid; gap: 14px; align-content: start; }
+.sheet-group { display: grid; }
+.sheet-group .list-head { margin: 0; padding: 0 0 5px; }
+.sheet-row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto minmax(58px, auto); gap: 8px; align-items: center; min-height: 30px; padding: 0 6px; margin: 0 -6px; border-top: 1px solid var(--border); cursor: pointer; }
+.sheet-row:hover { background: var(--hover); }
+.sheet-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
+.sheet-row .chev { margin: 0; }
+.sheet-label { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-row[aria-expanded="true"] .sheet-label { color: var(--text); font-weight: 600; }
+.sheet-value { font: 600 14px/1.2 var(--font-display); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.sheet-value.bad { color: var(--bad); }
+.cap-bar { display: block; width: 72px; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+.cap-bar i { display: block; height: 100%; border-radius: 3px; background: var(--text-2); }   /* neutral: this is "total against the cap", not one of the source series */
+.cap-bar.over i { background: var(--warn-mark); }   /* past the cap: the same colour as the sentence above the sheet */
+.sheet-detail { display: grid; gap: 6px; padding: 2px 0 12px 22px; justify-items: stretch; }
+.sheet-src { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; font-size: 12px; }
+.sheet-src .swatch { align-self: center; }
+.sheet-src small { display: block; color: var(--text-2); }
+.sheet-src b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.sheet-detail .btn { justify-self: start; margin-top: 2px; }
+.chg-more { justify-self: start; }
+/* affinity: one radar, three series on the same percentage scale (boost, its cap, resistance). Boost: purple, round
+   marks. Resistance: teal, square marks. Cap: a dashed neutral outline (a limit, not a measurement). */
+.radar { justify-self: center; }
+.radar svg { width: auto; max-width: 100%; height: auto; }
+.radar .gridline, .radar .zeroline { fill: none; }
+.radar .zeroline { stroke: var(--axis); stroke-width: 1.5; }
+.radar text.ring-label { fill: var(--text-3); font-size: 11px; }
+.radar .aff-s { --c: var(--aff); transition: opacity .12s ease; }
+.radar .aff-res { --c: var(--aff-res); }
+.radar .aff-cap { --c: var(--text-2); }
+.radar .aff-s.dim { opacity: .22; }
+.radar .aff-area { fill: var(--c); opacity: .14; }
+.radar .aff-cap .aff-area { fill: none; }
+.radar .aff-line { fill: none; stroke: var(--c); stroke-width: 2; stroke-linejoin: round; }
+.radar .aff-cap .aff-line { stroke-dasharray: 5 4; stroke-width: 1.5; }
+.radar .aff-dot { fill: var(--c); stroke: var(--surface); stroke-width: 2; }
+.radar .aff-dot.bad { fill: var(--bad); }
+.radar text.aff-name { fill: var(--text-2); }
+.radar text.aff-name.none { fill: var(--text-3); }
+.radar text.aff-value { fill: var(--text); font-weight: 600; }
+.radar text.aff-value.bad { fill: var(--bad); }
+.aff-pick { justify-self: center; }
+.aff-pick button { gap: 6px; }
+.aff-key { display: inline-block; width: 9px; height: 9px; background: var(--aff); border-radius: 50%; }
+.aff-key-res { background: var(--aff-res); border-radius: 2px; }
+.aff-key-cap { width: 12px; height: 0; background: none; border-radius: 0; border-top: 2px dashed var(--text-2); }
+.card > .aff-pick + .note { justify-self: center; text-align: center; }
 
 /* ---------- stat bars (base + bonus) ---------- */
-.vitals { display: flex; flex-wrap: wrap; gap: 8px 28px; }
-.vital { display: grid; gap: 1px; }
-.vital-value { font: 600 20px/1.15 var(--font-display); }
 .srows { display: grid; gap: 1px; }
 .srow { display: grid; grid-template-columns: 62px minmax(60px, 1fr) 44px; align-items: center; gap: 10px; height: 24px; border-radius: 4px; padding: 0 4px; margin: 0 -4px; }
 .srow:hover { background: var(--hover); }
@@ -259,8 +315,9 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .srow-gap { height: 9px; }
 
 /* ---------- changes ---------- */
-.chg-list { display: grid; }
-.chg { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.chg-list { columns: 2 340px; column-gap: 36px; }   /* the card is as wide as the page: two columns of changes */
+.chg-group { break-after: avoid; }
+.chg { break-inside: avoid; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .chg:last-child { border-bottom: 0; }
 .chg-vals { color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .chg-vals b { color: var(--text); font-weight: 600; }
@@ -431,7 +488,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 
 /* ---------- narrower windows ---------- */
 @media (max-width: 1020px) {
-  .cols-2 { grid-template-columns: minmax(0, 1fr); }
+  .over-grid { grid-template-columns: minmax(0, 1fr); }
   .passive { grid-template-columns: 118px minmax(0, 1fr); }
   .passive .fx { grid-column: 2; }
 }
@@ -445,6 +502,9 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
   .cmp-panel { position: static; order: -1; max-height: 240px; }
   .detail { position: static; }
   .page { padding: 18px 16px 32px; }
+}
+@media (max-width: 640px) {
+  .dg-bars.who-stats { grid-template-rows: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
@@ -463,6 +523,13 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .demon-id { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
 .demon-id .stat-label { font-size: 11px; }
 .demon-name { margin: 0 4px 0 0; font: 600 17px/1.2 var(--font-display); letter-spacing: -.01em; }
+/* the demon's name is the picker: a button that opens the dropdown of COMP demons */
+.name-btn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 8px; margin: -2px -6px -2px -8px; border-radius: 7px; cursor: pointer; }
+.name-btn:hover { background: var(--hover); }
+.name-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.name-btn .chev.down { transform: rotate(90deg); color: var(--text-3); }
+.name-btn .chev svg.icon { width: 14px; height: 14px; }
+.strack i:not(:last-child) { border-radius: 0; }   /* only the last part of a bar has a rounded end */
 .tag-demon { border-color: color-mix(in srgb, var(--demon) 60%, transparent); color: var(--text); background: color-mix(in srgb, var(--demon) 14%, transparent); }
 /* its stats: the player's tiny bars, four columns of three, HP and MP first */
 .dg-bars { display: grid; grid-template-rows: repeat(3, minmax(18px, 1fr)); align-items: center; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0 14px; }
@@ -486,15 +553,41 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
   background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--align) 22%, transparent), transparent 70%), var(--surface-2);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--align) 14%, transparent), 0 0 14px color-mix(in srgb, var(--align) 30%, transparent); }
 .demon-pic[class*="align-"] span { color: var(--align); }
-.portrait[class*="align-"] { box-shadow: 0 0 0 2px var(--align), 0 0 16px color-mix(in srgb, var(--align) 30%, transparent); }
-.portrait.no-pic[class*="align-"] { box-shadow: none; border-color: var(--align); }
+/* the player's picture: the same recipe as the demon's icon (a border in the alignment colour, a soft ring, a glow),
+   on the Overview portrait, on its empty "Add picture" frame, and on the small picture in the top bar */
+.portrait[class*="align-"] { box-shadow: 0 0 0 2px var(--align), 0 0 0 5px color-mix(in srgb, var(--align) 14%, transparent), 0 0 16px color-mix(in srgb, var(--align) 30%, transparent); }
+.portrait.no-pic[class*="align-"] { border: 1.5px solid var(--align);
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--align) 16%, transparent), transparent 70%), var(--surface-2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--align) 14%, transparent), 0 0 14px color-mix(in srgb, var(--align) 30%, transparent); }
+.who-pic[class*="align-"] { box-shadow: 0 0 0 1.5px var(--align), 0 0 8px color-mix(in srgb, var(--align) 35%, transparent); }
 .tag-align { border-color: color-mix(in srgb, var(--align) 70%, transparent); color: var(--text); background: color-mix(in srgb, var(--align) 14%, transparent); }
 
 /* digitalize demon picker: the game's 32x32 icons, pixel-crisp */
 .dm-icon { width: 32px; height: 32px; border-radius: 6px; image-rendering: pixelated; box-shadow: 0 0 0 1px var(--border-strong); }
 .dm-none { display: grid; place-items: center; font: 600 14px/1 var(--font-display); color: var(--demon); background: var(--surface-2); }
 .char[disabled] { opacity: .6; cursor: progress; }
-.demon-change { margin-left: auto; }
+.demon-actions { margin-left: auto; display: inline-flex; gap: 2px; }
+.demon-actions .chev { margin: 0 4px 0 0; }
+.demon-actions .chev.down { margin: 0 0 0 4px; transform: rotate(90deg); }
+.demon-switching { display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.spin.ink { border-color: var(--border-strong); border-top-color: var(--text); }   /* the spinner on a plain surface (the default one is for the purple button) */
+/* the demon picker: a dropdown under "Change" (a popover; app.js places it under its button) */
+.menu { position: fixed; inset: auto; margin: 0; width: min(360px, calc(100vw - 16px)); padding: 6px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); overflow: visible; }
+.menu .char-list { margin: 0; padding: 0; max-height: min(50vh, 360px); }
+.menu .char { padding: 6px 8px; gap: 10px; border-color: transparent; }
+.menu .char:hover { border-color: transparent; }
+.menu-foot { display: grid; gap: 6px; margin-top: 6px; padding: 8px 6px 0; border-top: 1px solid var(--border); }
+.menu-foot .btn { width: 100%; }
+.menu-foot .field-help:empty { display: none; }
+.dm-off { color: var(--text-3); }
+/* the demon line with no demon: the same box, empty */
+.demon-pic.none { border: 1.5px dashed var(--border-strong); background: var(--surface-2); box-shadow: none; }
+.demon-pic.none span { color: var(--text-3); }
+.menu-note { margin: 0; padding: 4px 8px 4px; }
+/* closed (the default): one line, who it is and your HP/MP with it */
+.demon-card.closed { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+.demon-card.closed .demon-main { grid-template-rows: auto; }
+.demon-card.closed .demon-pic { align-self: center; }
 /* demon card: second line (Max HP/MP while digitalized, force stack, equipment, Demon Force) */
 .demon-main:has(> .demon-extra) { grid-template-rows: auto auto 1fr; }
 .demon-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; color: var(--text-2); }

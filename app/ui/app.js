@@ -136,8 +136,11 @@
           const [snapshots, gear, expertise, bonuses, ranks, digitalize] = empty ? [[], [], [], [], null, null] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null)]);
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png' } };
+          const damage = empty ? null : await get('../../data/dash/damage.json', null);
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, damage, damageModel: !empty, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png' } };
         }
+        // stand-in: the saved result again after a moment, stamped as the one asked for (the app runs the gear analysis)
+        if (cmd === 'damage') { await wait(1500); const d = await get('../../data/dash/damage.json', null); return d ? { ...d, for: args.for, at: new Date().toISOString().slice(0, 19) } : null; }
         if (cmd === 'snapshot') {
           await wait(1400);
           if (Q.get('snap') === 'fail') throw Object.assign(new Error('ImagineClient is not running.'), { kind: 'user' });
@@ -163,14 +166,14 @@
         }
         if (cmd === 'pictureRemove') { delete fakePic[fake.active]; delete fakeSrc[fake.active]; return fakeState(); }
         if (cmd === 'compDemons') {
-          await wait(500);
-          const cur = (fake.demon = fake.demon || 'Specter');
+          await wait(args && args.cached ? 0 : 1200);   // seen before: at once; looking at the game: a moment
+          const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
             ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
-            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame, current: name === cur, icon: null }));
+            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, icon: null }));
         }
         // The browser preview has no game and no files to change: say so instead of pretending (the desktop app switches)
-        if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Use Change in the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
+        if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Pick the demon in the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
         if (cmd === 'setAlignment') {
           await wait(900);
           fake.align = fake.align || {}; fake.align[fake.active] = args.alignment;
@@ -195,15 +198,18 @@
     ['boost_spin', 'Spin skill boost', '%'], ['boost_attack', 'Attack skill boost', '%'], ['boost_rush', 'Rush skill boost', '%'], ['boost_rapid', 'Rapid skill boost', '%'], ['boost_shot', 'Shot skill boost', '%'],
     ['cooldown', 'Cooldown', '%'], ['move_speed', 'Movement speed', '%'],
   ];
-  const KEY_GROUPS = [
-    { title: 'Critical', stats: [['crit', 'Critical'], ['final_crit', 'Final correction']] },
-    { title: 'Limit break', stats: [['lb_chance', 'Chance'], ['lb_power', 'Power'], ['lb_cap', 'Damage cap']] },
-    { title: 'Technical attack', stats: [['ta_chance', 'Chance'], ['ta_power', 'Power']] },
-    { title: 'Pursuit', stats: [['pursuit_chance', 'Chance'], ['pursuit_power', 'Power']] },
-    { title: 'Damage dealt', stats: [['dmg_close', 'Close-range'], ['dmg_long', 'Long-range'], ['dmg_spell', 'Spell']] },
-    { title: 'Damage taken', meter: true, stats: [['taken_close', 'Close-range'], ['taken_long', 'Long-range'], ['taken_spell', 'Spell']] },
-    { title: 'Speed', stats: [['cooldown', 'Cooldown'], ['move_speed', 'Movement']] },
+  // The Overview's stat sheet: one line per key stat, in two columns of named groups.
+  const SHEET = [
+    [['Offence', [['crit', 'Critical'], ['final_crit', 'Final correction'], ['lb_chance', 'Limit break chance'], ['lb_power', 'Limit break power'], ['lb_cap', 'Limit break cap'],
+      ['ta_chance', 'Technical chance'], ['ta_power', 'Technical power'], ['pursuit_chance', 'Pursuit chance'], ['pursuit_power', 'Pursuit power']]]],
+    [['Damage dealt', [['dmg_close', 'Close-range'], ['dmg_long', 'Long-range'], ['dmg_spell', 'Spell']]],
+      ['Damage taken', [['taken_close', 'Close-range'], ['taken_long', 'Long-range'], ['taken_spell', 'Spell']]],
+      ['Speed', [['cooldown', 'Cooldown'], ['move_speed', 'Movement']]]],
   ];
+  /** The Bonuses row behind a key stat (same name, same unit; the cap is called "Limit break cap" there). */
+  const BONUS_NAME = { lb_cap: 'Limit break cap' };
+  const bonusRowOf = (k, label, unit) => (S.data.bonuses || []).find((r) => r.group === 'Combat' && r.bonus === (BONUS_NAME[k] || label) && (r.unit || '') === (unit || ''));
+  const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['history', 'History', 'chart']];
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -238,6 +244,9 @@
     busy: false, scanning: false, lastScan: 0,
     state: { active: null, scanned: false, clients: [], characters: [] },   // who is in game, whose data is shown
     compare: null,
+    over: { open: null, demon: store.get('demon-open') === '1', allChanges: false, switching: null, aff: store.get('aff') || null },   // (aff: the affinity series brought forward)   // Overview: the opened stat, demon details shown, every change listed, the demon being switched to
+    damage: { busy: null, failed: null, error: '' },   // the damage calculation in flight (what it is for), the one that failed
+    demons: null,   // the COMP demons as last listed (the picker shows these at once, then looks at the game again)
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: store.get('gearview') === 'table' ? 'table' : 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
     exp: { q: '', closed: new Set() },
@@ -257,7 +266,10 @@
     if (latest) COMBAT.forEach(([k, label, unit]) => {
       const gear = n0(latest[k]);
       const gearDigi = latest[k + '_digi'] === null || latest[k + '_digi'] === undefined ? gear : n0(latest[k + '_digi']);
-      const exp = round2(d.expertise.reduce((a, r) => a + n0(r[k]), 0));
+      // expertise: summed from the expertise list; a stat that list has no column for (movement speed, the skill
+      // boosts) takes the expertise share of its Bonuses row, so both pages show the same total
+      const exp = d.expertise.some((r) => r[k] !== undefined) ? round2(d.expertise.reduce((a, r) => a + n0(r[k]), 0))
+        : n0((bonusRowOf(k, label, unit) || {}).expertise);
       // what the digitalize demon adds (only while digitalized): the saved demon, else the snapshot's own record
       const dgc = d.digitalize && d.digitalize.combat;
       const demon = dgc && dgc[k] !== undefined ? n0(dgc[k]) : n0(latest[k + '_demon']);
@@ -308,19 +320,39 @@
 
   // ---------- tooltip ----------
   const tipEl = $('#tip');
-  function showTip(text, x, y) {
+  /** Puts the tip at `left`, with its top at `below`, or (when that would run off the window) its bottom at `above`. */
+  function placeTip(text, left, below, above) {
     tipEl.textContent = text; tipEl.hidden = false;
     const w = tipEl.offsetWidth, hgt = tipEl.offsetHeight;
-    tipEl.style.left = Math.max(8, Math.min(x + 14, window.innerWidth - w - 8)) + 'px';
-    tipEl.style.top = (y + 18 + hgt > window.innerHeight ? y - hgt - 10 : y + 18) + 'px';
+    tipEl.style.left = Math.max(8, Math.min(left, window.innerWidth - w - 8)) + 'px';
+    tipEl.style.top = (below + hgt > window.innerHeight ? above - hgt : below) + 'px';
   }
-  const hideTip = () => { tipEl.hidden = true; };
+  const showTip = (text, x, y) => placeTip(text, x + 14, y + 18, y - 10);   // beside the pointer
+  let tipFor = null;   // the element a keyboard-focus tip describes
+  const hideTip = () => {
+    tipEl.hidden = true;
+    if (tipFor) { tipFor.removeAttribute('aria-describedby'); tipFor = null; }
+  };
   document.addEventListener('pointermove', (ev) => {
     const t = ev.target instanceof Element ? ev.target.closest('[data-tip]') : null;
     if (t) showTip(t.dataset.tip, ev.clientX, ev.clientY); else if (!ev.target.closest || !ev.target.closest('.chart')) hideTip();
   });
   document.addEventListener('pointerleave', hideTip);
   document.addEventListener('keydown', hideTip, true);
+  // The pointer can stay still while the page moves under it (mouse wheel) or changes (a click): don't leave a tip behind.
+  document.addEventListener('scroll', hideTip, true);
+  document.addEventListener('pointerdown', hideTip, true);
+  // Keyboard: the same tip under whatever Tab lands on. A button with no tip of its own shows the one inside it.
+  document.addEventListener('focusin', (ev) => {
+    const el = ev.target;
+    if (!(el instanceof Element) || !el.matches(':focus-visible')) return;
+    const t = el.closest('[data-tip]') || (el.matches('button') ? el.querySelector('[data-tip]') : null);
+    if (!t) return;
+    const r = el.getBoundingClientRect();
+    placeTip(t.dataset.tip, r.left, r.bottom + 6, r.top - 6);
+    tipFor = el; el.setAttribute('aria-describedby', 'tip');
+  });
+  document.addEventListener('focusout', hideTip);
 
   // ---------- toasts ----------
   function toast(kind, title, text, ms) {
@@ -328,9 +360,21 @@
       icon(kind === 'ok' ? 'check' : kind === 'warn' ? 'alert' : kind === 'err' ? 'alert' : 'info'),
       h('div', null, h('div', { class: 'toast-title', text: title }), text ? h('div', { class: 'toast-text', text }) : null),
       h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Dismiss', onclick: () => el.remove() }, icon('x')));
-    $('#toasts').append(el);
+    homeToasts();
+    toastsEl.append(el);
     if (ms !== 0) setTimeout(() => el.remove(), ms || 7000);
   }
+  // An open dialog covers the rest of the page and switches it off, toasts included. So while one is open the toasts
+  // live inside it (still pinned to the window's corner), and go back to the page when it closes.
+  const toastsEl = $('#toasts');
+  function homeToasts() {
+    const home = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+    if (toastsEl.parentElement === home) return;
+    toastsEl.querySelectorAll('.toast').forEach((t) => { t.style.animation = 'none'; });   // moving would replay the entrance
+    home.append(toastsEl);
+  }
+  const dialogWatch = new MutationObserver(homeToasts);
+  document.querySelectorAll('dialog').forEach((d) => dialogWatch.observe(d, { attributes: true, attributeFilter: ['open'] }));
 
   // ---------- theme ----------
   const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -365,9 +409,7 @@
     S.page = page; store.set('page', page);
     render(); $('#main').scrollTop = 0;
   }
-  document.querySelectorAll('#mode button').forEach((b) => b.addEventListener('click', () => {
-    S.mode = b.dataset.mode; store.set('mode', S.mode); render();
-  }));
+  // (Normal / Digitalized is picked in the demon dropdown on the Overview: "No demon" or a demon. See setMode.)
 
   function renderChrome() {
     const L = S.v && S.v.latest;
@@ -375,12 +417,13 @@
     $('#who-name').textContent = who || 'No character yet';
     const pic = $('#who-pic'), picUrl = S.meta.picture || null;
     pic.hidden = !picUrl;
+    pic.className = 'who-pic ' + alignClass(S.meta.alignment);   // framed in the alignment's colour, as on the Overview
     if (picUrl && pic.getAttribute('src') !== picUrl) pic.src = picUrl;
     // Alignment is read from the game at each snapshot; before the first one the reader assumes Neutral, and the header says so.
     const al = S.meta.alignment ? S.meta.alignment.charAt(0) + S.meta.alignment.slice(1).toLowerCase() + (S.meta.alignmentKnown === false ? ' (assumed)' : '') : '';
     $('#who-sub').textContent = L ? [`Level ${fmt(L.level)}`, al].filter(Boolean).join(' · ') : (who ? 'No snapshot yet' : 'Log in to the game');
+    $('#page-title').textContent = (PAGES.find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
     document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.page === S.page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-    document.querySelectorAll('#mode button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === S.mode)));
     const foot = $('#side-foot');
     foot.replaceChildren();
     if (L) {
@@ -407,8 +450,8 @@
   }
 
   // ---------- shared page pieces ----------
-  const pageHead = (title, sub, ...right) => h('div', { class: 'page-head' },
-    h('div', null, h('h1', { class: 'page-title', text: title }), sub ? h('p', { class: 'page-sub', text: sub }) : null), right);
+  const pageHead = (sub, ...right) => h('div', { class: 'page-head' },
+    h('div', null, sub ? h('p', { class: 'page-sub', text: sub }) : null), right);   // the page's name is in the top bar (renderChrome)
   const legend = (...items) => h('div', { class: 'legend' }, items.map(([cls, text]) => h('span', null, h('i', { class: 'swatch ' + cls }), text)));
   function searchBox(value, placeholder, oninput) {
     const input = h('input', { class: 'input', type: 'search', placeholder, value, 'aria-label': placeholder, 'data-search': true, spellcheck: 'false', oninput: () => oninput(input.value) });
@@ -418,11 +461,11 @@
   function firstRun() {
     const name = S.meta.character || S.state.active;
     if (!name) return h('div', { class: 'page' }, h('div', { class: 'empty' },
-      h('h1', { class: 'empty-title', text: 'No character yet' }),
+      h('h2', { class: 'empty-title', text: 'No character yet' }),
       h('p', { class: 'page-sub', text: 'Start NewMoon and log in. The app reads your character’s name from the game by itself; if two game clients are open it asks which one to look at.' }),
       h('button', { type: 'button', class: 'btn btn-primary', onclick: () => openChooser() }, 'Look for my character')));
     return h('div', { class: 'page' }, h('div', { class: 'empty' },
-      h('h1', { class: 'empty-title', text: `No snapshot of ${name} yet` }),
+      h('h2', { class: 'empty-title', text: `No snapshot of ${name} yet` }),
       h('p', { class: 'page-sub', text: 'A snapshot reads your stats, gear and expertise from the running game and works out every bonus. It only reads; nothing in the game is changed.' }),
       h('ol', { class: 'steps' },
         h('li', null, h('span', { text: `Start NewMoon and log in as ${name}.` })),
@@ -438,9 +481,17 @@
   /** The demon the Digitalized view adds: who, how much of its stats, which assists. */
   function demonCard() {
     const DG = S.data.digitalize;
-    if (!DG) return h('div', { class: 'notice' }, icon('info'), h('div', null, h('b', { text: 'No digitalize demon saved yet. ' }),
-      'Take a snapshot while digitalized and the demon’s boosts are added here, or ',
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => openDemons() }, 'pick one from your COMP'), '.'));
+    // Not digitalized (or no demon saved yet): the same one-line band with "No demon", so the page doesn't jump when
+    // you go between that and a demon. Its name is the same dropdown.
+    if (!digi() || !DG) return h('section', { class: 'card demon-card closed' },
+      h('div', { class: 'demon-pic none', 'aria-hidden': 'true' }, h('span', { text: '–' })),
+      h('div', { class: 'demon-main' }, h('div', { class: 'demon-id' },
+        h('span', { class: 'stat-label', text: 'Digitalize demon' }),
+        h('h3', { class: 'demon-name' }, S.over.switching
+          ? h('span', { class: 'demon-switching', role: 'status' }, h('span', { class: 'spin ink' }), `Switching to ${S.over.switching}…`)
+          : h('button', { type: 'button', class: 'name-btn', popovertarget: 'demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick a demon to see your numbers while digitalized with it',
+            onclick: (ev) => { demonsFor = ev.currentTarget; } }, 'No demon', h('span', { class: 'chev down' }, icon('chevron')))),
+        h('span', { class: 'tag tag-off', text: 'Not digitalized' }))));
     const why = isTrue(DG.digitalized_when_taken) ? 'you were digitalized with it when it was saved' : 'it is the demon you last digitalized with or picked';
     // its icon from the game (32x32, shown at double size, pixel-crisp); its initial when there is none
     // framed in the colour of its alignment (Law / Neutral / Chaos)
@@ -453,8 +504,9 @@
     const chips = [`Lv ${fmt(DG.level)}`, DG.race, DG.mitama ? `${DG.mitama} Mitama` : null].filter(Boolean)
       .map((t) => h('span', { class: 'tag', text: t }));
     if (DG.alignment) chips.splice(2, 0, h('span', { class: 'tag tag-align ' + alignClass(DG.alignment), text: alignName(DG.alignment) }));
-    chips.push(h('span', { class: 'tag tag-demon', 'data-tip': `You get ${fmt(DG.rate)}% of its stats (at most ${fmt(DG.max_rate)}%).`, text: `${fmt(DG.rate)}% stats` }));
-    if (isTrue(DG.mitama_boost)) chips.push(h('span', { class: 'tag', 'data-tip': 'Mitama Demon Enhancement: the boosted Mitama set bonuses apply.', text: 'Sets boosted' }));
+    const idChips = chips.length;   // who it is; the chips after these explain what counts, and show with the details
+    chips.push(h('span', { class: 'tag tag-demon', tabindex: 0, 'data-tip': `You get ${fmt(DG.rate)}% of its stats (at most ${fmt(DG.max_rate)}%).`, text: `${fmt(DG.rate)}% stats` }));
+    if (isTrue(DG.mitama_boost)) chips.push(h('span', { class: 'tag', tabindex: 0, 'data-tip': 'Mitama Demon Enhancement: the boosted Mitama set bonuses apply.', text: 'Sets boosted' }));
     // the stats it adds: tiny bars like the player's, four columns of three, HP and MP first.
     // Each bar is scaled within its group, so STR..LUCK compare with each other, HP with MP, CLS-R..Support together.
     const ORDER = ['Max HP', 'Max MP', 'STR', 'MAG', 'VIT', 'INT', 'SPD', 'LUCK', 'CLS-R', 'LNG-R', 'Spell', 'Support'];
@@ -489,32 +541,152 @@
     // what else it brings: your Max HP/MP while digitalized, its Demon Force stack and equipment (each counted only with
     // the race's assist for it), and its Demon Force values (summoned only)
     const extra = [];
-    const HM = DG.hp_mp;
-    if (HM) extra.push(h('span', { class: 'dg-total', 'data-tip': `Your Max HP / MP while digitalized with ${DG.demon}, worked out from your last snapshot (${fmt(HM.normal_hp)} / ${fmt(HM.normal_mp)} normally) and the MP toggles on then.` },
-      'Digitalized: ', h('b', { text: `HP ${fmt(HM.hp)}` }), ' · ', h('b', { text: `MP ${fmt(HM.mp)}` })));
+    // (your Max HP / MP while digitalized are with your own stats, beside your picture)
     const FS = DG.force_stack;
     if (FS && FS.count) {
       const lines = (FS.effects || []).concat((FS.other || []).map((t) => t + ' (not for you while digitalized)'));
-      extra.push(h('span', { class: 'tag tag-demon' + (isTrue(FS.counted) ? '' : ' tag-off'),
+      extra.push(h('span', { class: 'tag tag-demon' + (isTrue(FS.counted) ? '' : ' tag-off'), tabindex: 0,
         'data-tip': (isTrue(FS.counted) ? 'Counted (Demon Force assist learned): ' : 'Not counted: needs this race’s Demon Force assist. ') + (lines.join(' · ') || 'no effects'),
         text: `Force stack ×${FS.count}` }));
     }
-    (DG.equipment || []).forEach((q) => extra.push(h('span', { class: 'tag tag-demon' + (isTrue(q.counted) ? '' : ' tag-off'),
+    (DG.equipment || []).forEach((q) => extra.push(h('span', { class: 'tag tag-demon' + (isTrue(q.counted) ? '' : ' tag-off'), tabindex: 0,
       'data-tip': `Demon equipment in slot ${q.slot}${q.replaces ? `, in place of the feature ${q.replaces}` : ''}. ` +
         (isTrue(q.counted) ? 'Counted (Features assist learned)' : 'Not counted: needs this race’s Features assist') + ((q.effects || []).length ? ': ' + q.effects.join(' · ') : ''),
       text: q.replaces ? `${q.name} (replaces ${q.replaces})` : q.name })));
-    if ((DG.force || []).length) extra.push(h('span', { class: 'tag tag-off', 'data-tip': `Demon Force: ${DG.force.join(', ')}. Only for the summoned demon, not while digitalized.`, text: 'Demon Force (summoned only)' }));
-    // icon | name, chips and bars | boosts, all in one band
+    if ((DG.force || []).length) extra.push(h('span', { class: 'tag tag-off', tabindex: 0, 'data-tip': `Demon Force: ${DG.force.join(', ')}. Only for the summoned demon, not while digitalized.`, text: 'Demon Force (summoned only)' }));
+    // One line by default: who it is. "Details" opens the rest (what counts, the stats it adds, its boosts per level):
+    // icon | name, chips and bars | boosts, all in one band. The choice is remembered.
+    // The name is the picker: click it for the dropdown of COMP demons (popovertarget opens and closes it; the click
+    // only says which button it hangs from).
+    const open = S.over.demon;
+    const actions = h('span', { class: 'demon-actions' },
+      h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'aria-expanded': String(open), 'data-tip': open ? 'Back to one line' : 'The stats it adds, what counts, and its boosts per level',
+        onclick: () => { S.over.demon = !open; store.set('demon-open', open ? '0' : '1'); render(); } }, h('span', { class: 'chev' }, icon('chevron')), open ? 'Less' : 'Details'));
+    const name = S.over.switching
+      ? h('span', { class: 'demon-switching', role: 'status' }, h('span', { class: 'spin ink' }), `Switching to ${S.over.switching}…`)
+      : h('button', { type: 'button', class: 'name-btn', popovertarget: 'demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick another demon, or no demon',
+        onclick: (ev) => { demonsFor = ev.currentTarget; } }, DG.demon, h('span', { class: 'chev down' }, icon('chevron')));
+    const id = h('div', { class: 'demon-id' },
+      h('span', { class: 'stat-label', tabindex: 0, 'data-tip': `Its passives, features and Mitama sets count when the assist for them is learned. Chosen because ${why}.`, text: 'Digitalize demon' }),
+      h('h3', { class: 'demon-name' }, name), open ? chips : chips.slice(0, idChips), actions);
+    if (!open) return h('section', { class: 'card demon-card closed' }, pic, h('div', { class: 'demon-main' }, id));
     return h('section', { class: 'card demon-card' }, pic,
-      h('div', { class: 'demon-main' },
-        h('div', { class: 'demon-id' },
-          h('span', { class: 'stat-label', 'data-tip': `Its passives, features and Mitama sets count when the assist for them is learned. Chosen because ${why}.`, text: 'Digitalize demon' }),
-          h('h3', { class: 'demon-name', text: DG.demon }), chips,
-          h('button', { type: 'button', class: 'btn btn-sm btn-ghost demon-change', 'data-tip': 'Pick another demon from your COMP', onclick: () => openDemons() }, 'Change')),
-        extra.length ? h('div', { class: 'demon-extra' }, extra) : null,
-        bars),
+      h('div', { class: 'demon-main' }, id, extra.length ? h('div', { class: 'demon-extra' }, extra) : null, bars),
       assists);
   }
+
+  /**
+   * Your affinity boosts and resistances in the shown mode, one entry per element.
+   * The Bonuses list has two rows for some of them ("Fire Boost" from gear, in %, and "Fire boost" from expertise, as a
+   * plain number): both are the server's BOOST_<element> value (RES_<element> for resistances), so they are added here.
+   */
+  const AFF_ORDER = ['Slash', 'Thrust', 'Blunt', 'Strike', 'Gun', 'Pierce', 'Spread', 'Fire', 'Ice', 'Electric', 'Force', 'Expel', 'Death', 'Mystic', 'Nerve', 'Mind', 'Word', 'Almighty', 'Heal', 'Support'];
+  function affinity() {
+    const by = { boost: new Map(), resistance: new Map(), cap: new Map() };
+    (S.data.bonuses || []).forEach((r) => {
+      if ((r.group !== 'Affinity' && r.group !== 'Other') || !isTrue(r.counted)) return;   // yours, and always on
+      // each element's boost stops at 100% unless something raises that element's cap ("Ice affinity cap")
+      const m = /^(.+?) (boost|resistance|affinity cap)$/i.exec(String(r.bonus || ''));
+      if (!m) return;
+      const name = m[1].charAt(0).toUpperCase() + m[1].slice(1), map = by[m[2].toLowerCase() === 'affinity cap' ? 'cap' : m[2].toLowerCase()];
+      const e = map.get(name) || { name, gear: 0, exp: 0, demon: 0 };
+      e.gear = round2(e.gear + n0(digi() && r.gear_digi !== null && r.gear_digi !== undefined ? r.gear_digi : r.gear));
+      e.exp = round2(e.exp + n0(r.expertise));
+      if (digi()) e.demon = round2(e.demon + n0(r.demon));
+      map.set(name, e);
+    });
+    const rank = (n) => { const i = AFF_ORDER.indexOf(n); return i < 0 ? AFF_ORDER.length : i; };
+    // the series share their spokes: every element with a boost, a resistance or a raised cap, in the game's order
+    const names = [...new Set([...by.boost.values(), ...by.resistance.values(), ...by.cap.values()].filter((e) => round2(e.gear + e.exp + e.demon)).map((e) => e.name))]
+      .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+    const list = (map) => names.map((name) => { const e = map.get(name) || { name, gear: 0, exp: 0, demon: 0 }; return { ...e, total: round2(e.gear + e.exp + e.demon) }; });
+    // the cap on each spoke: 100 plus what raises it (the raise keeps its gear / expertise / demon split)
+    const cap = list(by.cap).map((e) => ({ ...e, raise: e.total, total: round2(100 + e.total) }));
+    return { boost: list(by.boost), resistance: list(by.resistance), cap };
+  }
+
+  /**
+   * Affinity, beside the stat sheet: one radar, one spoke per element, three things on the same percentage scale:
+   * the boost to what you deal, the cap that boost stops at, and how much of the element you resist (below 0 is a
+   * weakness). The buttons under it bring one of the three forward: the others fade and its numbers appear on the spokes.
+   */
+  const AFF_SERIES = [['boost', 'Boost'], ['cap', 'Cap'], ['res', 'Resistance']];
+  function affinityCard() {
+    const DG = S.data.digitalize, aff = affinity(), n = aff.boost.length;
+    const card = h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Affinity' }),
+      h('span', { class: 'card-sub', text: digi() && DG ? `While digitalized with ${DG.demon}` : 'Not digitalized' })));
+    if (n < 3) {   // a radar needs three spokes
+      card.append(h('p', { class: 'note', text: n ? aff.boost.concat(aff.resistance).filter((e) => e.total).map((e) => `${e.name} ${fmt(e.total, '%')}`).join(' · ') : 'No affinity boosts or resistances yet.' }));
+      return card;
+    }
+    const focus = AFF_SERIES.some(([k]) => k === S.over.aff) ? S.over.aff : null;
+    const val = { boost: aff.boost.map((e) => e.total), cap: aff.cap.map((e) => e.total), res: aff.resistance.map((e) => e.total) };
+    // the scale: from the deepest weakness (or 0) to the cap, or past it when something is over the cap; steps of 50
+    const lo = Math.min(0, Math.floor(Math.min(...val.res, ...val.boost) / 50) * 50), hi = Math.max(100, Math.ceil(Math.max(...val.cap, ...val.boost, ...val.res) / 50) * 50);
+    const W = 346, H = 318, cx = W / 2, cy = H / 2, R = 94;   // sized for the card's column, with room for a two-line label on every spoke
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img',
+      'aria-label': 'Affinity by element. ' + aff.boost.map((e, i) => `${e.name}: boost ${fmt(e.total, '%')}, cap ${fmt(val.cap[i])}%, resistance ${fmt(val.res[i], '%')}`).join('; ') });
+    const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const at = (i, v, r0) => { const r = r0 !== undefined ? r0 : R * Math.max(0, Math.min(1, (v - lo) / (hi - lo))); return [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))]; };
+    const path = (pts) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('') + 'Z';
+    const all = aff.boost.map((_, i) => i);
+    // grid: the spokes, a ring every 50 with its number between the first two spokes, the 0 ring a little stronger
+    all.forEach((i) => { const [x, y] = at(i, hi); svg.append(s('line', { class: 'gridline', x1: cx, y1: cy, x2: x, y2: y })); });
+    for (let v = lo + 50; v <= hi; v += 50) {
+      svg.append(s('path', { class: v === 0 && lo < 0 ? 'zeroline' : 'gridline', d: path(all.map((i) => at(i, v))) }));
+      const [x, y] = at(0.5, v);
+      svg.append(Object.assign(s('text', { class: 'ring-label', x: x + 3, y: y + 3 }), { textContent: fmt(v) + (v === hi ? '%' : '') }));
+    }
+    // the three series; the one brought forward is drawn last, the others faded
+    const draw = { boost: 'circle', res: 'square', cap: null };
+    AFF_SERIES.map(([k]) => k).sort((a, b) => (a === focus) - (b === focus)).forEach((k) => {
+      const g = s('g', { class: `aff-s aff-${k}` + (focus && focus !== k ? ' dim' : '') });
+      g.append(s('path', { class: 'aff-area', d: path(all.map((i) => at(i, val[k][i]))) }), s('path', { class: 'aff-line', d: path(all.map((i) => at(i, val[k][i]))) }));
+      if (draw[k]) all.forEach((i) => {
+        if (!val[k][i]) return;
+        const [x, y] = at(i, val[k][i]), bad = k === 'res' && val[k][i] < 0 ? ' bad' : '';
+        g.append(draw[k] === 'circle' ? s('circle', { class: 'aff-dot' + bad, cx: x, cy: y, r: 4 })
+          : s('rect', { class: 'aff-dot' + bad, x: x - 3.5, y: y - 3.5, width: 7, height: 7, rx: 1 }));
+      });
+      svg.append(g);
+    });
+    // Labels go outside the rim, each centred on its spoke: the element, and under it the number of the series brought
+    // forward. Near the top and bottom neighbours sit side by side, so a label that would run into one already placed
+    // moves further out along its spoke. Each spoke's tooltip has all three numbers and where they come from.
+    const split = (e) => { const parts = [['gear', e.gear], ['expertise', e.exp], ...(digi() && DG ? [[DG.demon, e.demon]] : [])].filter(([, v]) => v); return parts.length > 1 ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : parts.length ? ` (${parts[0][0]})` : ''; };
+    const placed = [], raised = aff.cap.filter((c) => c.raise);
+    all.forEach((i) => {
+      const e = aff.boost[i], rs = aff.resistance[i], cp = aff.cap[i], capText = fmt(cp.total) + '%', c = Math.cos(ang(i)), sn = Math.sin(ang(i));
+      // the number of the series brought forward: nothing rather than "0%", and the cap without a plus sign
+      const value = focus === 'cap' ? capText : focus && val[focus][i] ? fmt(val[focus][i], '%') : '', quiet = !e.total && !rs.total && !cp.raise;
+      const anchor = c > 0.3 ? 'start' : c < -0.3 ? 'end' : 'middle';
+      const w = Math.max(e.name.length, value.length) * 6.4 + 4, hgt = value ? 25 : 13;   // room the text needs, near enough
+      let r = R + 9 + 13 * Math.abs(sn), box, lx, ly;
+      for (let tries = 0; tries < 5; tries++, r += 8) {
+        [lx, ly] = at(i, 0, r);
+        const x0 = anchor === 'start' ? lx : anchor === 'end' ? lx - w : lx - w / 2;
+        box = [x0, ly - hgt / 2, x0 + w, ly + hgt / 2];
+        if (!placed.some((b) => box[0] < b[2] && b[0] < box[2] && box[1] < b[3] && b[1] < box[3])) break;
+      }
+      placed.push(box);
+      const [rx, ry] = at(i, hi), top = ly - hgt / 2 + 10;
+      svg.append(s('g', { 'data-tip': `${e.name}: boost ${fmt(e.total, '%')}${split(e)} · cap ${capText}${cp.raise ? ` (100% + ${fmt(cp.raise)}%)` : ''} · resistance ${fmt(rs.total, '%')}${split(rs)}` },
+        s('line', { x1: cx, y1: cy, x2: rx, y2: ry, stroke: 'transparent', 'stroke-width': 16 }),
+        Object.assign(s('text', { class: 'aff-name' + (quiet ? ' none' : ''), x: lx, y: top, 'text-anchor': anchor }), { textContent: e.name }),
+        value ? Object.assign(s('text', { class: 'aff-value' + (focus === 'res' && val.res[i] < 0 ? ' bad' : ''), x: lx, y: top + 12, 'text-anchor': anchor }), { textContent: value }) : null));
+    });
+    // the legend is the control: All, or one of the three
+    const pick = (k, label, mark) => h('button', { type: 'button', 'aria-pressed': String(focus === k), onclick: () => { S.over.aff = k; store.set('aff', k || ''); render(); } },
+      mark ? h('i', { class: 'aff-key aff-key-' + k }) : null, label);
+    card.append(h('div', { class: 'chart radar' }, svg),
+      h('div', { class: 'seg aff-pick', role: 'group', 'aria-label': 'Bring forward' }, pick(null, 'All'), AFF_SERIES.map(([k, label]) => pick(k, label, true))));
+    // a line about the series brought forward; nothing under "All" (the user asked for that hint to go)
+    if (focus) card.append(h('p', { class: 'note', text: focus === 'cap' ? 'Boosts stop at 100%' + (raised.length ? `, except where something of yours raises the cap: ${raised.map((c) => `${c.name} ${fmt(c.total)}%`).join(', ')}.` : '. Nothing of yours raises it for any element.')
+      : focus === 'res' ? 'How much of each element you resist. Inside the 0 ring is a weakness.'
+      : 'What you add to the damage you deal with each element.' }));
+    return card;
+  }
+
 
   function pageOverview() {
     const L = S.v.latest;
@@ -526,13 +698,36 @@
       S.meta.picture ? h('img', { src: S.meta.picture, alt: `Picture of ${S.meta.character}` }) : h('span', null, icon('camera'), h('span', { text: 'Add picture' })));
     // who this is: name, level, alignment ("assumed" until it has been set in Settings)
     const align = S.meta.alignment ? S.meta.alignment.charAt(0) + S.meta.alignment.slice(1).toLowerCase() + (S.meta.alignmentKnown === false ? ' (assumed)' : '') : '';
+    // Your stats under the name, compact like the demon's: Max HP, Max MP and the 12, each a thin bar of base + bonus
+    // and, in the Digitalized view, what the digitalize demon adds. Bars are scaled within their group (HP with MP,
+    // STR..LUCK, CLS-R..Support, the two defences).
+    const add = {};   // what the demon adds, by stat name
+    if (digi() && DG) (DG.stats || []).forEach((x) => { add[x.stat] = n0(x.value); });
+    const HM = digi() && DG ? DG.hp_mp : null;   // Max HP / MP while digitalized: from the HP/MP formula on the final stats, not a plain sum
+    const vital = (label, key, normal, whenDigi) => {
+      const total = HM && whenDigi !== null && whenDigi !== undefined ? n0(whenDigi) : n0(normal) + n0(add[key]);
+      return { label, group: 'hpmp', base: n0(normal), bonus: 0, demon: Math.max(0, total - n0(normal)), total, whole: true };
+    };
+    const mine = [vital('HP', 'Max HP', L.max_hp, HM && HM.hp), vital('MP', 'Max MP', L.max_mp, HM && HM.mp),
+      ...STATS.map(([k, label], i) => ({ label, group: i < 6 ? 'base' : i < 10 ? 'atk' : 'def', base: Math.max(0, n0(L[k + '_base'])), bonus: Math.max(0, n0(L[k + '_bonus'])),
+        demon: n0(add[label]), total: n0(L[k]) + n0(add[label]), noDemon: i >= 10 }))];
+    const gmax = {};
+    mine.forEach((e) => { gmax[e.group] = Math.max(gmax[e.group] || 1, e.total); });
+    const seg = (cls, v, e) => (v > 0 ? h('i', { class: cls, style: `width:${(v / gmax[e.group]) * 100}%` }) : null);
+    const statRow = (e) => h('div', { class: 'srow dg-row', tabindex: 0,
+      'data-tip': (e.whole ? `Max ${e.label} ${fmt(e.total)}` + (e.demon ? ` = ${fmt(e.base)} normally + ${DG.demon} ${fmt(e.demon)}` : '')
+        : `${e.label} ${fmt(e.total)} = base ${fmt(e.base)} + bonus ${fmt(e.bonus)}` + (e.demon ? ` + ${DG.demon} ${fmt(e.demon)}` : ''))
+        + (digi() && DG && e.noDemon ? '. What digitalizing does to this one isn’t worked out, so it is the normal value.' : '') },
+      h('span', { class: 'srow-label', text: e.label === 'Support' ? 'Supp' : e.label }),
+      h('div', { class: 'strack' }, seg('base', e.base, e), seg('bonus', e.bonus, e), seg('demon', e.demon, e)),
+      h('span', { class: 'srow-value', text: fmt(e.total) }));
     page.append(h('div', { class: 'page-head with-portrait' }, portrait, h('div', { class: 'page-head-text' },
-      h('h1', { class: 'page-title', text: 'Overview' }),
-      h('p', { class: 'page-who' }, h('b', { text: S.meta.character || '' }), [`Level ${fmt(L.level)}`, align].filter(Boolean).map((t) => ` · ${t}`).join('')),
-      h('p', { class: 'page-sub', text: digi()
-        ? `Gear and expertise added together, including the bonuses that only apply while digitalized${DG ? `, plus what digitalizing with ${DG.demon} gives.` : '.'}`
-        : 'Gear and expertise added together. Switch to Digitalized to add the bonuses that only apply then.' }))));
-    if (digi()) page.append(demonCard());
+      h('div', { class: 'who-line' },
+        h('p', { class: 'page-who' }, h('b', { class: 'who-big', text: S.meta.character || '' }), [`Level ${fmt(L.level)}`, align].filter(Boolean).map((t) => ` · ${t}`).join('')),
+        legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : []))),
+      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow))),
+      damageBlock()));
+    page.append(demonCard());   // always there: a demon, or "No demon"
 
     const missing = String(L.gear_missing || '').trim();
     if (missing) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
@@ -540,60 +735,46 @@
     else if (!isTrue(L.stats_live)) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
       h('b', { text: `The 12 stats and HP/MP are from ${when(L.stats_from)}. ` }), 'Gear and expertise are current. The stats are kept from then because you were digitalized (the game then shows the demon’s share too). Take a snapshot when not digitalized to refresh them.')));
 
-    // Key stats
-    const ks = h('div', { class: 'ks' });
-    const overCap = [];   // capped stats that are past their cap, for one plain sentence under the cards
-    KEY_GROUPS.forEach((grp) => {
-      const blocks = grp.stats.map(([k, label]) => {
-        const r = stat(k);
-        if (!r) return null;
-        const f = (v) => fmt(v, r.unit);
-        const cap = CAPS[k] === undefined ? null : CAPS[k];
-        const bar = h('div', { class: grp.meter || cap !== null ? 'bar' : 'bar share' });
-        // a capped stat's bar is "how far to the cap"; past the cap it is simply full
-        const g = Math.abs(r.gearNow), e = Math.abs(r.exp), dm = Math.abs(r.demonNow), full = grp.meter ? 100 : cap !== null ? Math.max(cap, g + e + dm) : (g + e + dm);
-        if (full > 0) [[g, 'gear'], [e, 'exp'], [dm, 'demon']].forEach(([v, cls]) => { if (v) bar.append(h('i', { class: cls, style: `width:${Math.min(100, (v / full) * 100)}%` })); });
-        const note = h('div', { class: 'stat-note' });
-        const part = (cls, v) => h('span', { class: 'src' }, h('i', { class: 'swatch ' + cls }), f(v));
-        const srcs = [[g, 'sw-gear', r.gearNow], [e, 'sw-exp', r.exp], [dm, 'sw-demon', r.demonNow]].filter(([v]) => v);
-        note.append(srcs.length > 1 ? h('span', { class: 'src-pair' }, srcs.map(([, cls, v]) => part(cls, v)))
-          : h('span', { text: !srcs.length ? 'Nothing yet' : srcs[0][1] === 'sw-gear' ? 'All from gear' : srcs[0][1] === 'sw-exp' ? 'All from expertise' : 'All from the demon' }));
-        if (r.extra) note.append(h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), text: digi() ? `incl. ${fmt(r.extra, r.unit, true)} digi` : `${fmt(r.extra, r.unit, true)} digitalized` }));
-        const capped = capTag(r.total, cap, r.unit);
-        if (capped) { note.append(capped); if (r.total > cap) overCap.push(`${r.label} by ${fmt(round2(r.total - cap), r.unit).replace(/^\+/, '')}`); }
-        return h('div', { class: 'stat', 'data-tip': `${r.label}: ${f(r.total)} = gear ${f(r.gearNow)} + expertise ${f(r.exp)}${digi() ? `${DG ? ` + ${DG.demon} ${f(r.demonNow)}` : ''} (digitalized)` : ''}${grp.meter ? '. Bar is out of 100%.' : ''}${cap !== null ? `. Caps at ${fmt(cap, r.unit)}; the bar shows how close you are.` : ''}` },
-          h('span', { class: 'stat-label', text: label }), h('span', { class: 'stat-value', text: f(r.total) }), bar, note);
-      }).filter(Boolean);
-      if (!blocks.length) return;
-      ks.append(h('section', { class: 'card ks-card', style: `--n:${blocks.length}` },
-        h('h3', { class: 'card-title', text: grp.title }), h('div', { class: 'ks-stats' }, blocks)));
-    });
-    page.append(h('section', { style: 'display:grid;gap:10px' },
-      h('div', { class: 'section-head' }, h('h2', { class: 'section-title', text: 'Key stats' }), legend(['sw-gear', 'Gear'], ['sw-exp', 'Expertise'], ...(digi() && DG ? [['sw-demon', DG.demon]] : []))), ks,
-      overCap.length ? h('p', { class: 'note over-note' }, icon('alert'), h('span', { text: `Over the cap${digi() ? ' while digitalized' : ''}: ${overCap.join(', ')}. That part adds nothing, so those points could go elsewhere.` })) : null));
+    // Key stats: one line each (name, how close to its cap when it has one, total). Where the total comes from is a
+    // click away, under the line; every single source is on the Bonuses page.
+    const sheetRow = ([k, label]) => {
+      const r = stat(k);
+      if (!r) return null;
+      const f = (v) => fmt(v, r.unit, true);
+      const cap = CAPS[k] === undefined ? null : CAPS[k];
+      const over = cap !== null && r.total > cap ? round2(r.total - cap) : 0;
+      const plain = (v) => fmt(v, r.unit).replace(/^\+/, '');
+      const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : [])].filter(([, , v]) => v);
+      const open = S.over.open === k;
+      // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
+      // (full and in the warning colour when past it; by how much is in the tooltip and under the opened line)
+      const meter = cap === null ? h('span') : h('span', { class: 'cap-bar' + (over ? ' over' : '') }, h('i', { style: `width:${Math.max(0, Math.min(100, (r.total / cap) * 100))}%` }));
+      const row = h('button', { type: 'button', class: 'sheet-row', 'aria-expanded': String(open),
+        'data-tip': (srcs.length ? srcs.map(([, name, v]) => `${name} ${f(v)}`).join(' · ') : 'Nothing adds to this yet')
+          + (cap === null ? '' : `. Caps at ${fmt(cap, r.unit)}` + (over ? `: ${plain(over)} over, which adds nothing.` : '.')),
+        onclick: () => { S.over.open = open ? null : k; render(); } },
+        h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'sheet-label', text: label }), meter,
+        h('span', { class: 'sheet-value' + (r.total < 0 && !lowIsGood(r.label) ? ' bad' : ''), text: fmt(r.total, r.unit) }));
+      if (!open) return row;
+      const bonusRow = bonusRowOf(k, r.label, r.unit);
+      const line = (cls, name, value, note) => h('div', { class: 'sheet-src' }, h('i', { class: 'swatch ' + cls }),
+        h('span', null, name, note ? h('small', { text: note }) : null), h('b', { text: value }));
+      return [row, h('div', { class: 'sheet-detail' },
+        srcs.length ? srcs.map(([cls, name, v]) => line(cls, name, f(v),
+          cls === 'sw-gear' && r.extra ? (digi() ? `${f(r.extra)} of it only while digitalized` : `${f(r.extra)} more while digitalized`) : null))
+          : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
+        cap === null ? null : h('p', { class: 'note', text: `Caps at ${fmt(cap, r.unit)}: ` + (over ? `the ${plain(over)} above it adds nothing, so those points could go elsewhere.`
+          : r.total >= cap ? 'reached, more adds nothing.' : `${plain(round2(cap - r.total))} to go.`) }),
+        bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
+          'Every source in Bonuses') : null)];
+    };
+    const sheet = h('section', { class: 'card sheet' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' },
+      col.map(([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow)))))));
 
-    // Stats (base + bonus) and what changed
-    const max = Math.max(1, ...STATS.map(([k]) => n0(L[k])));
-    const srows = h('div', { class: 'srows' });
-    STATS.forEach(([k, label], i) => {
-      const base = Math.max(0, n0(L[k + '_base'])), bonus = Math.max(0, n0(L[k + '_bonus']));
-      if (i === 6) srows.append(h('div', { class: 'srow-gap' }));
-      srows.append(h('div', { class: 'srow', 'data-tip': `${label} ${fmt(L[k])} = base ${fmt(base)} + bonus ${fmt(bonus)}` },
-        h('span', { class: 'srow-label', text: label }),
-        h('div', { class: 'strack' }, base ? h('i', { class: 'base', style: `width:${(base / max) * 100}%` }) : null, bonus ? h('i', { class: 'bonus', style: `width:${(bonus / max) * 100}%` }) : null),
-        h('span', { class: 'srow-value', text: fmt(L[k]) })));
-    });
-    const statsCard = h('section', { class: 'card' },
-      h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Stats' }), legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'])),
-      h('div', { class: 'vitals' },
-        h('div', { class: 'vital' }, h('span', { class: 'stat-label', text: 'Max HP' }), h('span', { class: 'vital-value', text: fmt(L.max_hp) })),
-        h('div', { class: 'vital' }, h('span', { class: 'stat-label', text: 'Max MP' }), h('span', { class: 'vital-value', text: fmt(L.max_mp) })),
-        h('div', { class: 'vital' }, h('span', { class: 'stat-label', text: 'Level' }), h('span', { class: 'vital-value', text: fmt(L.level) }))),
-      srows,
-      h('p', { class: 'note', text: 'As the Information window shows them. Bonus is everything the game adds on top of your own points.' }));
+    // the sheet with what changed under it; affinity (two radars, one over the other) beside them
+    page.append(h('div', { class: 'over-grid' }, h('div', { class: 'over-main' }, sheet, changesCard()), affinityCard()));
 
-    page.append(h('div', { class: 'cols-2' }, statsCard, changesCard()));
-    page.append(h('p', { class: 'note', text: 'Not included anywhere: buffs, clan and title bonuses, and your partner demon\u2019s own stats. The game only works those out on the server. Your digitalize demon is in the Digitalized view.' }));
+    page.append(h('p', { class: 'note', text: 'Not included anywhere: buffs, clan and title bonuses, and your partner demon\u2019s own stats. The game only works those out on the server. Pick your digitalize demon above to add what it gives.' }));
     return page;
   }
 
@@ -619,22 +800,26 @@
       [digi() ? 'Gear bonuses, digitalized' : 'Gear bonuses', COMBAT.map(([k, label, unit]) => [k + sfx, label, unit])],
     ];
     const list = h('div', { class: 'chg-list' });
-    let count = 0;
-    groups.forEach(([title, keys]) => {
-      const rows = keys.map(([k, label, unit]) => {
-        const a = num(base[k]), b = num(L[k]);
-        if (a === null || b === null || a === b) return null;
-        const d = round2(b - a), good = lowIsGood(label) ? d < 0 : d > 0;
-        return h('div', { class: 'chg' }, h('span', { text: label }),
-          h('span', { class: 'chg-vals' }, fmt(a, unit) + ' → ', h('b', { text: fmt(b, unit) })),
-          h('span', { class: 'delta ' + (good ? 'good' : 'bad'), text: (d > 0 ? '▲ ' : '▼ ') + fmt(d, unit, true) }));
-      }).filter(Boolean);
-      if (!rows.length) return;
-      count += rows.length;
-      list.append(h('div', { class: 'chg-group', text: title }), ...rows);
-    });
-    if (count) card.append(list);
-    else card.append(h('p', { class: 'note', text: `Nothing changed since ${when(base.taken_at)}: same stats, same gear bonuses.` }));
+    // every change, with how big it is next to the number it changed from (so 50 on 365 and 51 on 524 can be compared)
+    const changed = groups.map(([title, keys]) => [title, keys.map(([k, label, unit]) => {
+      const a = num(base[k]), b = num(L[k]);
+      if (a === null || b === null || a === b) return null;
+      const d = round2(b - a), good = lowIsGood(label) ? d < 0 : d > 0;
+      return { size: Math.abs(d) / Math.max(Math.abs(a), Math.abs(b), 1), el: h('div', { class: 'chg' }, h('span', { text: label }),
+        h('span', { class: 'chg-vals' }, fmt(a, unit) + ' → ', h('b', { text: fmt(b, unit) })),
+        h('span', { class: 'delta ' + (good ? 'good' : 'bad'), text: (d > 0 ? '▲ ' : '▼ ') + fmt(d, unit, true) })) };
+    }).filter(Boolean)]);
+    const count = changed.reduce((n, [, rows]) => n + rows.length, 0);
+    if (!count) { card.append(h('p', { class: 'note', text: `Nothing changed since ${when(base.taken_at)}: same stats, same gear bonuses.` })); return card; }
+    // the biggest few first; the whole list, grouped, on request
+    const all = S.over.allChanges || count <= TOP_CHANGES;
+    if (all) changed.forEach(([title, rows]) => { if (rows.length) list.append(h('div', { class: 'chg-group', text: title }), ...rows.map((r) => r.el)); });
+    else list.append(...changed.flatMap(([, rows]) => rows).sort((x, y) => y.size - x.size).slice(0, TOP_CHANGES).map((r) => r.el));
+    card.append(list);
+    // the bonus lines are the snapshots' gear columns, so they can differ from the sheet's totals
+    if (changed[2][1].length) card.append(h('p', { class: 'note', text: 'Bonus lines compare gear only; expertise and the digitalize demon are not in them.' }));
+    if (count > TOP_CHANGES) card.append(h('button', { type: 'button', class: 'btn btn-sm chg-more', 'aria-expanded': String(all),
+      onclick: () => { S.over.allChanges = !S.over.allChanges; render(); } }, all ? `Show the ${TOP_CHANGES} biggest` : `Show all ${count} changes`));
     return card;
   }
 
@@ -659,7 +844,7 @@
     const all = S.data.bonuses.filter((r) => digi() || !demonOnly(r));
     const DG = S.data.digitalize, ncol = digi() ? 5 : 4;
     const page = h('div', { class: 'page' });
-    page.append(pageHead('Bonuses', digi() && DG ? `Everything your gear, expertise and ${DG.demon} (digitalized) give. Click a row to see where each part comes from.`
+    page.append(pageHead(digi() && DG ? `Everything your gear, expertise and ${DG.demon} (digitalized) give. Click a row to see where each part comes from.`
       : 'Everything your gear and expertise give. Click a row to see where each part comes from.'));
     const counts = {}; all.forEach((r) => { counts[r.group] = (counts[r.group] || 0) + 1; });
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind' });
@@ -891,7 +1076,7 @@
     const page = h('div', { class: 'page' + (S.gear.view === 'table' ? ' wide' : '') });
     const view = h('div', { class: 'seg', role: 'group', 'aria-label': 'View' },
       [['pieces', 'By piece'], ['table', 'Compare']].map(([id, label]) => h('button', { type: 'button', 'aria-pressed': String(S.gear.view === id), onclick: () => { S.gear.view = id; store.set('gearview', id); render(); } }, label)));
-    page.append(pageHead('Gear', S.gear.view === 'pieces'
+    page.append(pageHead(S.gear.view === 'pieces'
       ? 'Pick a piece to see everything it adds: its own bonuses, tarot, soul fusion, mods and appearance bonus.'
       : 'Every piece side by side. Choose the columns on the right; click a column heading to sort by it.', view));
     if (S.gear.view === 'table') { page.append(gearCompare()); return page; }
@@ -925,7 +1110,7 @@
   function pageExpertise() {
     const rows = S.data.expertise;
     const page = h('div', { class: 'page' });
-    page.append(pageHead('Expertise', 'Passive skills your expertise ranks unlock (this assumes you acquired every one), and the ones your Digitalization Levels teach.'));
+    page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and the ones your Digitalization Levels teach.'));
 
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted) && n0(r.expertise));
     const nCounted = rows.filter((r) => isTrue(r.counted)).length;
@@ -1037,7 +1222,7 @@
     const label = cur[1] + (cur[3] ? (digi() ? ' (gear, digitalized)' : ' (gear)') : '');
     const sel = h('select', { class: 'select', id: 'hist-stat', onchange: () => { S.hist.key = sel.value; store.set('hist', sel.value); render(); } },
       options.map(([group, list]) => h('optgroup', { label: group }, list.map(([k, text]) => h('option', { value: k, selected: k === cur[0], text })))));
-    page.append(pageHead('History', 'One point per snapshot, so gear swaps show up as steps.',
+    page.append(pageHead('One point per snapshot, so gear swaps show up as steps.',
       host.native ? h('button', { type: 'button', class: 'btn', onclick: () => host.call('reveal', { what: 'csv' }) }, 'Show spreadsheet') : null));
 
     const pts = snaps.map((r) => ({ t: date(r.taken_at).getTime(), v: num(r[field]), at: r.taken_at })).filter((p) => p.v !== null && !Number.isNaN(p.t));
@@ -1082,10 +1267,64 @@
   // ---------- actions ----------
   async function reload() {
     const d = await host.call('load');
-    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null };
+    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null,
+      damage: d.damage || null, damageModel: !!d.damageModel };
     S.meta = d.meta || {};
+    if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
     derive();
     render();
+    ensureDamage();
+  }
+
+  // ---------- damage per shot ----------
+  // Worked out by the gear analysis from this reader's data (the host runs it: about five seconds), for the latest
+  // snapshot and the saved demon. The last result is shown at once; when the snapshot or the demon has changed since,
+  // a new one is asked for and takes its place when it is back.
+  /** What a damage result belongs to: the latest snapshot and the saved digitalize demon. */
+  function damageKey() {
+    const L = S.v && S.v.latest, DG = S.data && S.data.digitalize;
+    return L ? `${L.taken_at}|${DG ? `${DG.demon}@${DG.taken_at || ''}` : ''}` : '';
+  }
+  async function ensureDamage() {
+    const key = damageKey();
+    if (!key || !S.data.damageModel || S.damage.busy || S.damage.failed === key) return;
+    if (S.data.damage && S.data.damage.for === key) return;
+    S.damage.busy = key; S.damage.error = '';
+    if (S.page === 'overview') render();
+    try {
+      const r = await host.call('damage', { for: key });
+      if (r && S.data) S.data.damage = r;
+      if (!r) S.data.damageModel = false;
+      else if (r.for !== key) S.damage.failed = key;   // the host could only give the saved one (a capture run): don't ask again
+    } catch (e) { S.damage.failed = key; S.damage.error = String(e && e.message || e); }
+    S.damage.busy = null;
+    if (S.page === 'overview') render();
+    ensureDamage();   // the snapshot or the demon may have changed meanwhile
+  }
+  /** The block to the right of the player's stats: expected damage per shot, and what it is made of. */
+  function damageBlock() {
+    if (!S.data.damageModel && !S.data.damage) return null;
+    const D = S.data.damage, r = D && (digi() ? D.digi || D.normal : D.normal || D.digi);
+    const stale = !D || D.for !== damageKey();
+    const box = h('div', { class: 'who-damage' + (stale ? ' stale' : '') }, h('span', { class: 'stat-label', text: 'Damage per shot' }));
+    if (!r) {
+      box.append(S.damage.busy ? h('span', { class: 'demon-switching', role: 'status' }, h('span', { class: 'spin ink' }), 'Calculating…')
+        : h('span', { class: 'note', text: S.damage.error ? 'Couldn’t be calculated' : 'Not calculated yet' }));
+      if (S.damage.error) box.dataset.tip = S.damage.error;
+      return box;
+    }
+    const capped = r.lb_hit >= r.lb_cap;
+    box.tabIndex = 0;
+    box.dataset.tip = `Expected damage of one ${D.skill || 'shot'} against ${D.enemy || 'the target'}, from the gear analysis, ${digi() && D.digi ? `digitalized with ${(S.data.digitalize || {}).demon || 'the demon'}` : 'not digitalized'}. `
+      + `Limit break hit ${fmt(r.lb_hit)}${capped ? ` (at its cap; ${fmt(r.lb_raw)} before it)` : ` (cap ${fmt(r.lb_cap)})`}, pursuit ${fmt(r.pursuit_chance)}% × ${fmt(r.pursuit_power)}%, technical ${fmt(r.tech_chance)}% × ${fmt(r.tech_power)}%. `
+      + `Critical ${fmt(r.crit_chance)}%, limit break ${fmt(r.lb_chance)}%. `
+      + `Assumes${r.peak ? ' your procs at their peak' : ' no procs'}${r.buff_lb_cap ? ` and a +${fmt(r.buff_lb_cap)} LB cap buff` : ''}. `
+      + (stale ? (S.damage.busy ? 'From before the latest change: a new one is being worked out.' : `From before the latest change (worked out ${when(D.at)}).`) : `Worked out ${when(D.at)}.`);
+    box.append(h('span', { class: 'who-damage-value', text: fmt(r.expected) }),
+      h('span', { class: 'who-damage-sub' }, `up to ${fmt(r.max)}`, S.damage.busy ? h('span', { class: 'spin ink', role: 'status', 'aria-label': 'Calculating' }) : null),
+      h('span', { class: 'who-damage-sub', text: `${D.skill || ''}${D.enemy ? ` vs ${D.enemy}` : ''}` }));
+    if (S.damage.error) box.append(h('span', { class: 'who-damage-sub', text: 'Couldn’t be recalculated' }));
+    return box;
   }
 
   // ---------- characters: who is in game, whose data is shown ----------
@@ -1103,7 +1342,7 @@
     S.state = await host.call('selectCharacter', { name });
     try { Object.assign(S.settings, await host.call('getSettings')); } catch (e) { /* keep */ }
     // what was open or picked belongs to the other character
-    S.compare = null; S.bonus.open.clear(); S.bonus.q = ''; S.exp.closed.clear(); S.exp.q = ''; S.gear.sel = null; S.gear.sort = null; S.alignNote = '';
+    S.compare = null; S.over.open = null; S.over.allChanges = false; S.demons = null; S.bonus.open.clear(); S.bonus.q = ''; S.exp.closed.clear(); S.exp.q = ''; S.gear.sel = null; S.gear.sort = null; S.alignNote = '';
     await reload();
     $('#main').scrollTop = 0;
   }
@@ -1140,49 +1379,92 @@
     if (!why && (host.native || Q.has('clients'))) scanClients();   // opened by hand: logins may have changed since the last look
   }
   // ---------- the digitalize demon: any demon from the COMP ----------
-  const demonsDlg = $('#demons');
-  let demonsBusy = false;
-  /** Lists the COMP demons (the ones in the game's memory now, plus every one seen before) and switches on a click. */
-  async function openDemons() {
-    if (!demonsDlg.open) demonsDlg.showModal();
-    const list = $('#demons-list'), status = $('#demons-status'), again = $('#demons-rescan');
-    list.replaceChildren(h('p', { class: 'note', text: 'Reading the COMP…' }));
-    status.textContent = ''; again.disabled = true;
-    let demons;
-    try { demons = await host.call('compDemons'); }
-    catch (e) { list.replaceChildren(h('p', { class: 'note', text: String(e && e.message || e) })); again.disabled = false; return; }
-    finally { again.disabled = false; }
-    const row = (d) => h('button', { type: 'button', class: 'char', 'aria-current': d.current ? 'true' : null, disabled: demonsBusy || null,
-      onclick: () => (d.current ? demonsDlg.close() : useDemon(d)) },
+  // A dropdown under the demon's name on the Overview (a popover: a click outside or Esc closes it; the button's own
+  // popovertarget opens and closes it). It is also the Normal / Digitalized switch: "No demon" is the normal view,
+  // a demon is the digitalized view with it. The list is the demons seen before, kept by the host
+  // (cache\comp-demons.json) and here (S.demons), so opening never reads the game; "Load demons from the game" at the
+  // end does that (a scan of the game's memory, a second or two) and adds what it finds.
+  // Picking closes the dropdown straight away; switching to another demon (another scan, the spreadsheet, the page
+  // data) runs behind the demon line, which says so until it is done.
+  const demonsMenu = $('#demons');
+  let demonsFor = null, demonsLook = 0;   // the button it hangs from; which look at the game is the latest
+  function placeDemons() {
+    if (!demonsFor || !demonsFor.isConnected || !demonsMenu.matches(':popover-open')) return;
+    const r = demonsFor.getBoundingClientRect(), w = demonsMenu.offsetWidth, hgt = demonsMenu.offsetHeight;
+    demonsMenu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+    demonsMenu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
+  }
+  const setMode = (mode) => { S.mode = mode; store.set('mode', mode); };
+  /** The list as known now: "No demon", then every demon seen. `status`: a line under the load button. */
+  function drawDemons(status, loading) {
+    const list = $('#demons-list'), demons = S.demons || [];
+    const had = list.contains(document.activeElement);
+    const none = h('button', { type: 'button', class: 'char', 'aria-current': digi() ? null : 'true',
+      onclick: () => { demonsMenu.hidePopover(); if (digi()) { setMode('normal'); render(); } } },
+      h('span', { class: 'dm-icon dm-none dm-off', text: '–' }),
+      h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: 'No demon' }), h('span', { class: 'char-line', text: 'Not digitalized' })));
+    const row = (d) => { const on = digi() && d.current; return h('button', { type: 'button', class: 'char', 'aria-current': on ? 'true' : null,
+      onclick: () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render()) : useDemon(d)) },
       d.icon ? h('img', { class: 'dm-icon', src: d.icon, alt: '' }) : h('span', { class: 'dm-icon dm-none', text: d.name.charAt(0) }),
       h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: d.name }),
         h('span', { class: 'char-line', text: [`Lv ${d.level}`, d.race, d.mitama ? `${d.mitama} Mitama` : null,
-          d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') })),
-      d.current ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null);
-    const loaded = demons.filter((d) => d.inGame), before = demons.filter((d) => !d.inGame);
-    list.replaceChildren();
-    if (loaded.length) list.append(h('div', { class: 'list-head', text: 'In the game now' }), ...loaded.map(row));
-    if (before.length) list.append(h('div', { class: 'list-head', text: loaded.length ? 'Seen before' : 'Seen in the game before' }), ...before.map(row));
-    if (!demons.length) list.append(h('p', { class: 'note', text: 'No demons seen yet. Open the COMP in game, then look again.' }));
-    // The game keeps every COMP demon in memory only while the COMP (or Demon List) is open; otherwise just the summoned one.
-    status.textContent = !host.native ? 'Browser preview: stand-in demons. Switching works in the desktop app.'
-      : !loaded.length ? 'The game isn’t showing any demons now: these are the ones seen before.'
-      : loaded.length <= 1 ? 'Only the summoned demon is loaded. Open the COMP in game to see them all.' : '';
+          d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }))); };
+    list.replaceChildren(none, ...demons.map(row));
+    const load = $('#demons-load');
+    load.disabled = !!loading;
+    load.textContent = loading ? 'Reading the game…' : 'Load demons from the game';
+    $('#demons-status').textContent = status || (!S.demons ? '' : !demons.length ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
+    placeDemons();
+    if (had) { const b = list.querySelector('.char[aria-current="true"]') || list.querySelector('.char'); if (b) b.focus(); }
   }
+  /** The demons seen before (at once), or with `scan` a fresh look at the game added to them. */
+  async function loadDemons(scan) {
+    const look = ++demonsLook;
+    drawDemons(null, scan);
+    try {
+      const demons = await host.call('compDemons', scan ? {} : { cached: true });
+      if (look !== demonsLook) return;
+      S.demons = demons;
+      // The game keeps every COMP demon in memory only while the COMP (or Demon List) is open; otherwise just the summoned one.
+      const live = demons.filter((d) => d.inGame).length;
+      drawDemons(!scan ? null : !host.native ? 'Browser preview: stand-in demons.'
+        : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.'
+        : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.'
+        : `${live} demons read from the game.`);
+    } catch (e) { if (look === demonsLook) drawDemons(String(e && e.message || e)); }
+  }
+  demonsMenu.addEventListener('toggle', (ev) => {
+    if (ev.newState !== 'open') { demonsLook++; return; }
+    if (S.demons) drawDemons(); else loadDemons(false);   // never the game: only what is cached
+    placeDemons();
+    const b = $('#demons-list .char[aria-current="true"]') || $('#demons-list .char');
+    if (b && demonsFor && demonsFor.matches(':focus-visible')) b.focus();   // opened from the keyboard: go into the list
+  });
+  demonsMenu.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    const rows = [...demonsMenu.querySelectorAll('.char, #demons-load')], i = rows.indexOf(document.activeElement);
+    const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
+    if (next) { next.focus(); ev.preventDefault(); }
+  });
+  window.addEventListener('resize', placeDemons);
+  $('#main').addEventListener('scroll', () => { if (demonsMenu.matches(':popover-open')) demonsMenu.hidePopover(); });   // its button moves away
+  $('#demons-load').addEventListener('click', () => loadDemons(true));
   async function useDemon(d) {
-    if (demonsBusy) return;
-    demonsBusy = true;
-    $('#demons-status').textContent = `Switching to ${d.name}…`;
+    if (S.over.switching) return;
+    S.over.switching = d.name;
+    demonsMenu.hidePopover();
+    render();   // the demon line says "Switching to …"
     try {
       const r = await host.call('useDemon', { key: d.key });
-      demonsDlg.close();
+      if (S.demons) S.demons = S.demons.map((x) => ({ ...x, current: x.key === d.key }));
+      S.over.switching = null;
+      setMode('digi');
       await reload();
-      toast('ok', `${r.name} is the digitalize demon`, r.rowUpdated ? 'The latest snapshot now adds it in the Digitalized view.' : 'It is added to the next snapshot.');
-    } catch (e) { $('#demons-status').textContent = String(e && e.message || e); }
-    finally { demonsBusy = false; }
+      toast('ok', `${r.name} is the digitalize demon`, r.rowUpdated ? 'The latest snapshot now adds it.' : 'It is added to the next snapshot.');
+    } catch (e) {
+      toast('err', `Couldn’t switch to ${d.name}`, String(e && e.message || e), 0);
+    } finally { if (S.over.switching) { S.over.switching = null; render(); } }
   }
-  $('#demons-close').addEventListener('click', () => demonsDlg.close());
-  $('#demons-rescan').addEventListener('click', () => openDemons());
 
   /** After a look at the clients: follow the only character in game, or ask when there are several. */
   async function settle(atStart) {
@@ -1336,6 +1618,7 @@
     S.busy = true; renderChrome();
     try {
       const r = await host.call('snapshot');
+      S.demons = null;   // a snapshot can change the saved demon: ask the host for the list again next time
       await reload();
       if (r.missing) toast('warn', 'Snapshot saved, with gaps', `No saved bonuses for ${r.missing}. Open the Information window in game and take another snapshot.`, 0);
       else if (r.source === 'window' || r.source === 'status') toast('ok', 'Snapshot saved', 'Stats, gear and expertise were all read live.' + (r.picture ? ' The picture was updated from the Information window.' : ''));
@@ -1403,7 +1686,7 @@
 
   // keyboard
   document.addEventListener('keydown', (ev) => {
-    if (dlg.open || chooser.open || picDlg.open) return;
+    if (document.querySelector('dialog[open], [popover]:popover-open')) return;   // any dialog (settings, characters, picture) or the demon dropdown
     if (ev.key === 'F5') { ev.preventDefault(); takeSnapshot(); return; }
     if (ev.ctrlKey && !ev.shiftKey && !ev.altKey && ev.key >= '1' && ev.key <= String(PAGES.length)) { ev.preventDefault(); go(PAGES[Number(ev.key) - 1][0]); return; }
     if ((ev.ctrlKey && ev.key.toLowerCase() === 'f') || (ev.key === '/' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))) {
