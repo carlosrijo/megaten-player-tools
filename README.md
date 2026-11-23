@@ -28,6 +28,7 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   snapshot ("Show all" lists the rest); beside it, one radar chart per element with your affinity boost,
   the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers. The digitalize demon's name is a dropdown to pick another one.
   Under the radars, an **Expertise** card: your expertise points against the cap, as the game's Expertise window shows them (e.g. 52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its class-rank and the icons of the skills its ranks gave you, passive and active on separate lines (a switched-off toggle is dimmed). Click one to open it on the Expertise page, or "View more" for the whole page.
+- **Expertise page:** opens with a **Summary**: points spent against the cap (with what is free), how many expertises are raised, at their highest class and chained, and how many passives are counted; then every raised expertise and chain expertise with its class-rank, a bar to its highest class ("Max" once reached; the highest class is the game client's own) and its points, with the icons of the skills its ranks gave you under it. Click one to show only its passives in the list below.
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
   click the name in the header to switch.
@@ -172,12 +173,15 @@ skills in its slots and the key bonuses it would add, worked out with your learn
 
 **Digitalize demon on the page.** A snapshot taken while digitalized saves that demon as the character's digitalize
 demon (`data\cache\digitalize.json`). To pick one without digitalizing, click the demon's name on the Overview's demon line (in the
-app; a dropdown of "No demon" and the demons seen before, with "Load demons from the game" at the end to read the COMP again), or `demon "<name>" --use`. The picker lists the COMP demons the game has loaded (all of them while the COMP or Demon
-List is open, otherwise only the summoned one), plus every one seen before (`data\cache\comp-demons.json`, with icons in
-`data\cache\demon-icons\`), so it also works without the game. In the app, picking never reads the game: it uses the demons and the learned
+app; a dropdown of "No demon" and the demons seen before, with "Load demons from the game" at the end to read the COMP again), or `demon "<name>" --use`. The picker lists your COMP as the game has it
+(open the COMP in game, then "Load demons from the game"); each demon says whether your Digitalization Levels unlock it. The game only
+loads a demon's stats and skills when you look at it, so a demon shows "Not read yet" until you click it in the COMP in game, or open the
+fusion window at the Cathedral of Shadows (which loads your whole COMP at once), and load again (the summoned demon is always read). What was read is kept, also for a demon you later move out of the
+COMP (its card then says "Not in your COMP") (`data\cache\comp-demons.json`, with icons in
+`data\cache\demon-icons\`), so the picker also works without the game. In the app, picking never reads the game: it uses the demons and the learned
 assists last read (by a snapshot, or by "Load demons from the game" in the dropdown). Picking one saves it, recalculates the latest snapshot's
 demon columns with it (the CSV is copied to `<csv>.backup-before-demon-switch.csv` first) and rebuilds the page. Later
-snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
+snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The demon that was summoned when the game was last read (a snapshot, or "Load demons from the game") shows as a small card to the right of your stats on the Overview. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
 client's `Interface\tga` into `data\dash\demon.png` when the demon is saved; **Details** opens the stats it adds and its assists per level), a
 third part in each key stat's breakdown, and
 a demon column on Bonuses (rows only the demon gives appear in that view only). The CSV gets "Digitalize demon",

@@ -36,6 +36,9 @@
   --warn-ink: #7a4d00;
   --warn-mark: #c98500;
   --warn-bg: #fdf3dc;
+  --over-ink: #9c1f3d;     /* past a cap (wasted points): a soft red, the user's pick over the amber it was */
+  --over-mark: #d94a66;
+  --over-bg: #fde7ec;
   --err-bg: #fbe9e7;
   --ok-bg: #e6f4e6;
   --shadow: 0 1px 2px rgba(11, 11, 11, .06), 0 8px 24px rgba(11, 11, 11, .10);
@@ -81,6 +84,9 @@
   --warn-ink: #f3c770;
   --warn-mark: #fab219;
   --warn-bg: #33290f;
+  --over-ink: #f9a8b8;
+  --over-mark: #f7768e;
+  --over-bg: #3a1c26;
   --err-bg: #3a1c19;
   --ok-bg: #16301a;
   --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .5);
@@ -180,6 +186,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 /* as many columns as fit, each wide enough for its label, bar and number (never squeezed into each other) */
 .dg-bars.who-stats { grid-template-rows: none; grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 2px 18px; }
 .who-stats .dg-row { grid-template-columns: 38px minmax(20px, 1fr) 40px; }
+.dg-bars.who-stats .dg-row .strack i { border-radius: 0; }   /* the player's bars have square ends (asked for); the demon's own keep the rounded one */
 
 /* ---------- controls ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; white-space: nowrap; }
@@ -220,7 +227,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .tag-digi { border-color: transparent; background: var(--selected); color: var(--text); }
 .tag-off { border-style: dashed; }
 .tag-max { border-color: var(--border-strong); color: var(--text); }                             /* exactly at a cap */
-.tag-over { border-color: transparent; background: var(--warn-bg); color: var(--warn-ink); }      /* past a cap: wasted */
+.tag-over { border-color: transparent; background: var(--over-bg); color: var(--over-ink); }      /* past a cap: wasted */
 .cmp .tbl tfoot td.capped { color: var(--warn-ink); }
 
 /* ---------- cards ---------- */
@@ -256,6 +263,28 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
 .exp-bar i { display: block; height: 100%; border-radius: 4px; background: var(--exp); }
 .exp-free { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Expertise page summary */
+.exp-stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0 0 6px; }
+.exp-stat { display: flex; align-items: baseline; gap: 6px; }
+.exp-stat-v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--exp); }
+.exp-stat-l { color: var(--text-2); font-size: 12px; }
+.exp-sum-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 0 24px; }
+.exp-sum { gap: 4px; padding-top: 12px; padding-bottom: 10px; }
+.exp-sum .exp-points { margin: 0; }
+.exp-sum .list-head { margin: 0; padding: 8px 6px 0; }
+.exp-sum .exp-stats { margin: 2px 0 0; }
+.exp-sum-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px 90px 44px 78px; align-items: center; align-content: start; gap: 4px 10px; width: 100%; text-align: left;
+  font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 5px 6px; cursor: pointer; border-radius: 6px; }
+.exp-sum-icons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 3px; }
+.exp-sum-icons .skill-ico { width: 20px; height: 20px; border-radius: 3px; }
+.exp-sum-icons .skill-ico.off { opacity: .35; }
+.exp-sum-row:hover { background: var(--hover); }
+.exp-sum-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-sum-rank { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.exp-sum-row .exp-bar { height: 6px; }
+.exp-sum-max { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.exp-sum-max.done { color: var(--exp); font-weight: 600; }
+.exp-sum-pt { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .chain-list { display: grid; gap: 2px; }
 .chain { display: grid; gap: 6px; width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; border-top: 1px solid var(--border); padding: 8px 6px; cursor: pointer; border-radius: 6px; }
 .chain:first-child { border-top: 0; }
@@ -278,13 +307,15 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .sheet-row:hover { background: var(--hover); }
 .sheet-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
 .sheet-row .chev { margin: 0; }
+.sheet-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sheet-name .tag { flex: none; }
 .sheet-label { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-row[aria-expanded="true"] .sheet-label { color: var(--text); font-weight: 600; }
 .sheet-value { font: 600 14px/1.2 var(--font-display); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .sheet-value.bad { color: var(--bad); }
 .cap-bar { display: block; width: 72px; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
 .cap-bar i { display: block; height: 100%; border-radius: 3px; background: var(--text-2); }   /* neutral: this is "total against the cap", not one of the source series */
-.cap-bar.over i { background: var(--warn-mark); }   /* past the cap: the same colour as the sentence above the sheet */
+.cap-bar.over i { background: var(--over-mark); }   /* past the cap: soft red, with the "Over cap" tag beside the name */
 .sheet-detail { display: grid; gap: 6px; padding: 2px 0 12px 22px; justify-items: stretch; }
 .sheet-src { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; font-size: 12px; }
 .sheet-src .swatch { align-self: center; }
@@ -508,11 +539,17 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .dg-tile.on { border-color: color-mix(in srgb, var(--demon) 70%, transparent); cursor: default; }
 .dg-tile.on:hover { background: var(--surface); }
 .dg-tile[disabled] { opacity: .6; cursor: progress; }
+.dg-tile.static, .dg-tile.static:hover { cursor: default; background: var(--surface); border-color: var(--border); }
+/* Overview: the summoned demon, to the right of the character's stats (the picker's card without its bonus list) */
+.summoned { flex: 0 1 auto; min-width: 0; max-width: 340px; }
+.summoned.none { display: none; }
 .dgt-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .dgt-head .demon-pic { align-self: center; }
 .dgt-id { display: grid; gap: 1px; min-width: 0; }
 .dgt-name { font: 600 15px/1.3 var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dgt-name-line { display: flex; align-items: center; gap: 8px; min-width: 0; }   /* the name with its tag right after it */
 .dgt-line { color: var(--text-2); font-size: 12px; }
+.dgt-tags { display: flex; flex-wrap: wrap; gap: 4px 6px; }
 .dg-tile .dg-skill-icons { margin-left: 0; }
 .dgt-adds { display: grid; gap: 2px; font-size: 12px; padding-top: 8px; border-top: 1px solid var(--border); }
 .dgt-add { display: flex; justify-content: space-between; gap: 10px; color: var(--text-2); }
@@ -536,6 +573,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .dgu-small .demon-pic img { inset: 0; width: 100%; height: 100%; border-radius: 4px; image-rendering: auto; }
 .dgu-small .demon-pic.off { opacity: .3; }
 @media (max-width: 640px) { .dgu-race { grid-template-columns: minmax(0, 1fr); } }
+.tt-why { color: var(--text-2); }
 .dg-skill-list { display: grid; }
 .dg-skill-list .passive { grid-template-columns: 84px minmax(0, 230px) minmax(0, 1fr); }
 .dg-skill-list .passive:first-child { border-top: 0; }
@@ -553,7 +591,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .chart .cross { stroke: var(--axis); stroke-width: 1; }
 .chart .endlabel { fill: var(--text); font-size: 12px; font-weight: 600; }
 
-.tip { position: fixed; z-index: 50; pointer-events: none; max-width: 320px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: var(--shadow); border-radius: 8px; padding: 6px 9px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.tip { position: fixed; inset: auto; margin: 0; overflow: visible; z-index: 50; pointer-events: none; max-width: 320px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: var(--shadow); border-radius: 8px; padding: 6px 9px; font-size: 12px; font-variant-numeric: tabular-nums; }
 
 /* ---------- toasts ---------- */
 .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: grid; gap: 8px; width: min(400px, calc(100vw - 32px)); }
@@ -622,6 +660,10 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--demon) 12%, transparent), 0 0 12px color-mix(in srgb, var(--demon) 25%, transparent); }
 .demon-pic span { font: 600 18px/1 var(--font-display); color: var(--demon); }
 .demon-pic img { position: absolute; inset: 5px; width: 32px; height: 32px; image-rendering: pixelated; }
+/* a Mitama demon: the game's mark on the top left corner of the picture (its 14x14 image as a mask, in the game's cyan) */
+.demon-pic .mitama-mark { position: absolute; left: 5px; top: 5px; box-sizing: content-box; width: 10px; height: 10px; border: 1px solid #1a2b4c; background: #1a2b4c; }   /* dark blue, 2px around (asked for) and behind the mark, as the game's dark square */
+.demon-pic .mitama-mark::before { content: ''; position: absolute; inset: 0; background: #7dcfff; image-rendering: auto;
+  -webkit-mask: var(--mark) center / 100% 100% no-repeat; mask: var(--mark) center / 100% 100% no-repeat; }
 .demon-id { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
 .demon-id .stat-label { font-size: 11px; }
 .demon-name { margin: 0 4px 0 0; font: 600 17px/1.2 var(--font-display); letter-spacing: -.01em; }

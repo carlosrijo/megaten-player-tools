@@ -145,7 +145,9 @@
           const [snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks] = empty ? [[], [], [], [], null, null, {}, []] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {}), get('../../data/dash/digi-unlocks.json', [])]);
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
+          // the summoned demon comes with the page data (dash\summoned.json); here the stand-in list's summoned one
+          const summoned = empty ? null : (await this.call('compDemons', { cached: true })).find((d) => d.summoned) || null;
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks, summoned, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
         }
         if (cmd === 'snapshot') {
           await wait(1400);
@@ -176,7 +178,11 @@
           const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
             ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
-            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, icon: null }));
+            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, summoned: name === 'Specter' && Q.get('summoned') !== '0', icon: null, loaded: name !== 'Pixie', inComp: name !== 'Seraph', seenAt: '2026-11-23T15:40:23',
+              // stand-ins for the three states of the unlock tag
+              unlock: name === 'Alilat' ? { listed: false, level: 0, raceLevel: 1, race, reached: false } : { listed: true, level: name === 'Seraph' ? 8 : 5, raceLevel: name === 'Seraph' ? 5 : 10, race, reached: name !== 'Seraph' },
+              // the saved demon's own numbers as its offer, so its card looks as in the app (the others have none here)
+              offer: name === cur && S.data && S.data.digitalize ? (({ rate, alignment, stats, skills }) => ({ rate, alignment, stats, skills, combat: {} }))(S.data.digitalize) : null }));
         }
         // The browser preview has no game and no files to change: say so instead of pretending (the desktop app switches)
         if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Pick the demon in the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
@@ -373,6 +379,10 @@
     const rich = text instanceof Node;
     if (!rich) tipEl.textContent = text; else if (tipEl.firstChild !== text || tipEl.childNodes.length !== 1) tipEl.replaceChildren(text);
     tipEl.classList.toggle('tip-rich', rich); tipEl.hidden = false;
+    // The tip is a popover so it sits in the top layer, above the demon dropdown and the dialogs (which are there too;
+    // a plain z-index can't get above them). The top layer stacks in the order things were opened: it is opened here,
+    // after whatever is open, and closed in hideTip.
+    try { if (!tipEl.matches(':popover-open')) tipEl.showPopover(); } catch (e) { /* no popover support: it shows as before */ }
     const w = tipEl.offsetWidth, hgt = tipEl.offsetHeight;
     tipEl.style.left = Math.max(8, Math.min(left, window.innerWidth - w - 8)) + 'px';
     tipEl.style.top = Math.max(8, below + hgt > window.innerHeight ? Math.min(above - hgt, window.innerHeight - hgt - 8) : below) + 'px';
@@ -396,6 +406,7 @@
   const showTip = (text, x, y) => placeTip(text, x + 14, y + 18, y - 10);   // beside the pointer
   let tipFor = null;   // the element a keyboard-focus tip describes
   const hideTip = () => {
+    try { if (tipEl.matches(':popover-open')) tipEl.hidePopover(); } catch (e) { /* as above */ }
     tipEl.hidden = true;
     if (tipFor) { tipFor.removeAttribute('aria-describedby'); tipFor = null; }
   };
@@ -557,6 +568,17 @@
   const alignClass = (a) => (/^(LAW|NEUTRAL|CHAOS)$/i.test(String(a || '')) ? 'align-' + String(a).toLowerCase() : '');
   const alignName = (a) => (a ? String(a).charAt(0) + String(a).slice(1).toLowerCase() : '');
 
+  /**
+   * The game's mark for a Mitama demon on the top left corner of its picture, as in the COMP bar (the game's own
+   * image, icons.json "mitama"; white there, tinted here as the game tints it). Nothing when the demon isn't one or
+   * the image was never read from the client.
+   */
+  function mitamaMark(pic, mitama) {
+    const src = mitama && S.data.icons && S.data.icons.mitama;
+    if (src) pic.append(h('i', { class: 'mitama-mark', style: `--mark:url("${src}")` }));
+    return pic;
+  }
+
   /** The demon the Digitalized view adds: who, how much of its stats, which assists. */
   function demonCard() {
     const DG = S.data.digitalize;
@@ -580,6 +602,7 @@
       img.onerror = () => img.remove();
       pic.append(img);
     }
+    mitamaMark(pic, DG.mitama);
     const chips = [`Lv ${fmt(DG.level)}`, DG.race, DG.mitama ? `${DG.mitama} Mitama` : null].filter(Boolean)
       .map((t) => h('span', { class: 'tag', text: t }));
     if (DG.alignment) chips.splice(2, 0, h('span', { class: 'tag tag-align ' + alignClass(DG.alignment), text: alignName(DG.alignment) }));
@@ -771,6 +794,22 @@
   }
 
 
+  /**
+   * The demon summoned when the game was last read (a snapshot, or "Load demons from the game"), to the right of your
+   * stats: the picker's card without its bonus list. It comes with the page data, so it is drawn with the rest;
+   * nothing is drawn when no demon was summoned.
+   */
+  function summonedCard() {
+    // with the page data (dash\summoned.json), so it is there at once; the demon list, once loaded, is newer
+    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+    if (!d) return h('div', { class: 'summoned none' });
+    const tag = h('span', { class: 'tag tag-demon', tabindex: 0, text: 'Summoned',
+      'data-tip': 'Your summoned demon' + (d.seenAt ? ` when the game was last read (${when(d.seenAt)})` : '') + '. A snapshot, or "Load demons from the game" in the demon list, reads it again.' });
+    return h('div', { class: 'summoned' }, demonTile(d, false, null, true, tag));
+  }
+  /** After the list of demons changed (loaded, or read from the game): only that card, so an open demon list stays put. */
+  function refreshSummoned() { const el = $('.page-head .summoned'); if (el) el.replaceWith(summonedCard()); }
+
   function pageOverview() {
     const L = S.v.latest;
     const DG = S.data.digitalize;
@@ -808,7 +847,7 @@
       h('div', { class: 'who-line' },
         h('p', { class: 'page-who' }, h('b', { class: 'who-big', text: S.meta.character || '' }), [`Level ${fmt(L.level)}`, align].filter(Boolean).map((t) => ` · ${t}`).join('')),
         legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : []))),
-      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow)))));
+      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow))), summonedCard()));
     page.append(demonCard());   // always there: a demon, or "No demon"
 
     const missing = String(L.gear_missing || '').trim();
@@ -829,13 +868,15 @@
       const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : [])].filter(([, , v]) => v);
       const open = S.over.open === k;
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
-      // (full and in the warning colour when past it; by how much is in the tooltip and under the opened line)
+      // (full and soft red when past it, with an "Over cap" tag beside the name; by how much is in the tooltip and under the opened line)
       const meter = cap === null ? h('span') : h('span', { class: 'cap-bar' + (over ? ' over' : '') }, h('i', { style: `width:${Math.max(0, Math.min(100, (r.total / cap) * 100))}%` }));
       const row = h('button', { type: 'button', class: 'sheet-row', 'aria-expanded': String(open),
         'data-tip': (srcs.length ? srcs.map(([, name, v]) => `${name} ${f(v)}`).join(' · ') : 'Nothing adds to this yet')
           + (cap === null ? '' : `. Caps at ${fmt(cap, r.unit)}` + (over ? `: ${plain(over)} over, which adds nothing.` : '.')),
         onclick: () => { S.over.open = open ? null : k; render(); } },
-        h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'sheet-label', text: label }), meter,
+        h('span', { class: 'chev' }, icon('chevron')),
+        // past the cap: a short "Over cap" tag beside the name (by how much is in the tooltip and under the opened line)
+        h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label }), over ? h('span', { class: 'tag tag-over', text: 'Over cap' }) : null), meter,
         h('span', { class: 'sheet-value' + (r.total < 0 && !lowIsGood(r.label) ? ' bad' : ''), text: fmt(r.total, r.unit) }));
       if (!open) return row;
       const bonusRow = bonusRowOf(k, r.label, r.unit);
@@ -847,8 +888,8 @@
           : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
         cap === null ? null : h('p', { class: 'note', text: `Caps at ${fmt(cap, r.unit)}: ` + (over ? `the ${plain(over)} above it adds nothing, so those points could go elsewhere.`
           : r.total >= cap ? 'reached, more adds nothing.' : `${plain(round2(cap - r.total))} to go.`) }),
-        bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
-          'Every source in Bonuses') : null)];
+        bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this, on the Bonuses page', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
+          'View more') : null)];
     };
     const sheet = h('section', { class: 'card sheet' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' },
       col.map(([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow)))))));
@@ -1409,7 +1450,7 @@
       });
       if (!shown) listHost.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty-row', text: q ? `Nothing matches “${st.q.trim()}”.` : o.empty })));
     };
-    page.append(h('div', { class: 'sect' }, h('div', { class: 'toolbar' },
+    page.append(h('div', { class: 'sect', id: o.id || null }, h('div', { class: 'toolbar' },
       h('h2', { class: 'section-title', text: o.heading }), h('span', { class: 'toolbar-spacer' }),
       o.search ? searchBox(st.q, o.search, (v) => { st.q = v; draw(); }) : null,
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { st.closed.clear(); draw(); } }, 'Expand all'),
@@ -1417,15 +1458,70 @@
     draw();
   }
 
+  /**
+   * The Expertise page's opening summary: points spent against the cap (points / 100, "pt", as the game's Expertise
+   * window), how many expertises are raised, maxed and chained, then every raised expertise with its class-rank and a bar
+   * to its highest class (max_class from the client's ExpertClassData; Class <max> Rank 0 is maxed). Regular ones by
+   * points, then the chains. A row filters the passive list below to that expertise.
+   */
+  function expSummary(rows) {
+    const R = S.data.ranks || {}, P = R.points || null, all = (R.ranks || []).filter((r) => n0(r.points) > 0);
+    const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
+    const card = h('section', { class: 'card exp-sum' });
+    const wrap = sect('Summary', P ? (P.cap ? `${pt(P.total)} of ${pt(P.cap)} spent` : `${pt(P.total)} spent, no cap`) : null, null, card);
+    if (!all.length) { card.append(h('p', { class: 'note', text: 'No expertise read yet. Take a snapshot.' })); return wrap; }
+    if (P && P.cap) {
+      const free = n0(P.cap) - n0(P.total);
+      card.append(h('div', { class: 'exp-points', 'data-tip': `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})`
+          + (P.level === 99 ? ' + 1000.00pt at 99' : '') + ` + ${P.extension} expansions × 1000.00pt` },
+        h('span', { class: 'exp-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })),
+        h('span', { class: 'exp-free', text: free > 0 ? `${pt(free)} free` : 'At the cap' })));
+    }
+    const maxed = (r) => r.max_class > 0 && n0(r.class) * 10 + n0(r.rank) >= r.max_class * 10;
+    const regular = all.filter((r) => !r.chain).sort((a, b) => n0(b.points) - n0(a.points) || String(a.name).localeCompare(b.name));
+    const chains = all.filter((r) => r.chain).sort((a, b) => n0(b.points) - n0(a.points) || String(a.name).localeCompare(b.name));
+    const counted = rows.filter((r) => isTrue(r.counted)).length;
+    const stat = (v, label) => h('div', { class: 'exp-stat' }, h('span', { class: 'exp-stat-v', text: String(v) }), h('span', { class: 'exp-stat-l', text: label }));
+    card.append(h('div', { class: 'exp-stats' }, stat(regular.length, regular.length === 1 ? 'expertise raised' : 'expertises raised'),
+      stat(all.filter(maxed).length, 'at their highest class'), stat(chains.length, chains.length === 1 ? 'chain expertise' : 'chain expertises'),
+      stat(counted, counted === 1 ? 'passive counted' : 'passives counted')));
+    const line = (r) => {
+      const top = r.max_class > 0 ? r.max_class * 100000 : 0, done = maxed(r);
+      // the skills its reached ranks give (expertise-ranks.json "skills", actives too); older data: its passives from expertise.json
+      const mine = S.data.expertise.filter((x) => x.expertise === r.name && !isExtra(x));
+      const offIds = new Set(mine.filter((x) => x.toggle && !x.toggle_on).map((x) => x.skill_id));
+      const skills = Array.isArray(r.skills) ? r.skills.map((s) => ({ ...s, off: offIds.has(s.id) }))
+        : mine.map((x) => ({ id: x.skill_id, name: x.skill || '—', icon: x.icon, rank: x.rank || '', active: false, off: x.toggle && !x.toggle_on }));
+      const icons = skills.filter((s) => s.icon).map((s) => {
+        const ic = skillIcon(s);
+        ic.dataset.tip = `${s.name} (${s.rank})` + (s.active ? ', active' : '') + (s.off ? ', toggle switched off' : '');
+        if (s.off) ic.classList.add('off');
+        return ic;
+      });
+      return h('button', { type: 'button', class: 'exp-sum-row', 'data-tip': `Show ${r.name}’s passives below` + (r.chain ? ' (chain: worked out from the expertises it is made of; costs no points)' : ''),
+        onclick: () => { S.exp.q = r.name; render(); const el = document.getElementById('exp-list'); if (el) el.scrollIntoView({ block: 'start' }); } },
+        h('span', { class: 'exp-sum-name', text: r.name }),
+        h('span', { class: 'exp-sum-rank', text: `${r.class}-${r.rank}` }),
+        h('span', { class: 'exp-bar', 'aria-hidden': 'true' }, top ? h('i', { style: `width:${Math.min(100, (n0(r.points) / top) * 100)}%` }) : null),
+        h('span', { class: 'exp-sum-max' + (done ? ' done' : ''), text: done ? 'Max' : top ? `of ${r.max_class}-0` : '' }),
+        h('span', { class: 'exp-sum-pt', text: r.chain ? '' : pt(r.points) }),
+        icons.length ? h('span', { class: 'exp-sum-icons' }, icons) : null);
+    };
+    const block = (title, list) => (list.length ? [h('h4', { class: 'list-head', text: title }), h('div', { class: 'exp-sum-list' }, list.map(line))] : null);
+    card.append(...[block('Expertise', regular), block('Chain expertise', chains)].flat().filter(Boolean));
+    return wrap;
+  }
+
   function pageExpertise() {
     const rows = S.data.expertise.filter((r) => !isDlevel(r) && !isExtra(r));
     const page = h('div', { class: 'page' });
     page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and your other learned passives. Digitalization Levels are on the Digitalize page; the quest bonus and Demonic Compendium are on Bonuses.'));
+    page.append(expSummary(rows));
     // the expertise share of each bonus, without what the Digitalization Levels, quest bonus and compendium put into it
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, round2(n0(r.expertise) - shareOf(r, ['dlevel', 'quest', 'compendium']))]).filter(([, v]) => v);
     page.append(sect('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, null,
       totalsCard(null, null, totals, 'No expertise bonuses counted yet.')));
-    passiveList(page, rows, S.exp, { heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
+    passiveList(page, rows, S.exp, { id: 'exp-list', heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
     return page;
   }
 
@@ -1436,11 +1532,14 @@
    * (the skills, then the features: kind, icon and name, and what each gives). A skill you don't get while
    * digitalized is dimmed (the reason, "why" in the data, is not shown: the user didn't want the label). Null when the saved data has no skills yet.
    */
+  /** For a demon skill you don't get while digitalized (greyed): the reason, as the last line of its tooltip. Not a label on the page: the user took that out. */
+  const skillWhy = (s) => (!isTrue(s.counted) && s.why ? h('div', { class: 'tt-line tt-gap tt-why', text: 'Not applied while digitalized: ' + String(s.why).charAt(0).toLowerCase() + String(s.why).slice(1) + '.' }) : null);
+
   function demonSkills(DG) {
     if (!DG || !Array.isArray(DG.skills)) return null;
     const row = (s) => {
       const name = h('span', { class: 'skill', tabindex: 0 }, skillIcon(s), h('span', { text: s.name }));
-      if (s.tip) withTip(name, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind === 'Equipment' ? 'Demon equipment' : s.kind), ...tipLines(s.tip)));
+      if (s.tip) withTip(name, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind === 'Equipment' ? 'Demon equipment' : s.kind), ...tipLines(s.tip), skillWhy(s)));
       const fx = (s.effects || []).length ? s.effects
         : s.kind === 'Active' && isTrue(s.counted) ? ['You can use it while digitalized'] : isTrue(s.counted) ? ['No stat bonus'] : [];
       return h('div', { class: 'passive' + (isTrue(s.counted) ? '' : ' off') },
@@ -1455,7 +1554,7 @@
       const ic = skillIcon(s);
       ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name);
       if (!isTrue(s.counted)) ic.classList.add('off');
-      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip)));
+      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
     })) : null;
     const part = (label, rows, none) => [
       h('div', { class: 'dg-skill-head' }, h('h4', { class: 'section-title', text: label }), rows.length ? h('span', { class: 'card-sub', text: count(rows) }) : null),
@@ -1464,29 +1563,54 @@
   }
 
   /**
+   * Where a COMP demon stands for digitalizing ("unlock", from the game's Digitalization Level table and your levels):
+   * unlocked, locked until a level of its race, or not named by any level. Plus a mark when the saved digitalize demon
+   * is no longer among the COMP demons read (seenAt empty: it was only kept because it is the saved one).
+   */
+  function demonUnlockTags(d) {
+    const U = d.unlock, tags = [];
+    if (U && isTrue(U.listed) && U.raceLevel !== null && U.raceLevel !== undefined) {
+      tags.push(isTrue(U.reached)
+        ? h('span', { class: 'tag', 'data-tip': `${U.race} Digitalization Level ${U.level} unlocks it; you are at level ${U.raceLevel}.`, text: `Unlocked · ${U.race} DLv ${U.level}` })
+        : h('span', { class: 'tag tag-off', 'data-tip': n0(U.raceLevel) ? `Your ${U.race} Digitalization Level is ${U.raceLevel}.` : `You have no ${U.race} Digitalization Level yet.`, text: `Locked · needs ${U.race} DLv ${U.level}` }));
+    } else if (U && !isTrue(U.listed)) {
+      tags.push(h('span', { class: 'tag tag-off', 'data-tip': `No ${U.race} Digitalization Level names this demon in the game data, so it may not be usable for digitalizing. The data does not say more.`, text: 'Not on any Digitalization Level' }));
+    }
+    if (d.inComp === false) tags.push(h('span', { class: 'tag tag-off', 'data-tip': 'It was not in your COMP when the game was last read. It is kept because it was read before, so you can still see what it gives.', text: 'Not in your COMP' }));
+    return tags.length ? h('span', { class: 'dgt-tags' }, tags) : null;
+  }
+
+  /**
    * One COMP demon as a card, for the demon dropdown: who it is, the share of its stats you get, the skills in its
    * slots and the key bonuses it would add ("offer", worked out by the reader with your learned boosts).
    * `pick` runs on a click; `on` marks the demon in use.
+   * `compact` (the Overview's summoned demon): no bonus list or unlock tags, not a button, and `tag` after the name.
    */
-  function demonTile(d, on, pick, iconFolder) {
+  function demonTile(d, on, pick, compact, tag, iconFolder) {   // iconFolder: another character's skill icons (the Simulator's imported base)
     const O = d.offer || null;
     const pic = h('span', { class: 'demon-pic ' + alignClass(O && O.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
     if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+    mitamaMark(pic, d.mitama);
     const slots = O ? (O.skills || []).filter((s) => s.kind !== 'Feature' && s.kind !== 'Equipment') : [];
     const icons = slots.map((s) => {
       const ic = skillIcon(s, iconFolder);
-      if (!isTrue(s.counted)) ic.classList.add('off');
-      return withTip(ic, () => h('div', null, tipHead(skillIcon(s, iconFolder), s.name, s.kind), ...tipLines(s.tip)));
+      // dimmed = you don't get it while digitalized (the race's boost isn't learned): no meaning for the summoned demon, which uses all its skills
+      if (!compact && !isTrue(s.counted)) ic.classList.add('off');
+      if (compact) { ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name); }
+      return withTip(ic, () => h('div', null, tipHead(skillIcon(s, iconFolder), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
     });
-    const adds = O ? COMBAT.filter(([k]) => n0(O.combat && O.combat[k])).map(([k, label, unit]) => h('span', { class: 'dgt-add' }, h('span', { text: label }), h('b', { text: fmt(O.combat[k], unit, true) }))) : [];
+    const adds = compact ? [] : O ? COMBAT.filter(([k]) => n0(O.combat && O.combat[k])).map(([k, label, unit]) => h('span', { class: 'dgt-add' }, h('span', { text: label }), h('b', { text: fmt(O.combat[k], unit, true) }))) : [];
     const hp = O && (O.stats || []).find((s) => s.stat === 'Max HP'), mp = O && (O.stats || []).find((s) => s.stat === 'Max MP');
-    return h('button', { type: 'button', class: 'dg-tile' + (on ? ' on' : ''), 'aria-current': on ? 'true' : null, onclick: pick },
+    return h(compact ? 'div' : 'button', compact ? { class: 'dg-tile static' } : { type: 'button', class: 'dg-tile' + (on ? ' on' : ''), 'aria-current': on ? 'true' : null, onclick: pick },
       h('span', { class: 'dgt-head' }, pic,
-        h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: d.name }),
+        h('span', { class: 'dgt-id' }, compact && tag ? h('span', { class: 'dgt-name-line' }, h('span', { class: 'dgt-name', text: d.name }), tag) : h('span', { class: 'dgt-name', text: d.name }),
           h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race, O && O.alignment ? alignName(O.alignment) : null, d.mitama ? `${d.mitama} Mitama` : null].filter(Boolean).join(' · ') })),
-        on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null),
+        compact ? null : (on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null)),
+      compact ? null : demonUnlockTags(d),
       O ? h('span', { class: 'dgt-line' }, `${fmt(O.rate)}% of its stats`, hp ? ` · HP ${fmt(hp.value, '', true)}` : '', mp ? ` · MP ${fmt(mp.value, '', true)}` : '')
         : d.forceStack || d.equipment ? h('span', { class: 'dgt-line', text: [d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }) : null,
+      // listed by the game without its details (stats, skills, growth, Mitama): there is nothing to work out yet
+      d.loaded === false ? h('span', { class: 'dgt-line', text: 'Not read yet. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (that loads your whole COMP), then load the demons again.' }) : null,
       icons.length ? h('span', { class: 'dg-skill-icons' }, icons) : null,
       adds.length ? h('span', { class: 'dgt-adds' }, adds) : null);
   }
@@ -2013,7 +2137,7 @@
   //     character's saved demon when the app is showing digitalized numbers, else none. ---
   const simDemonDefault = (init) => (digi() && init && init.meta.demon_key ? init.meta.demon_key : '');
   const simDemonOf = (b, init) => (typeof b.demon === 'string' ? b.demon : simDemonDefault(init));
-  const simDemonName = (key) => String(key || '').replace(/^\d+:/, '');
+  const simDemonName = (key) => String(key || '').replace(/^\d+:/, '').replace(/:\d+$/, '');   // "type:name:level" (older: "type:name")
   /** The demons of the editor's base (what that character's demon picker lists; asked once per reading). */
   function simDemonList() {
     const M = S.sim, entry = M.bases.get(simBaseKey(M.char, M.level, M.align));
@@ -2302,7 +2426,7 @@
     const entry = M.bases.get(simBaseKey(M.char, M.level, M.align)) || {};
     if (!entry.demons) simFill(box, none, h('p', { class: 'note', style: 'padding:8px', text: `Reading ${M.char}’s demons…` }));
     const list = await simDemonList();
-    simFill(box, none, list.map((d) => demonTile(d, d.key === M.demon, () => pick(d.key), entry.skillIcons)),
+    simFill(box, none, list.map((d) => demonTile(d, d.key === M.demon, () => pick(d.key), false, null, entry.skillIcons)),
       list.length ? null : h('p', { class: 'note', style: 'padding:8px', text: `No demons seen for ${M.char} yet. Open the COMP in game as ${M.char}, then load the demons on the Digitalize page.` }));
     $('#sim-demons-note').textContent = `${M.char}’s COMP demons as last seen. The pick is this build’s: ${M.char}’s own digitalize demon is not changed.`;
     simPlace(simDemonsMenu, simDemonsFor);
@@ -2651,7 +2775,7 @@
       const icons = skills.length ? h('span', { class: 'dg-skill-icons' }, skills.map((s) => {
         const ic = skillIcon(s, entry.skillIcons);
         if (!isTrue(s.counted)) ic.classList.add('off');
-        return withTip(ic, () => h('div', null, tipHead(skillIcon(s, entry.skillIcons), s.name, s.kind), ...tipLines(s.tip)));
+        return withTip(ic, () => h('div', null, tipHead(skillIcon(s, entry.skillIcons), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
       })) : null;
       return h('section', { class: 'card demon-card closed sim-band' }, pic, h('div', { class: 'demon-main' }, h('div', { class: 'demon-id' }, h('h3', { class: 'demon-name' }, name), chips, icons)));
     }
@@ -3035,7 +3159,7 @@
   // ---------- actions ----------
   async function reload() {
     const d = await host.call('load');
-    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [] };
+    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [], summoned: d.summoned || null };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
     S.sim.state = 'idle';   // the Simulator starts again from what was just loaded (the build being tried is kept)
@@ -3123,7 +3247,9 @@
       h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: 'No demon' }), h('span', { class: 'char-line', text: 'Not digitalized' })));
     // each demon as a card: what digitalizing with it would give (demonTile)
     const row = (d) => { const on = digi() && d.current; return demonTile(d, on,
-      () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render()) : useDemon(d))); };
+      () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render())
+        : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (the Master), which loads your whole COMP at once. Then press Load demons from the game.', 12000)
+          : useDemon(d))); };
     list.replaceChildren(none, ...demons.map(row));
     const load = $('#demons-load');
     load.disabled = !!loading;
@@ -3140,12 +3266,14 @@
       const demons = await host.call('compDemons', scan ? {} : { cached: true });
       if (look !== demonsLook) return;
       S.demons = demons;
+      if (scan) refreshSummoned();
       // The game keeps every COMP demon in memory only while the COMP (or Demon List) is open; otherwise just the summoned one.
       const live = demons.filter((d) => d.inGame).length;
+      const unread = demons.filter((d) => d.inGame && d.loaded === false).length;   // listed by the game without their details
       drawDemons(!scan ? null : !host.native ? 'Browser preview: stand-in demons.'
         : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.'
         : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.'
-        : `${live} demons read from the game.`);
+        : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: click them in the COMP, or open the fusion window at the Cathedral of Shadows, then load again.` : ''));
     } catch (e) { if (look === demonsLook) drawDemons(String(e && e.message || e)); }
   }
   demonsMenu.addEventListener('toggle', (ev) => {
