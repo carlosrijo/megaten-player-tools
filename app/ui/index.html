@@ -50,6 +50,11 @@
     <main class="main" id="main" tabindex="-1"></main>
   </div>
 
+  <!-- the assistant: Black Frost in the corner (assistant.js draws it; app.js "the assistant" runs it) -->
+  <div class="assistant" id="assistant" hidden>
+    <canvas id="assistant-view" role="img" aria-label="Black Frost, the assistant. Click for a trick."></canvas>
+  </div>
+
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
   <div class="tip" id="tip" role="tooltip" popover="manual" hidden></div>
 
@@ -67,6 +72,15 @@
           <button type="button" data-theme-choice="light">Light</button>
           <button type="button" data-theme-choice="dark">Dark</button>
         </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Assistant</span>
+        <label class="switch-row">
+          <span>Show Black Frost in the corner</span>
+          <input type="checkbox" class="switch" role="switch" id="set-assistant">
+        </label>
+        <span class="field-help" id="assistant-help" role="status"></span>
       </div>
 
       <div class="field">
@@ -163,6 +177,7 @@
     </div>
   </dialog>
 
+  <script src="assistant.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

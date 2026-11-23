@@ -184,6 +184,8 @@
           fake.align = fake.align || {}; fake.align[fake.active] = args.alignment;
           return { changed: true, rows: fake.active === 'Rubito' ? 5 : 0, changedRows: fake.active === 'Rubito' ? 3 : 0, backup: 'rubito-stats.backup-before-alignment-20261122-233212.csv' };
         }
+        // the assistant's model: the file the reader made (newmoon-reader.exe model); ?assistant=none stands in for "game never seen"
+        if (cmd === 'assistant') return Q.get('assistant') === 'none' ? null : get('../../data/cache/models/D2_11_003a.json', null);
         if (cmd === 'getSettings' || cmd === 'pickCsv') return { ...settings };
         if (cmd === 'saveSettings') { Object.assign(settings, args); return { ...settings }; }
         return true;
@@ -2304,17 +2306,91 @@
     return ['The snapshot didn\u2019t work', message];
   }
 
+  // ---------- the assistant: Black Frost in the corner (assistant.js draws it) ----------
+  // The host makes its model out of the game's own files the first time (so it must have seen the game once, to know
+  // where it is installed). On or off is a preference of this window; ?assistant=0 leaves it out for one run and
+  // ?assistant=1 puts it in (the app's --capture runs leave it out unless asked).
+  const A = { el: $('#assistant'), view: null, state: 'off' };   // state: off | loading | on | missing | failed
+  const assistantWanted = () => Q.get('assistant') !== '0' && (Q.get('assistant') === '1' || store.get('assistant') !== 'off');
+  function fillAssistant() {
+    const on = store.get('assistant') !== 'off';
+    $('#set-assistant').checked = on;
+    $('#assistant-help').textContent = !on ? 'Off. Its model and animations come from your game’s own files.'
+      : A.state === 'loading' ? 'Getting its model from the game’s files…'
+      : A.state === 'missing' ? 'Its model comes from the game’s own files, and the app doesn’t know yet where the game is installed. Start NewMoon and it will show up.'
+      : A.state === 'failed' ? 'It couldn’t be drawn here: this window has no 3D graphics (WebGL).'
+      : 'Its model and animations come from your game’s own files. Click it for a trick; it also reacts when you take a snapshot.';
+  }
+  // Clicks go to the box it stands in (its canvas is bigger, for the animations, and lets clicks through).
+  A.el.addEventListener('click', () => { if (A.view) A.view.poke(); });
+  // Holding the right button and dragging sideways turns it around (left and right only); the way it is left facing is kept.
+  let turning = null;
+  A.el.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  A.el.addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 2 || !A.view) return;
+    turning = { id: ev.pointerId, x: ev.clientX };
+    A.el.setPointerCapture(ev.pointerId); A.el.classList.add('turning'); ev.preventDefault();
+  });
+  A.el.addEventListener('pointermove', (ev) => {
+    if (!turning || ev.pointerId !== turning.id || !A.view) return;
+    A.view.turn((turning.x - ev.clientX) * 0.8);   // its near side follows the pointer
+    turning.x = ev.clientX;
+  });
+  const endTurn = (ev) => {
+    if (!turning || ev.pointerId !== turning.id) return;
+    turning = null; A.el.classList.remove('turning');
+    if (A.view) store.set('assistant-yaw', String(Math.round(A.view.yaw)));
+  };
+  A.el.addEventListener('pointerup', endTurn);
+  A.el.addEventListener('pointercancel', endTurn);
+  // it sits on top of the page: the wheel over it still scrolls the page
+  A.el.addEventListener('wheel', (ev) => { $('#main').scrollBy({ top: ev.deltaY }); }, { passive: true });
+  async function startAssistant() {
+    if (A.view || A.state === 'loading' || !window.NMAssistant) return;
+    A.state = 'loading'; fillAssistant();
+    let model = null;
+    try { model = await host.call('assistant'); } catch (e) { model = null; }
+    if (!assistantWanted()) { A.state = 'off'; fillAssistant(); return; }   // switched off while it loaded
+    if (!model) { A.state = 'missing'; fillAssistant(); return; }
+    A.el.hidden = false;
+    const yaw = parseFloat(store.get('assistant-yaw'));   // the way it was left facing
+    try { A.view = window.NMAssistant.mount($('#assistant-view'), model, Number.isFinite(yaw) ? { yaw } : {}); } catch (e) { A.view = null; }
+    if (!A.view) { A.el.hidden = true; A.state = 'failed'; fillAssistant(); return; }
+    // Far enough from the window's edges that its widest and lowest animation fits the way it faces now. (Turned
+    // another way an animation can reach further: its canvas has the room, and only the window's own edge can cut it.)
+    document.body.style.setProperty('--assistant-right', Math.max(18, A.view.home.r + 4) + 'px');
+    document.body.style.setProperty('--assistant-bottom', Math.max(2, A.view.home.b) + 'px');
+    A.state = 'on'; document.body.classList.add('has-assistant'); fillAssistant();
+  }
+  function stopAssistant() {
+    if (A.view) A.view.dispose();
+    A.view = null; A.state = 'off'; A.el.hidden = true; document.body.classList.remove('has-assistant');
+    // its canvas gave up its 3D context for good: the next start gets a new one
+    const old = $('#assistant-view'), fresh = old.cloneNode(false);
+    fresh.removeAttribute('style'); old.replaceWith(fresh);
+    fillAssistant();
+  }
+  const assistantReact = (what) => { if (A.view) A.view.react(what); };
+
+  $('#set-assistant').addEventListener('change', (ev) => {
+    store.set('assistant', ev.target.checked ? 'on' : 'off');
+    if (ev.target.checked) startAssistant(); else stopAssistant();
+  });
+
   async function takeSnapshot() {
     if (S.busy) return;
     S.busy = true; renderChrome();
+    assistantReact('work');
     try {
       const r = await host.call('snapshot');
       S.demons = null;   // a snapshot can change the saved demon: ask the host for the list again next time
       await reload();
+      assistantReact('ok');
       if (r.missing) toast('warn', 'Snapshot saved, with gaps', `No saved bonuses for ${r.missing}. Open the Information window in game and take another snapshot.`, 0);
       else if (r.source === 'window' || r.source === 'status') toast('ok', 'Snapshot saved', 'Stats, gear and expertise were all read live.' + (r.picture ? ' The picture was updated from the Information window.' : ''));
       else toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP are the saved ones, because you were digitalized (the game then counts the demon in them). Snapshot again when not digitalized to refresh them.', 12000);
     } catch (e) {
+      assistantReact('fail');
       const [title, text] = explain(String(e && e.message || e));
       toast('err', title, text, 0);
       if (/No running client has|No character is selected/i.test(String(e && e.message))) scanClients();   // who IS in game?
@@ -2330,6 +2406,7 @@
     $('#set-character').textContent = S.settings.character || 'None yet';
     $('#set-csv').textContent = S.settings.csv || '—';
     $('#set-data').textContent = S.settings.dataDir || '—';
+    fillAssistant();
     document.querySelectorAll('[data-theme-choice]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === S.settings.theme)));
     // Alignment: nothing is pressed until it has been set for this character (until then the reader assumes Neutral).
     const set = S.meta.alignmentKnown !== false ? S.meta.alignment : null;
@@ -2393,6 +2470,7 @@
     if (S.scanning || S.busy) return;
     try {
       const st = await host.call('status');
+      if (st.gameRunning && A.state === 'missing' && assistantWanted()) startAssistant();   // the game is up now: its files can be found
       const waiting = S.state.clients.some((c) => !c.character) && Date.now() - (S.lastScan || 0) > 30000;
       if (st.clientsChanged || waiting) { await scanClients(); await settle(false); }
     } catch (e) { /* next round */ }
@@ -2407,9 +2485,14 @@
     catch (e) {
       $('#main').replaceChildren(h('div', { class: 'page' }, h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'Couldn\u2019t load the saved data. ' }), String(e && e.message || e)))));
     }
-    window.__nm = { S, takeSnapshot };   // for checking the page from DevTools
+    window.__nm = { S, takeSnapshot, assistant: A };   // for checking the page from DevTools
     // The saved data is on screen; now see who is in game. One character: show it. Several: ask.
     if (host.native || Q.has('clients')) { await scanClients(); await settle(true); }
+    if (assistantWanted()) {
+      const going = startAssistant();
+      // asked for by name (a picture is about to be taken): wait until it stands there
+      if (Q.get('assistant') === '1') await Promise.race([going.then(() => new Promise((r) => setTimeout(r, 400))), new Promise((r) => setTimeout(r, 5000))]);
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => host.call('ready').catch(() => {})));
     if (host.native) setInterval(pollStatus, 5000);
   })();

@@ -567,6 +567,22 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 
 .tip { position: fixed; inset: auto; margin: 0; overflow: visible; z-index: 50; pointer-events: none; max-width: 320px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: var(--shadow); border-radius: 8px; padding: 6px 9px; font-size: 12px; font-variant-numeric: tabular-nums; }
 
+/* ---------- the assistant (Black Frost in the corner) ---------- */
+.assistant { position: fixed; right: var(--assistant-right, 18px); bottom: var(--assistant-bottom, 2px); z-index: 30; width: 136px; height: 150px; cursor: pointer; animation: rise .3s ease-out; }
+.assistant[hidden] { display: none; }
+/* the floor under its feet, so it stands on the window instead of floating */
+.assistant::before { content: ""; position: absolute; left: 14%; right: 14%; bottom: 3px; height: 16px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .28), rgba(0, 0, 0, 0)); }
+:root[data-theme="dark"] .assistant::before { background: radial-gradient(closest-side, rgba(0, 0, 0, .6), rgba(0, 0, 0, 0)); }
+/* the canvas is bigger than this box (assistant.js sizes it): room for arms, jumps and falls. Clicks go to the box. */
+.assistant canvas { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
+/* room at the end of every page, so its last lines can be scrolled out from behind the assistant */
+body.has-assistant .main::after { content: ""; display: block; height: 96px; }
+.assistant.turning { cursor: ew-resize; }
+/* messages are what it says: speech bubbles above its head, the newest one with the tail pointing down at it */
+body.has-assistant .toasts { right: 16px; bottom: calc(var(--assistant-bottom, 2px) + 162px); width: min(380px, calc(100vw - 32px)); }
+body.has-assistant .toast { position: relative; border-radius: 14px; }
+body.has-assistant .toast:last-child::after { content: ""; position: absolute; right: calc(var(--assistant-right, 18px) + 46px); bottom: -7px; width: 12px; height: 12px; background: var(--surface); border-right: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); transform: rotate(45deg); border-bottom-right-radius: 3px; }
+
 /* ---------- toasts ---------- */
 .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: grid; gap: 8px; width: min(400px, calc(100vw - 32px)); }
 .toast { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 11px 10px 11px 12px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border-strong); box-shadow: var(--shadow); animation: rise .18s ease-out; }

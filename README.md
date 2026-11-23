@@ -28,6 +28,12 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   snapshot ("Show all" lists the rest); beside it, one radar chart per element with your affinity boost,
   the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers. The digitalize demon's name is a dropdown to pick another one.
   Under the radars, an **Expertise** card: your expertise points against the cap, as the game's Expertise window shows them (e.g. 52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its class-rank and the icons of the skills its ranks gave you, passive and active on separate lines (a switched-off toggle is dimmed). Click one to open it on the Expertise page, or "View more" for the whole page.
+- **Assistant:** Black Frost stands in the window's bottom right corner, drawn in 3D from the game's own model with the
+  game's own animations (the app reads them from your game folder the first time, so the game must have been running
+  once with the app open). It idles, does something by itself now and then, plays a trick when you click it, casts
+  while a snapshot is being read and cheers or flinches at the result. The app's messages are what it says: speech
+  bubbles above its head. Hold the right mouse button on it and drag sideways to turn it around (it stays the way you
+  leave it). Settings > Assistant hides it and brings it back.
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
   click the name in the header to switch.
@@ -46,6 +52,9 @@ Working on the app's page:
 - In a plain browser: `tools\serve.ps1 -Root . -Port 18765`, then `http://localhost:18765/app/ui/index.html`.
   A stand-in for the app reads `data\dash`. Add `?empty=1` (first run), `?snap=fail` or `?snap=live` (snapshot results),
   `?game=1`, `?page=…`, `?theme=…`, `?mode=digi`.
+- The assistant: `--capture` pictures leave it out unless the run adds `--query assistant=1`. In a plain browser it
+  needs the model file first (`newmoon-reader.exe model`, below); `?assistant=0` leaves it out, `?assistant=none`
+  stands in for "the game's folder isn't known yet".
 
 ### Tools: DCM Locator
 
@@ -148,6 +157,8 @@ reading. The Expertise tab shows a "not counted" row for whichever is missing. T
 
 ```
 newmoon-reader extras --quests 32 --compendium 60      # --compendium-v2 no if you don't own Compendium v2; none = unset
+bin\Release\net10.0\newmoon-reader.exe model           # the assistant's 3D model (Black Frost) from the game folder into data\cache\models, with a summary
+bin\Release\net10.0\newmoon-reader.exe model --check "<game folder>\Devil\bone"   # which of the client's model/animation files the reader can read
 ```
 
 Without options, `extras` shows the clan (read from the game), reads both counts when the game has them, and lists
@@ -166,6 +177,7 @@ every bonus they give.
 | Expertise ranks | The client's expertise tree; chain expertises use NewMoon's chain formulas and rank skills (client data, `reference/expertise-*.tsv`). Toggle skills count only while switched on (read from the game: the learned-skill map's "on" flag) |
 | Other learned passives | Every learned passive skill that no expertise rank or Digitalization Level gives (Additional HP/MP, "Additional" affinity skills, Quickness, clan skills, Quickdraw...), from the learned-skill map; shown as "Other learned skills" on the Expertise tab |
 | Digitalization Levels | The character's progress data in memory (level and points per race); each level's "extend" passive skill counts like an expertise passive (one group per race on the Digitalize page, which also shows the digitalize demon) |
+| The assistant (Black Frost) | The client's own 3D files: `Devil\bone\D2_11_003a_Base.nif` (model, bones, texture) and the 15 animations its `.kfm` lists (Jack Frost's `.kf` files, which the game itself uses for Black Frost). Read by `src\Data\Nif.cs`, turned into one file for the page by `src\Build\DemonModel.cs` |
 | COMP demons (`demon`) | Each demon's records in memory (`Game\DemonReader.cs`): level, growth type, rebirth ranks, Mitama slots, skill slots, learned skills; base values, growth, traits and Mitama tables from the server's demon tables (`reference\`) |
 
 Layouts are documented in `src/Game/ClientReader.cs`.
@@ -174,7 +186,9 @@ Layouts are documented in `src/Game/ClientReader.cs`.
 
 - `src/` code. `Memory/` read-only process access; `Game/` structure layouts; `Calc/` tooltip parsing and bonus math;
   `Build/` snapshot, CSV, expertise and page-data builders.
-- `data/cache/` last stats, tooltip text per item, the set table, alignment.
+- `data/cache/` last stats, tooltip text per item, the set table, alignment. `data/cache/models/` the assistant's model,
+  made from the game's files (the game's art: not in the repository).
+- `app/ui/assistant.js` draws the assistant (plain WebGL, no library).
 - `reference/enchants-game.tsv` the client's own enchant table; `reference/devils-game.tsv`, `devil-growth.tsv`,
   `mitama-*.tsv`, `guardian-assist.tsv`, `guardian-levels.tsv`, `skills-digitize.tsv` the server's demon and digitalize tables;
   `tokusei-*.tsv`, `expertise-newmoon.tsv`, `traits-unresolved.tsv` NewMoon data from the client (see
