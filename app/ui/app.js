@@ -2179,13 +2179,19 @@
       groups.length ? h('div', { class: 'dun-aff' }, groups.map(([label, list, txt, cls]) => h('div', { class: 'dun-aff-row' },
         h('span', { class: 'dun-aff-k', text: label }), h('span', { class: 'chips' }, list.map((a) => h('span', { class: 'tag ' + cls, text: txt(a) }))))))
         : h('span', { class: 'zero', text: 'No weakness or resistance' })));
-    const skills = (label, ids, tip) => {
-      const list = ids.filter((id) => D.skills[id]);
+    // skills as the game's icons; the name and description are in the tooltip. Many enemy-only skills have no icon in
+    // the game at all (icon id 0): those show their name in a small tag, with the same tooltip, after the icons.
+    const skillPic = (icon) => h('img', { class: 'dun-skill-pic', src: icon, alt: '', width: 32, height: 32, loading: 'lazy' });
+    const skills = (label, ids, kind, tip) => {
+      const list = ids.filter((id) => D.skills[id]).sort((a, b) => !D.skills[a][2] - !D.skills[b][2]);
       return list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label, 'data-tip': tip || null }),
-        h('ul', { class: 'gdb-list dun-skills' }, list.map((id) => { const [n, d] = D.skills[id];
-          return h('li', null, h('b', { text: n }), d ? h('span', { class: 'dun-desc', text: d.replace(/\s*\n\s*/g, ' ') }) : null); }))) : null;
+        h('div', { class: 'dun-skill-row' }, list.map((id) => { const [n, d, icon] = D.skills[id];
+          const el = icon ? h('span', { class: 'dun-skill', tabindex: 0, role: 'img', 'aria-label': n }, skillPic(icon))
+            : h('span', { class: 'tag dun-skill-name', tabindex: 0, text: n });
+          return withTip(el, () => h('div', null, tipHead(icon ? skillPic(icon) : null, n, kind), ...tipLines(d))); }))) : null;
     };
-    [skills('Skills', m.skills), skills('Enemy-only skills', m.enemySkills, 'Skills only this enemy version uses'), skills('Traits', m.traits, 'Its innate passive features')].forEach((b) => b && box.append(b));
+    [skills('Skills', m.skills, 'Skill'), skills('Enemy-only skills', m.enemySkills, 'Enemy-only skill', 'Skills only this enemy version uses'),
+      skills('Traits', m.traits, 'Trait', 'Its innate passive features')].forEach((b) => b && box.append(b));
     if (e.drops) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Drops' }),
       h('ul', { class: 'gdb-list' }, e.drops.map((g) => h('li', null, h('span', { class: 'gdb-kind dun-rate', text: `${nf.format(g.rate)}%` }), g.item, g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null)))));
     return box;
