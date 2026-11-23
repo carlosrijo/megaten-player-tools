@@ -1616,7 +1616,9 @@
     const row = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
     return h('div', { class: 'q-way' },
       h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, h('span', null, sentence)),
+      w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
       w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
+      w.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: w.asks })) : null,
       w.pick && w.pick.length ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('span', null, w.pick.map((p, i) => [i ? h('span', { class: 'q-arrow', text: ' then ' }) : null, h('span', { class: 'q-pick', text: p })]))) : null,
       row('You must', w.needs), row('You fight', w.fights), row('You receive', w.get, 'q-get'), row('You hand over', w.lose), row('Afterwards', w.effects));
   }
