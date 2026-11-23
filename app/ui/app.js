@@ -171,7 +171,7 @@
           const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
             ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
-            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, summoned: name === 'Specter' && Q.get('summoned') !== '0', icon: null, loaded: name !== 'Pixie', seenAt: name === 'Seraph' ? null : '2026-11-23T15:40:23',
+            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, summoned: name === 'Specter' && Q.get('summoned') !== '0', icon: null, loaded: name !== 'Pixie', inComp: name !== 'Seraph', seenAt: '2026-11-23T15:40:23',
               // stand-ins for the three states of the unlock tag
               unlock: name === 'Alilat' ? { listed: false, level: 0, raceLevel: 1, race, reached: false } : { listed: true, level: name === 'Seraph' ? 8 : 5, raceLevel: name === 'Seraph' ? 5 : 10, race, reached: name !== 'Seraph' },
               // the saved demon's own numbers as its offer, so its card looks as in the app (the others have none here)
@@ -1482,7 +1482,7 @@
     } else if (U && !isTrue(U.listed)) {
       tags.push(h('span', { class: 'tag tag-off', 'data-tip': `No ${U.race} Digitalization Level names this demon in the game data, so it may not be usable for digitalizing. The data does not say more.`, text: 'Not on any Digitalization Level' }));
     }
-    if (!d.seenAt && !d.inGame) tags.push(h('span', { class: 'tag tag-off', 'data-tip': 'It was not among the COMP demons last read from the game. It is still here because it is your saved digitalize demon.', text: 'Not in your COMP' }));
+    if (d.inComp === false) tags.push(h('span', { class: 'tag tag-off', 'data-tip': 'It was not in your COMP when the game was last read. It is kept because it was read before, so you can still see what it gives.', text: 'Not in your COMP' }));
     return tags.length ? h('span', { class: 'dgt-tags' }, tags) : null;
   }
 
@@ -1516,7 +1516,7 @@
       O ? h('span', { class: 'dgt-line' }, `${fmt(O.rate)}% of its stats`, hp ? ` · HP ${fmt(hp.value, '', true)}` : '', mp ? ` · MP ${fmt(mp.value, '', true)}` : '')
         : d.forceStack || d.equipment ? h('span', { class: 'dgt-line', text: [d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }) : null,
       // listed by the game without its details (stats, skills, growth, Mitama): there is nothing to work out yet
-      d.loaded === false ? h('span', { class: 'dgt-line', text: 'Not read yet. Open its status window in game (from the COMP), then load the demons again to see what it gives.' }) : null,
+      d.loaded === false ? h('span', { class: 'dgt-line', text: 'Not read yet. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (that loads your whole COMP), then load the demons again.' }) : null,
       icons.length ? h('span', { class: 'dg-skill-icons' }, icons) : null,
       adds.length ? h('span', { class: 'dgt-adds' }, adds) : null);
   }
@@ -2091,7 +2091,7 @@
     // each demon as a card: what digitalizing with it would give (demonTile)
     const row = (d) => { const on = digi() && d.current; return demonTile(d, on,
       () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render())
-        : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Open its status window in game (from the COMP), then press Load demons from the game.', 12000)
+        : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (the Master), which loads your whole COMP at once. Then press Load demons from the game.', 12000)
           : useDemon(d))); };
     list.replaceChildren(none, ...demons.map(row));
     const load = $('#demons-load');
@@ -2116,7 +2116,7 @@
       drawDemons(!scan ? null : !host.native ? 'Browser preview: stand-in demons.'
         : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.'
         : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.'
-        : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: open a demon’s status window in game, then load again.` : ''));
+        : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: click them in the COMP, or open the fusion window at the Cathedral of Shadows, then load again.` : ''));
     } catch (e) { if (look === demonsLook) drawDemons(String(e && e.message || e)); }
   }
   demonsMenu.addEventListener('toggle', (ev) => {
