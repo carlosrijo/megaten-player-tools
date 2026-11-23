@@ -1433,7 +1433,7 @@
   function expSummary(rows) {
     const R = S.data.ranks || {}, P = R.points || null, all = (R.ranks || []).filter((r) => n0(r.points) > 0);
     const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
-    const card = h('section', { class: 'card' });
+    const card = h('section', { class: 'card exp-sum' });
     const wrap = sect('Summary', P ? (P.cap ? `${pt(P.total)} of ${pt(P.cap)} spent` : `${pt(P.total)} spent, no cap`) : null, null, card);
     if (!all.length) { card.append(h('p', { class: 'note', text: 'No expertise read yet. Take a snapshot.' })); return wrap; }
     if (P && P.cap) {
@@ -1453,13 +1453,25 @@
       stat(counted, counted === 1 ? 'passive counted' : 'passives counted')));
     const line = (r) => {
       const top = r.max_class > 0 ? r.max_class * 100000 : 0, done = maxed(r);
+      // the skills its reached ranks give (expertise-ranks.json "skills", actives too); older data: its passives from expertise.json
+      const mine = S.data.expertise.filter((x) => x.expertise === r.name && !isExtra(x));
+      const offIds = new Set(mine.filter((x) => x.toggle && !x.toggle_on).map((x) => x.skill_id));
+      const skills = Array.isArray(r.skills) ? r.skills.map((s) => ({ ...s, off: offIds.has(s.id) }))
+        : mine.map((x) => ({ id: x.skill_id, name: x.skill || '—', icon: x.icon, rank: x.rank || '', active: false, off: x.toggle && !x.toggle_on }));
+      const icons = skills.filter((s) => s.icon).map((s) => {
+        const ic = skillIcon(s);
+        ic.dataset.tip = `${s.name} (${s.rank})` + (s.active ? ', active' : '') + (s.off ? ', toggle switched off' : '');
+        if (s.off) ic.classList.add('off');
+        return ic;
+      });
       return h('button', { type: 'button', class: 'exp-sum-row', 'data-tip': `Show ${r.name}’s passives below` + (r.chain ? ' (chain: worked out from the expertises it is made of; costs no points)' : ''),
         onclick: () => { S.exp.q = r.name; render(); const el = document.getElementById('exp-list'); if (el) el.scrollIntoView({ block: 'start' }); } },
         h('span', { class: 'exp-sum-name', text: r.name }),
         h('span', { class: 'exp-sum-rank', text: `${r.class}-${r.rank}` }),
         h('span', { class: 'exp-bar', 'aria-hidden': 'true' }, top ? h('i', { style: `width:${Math.min(100, (n0(r.points) / top) * 100)}%` }) : null),
         h('span', { class: 'exp-sum-max' + (done ? ' done' : ''), text: done ? 'Max' : top ? `of ${r.max_class}-0` : '' }),
-        h('span', { class: 'exp-sum-pt', text: r.chain ? '' : pt(r.points) }));
+        h('span', { class: 'exp-sum-pt', text: r.chain ? '' : pt(r.points) }),
+        icons.length ? h('span', { class: 'exp-sum-icons' }, icons) : null);
     };
     const block = (title, list) => (list.length ? [h('h4', { class: 'list-head', text: title }), h('div', { class: 'exp-sum-list' }, list.map(line))] : null);
     card.append(...[block('Expertise', regular), block('Chain expertise', chains)].flat().filter(Boolean));
