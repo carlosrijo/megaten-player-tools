@@ -126,7 +126,8 @@ demon (`data\cache\digitalize.json`). To pick one without digitalizing, click th
 app; a dropdown of "No demon" and the demons seen before, with "Load demons from the game" at the end to read the COMP again), or `demon "<name>" --use`. The picker lists your COMP as the game has it
 (open the COMP in game, then "Load demons from the game"); each demon says whether your Digitalization Levels unlock it. The game only
 loads a demon's stats and skills when you look at it, so a demon shows "Not read yet" until you open its status window in game and load
-again (the summoned demon is always read). What was read is kept (`data\cache\comp-demons.json`, with icons in
+again (the summoned demon is always read). What was read is kept, also for a demon you later move out of the
+COMP (its card then says "Not in your COMP") (`data\cache\comp-demons.json`, with icons in
 `data\cache\demon-icons\`), so the picker also works without the game. In the app, picking never reads the game: it uses the demons and the learned
 assists last read (by a snapshot, or by "Load demons from the game" in the dropdown). Picking one saves it, recalculates the latest snapshot's
 demon columns with it (the CSV is copied to `<csv>.backup-before-demon-switch.csv` first) and rebuilds the page. Later

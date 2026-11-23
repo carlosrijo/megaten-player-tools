@@ -169,7 +169,7 @@
           const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
             ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
-            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, icon: null, loaded: name !== 'Pixie', seenAt: name === 'Seraph' ? null : '2026-11-23T15:40:23',
+            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, icon: null, loaded: name !== 'Pixie', inComp: name !== 'Seraph', seenAt: '2026-11-23T15:40:23',
               // stand-ins for the three states of the unlock tag
               unlock: name === 'Alilat' ? { listed: false, level: 0, raceLevel: 1, race, reached: false } : { listed: true, level: name === 'Seraph' ? 8 : 5, raceLevel: name === 'Seraph' ? 5 : 10, race, reached: name !== 'Seraph' } }));
         }
@@ -1455,7 +1455,7 @@
     } else if (U && !isTrue(U.listed)) {
       tags.push(h('span', { class: 'tag tag-off', 'data-tip': `No ${U.race} Digitalization Level names this demon in the game data, so it may not be usable for digitalizing. The data does not say more.`, text: 'Not on any Digitalization Level' }));
     }
-    if (!d.seenAt && !d.inGame) tags.push(h('span', { class: 'tag tag-off', 'data-tip': 'It was not among the COMP demons last read from the game. It is still here because it is your saved digitalize demon.', text: 'Not in your COMP' }));
+    if (d.inComp === false) tags.push(h('span', { class: 'tag tag-off', 'data-tip': 'It was not in your COMP when the game was last read. It is kept because it was read before, so you can still see what it gives.', text: 'Not in your COMP' }));
     return tags.length ? h('span', { class: 'dgt-tags' }, tags) : null;
   }
 
