@@ -137,6 +137,22 @@ Names, stats, skills and traits are the NewMoon client's. Which enemies are wher
 their drops come from the public server data, so NewMoon may have changed them. Stats are the server's formula for an
 enemy at that level (with the extra HP the game gives enemies), before its passive skills and traits. Not checked in
 game.
+### Tools: Demon Database
+
+Under **Tools** in the left bar. Every demon you can own (the compendium's 359) with its picture, race, base level and
+alignment. Click a demon for its stats at any level from its base level to 99 (a fresh demon: no Demon Force, rebirth
+or Mitama), its affinities (resistance in %, weaknesses in red, natural null / reflect / drain chances), its features and its
+Mitama features (what it gains, or swaps, when Mitama-fused),
+its skills (what it knows and the level it learns each one at; hover for the game's description), what its tarot and
+soul give and on which gear, and where to get it: the places it can be contracted with their levels, its DCM (with a
+button to the DCM Locator) and normal fusion. "Normal" / "Mitama-fused" at the top of a demon switches its stats,
+affinities, features and skills to its Mitama-fused form (340 demons have one).
+
+The list opens on the demons that can be contracted somewhere (140); "Not contracted anywhere" and "All demons" show
+the rest. Dungeon and boss copies of a demon are not listed on their own: the places they appear, where they cannot be
+talked into a contract, are under "Enemy only". Search by name, race, skill, feature, tarot text or zone; filter by
+race; sort by level, name or race. Demons, stats, skills, tarot and soul are the NewMoon client's; spawns are the
+public server data, so NewMoon may have changed them.
 
 ### Tools: Simulator
 

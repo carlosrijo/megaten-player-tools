@@ -26,6 +26,7 @@
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     book: '<path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/>',
     fuse: '<circle cx="8" cy="8" r="3.5"/><circle cx="16" cy="8" r="3.5"/><path d="M8 11.5v1.5a4 4 0 0 0 4 4 4 4 0 0 0 4-4v-1.5M12 17v3.5"/>',
+    horns: '<path d="M6.5 3.5c-.6 3 .4 5.4 2.6 6.6M17.5 3.5c.6 3-.4 5.4-2.6 6.6"/><circle cx="12" cy="14.5" r="6"/><path d="M9.6 14h.01M14.4 14h.01M10 17.2h4"/>',
     flask: '<path d="M9 3.5h6M10 3.5v5.2L5.2 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.8-2.9L14 8.7V3.5"/><path d="M7.6 14.5h8.8"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     gate: '<path d="M5 20.5V10a7 7 0 0 1 14 0v10.5"/><path d="M3 20.5h18"/><path d="M9.5 20.5v-5a2.5 2.5 0 0 1 5 0v5"/>',
@@ -237,7 +238,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['dungeons', 'Dungeon Explorer', 'gate'], ['fusion', 'Fusion Planner', 'fuse'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['dungeons', 'Dungeon Explorer', 'gate'], ['fusion', 'Fusion Planner', 'fuse'], ['ddb', 'Demon Database', 'horns'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -282,6 +283,7 @@
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle' },   // Dungeon Explorer: opened places, opened enemies
+    ddb: { q: '', kind: 'contract', race: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle' },
     // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
       // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
@@ -2253,6 +2255,182 @@
     return page;
   }
 
+  // ---------- Tools: Demon Database ----------
+  // demon-db.json is made by "newmoon-reader demondb" (src\Build\DemonDb.cs): the compendium's demons with their stats,
+  // affinities, features, skills, tarot and soul from the NewMoon client, and where each can be contracted from the
+  // server's zone files. Enemy-only copies (dungeon and boss versions) are folded into their demon, not listed. Pictures
+  // are in demon-db-icons\ beside this file.
+  const DDB_KINDS = [['contract', 'Can be contracted'], ['other', 'Not contracted anywhere'], ['all', 'All demons']];
+  function loadDemonDb() {
+    if (S.ddb.state !== 'idle') return;
+    S.ddb.state = 'loading';
+    fetch('demon-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.ddb.data = d; S.ddb.state = d ? 'ready' : 'failed';
+      if (d) d.demons.forEach((x) => {
+        const sk = (id) => d.skills[id] || { name: 'A skill the game data does not name', desc: '' };
+        x.hay = [x.name, x.race, x.align, ...x.traits.concat(x.mt ? x.mt.traits : []).map((t) => sk(t).name), ...x.skills.map(([id]) => sk(id).name),
+          ...[x.tarot, x.soul].filter(Boolean).flatMap((e) => [e.name, ...e.lines]), ...x.contract.map((c) => c.zone)].join(' ').toLowerCase();
+      });
+      if (S.page === 'ddb') render();
+    });
+    loadDcm();   // a demon's DCM, when there is one, links to the DCM Locator
+  }
+  /** Stats at a level, as the server works them out (CharacterManager::GetDemonBaseStats, then CalculateDependentStats for a demon). */
+  function ddbStats(x, level) {
+    const s = x.stats.slice(), g = (S.ddb.data.growth || {})[x.growth];
+    if (g) {
+      const boost = Math.floor((level + 3) / 4), stage = Math.floor((boost - 1) / 5);
+      const add = (k, n) => { if (g[k] && n > 0) for (let i = 0; i < 6; i++) s[i] += g[k][i] * n; };
+      // the server's table: A for every boost up to stage 1, then A x6, B x5, C x5, D for the rest
+      if (stage <= 1) add(0, boost);
+      else if (stage === 2) { add(0, 6); add(1, boost - 6); }
+      else if (stage === 3) { add(0, 6); add(1, 5); add(2, boost - 11); }
+      else { add(0, 6); add(1, 5); add(2, 5); add(3, boost - 16); }
+    }
+    const [str, mag, vit, int, spd] = s, hp = s[6], mp = s[7], L = level;
+    const out = s.slice();
+    out[6] = hp + Math.ceil(hp * 0.03 * L) + Math.ceil(str * 0.3) + Math.ceil((hp * 0.01 + 0.5) * vit);
+    out[7] = mp + Math.ceil(mp * 0.03 * L) + Math.ceil(mag * 0.3) + Math.ceil((mp * 0.01 + 0.5) * int);
+    const dep = (base, stat, k) => base + Math.round(stat * k + 0.5 + L * 0.1);
+    out[8] = dep(s[8], str, 0.5); out[9] = dep(s[9], spd, 0.5); out[10] = dep(s[10], mag, 0.5); out[11] = dep(s[11], int, 0.5);
+    out[12] = dep(s[12], vit, 0.1); out[13] = dep(s[13], int, 0.1);
+    return out;
+  }
+  const ddbImg = (src, size, cls) => { const box = h('span', { class: cls || 'dcm-icon', 'aria-hidden': 'true' });
+    if (src) box.append(h('img', { src, alt: '', width: size, height: size, loading: 'lazy', onerror: (ev) => ev.target.remove() })); return box; };
+  const ddbFace = (x) => ddbImg(x.icon || (S.ddb.data && S.ddb.data.noIcon), 28);
+  const ddbAlign = (x) => h('span', { class: 'tag tag-align ' + alignClass(x.align), text: x.align });
+  const ddbLv = (c) => (c.min === c.max ? `Lv ${c.min}` : `Lv ${c.min}–${c.max}`);
+  const ddbMoon = (mask) => 'Moon: ' + [...Array(16).keys()].filter((i) => mask & (1 << i)).map((i) => (i === 0 ? 'new' : i === 8 ? 'full' : i < 8 ? `${i}/8 waxing` : `${16 - i}/8 waning`)).join(', ');
+  function ddbDetail(x) {
+    const D = S.ddb, d = D.data, box = h('div', { class: 'q-detail ddb-detail' });
+    const sk = (id) => d.skills[id] || { name: 'A skill the game data does not name', desc: '' };
+    const block = (label, ...kids) => h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('div', null, ...kids));
+    box.append(h('div', { class: 'detail-meta' }, h('span', { class: 'tag', text: x.race }), h('span', { class: 'tag', text: `Base Lv ${x.level}` }), ddbAlign(x),
+      x.gender && !/^(None|Na)$/i.test(x.gender) ? h('span', { class: 'tag', text: x.gender }) : null,
+      x.fusion ? h('span', { class: 'tag', 'data-tip': 'The game\'s fusion picks it by level within its race.', text: 'Normal fusion' }) : null,
+      x.mitama ? h('span', { class: 'tag', text: 'Mitama' }) : null,
+      x.counted ? null : h('span', { class: 'tag tag-off', 'data-tip': 'The compendium lists it but does not count it toward its totals.', text: 'Not counted in the compendium' })));
+
+    // Normal or Mitama-fused: Mitama fusion turns it into another demon type with its own features, stats and
+    // affinities (x.mt; skills only when they differ). The view switches everything below that the Mitama form changes.
+    const mv = !!(x.mt && D.mtView.has(x.id));
+    const v = mv ? Object.assign({}, x, x.mt, { skills: x.mt.skills || x.skills }) : x;
+    if (x.mt) box.append(h('div', { class: 'chips ddb-form', role: 'group', 'aria-label': 'Which form' }, [['', 'Normal'], ['m', 'Mitama-fused']].map(([k, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(mv === !!k), onclick: () => { if (k) D.mtView.add(x.id); else D.mtView.delete(x.id); box.replaceWith(ddbDetail(x)); } }, label))));
+
+    // Stats, at any level from its base level (where it starts when contracted or fused) to 99
+    const lvKey = x.id + (mv ? 'm' : '');
+    const lv = Math.max(v.level, Math.min(99, D.level[lvKey] || v.level));
+    const grid = h('div', { class: 'ddb-stats' });
+    const drawStats = (L) => { const s = ddbStats(v, L);
+      grid.replaceChildren(...d.statNames.map((n, i) => h('div', { class: 'ddb-stat' }, h('span', { class: 'q-key', text: n }), h('b', { text: fmt(s[i]) })))); };
+    const num = h('input', { class: 'input ddb-lvnum', type: 'number', min: v.level, max: 99, value: lv, 'aria-label': 'Level' });
+    const range = h('input', { type: 'range', class: 'ddb-range', min: v.level, max: 99, value: lv, 'aria-label': 'Level' });
+    const setLv = (L) => { L = Math.max(v.level, Math.min(99, Math.round(Number(L) || v.level))); D.level[lvKey] = L; num.value = L; range.value = L; drawStats(L); };
+    num.oninput = () => { if (num.value !== '') setLv(num.value); }; num.onchange = () => setLv(num.value); range.oninput = () => setLv(range.value);
+    drawStats(lv);
+    box.append(block('Stats', h('div', { class: 'ddb-lv' }, h('span', { class: 'q-key', text: 'At level' }), num, range,
+      h('span', { class: 'src-count', text: mv ? 'The Mitama-fused demon\'s own base stats; no Demon Force, rebirth or Mitama runes.' : 'No Demon Force, rebirth or Mitama: the stats of a fresh demon of this level.' })), grid));
+
+    // Affinities: damage taken is multiplied by (100% − the value); natural null / reflect / drain chances beside it
+    const NRA = { 1: 'Null', 2: 'Reflect', 3: 'Drain' };
+    const aff = h('div', { class: 'ddb-aff' }, d.elements.map((e, i) => {
+      const r = v.res[i], n = v.nra[i], kind = n > 0 ? NRA[n % 10] : null;
+      const cls = r < 0 ? ' weak' : r >= 100 ? ' null' : r > 0 ? ' strong' : '';
+      return h('div', { class: 'ddb-aff-cell' + cls, 'data-tip': `${e}: ${r < 0 ? `takes ${-r}% more damage` : r > 0 ? `takes ${Math.min(r, 100)}% less damage` : 'normal damage'}${kind ? `; ${Math.floor(n / 10)}% chance to ${kind.toLowerCase()} it` : ''}` },
+        h('span', { class: 'q-key', text: e }), h('b', { text: r ? `${r > 0 ? '' : '−'}${Math.abs(r)}%` : '—' }), kind ? h('span', { class: 'ddb-nra', text: `${kind} ${Math.floor(n / 10)}%` }) : null);
+    }));
+    box.append(block('Affinities', aff, h('p', { class: 'note', style: 'margin-top:6px', text: 'Resistance in %: the damage it takes is cut by that much. A negative number is a weakness.' })));
+
+    const skillRow = (id, tag, inline) => { const s = sk(id);
+      return h('li', { class: 'ddb-skill', 'data-tip': inline ? null : s.desc || null }, ddbImg(s.icon, 24, 'skill-ico'),
+        h('span', null, h('b', { text: s.name }), tag ? h('span', { class: 'src-count', text: tag }) : null, inline && s.desc ? h('small', { class: 'ddb-desc', text: s.desc }) : null)); };
+    // Features. The Mitama-fused form keeps most and gains or swaps one: those are "Mitama features", shown in both views.
+    const gained = x.mt ? x.mt.traits.filter((t) => !x.traits.includes(t)) : [], lost = x.mt ? x.traits.filter((t) => !x.mt.traits.includes(t)) : [];
+    box.append(block('Features', v.traits.length ? h('ul', { class: 'gdb-list' }, v.traits.map((t) => skillRow(t, mv && gained.includes(t) ? 'Mitama feature' : '', true))) : h('span', { class: 'zero', text: 'None' })));
+    if (x.mt && !mv) box.append(block('Mitama features', gained.length
+      ? h('div', null, h('ul', { class: 'gdb-list' }, gained.map((t) => skillRow(t, '', true))),
+        h('p', { class: 'note', style: 'margin-top:4px', text: lost.length ? `Mitama-fused, it gets ${gained.length === 1 ? 'this' : 'these'} in place of ${lost.map((t) => sk(t).name).join(', ')}.` : `Mitama-fused, it gets ${gained.length === 1 ? 'this' : 'these'} on top of its own features.` }))
+      : h('span', { class: 'zero', text: 'Mitama-fused, it keeps the same features.' })));
+    box.append(block('Skills', v.skills.length ? h('ul', { class: 'gdb-list ddb-skills' }, v.skills.map(([id, at]) => skillRow(id, at ? `learns at Lv ${at}` : 'knows it'))) : h('span', { class: 'zero', text: 'None in the game data' })));
+
+    // Tarot and soul: what its crystal gives when fused into gear
+    const ench = (label, e) => block(label, !e ? h('span', { class: 'zero', text: 'None in the game data' }) : h('div', null,
+      h('div', null, h('b', { text: e.name }), h('span', { class: 'src-count', text: [e.slots.join(', '), e.level ? `equip level ${e.level}` : ''].filter(Boolean).join(' · ') })),
+      h('ul', { class: 'gdb-list', style: 'margin-top:3px' }, e.lines.map((l) => h('li', { class: /^\s/.test(l) ? 'gdb-sub' : null, text: l.trim() })))));
+    box.append(ench('Tarot', x.tarot), ench('Soul', x.soul));
+    const crystal = (x.tarot || x.soul || {}).crystal;
+    if (crystal) box.append(h('p', { class: 'note', text: `Both come from ${crystal}.` }));
+
+    // Where to get it
+    const where = h('ul', { class: 'gdb-list gdb-get' });
+    x.contract.forEach((c) => where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Contract' }), h('b', { text: c.zone }), h('span', { class: 'gdb-rate', text: ddbLv(c) }),
+      c.moon ? h('span', { class: 'tag', style: 'margin-left:8px', text: ddbMoon(c.moon) }) : null, c.season ? h('span', { class: 'tag', style: 'margin-left:8px', text: c.season + ' event' }) : null)));
+    const dcm = S.dcm.data && S.dcm.data.items.find((it) => it.devilId === x.id);
+    if (dcm) where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'DCM' }), h('b', { text: dcm.lines && dcm.lines[0] ? `${dcm.lines[0].kind}: ${dcm.lines[0].text}` : 'No source in the game data' }),
+      h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:10px', onclick: () => { S.dcm.q = x.name; S.dcm.kind = 'all'; S.dcm.open = new Set([dcm.id]); go('dcm'); } }, 'Open in DCM Locator')));
+    if (x.fusion) where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Fusion' }), h('span', null, `Normal two-demon fusion: a ${x.race} result picked by level`)));
+    box.append(block('Where to get it', where.childNodes.length ? where : h('span', { class: 'zero', text: 'The game data names no place to contract it, no fusion by level and no DCM.' })));
+    if (x.enemy.length) box.append(block('Enemy only', h('div', { class: 'note', style: 'margin-bottom:4px', text: 'It appears here too, but cannot be talked into a contract (dungeon and boss versions).' }),
+      h('ul', { class: 'gdb-list ddb-enemy' }, x.enemy.map((c) => h('li', null, c.zone, h('span', { class: 'src-count', text: ddbLv(c) }))))));
+    return box;
+  }
+  function pageDemonDb() {
+    const D = S.ddb, page = h('div', { class: 'page page-dcm' });
+    loadDemonDb();
+    page.append(pageHead('Every demon you can own: stats, affinities, features, skills, tarot and soul, and where to contract it. Click a demon for the details.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The demon list could not be loaded (demon-db.json is missing beside the page).' : 'Loading the demons…' }));
+      return page;
+    }
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
+      'Demons, stats, affinities, skills, tarot and soul are the NewMoon client\'s. Where each spawns comes from the public server data, so NewMoon may have changed it. Dungeon and boss copies of a demon are not listed on their own: they show under “Enemy only”.')));
+    const all = D.data.demons;
+    const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : !x.contract.length);
+    const races = [...new Set(all.map((x) => x.race))].sort();
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Which demons' });
+    const body = h('tbody'), count = h('p', { class: 'note' });
+    const drawChips = () => chips.replaceChildren(...DDB_KINDS.map(([id, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
+        label, h('span', { class: 'count', text: all.filter((x) => inKind(x, id) && (!D.race || x.race === D.race)).length }))));
+    const SORTS = { level: (a, b) => a.level - b.level || a.name.localeCompare(b.name), name: (a, b) => a.name.localeCompare(b.name), race: (a, b) => a.race.localeCompare(b.race) || a.level - b.level };
+    const draw = () => {
+      body.replaceChildren();
+      const words = D.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const rows = all.filter((x) => inKind(x, D.kind) && (!D.race || x.race === D.race) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
+      rows.forEach((x) => {
+        const open = D.open.has(x.id);
+        const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
+        const c0 = x.contract[0];
+        const where = c0 ? h('span', null, c0.zone, h('span', { class: 'src-count', text: ddbLv(c0) + (x.contract.length > 1 ? ` · and ${x.contract.length - 1} more` : '') }))
+          : h('span', { class: 'zero', text: x.fusion ? 'Fusion only' : '—' });
+        const ench = [x.tarot && x.tarot.lines[0], x.soul && x.soul.lines[0]].filter(Boolean);
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+          h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+            h('span', { class: 'chev' }, icon('chevron')), ddbFace(x), h('span', null, x.name, h('span', { class: 'src-count', text: x.race })))),
+          h('td', { class: 'num', text: x.level }),
+          h('td', null, ddbAlign(x)),
+          h('td', null, where),
+          h('td', { class: ench.length ? 'gdb-gives' : 'zero', text: ench.join(' · ') || '—' })));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 5 }, ddbDetail(x))));
+      });
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 5, class: 'empty-row', text: words.length ? `Nothing matches “${D.q.trim()}”.` : 'No demon in this group.' })));
+      count.textContent = `Showing ${rows.length} of ${all.length} demons. ${all.filter((x) => x.contract.length).length} can be contracted somewhere. Data made on ${D.data.generatedAt}.`;
+    };
+    const sel = (label, value, options, onchange) => h('label', { class: 'gdb-check' }, label,
+      h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, race, skill, feature, tarot or zone', (v) => { D.q = v; draw(); }),
+      sel('Race', D.race, [['', 'All races']].concat(races.map((r) => [r, r])), (v) => { D.race = v; drawChips(); draw(); }),
+      sel('Sort', D.sort, [['level', 'Level'], ['name', 'Name'], ['race', 'Race']], (v) => { D.sort = v; draw(); })));
+    page.append(chips);
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Demon' }), h('th', { scope: 'col', class: 'num', text: 'Lv' }), h('th', { scope: 'col', text: 'Alignment' }),
+        h('th', { scope: 'col', text: 'Where to contract' }), h('th', { scope: 'col', text: 'Tarot · Soul' }))), body)));
+    page.append(count);
+    drawChips(); draw();
+    return page;
+  }
   // ---------- Simulator (Tools): other gear and expertise ranks, and what they would give ----------
   // The numbers come from the reader (host "simInit" / "simulate" / "simCatalog": src\Build\Simulator.cs), so they are
   // worked out by the same code as the rest of the app. The page only keeps the build being tried, asks for its result
@@ -3739,7 +3917,7 @@
     return box;
   }
 
-  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion };
+  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, ddb: pageDemonDb };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;

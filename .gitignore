@@ -10,3 +10,5 @@ app/ui/dungeon-icons/
 # the assistant's 3D model: the game's own art, made locally from the client (newmoon-reader.exe model, or the app on first use)
 data/cache/models/
 data/characters/*/cache/models/
+# demon and skill pictures for the Demon Database: the game's own art, made locally by newmoon-reader demondb
+app/ui/demon-db-icons/

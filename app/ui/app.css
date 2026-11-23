@@ -1102,3 +1102,27 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-skills li { display: grid; gap: 1px; }
 .dun-desc { color: var(--text-2); font-size: 12px; }
 .dun-rate { min-width: 56px; font-variant-numeric: tabular-nums; }
+/* ---------- Demon Database (Tools) ---------- */
+.ddb-select { height: 28px; padding: 0 6px; font-size: 12px; }
+.ddb-detail .gdb-block > div { min-width: 0; }
+.ddb-lv { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ddb-lvnum { width: 64px; height: 26px; }
+.ddb-range { width: 180px; accent-color: var(--demon); }
+.ddb-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; max-width: 720px; }
+.ddb-stat { display: grid; gap: 1px; padding: 5px 8px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.ddb-stat b { font-variant-numeric: tabular-nums; font-size: 14px; }
+.ddb-aff { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; max-width: 760px; }
+.ddb-aff-cell { display: grid; gap: 1px; padding: 5px 8px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid transparent; }
+.ddb-aff-cell b { font-variant-numeric: tabular-nums; color: var(--text-3); font-weight: 500; }
+.ddb-aff-cell.strong b { color: var(--text); font-weight: 600; }
+.ddb-aff-cell.null { border-color: color-mix(in srgb, var(--aff-res) 55%, transparent); background: color-mix(in srgb, var(--aff-res) 12%, var(--surface-2)); }
+.ddb-aff-cell.null b { color: var(--text); font-weight: 600; }
+.ddb-aff-cell.weak { border-color: color-mix(in srgb, var(--down) 55%, transparent); background: color-mix(in srgb, var(--down) 10%, var(--surface-2)); }
+.ddb-aff-cell.weak b { color: var(--down); font-weight: 600; }
+.ddb-nra { font-size: 11px; color: var(--aff); font-weight: 600; }
+.ddb-skill { display: flex; align-items: flex-start; gap: 8px; }
+.ddb-skill > span:last-child { min-width: 0; }
+.ddb-skills { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px 14px; }
+.ddb-desc { display: block; color: var(--text-2); font-size: 12px; white-space: pre-line; }
+.ddb-enemy { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px 14px; color: var(--text-2); }
+.ddb-form { margin-top: 2px; }
