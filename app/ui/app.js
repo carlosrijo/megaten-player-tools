@@ -3479,8 +3479,10 @@
   function pluginLine(E, sp) {
     if (!sp || !sp.plugin) return null;
     const p = E.F.plugins[String(sp.plugin)];
-    return h('p', { class: 'fus-plugin' }, icon('info'), h('span', null, h('b', { text: p && p.name ? `Needs the plugin “${p.name}”. ` : 'Needs a fusion plugin. ' }),
-      p && p.how ? p.how : 'The data does not say where to get it.'));
+    // the game's key item names it ("Plugin: Uriel", "Enhanced Plugin: Skadi"); its ways to get it are joined with " · "
+    const ways = p && p.how ? p.how.split(' · ') : ['The data does not say where to get it.'];
+    return h('div', { class: 'fus-plugin' }, icon('info'), h('div', null, h('b', { text: p && p.name ? `Needs the key item “${p.name}”` : 'Needs a fusion plugin' }),
+      ways.length > 1 ? h('ul', null, ways.map((w) => h('li', { text: w }))) : h('div', { text: ways[0] })));
   }
 
   function pageFusion() {
