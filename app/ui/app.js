@@ -1480,7 +1480,7 @@
       O ? h('span', { class: 'dgt-line' }, `${fmt(O.rate)}% of its stats`, hp ? ` · HP ${fmt(hp.value, '', true)}` : '', mp ? ` · MP ${fmt(mp.value, '', true)}` : '')
         : d.forceStack || d.equipment ? h('span', { class: 'dgt-line', text: [d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }) : null,
       // listed by the game without its details (stats, skills, growth, Mitama): there is nothing to work out yet
-      d.loaded === false ? h('span', { class: 'dgt-line', text: 'Not read yet. Open its status window in game (from the COMP), then load the demons again to see what it gives.' }) : null,
+      d.loaded === false ? h('span', { class: 'dgt-line', text: 'Not read yet. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (that loads your whole COMP), then load the demons again.' }) : null,
       icons.length ? h('span', { class: 'dg-skill-icons' }, icons) : null,
       adds.length ? h('span', { class: 'dgt-adds' }, adds) : null);
   }
@@ -2055,7 +2055,7 @@
     // each demon as a card: what digitalizing with it would give (demonTile)
     const row = (d) => { const on = digi() && d.current; return demonTile(d, on,
       () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render())
-        : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Open its status window in game (from the COMP), then press Load demons from the game.', 12000)
+        : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (the Master), which loads your whole COMP at once. Then press Load demons from the game.', 12000)
           : useDemon(d))); };
     list.replaceChildren(none, ...demons.map(row));
     const load = $('#demons-load');
@@ -2079,7 +2079,7 @@
       drawDemons(!scan ? null : !host.native ? 'Browser preview: stand-in demons.'
         : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.'
         : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.'
-        : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: open a demon’s status window in game, then load again.` : ''));
+        : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: click them in the COMP, or open the fusion window at the Cathedral of Shadows, then load again.` : ''));
     } catch (e) { if (look === demonsLook) drawDemons(String(e && e.message || e)); }
   }
   demonsMenu.addEventListener('toggle', (ev) => {
