@@ -3791,8 +3791,8 @@
     return box;
   }
   /** One demon as a small chip: picture, name, race and level; a click plans it (reverse view). */
-  function demonChip(E, d, lvl, onclick) {
-    const kids = [demonPic(E, d), h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: d.label }), h('span', { class: 'fus-chip-sub', text: `${d.raceName} · Lv ${lvl === undefined ? d.lvl : lvl}` }))];
+  function demonChip(E, d, lvl, onclick, tag) {
+    const kids = [demonPic(E, d), h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: d.label }), h('span', { class: 'fus-chip-sub', text: `${d.raceName} · Lv ${lvl === undefined ? d.lvl : lvl}` })), tag || null];
     return onclick ? h('button', { type: 'button', class: 'fus-chip', 'data-tip': `How to make ${d.label}`, onclick: () => onclick(d) }, kids) : h('span', { class: 'fus-chip' }, kids);
   }
   function pluginLine(E, sp) {
@@ -3802,6 +3802,14 @@
     const ways = p && p.how ? p.how.split(' · ') : ['The data does not say where to get it.'];
     return h('div', { class: 'fus-plugin' }, icon('info'), h('div', null, h('b', { text: p && p.name ? `Needs the key item “${p.name}”` : 'Needs a fusion plugin' }),
       ways.length > 1 ? h('ul', null, ways.map((w) => h('li', { text: w }))) : h('div', { text: ways[0] })));
+  }
+  /** The same, short, for a recipe card: the key item's name, and its ways to get it in a tip (cards keep one size). */
+  function pluginNote(E, sp) {
+    if (!sp || !sp.plugin) return null;
+    const p = E.F.plugins[String(sp.plugin)];
+    const ways = p && p.how ? p.how.split(' · ') : ['The data does not say where to get it.'];
+    return withTip(h('div', { class: 'fus-plugin fus-plugin-sm', tabindex: '0' }, icon('info'), h('span', { class: 'fus-plugin-name', text: p && p.name ? `Needs “${p.name}”` : 'Needs a fusion plugin' })),
+      () => h('div', null, h('b', { text: p && p.name ? `How to get “${p.name}”` : 'Fusion plugin' }), h('ul', { class: 'fus-tip-ways' }, ways.map((w) => h('li', { text: w })))));
   }
 
   function pageFusion() {
@@ -3893,8 +3901,13 @@
       const up = o.lvl < T.lvl || (o.lvl === T.lvl && o.id < T.id);
       return h('span', { class: 'tag ' + (o.id === T.id ? 'fus-same' : up ? 'fus-up' : 'fus-down'), text: o.id === T.id ? 'Stays the same' : up ? 'Rank up' : 'Rank down' });
     };
-    const recipeRow = (r) => h('li', { class: 'fus-recipe' }, r.map((d, i) => [i ? h('span', { class: 'fus-plus', text: '+' }) : null, demonChip(E, d, undefined, plan)]),
-      h('span', { class: 'fus-recipe-end' }, elemTag(r), h('span', { class: 'src-count', 'data-tip': 'The ingredients’ base levels added up', text: `Σ ${r.reduce((s2, d) => s2 + d.lvl, 0)}` })));
+    // a recipe as a card: its kind and its levels added up on top, then one ingredient per line; the grid gives every
+    // card of a section the same size (CSS: grid-auto-rows 1fr)
+    const rcard = (parts, head, foot) => h('li', { class: 'fus-rcard' },
+      h('div', { class: 'fus-rcard-head' }, head || null, h('span', { class: 'src-count fus-sum', 'data-tip': 'The ingredients’ base levels added up', text: `Σ ${parts.reduce((s2, p) => s2 + p.d.lvl, 0)}` })),
+      parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, demonChip(E, p.d, undefined, plan, p.tag)]),
+      foot || null);
+    const recipeRow = (r) => rcard(r.map((d) => ({ d })), elemTag(r));
     const section = (title, sub, rows, key) => {
       const list = rows.filter(hasQ), shown = U[key] || 30;
       const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, title, h('span', { class: 'src-count', text: q ? `${list.length} of ${rows.length}` : `${rows.length}` })), sub ? h('span', { class: 'card-sub', text: sub }) : null));
@@ -3907,12 +3920,13 @@
     if (!any) { box.append(h('p', { class: 'notice' }, icon('info'), h('span', { text: `No fusion makes ${T.label}. It comes from somewhere else in the game (a quest, an event, a contract), or only from demons the planner doesn’t list.` }))); return box; }
     if (R.special.length) {
       const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Special fusion' }), h('span', { class: 'card-sub', text: 'Always this result, whatever the levels' })));
+      const grid = h('ul', { class: 'fus-recipes' });
       R.special.forEach((sp) => {
-        const parts = sp.src.map(([id, variant]) => ({ d: E.byId.get(id), variant })).filter((p) => p.d);
-        sec.append(h('div', { class: 'fus-special' }, h('ul', { class: 'fus-recipes' }, h('li', { class: 'fus-recipe' },
-          parts.map((p, i) => [i ? h('span', { class: 'fus-plus', text: '+' }) : null, demonChip(E, p.d, undefined, plan), p.variant ? null : h('span', { class: 'tag', 'data-tip': 'Only this exact demon; its other versions don’t count', text: 'exact' })]),
-          h('span', { class: 'fus-recipe-end' }, h('span', { class: 'tag tag-digi', text: parts.length === 3 ? 'Tri-fusion' : 'Two demons' })))), pluginLine(E, sp)));
+        const parts = sp.src.map(([id, variant]) => ({ d: E.byId.get(id),
+          tag: variant ? null : h('span', { class: 'tag', 'data-tip': 'Only this exact demon; its other versions don’t count', text: 'exact' }) })).filter((p) => p.d);
+        grid.append(rcard(parts, h('span', { class: 'tag tag-digi', text: parts.length === 3 ? 'Tri-fusion' : 'Two demons' }), pluginNote(E, sp)));
       });
+      sec.append(grid);
       box.append(sec);
     }
     const lists = h('div', { class: 'fus-body' });
