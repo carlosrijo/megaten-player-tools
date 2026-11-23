@@ -1441,11 +1441,14 @@
    * (the skills, then the features: kind, icon and name, and what each gives). A skill you don't get while
    * digitalized is dimmed (the reason, "why" in the data, is not shown: the user didn't want the label). Null when the saved data has no skills yet.
    */
+  /** For a demon skill you don't get while digitalized (greyed): the reason, as the last line of its tooltip. Not a label on the page: the user took that out. */
+  const skillWhy = (s) => (!isTrue(s.counted) && s.why ? h('div', { class: 'tt-line tt-gap tt-why', text: 'Not applied while digitalized: ' + String(s.why).charAt(0).toLowerCase() + String(s.why).slice(1) + '.' }) : null);
+
   function demonSkills(DG) {
     if (!DG || !Array.isArray(DG.skills)) return null;
     const row = (s) => {
       const name = h('span', { class: 'skill', tabindex: 0 }, skillIcon(s), h('span', { text: s.name }));
-      if (s.tip) withTip(name, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind === 'Equipment' ? 'Demon equipment' : s.kind), ...tipLines(s.tip)));
+      if (s.tip) withTip(name, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind === 'Equipment' ? 'Demon equipment' : s.kind), ...tipLines(s.tip), skillWhy(s)));
       const fx = (s.effects || []).length ? s.effects
         : s.kind === 'Active' && isTrue(s.counted) ? ['You can use it while digitalized'] : isTrue(s.counted) ? ['No stat bonus'] : [];
       return h('div', { class: 'passive' + (isTrue(s.counted) ? '' : ' off') },
@@ -1460,7 +1463,7 @@
       const ic = skillIcon(s);
       ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name);
       if (!isTrue(s.counted)) ic.classList.add('off');
-      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip)));
+      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
     })) : null;
     const part = (label, rows, none) => [
       h('div', { class: 'dg-skill-head' }, h('h4', { class: 'section-title', text: label }), rows.length ? h('span', { class: 'card-sub', text: count(rows) }) : null),
@@ -1503,7 +1506,7 @@
       // dimmed = you don't get it while digitalized (the race's boost isn't learned): no meaning for the summoned demon, which uses all its skills
       if (!compact && !isTrue(s.counted)) ic.classList.add('off');
       if (compact) { ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name); }
-      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip)));
+      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
     });
     const adds = compact ? [] : O ? COMBAT.filter(([k]) => n0(O.combat && O.combat[k])).map(([k, label, unit]) => h('span', { class: 'dgt-add' }, h('span', { text: label }), h('b', { text: fmt(O.combat[k], unit, true) }))) : [];
     const hp = O && (O.stats || []).find((s) => s.stat === 'Max HP'), mp = O && (O.stats || []).find((s) => s.stat === 'Max MP');
