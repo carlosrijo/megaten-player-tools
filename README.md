@@ -105,6 +105,19 @@ Stats and effects are read from the NewMoon client's current item tables, not fr
 rows matched no item in the game data (different spelling); they are listed with the sheet's own text, marked
 "sheet only". The cosmetic ticket tabs (Vanities) are left out.
 
+### Tools: Fusion Planner
+
+Under **Tools** in the left bar. Two views:
+
+- **Fuse demons**: pick two demons (or three for a tri-fusion) and see what they make, with why: the races, the
+  fusion level worked out from their levels, elemental rank up or down, special fusions and the plugin they need. Each
+  demon starts at its base level; type its real level, since the result depends on it.
+- **Find a recipe**: pick the demon you want and get every way to make it: special fusions, the Mitama fusion, every
+  two-demon fusion and every tri-fusion, cheapest first (lowest levels added up). Recipes with an elemental are marked
+  **Rank up** or **Rank down**. Click any demon in a recipe to see how to make that one too ("Back to" returns).
+
+Demons, levels, races and special fusions are the NewMoon client's. The race chart and the tri-fusion and elemental
+rules are the comp_hack server's fusion code, which NewMoon may have changed: not yet checked against the game.
 ### Tools: Simulator
 
 Under **Tools** in the left bar. Try other gear and expertise ranks and watch your stats change, without touching the

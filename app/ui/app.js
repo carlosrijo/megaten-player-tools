@@ -25,6 +25,7 @@
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     book: '<path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/>',
+    fuse: '<circle cx="8" cy="8" r="3.5"/><circle cx="16" cy="8" r="3.5"/><path d="M8 11.5v1.5a4 4 0 0 0 4 4 4 4 0 0 0 4-4v-1.5M12 17v3.5"/>',
     flask: '<path d="M9 3.5h6M10 3.5v5.2L5.2 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.8-2.9L14 8.7V3.5"/><path d="M7.6 14.5h8.8"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
@@ -235,7 +236,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['fusion', 'Fusion Planner', 'fuse'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -277,6 +278,8 @@
     dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle' },
     gdb: { q: '', slot: 'all', known: true, open: new Set(), shown: 150, data: null, state: 'idle' },
+    // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
+    fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
     // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
       // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
@@ -3185,7 +3188,431 @@
     return page;
   }
 
-  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb };
+  // ---------- Tools: Fusion Planner ----------
+  // fusion-data.json is made by tools\fusionexport: the demons, races and special fusions are the NewMoon client's; the
+  // race chart and the tri-fusion rules are the comp_hack server's (FusionManager.cpp), followed here step by step,
+  // including its quirks, so the planner says what that server would make. NewMoon may have changed them.
+  function loadFusion() {
+    if (S.fus.state !== 'idle') return;
+    S.fus.state = 'loading';
+    fetch('fusion-data.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.fus.eng = d ? fusionEngine(d) : null;
+      S.fus.state = d ? 'ready' : 'failed';
+      if (S.page === 'fusion') render();
+    });
+  }
+
+  /** The fusion rules over the exported data: fuse(), the demon list, and every recipe for a target. */
+  function fusionEngine(F) {
+    const byId = new Map();
+    const demons = F.demons.map(([id, name, race, fam, lvl, lnc, base, opt, mit, ic]) => {
+      const d = { id, name, race, fam, lvl, lnc, base: base || id, opt, mit, icon: ic, raceName: F.races[race] || '' };
+      d.mitamaFused = (opt & 8) !== 0;
+      byId.set(id, d);
+      return d;
+    });
+    demons.forEach((d) => { d.label = d.mitamaFused ? `${d.name} (Mitama)` : d.name; });
+    const raceName = (r) => F.races[r] || 'an unknown race';
+    const raceIdx = new Map(F.raceOrder.map((r, i) => [r, i]));
+    const RANGE = F.rangeFlag;
+    // each race's demons in the order the server keeps them: by base level (a stable sort, so equal levels keep file order)
+    const ranges = new Map();
+    demons.filter((d) => (d.opt & RANGE) !== 0).sort((a, b) => a.lvl - b.lvl || a.id - b.id)
+      .forEach((d) => { if (!ranges.has(d.race)) ranges.set(d.race, []); ranges.get(d.race).push(d); });
+    const elemIdx = new Map(F.elementals.map((id, i) => [id, i]));
+    const mitamaIdx = new Map(F.mitamas.map((id, i) => [id, i]));
+    const prio = (race) => { const i = F.triPriority.indexOf(race); return i < 0 ? F.triPriority.length : i; };
+    const triFamilyFlat = F.triFamily.flat(2);
+    const FAM = F.families, ELEMENTAL_RACE = 55, MITAMA_RACE = 57, HAUNT = 103, FOUL = 101;
+    const isDark = (d) => d.race === HAUNT || d.race === FOUL;
+    const specialsBySrc = new Map();
+    F.specials.forEach((sp, i) => { sp.i = i; sp.src.forEach(([id]) => { if (!specialsBySrc.has(id)) specialsBySrc.set(id, []); if (!specialsBySrc.get(id).includes(sp)) specialsBySrc.get(id).push(sp); }); });
+    const specialsFor = new Map();
+    F.specials.forEach((sp) => { if (!specialsFor.has(sp.result)) specialsFor.set(sp.result, []); specialsFor.get(sp.result).push(sp); });
+
+    const lvlSum2 = (a, b) => Math.trunc((a + b) / 2 + 1);
+    /** The race's demon for a fusion level: the first at that level or above, else the race's highest. */
+    function pickInRace(race, adj) {
+      const list = ranges.get(race);
+      if (!list || !list.length) return null;
+      let r = list[0];
+      for (const d of list) { r = d; if (d.lvl >= adj) break; }
+      return r;
+    }
+    function rankUpDown(race, id, up) {
+      const list = ranges.get(race) || [];
+      const i = list.findIndex((d) => d.id === id);
+      if (i < 0) return id;
+      if (up) return i + 1 < list.length ? list[i + 1].id : id;
+      return i > 0 ? list[i - 1].id : id;
+    }
+    /** An elemental fused with a demon: one rank up or down within the demon's race, or nothing (0). */
+    function elementalFuse(elemId, race, id) {
+      const ri = raceIdx.get(race), ei = elemIdx.get(elemId);
+      if (ri === undefined || ei === undefined) return { id: 0, dir: 0 };
+      const dir = F.elemAdjust[ri][ei];
+      return dir ? { id: rankUpDown(race, id, dir === 1), dir } : { id: 0, dir: 0 };
+    }
+    const mapRace = (a, b) => { const i = raceIdx.get(a), j = raceIdx.get(b); return i === undefined || j === undefined ? null : F.raceMap[i][j]; };
+
+    /** A special fusion these demons make (any order), or null. usePlugins false skips the ones that need a plugin. */
+    function special(xs, usePlugins) {
+      const tri = xs.length === 3, seen = [];
+      for (const x of xs) for (const sp of specialsBySrc.get(x.d.id) || []) {
+        if (seen.includes(sp) || (sp.src.length === 3) !== tri) continue;
+        seen.push(sp);
+        if (sp.plugin && !usePlugins) continue;
+        const match = sp.src.map(([sid, variant]) => {
+          const sd = byId.get(sid);
+          return xs.map((x, i) => ((variant ? sd && x.d.base === sd.base : x.d.id === sid) ? i : -1)).filter((i) => i >= 0);
+        });
+        const ok = (k, used) => k === match.length || match[k].some((i) => !used.has(i) && ok(k + 1, new Set([...used, i])));
+        if (ok(0, new Set())) return sp;
+      }
+      return null;
+    }
+
+    /**
+     * What the server makes from these demons ({ d, lvl } each; lvl is the demon's current level). Returns
+     * { id, special, how: [lines] } with id 0 when they can't be fused. log false skips the explanation (searches).
+     */
+    function fuse(xs, opts) {
+      const o = opts || {}, usePlugins = o.plugins !== false, log = o.log !== false;
+      const how = [], say = (t) => { if (log) how.push(t); };
+      const out = (id, extra) => Object.assign({ id: id || 0, how }, extra || {});
+      if (xs.length === 3 && xs.some((x) => x.d.mitamaFused || x.d.race === MITAMA_RACE || mitamaIdx.has(x.d.base)))
+        { say('A Mitama, or a demon with a Mitama fused into it, can’t take part in a tri-fusion.'); return out(0); }
+      const sp = special(xs, usePlugins);
+      if (sp) { say('This is a special fusion: these demons always make this one, whatever their levels.'); return out(sp.result, { special: sp }); }
+      if (xs.length === 3) return out(tri(xs, say));
+      const [a, b] = xs;
+      if (a.d.race === MITAMA_RACE || b.d.race === MITAMA_RACE) {
+        if (a.d.race === b.d.race) { say('Two Mitamas can’t be fused together.'); return out(0); }
+        const m = a.d.race === MITAMA_RACE ? a : b, other = m === a ? b : a;
+        if (!mitamaIdx.has(m.d.base)) return out(0);
+        say(`A Mitama fused into ${other.d.name} makes a Mitama ${other.d.name}: same demon, with Mitama bonuses.`);
+        say(`The game only allows it once ${other.d.name}’s reunion ranks add up to 48 or more.`);
+        if (!other.d.mit) say(`${other.d.label} has no Mitama form.`);
+        return out(other.d.mit, { mitama: true });
+      }
+      if (a.d.race === ELEMENTAL_RACE || b.d.race === ELEMENTAL_RACE) {
+        if (a.d.race === b.d.race) {
+          const i = elemIdx.get(a.d.base), j = elemIdx.get(b.d.base);
+          const k = i === undefined || j === undefined ? -1 : F.elemMitama[i][j];
+          if (k < 0) { say('These two elementals don’t make anything together (two of the same never do).'); return out(0); }
+          say('Two different elementals make a Mitama.');
+          return out(F.mitamas[k]);
+        }
+        const e = a.d.race === ELEMENTAL_RACE ? a : b, other = e === a ? b : a;
+        const r = elementalFuse(e.d.base, other.d.race, other.d.base);
+        if (!r.id) { say(`${e.d.name} does nothing to a ${raceName(other.d.race)}: this pair can’t be fused.`); return out(0); }
+        const base = byId.get(other.d.base) || other.d;
+        if (r.id === base.id) say(`${e.d.name} moves a ${raceName(other.d.race)} one rank ${r.dir > 0 ? 'up' : 'down'}, but ${base.name} is already the ${r.dir > 0 ? 'highest' : 'lowest'} fusable one, so it stays ${base.name}.`);
+        else say(`${e.d.name} moves a ${raceName(other.d.race)} one rank ${r.dir > 0 ? 'up' : 'down'}: ${base.name} (level ${base.lvl}) becomes ${byId.get(r.id).name} (level ${byId.get(r.id).lvl}).`);
+        return out(r.id, { elemental: r.dir });
+      }
+      const race = mapRace(a.d.race, b.d.race);
+      if (!race) { say(`${raceName(a.d.race)} and ${raceName(b.d.race)} can’t be fused together.`); return out(0); }
+      if (a.d.race === b.d.race) {
+        const el = F.elementals[race - 1];
+        say(`Two ${raceName(a.d.race)} demons make an elemental.`);
+        return out(el);
+      }
+      const adj = lvlSum2(a.lvl, b.lvl), r = pickInRace(race, adj);
+      say(`${raceName(a.d.race)} × ${raceName(b.d.race)} makes a ${raceName(race)}.`);
+      if (r) say(`Fusion level: (${a.lvl} + ${b.lvl}) ÷ 2 + 1 = ${adj}. ${r.lvl >= adj ? `${r.name} (level ${r.lvl}) is the first ${raceName(race)} at that level or above.` : `No ${raceName(race)} is that high, so the highest one: ${r.name} (level ${r.lvl}).`}`);
+      return out(r && r.id);
+    }
+
+    /** Tri-fusion, as the server does it (FusionManager::GetResultDemon, tri branch). */
+    function tri(xs, say) {
+      const t = xs.slice().sort((x, y) => (y.d.lvl - x.d.lvl) || (prio(x.d.race) - prio(y.d.race)));
+      const [x1, x2, x3] = t;
+      const darks = t.filter((x) => isDark(x.d)), elems = t.filter((x) => x.d.fam === FAM.ELEMENTAL);
+      const nm = (x) => x.d.name;
+      if (darks.length === 3) {
+        const sum = x1.lvl + x2.lvl + x3.lvl;
+        let id = F.triDark[0][1];
+        for (const [min, rid] of F.triDark) { if (min > sum) break; id = rid; }
+        say(`Three Foul or Haunt demons: the result only depends on their levels added up (${sum}).`);
+        return id;
+      }
+      if (darks.length) {
+        // one dark: the other two first, then the dark one; two darks: the higher dark with the other, then the lower dark
+        let p, q, last;
+        if (darks.length === 1) { const o = t.filter((x) => !isDark(x.d)); [p, q] = o; last = darks[0]; }
+        else { p = darks[0]; q = t.find((x) => !isDark(x.d)); last = darks[1]; }
+        const r1 = mapRace(p.d.race, q.d.race);
+        if (r1 === null) { say(`${raceName(p.d.race)} and ${raceName(q.d.race)} can’t be fused together.`); return 0; }
+        const mid = pickInRace(r1, lvlSum2(p.lvl, q.lvl));
+        if (!mid) { say(`${nm(p)} and ${nm(q)} don’t make anything.`); return 0; }
+        say(`With a Foul or Haunt demon, the others are fused first: ${nm(p)} + ${nm(q)} → ${mid.name} (level ${mid.lvl}).`);
+        const r2 = mapRace(mid.race, last.d.race);
+        if (r2 === null) { say(`${raceName(mid.race)} and ${raceName(last.d.race)} can’t be fused together.`); return 0; }
+        const res = pickInRace(r2, lvlSum2(last.lvl, mid.lvl));
+        if (res) say(`Then ${mid.name} + ${nm(last)} → ${res.name}.`);
+        else say(`Then ${mid.name} + ${nm(last)} makes nothing.`);
+        return res ? res.id : 0;
+      }
+      if (elems.length === 3) { say('Three elementals can’t be fused.'); return 0; }
+      if (elems.length === 2) {
+        const other = t.find((x) => x.d.fam !== FAM.ELEMENTAL);
+        const [e1, e2] = elems.map((x) => x.d.id);
+        const hit = F.triElemental.find((r) => ((r[0] === e1 && r[1] === e2) || (r[0] === e2 && r[1] === e1)) && [r[2], r[3], r[4]].includes(other.d.race));
+        if (hit) { say(`Two elementals and a ${raceName(other.d.race)}: a fixed result.`); return hit[5]; }
+        say(`These two elementals don’t make anything with a ${raceName(other.d.race)}.`);
+        return 0;
+      }
+      if (elems.length === 1) {
+        const o = t.filter((x) => x.d.fam !== FAM.ELEMENTAL), e = elems[0];
+        const r1 = mapRace(o[0].d.race, o[1].d.race);
+        if (r1 === null) { say(`${raceName(o[0].d.race)} and ${raceName(o[1].d.race)} can’t be fused together.`); return 0; }
+        const mid = pickInRace(r1, lvlSum2(o[0].lvl, o[1].lvl));
+        if (!mid) { say(`${nm(o[0])} and ${nm(o[1])} don’t make anything.`); return 0; }
+        const res = pickInRace(r1, lvlSum2(e.lvl, mid.lvl));
+        say(`With one elemental, the other two are fused first: ${nm(o[0])} + ${nm(o[1])} → ${mid.name} (level ${mid.lvl}).`);
+        if (res) say(`Then the elemental’s level (${e.lvl}) and ${mid.name}’s give the level: (${e.lvl} + ${mid.lvl}) ÷ 2 + 1 = ${lvlSum2(e.lvl, mid.lvl)} → ${res.name}.`);
+        return res ? res.id : 0;
+      }
+      let extra = 0;
+      if (t.some((x) => x.d.fam === FAM.GOD)) extra += 4;
+      const neutral = t.every((x) => x.d.lnc < 5000 && x.d.lnc > -5000);
+      if (neutral) extra -= 4;
+      const sum = x1.lvl + x2.lvl + x3.lvl, adj = Math.trunc(sum / 3 + 1 + extra);
+      if (x1.d.race === x2.d.race) {
+        const ei = mapRace(x1.d.race, x2.d.race);
+        if (!ei) { say(`The two highest are both ${raceName(x1.d.race)}, and two of them don’t make an elemental: nothing comes out.`); return 0; }
+        const el = byId.get(F.elementals[ei - 1]);
+        const r = elementalFuse(F.elementals[ei - 1], x3.d.race, x3.d.id);
+        const up = rankUpDown(x3.d.race, r.id, true);
+        say(`The two highest are both ${raceName(x1.d.race)}: they make ${el ? el.name : 'an elemental'}, which then moves ${nm(x3)} one rank ${r.dir > 0 ? 'up' : r.dir < 0 ? 'down' : '(it does nothing to this race)'}, and a tri-fusion always adds one rank more.`);
+        if (up && byId.get(up)) say(`${nm(x3)} → ${byId.get(up).name}.`);
+        return up;
+      }
+      const f1 = x1.d.fam, f2 = x2.d.fam, f3 = x3.d.fam, inR = (f) => f >= FAM.GOD && f <= FAM.BEAST;
+      if (!(inR(f1) && inR(f2) && inR(f3))) { say('One of these demons is of a kind (such as a Fiend) that a normal tri-fusion doesn’t take.'); return 0; }
+      const i1 = Math.min(f1, f2) - 2, i2 = Math.max(f1, f2) - 3, i3 = f3 - 2, flat = i1 * 56 + i2 * 8 + i3;
+      const race = flat >= 0 && flat < triFamilyFlat.length ? triFamilyFlat[flat] : 0;
+      if (!race) { say('The server’s tri-fusion table has no result for the two highest demons’ families.'); return 0; }
+      const res = pickInRace(race, adj);
+      say(`The two highest demons’ families and the third’s make a ${raceName(race)}.`);
+      say(`Fusion level: (${x1.lvl} + ${x2.lvl} + ${x3.lvl}) ÷ 3 + 1${extra > 0 ? ' + 4 (a God-family demon is in)' : ''}${neutral ? ' − 4 (all three are Neutral)' : ''} = ${adj}${res ? ` → ${res.name} (level ${res.lvl})` : ''}.`);
+      return res ? res.id : 0;
+    }
+
+    // ---- reverse: every recipe, worked out once over the demons the race chart can make, at their base levels ----
+    const pool = demons.filter((d) => (d.opt & RANGE) !== 0 && !d.mitamaFused);
+    let two = null, three = null;
+    function buildAll() {
+      if (two) return;
+      const n = pool.length, at = (d) => ({ d, lvl: d.lvl });
+      const res2 = [], res3 = new Int32Array(((n * (n + 1) * (n + 2)) / 6) | 0);
+      // (a special fusion's pair is listed under "Special fusion", not again here: -1)
+      const idOf = (r) => (r.special ? -1 : r.id);
+      for (let i = 0; i < n; i++) for (let j = i; j < n; j++) res2.push(idOf(fuse([at(pool[i]), at(pool[j])], { log: false, plugins: false })));
+      let k = 0;
+      for (let i = 0; i < n; i++) for (let j = i; j < n; j++) for (let l = j; l < n; l++)
+        res3[k++] = idOf(fuse([at(pool[i]), at(pool[j]), at(pool[l])], { log: false, plugins: false }));
+      two = res2; three = res3;
+    }
+    /** Every way to make a demon: { special: [], mitama: [], two: [[a, b]], three: [[a, b, c]] } (demons, base levels). */
+    function recipes(target) {
+      buildAll();
+      const n = pool.length, out = { special: specialsFor.get(target.id) || [], mitama: [], two: [], three: [] };
+      if (target.mitamaFused) out.mitama = demons.filter((d) => d.mit === target.id && !d.mitamaFused);
+      let k = 0;
+      for (let i = 0; i < n; i++) for (let j = i; j < n; j++) { if (two[k++] === target.id) out.two.push([pool[i], pool[j]]); }
+      k = 0;
+      for (let i = 0; i < n; i++) for (let j = i; j < n; j++) for (let l = j; l < n; l++) { if (three[k++] === target.id) out.three.push([pool[i], pool[j], pool[l]]); }
+      const cost = (r) => r.reduce((s2, d) => s2 + d.lvl, 0);
+      out.two.sort((x, y) => cost(x) - cost(y)); out.three.sort((x, y) => cost(x) - cost(y));
+      return out;
+    }
+    return { F, demons, byId, fuse, recipes, raceName, pool, ranges, built: () => !!two, build: buildAll, isElemental: (d) => d.race === ELEMENTAL_RACE };
+  }
+
+  /** A demon picker: a search field that lists matching demons under it (arrow keys, Enter, Esc). */
+  function demonCombo(E, current, placeholder, onPick, list) {
+    const wrap = h('div', { class: 'fus-combo' });
+    const input = h('input', { class: 'input', type: 'search', placeholder, value: current ? current.label : '', 'aria-label': placeholder, spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
+    const menu = h('div', { class: 'fus-menu', role: 'listbox', hidden: true });
+    let hits = [], at = 0;
+    const all = (list || E.demons);
+    const draw = () => {
+      const q = input.value.trim().toLowerCase();
+      const seen = new Set();
+      hits = all.filter((d) => { const key = d.label + '|' + d.race + '|' + d.lvl; if (seen.has(key)) return false; seen.add(key); return !q || d.label.toLowerCase().includes(q) || d.raceName.toLowerCase().includes(q); })
+        .sort((a, b) => { const qa = a.label.toLowerCase().startsWith(q) ? 0 : 1, qb = b.label.toLowerCase().startsWith(q) ? 0 : 1; return qa - qb || a.label.localeCompare(b.label) || a.lvl - b.lvl; })
+        .slice(0, 60);
+      at = Math.min(at, Math.max(0, hits.length - 1));
+      menu.replaceChildren(...(hits.length ? hits.map((d, i) => h('div', { class: 'fus-opt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(i === at),
+        onmousedown: (ev) => { ev.preventDefault(); pick(d); } }, demonPic(E, d), h('span', { class: 'fus-opt-name', text: d.label }), h('span', { class: 'src-count', text: `${d.raceName} · Lv ${d.lvl}` })))
+        : [h('div', { class: 'fus-opt empty', text: 'No demon matches.' })]));
+      const on = menu.querySelector('.fus-opt.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+    };
+    const open = () => { menu.hidden = false; input.setAttribute('aria-expanded', 'true'); draw(); };
+    const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+    const pick = (d) => { close(); input.value = d.label; onPick(d); };
+    input.addEventListener('focus', () => { input.select(); open(); });
+    input.addEventListener('input', () => { at = 0; open(); });
+    input.addEventListener('blur', () => { close(); if (!input.value.trim() && current) onPick(null); else if (current) input.value = current.label; });
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (menu.hidden) open(); else { at = Math.min(at + 1, hits.length - 1); draw(); } }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); at = Math.max(at - 1, 0); draw(); }
+      else if (ev.key === 'Enter') { if (!menu.hidden && hits[at]) { ev.preventDefault(); pick(hits[at]); } }
+      else if (ev.key === 'Escape') { if (!menu.hidden) { ev.stopPropagation(); close(); } }
+    });
+    wrap.append(h('div', { class: 'search' }, icon('search'), input), menu);
+    return wrap;
+  }
+  function demonPic(E, d, big) {
+    const box = h('span', { class: 'dcm-icon' + (big ? ' fus-pic-big' : ''), 'aria-hidden': 'true' });
+    const src = (d && d.icon) || E.F.noIcon;
+    if (src) box.append(h('img', { src, alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }));
+    return box;
+  }
+  /** One demon as a small chip: picture, name, race and level; a click plans it (reverse view). */
+  function demonChip(E, d, lvl, onclick) {
+    const kids = [demonPic(E, d), h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: d.label }), h('span', { class: 'fus-chip-sub', text: `${d.raceName} · Lv ${lvl === undefined ? d.lvl : lvl}` }))];
+    return onclick ? h('button', { type: 'button', class: 'fus-chip', 'data-tip': `How to make ${d.label}`, onclick: () => onclick(d) }, kids) : h('span', { class: 'fus-chip' }, kids);
+  }
+  function pluginLine(E, sp) {
+    if (!sp || !sp.plugin) return null;
+    const p = E.F.plugins[String(sp.plugin)];
+    return h('p', { class: 'fus-plugin' }, icon('info'), h('span', null, h('b', { text: p && p.name ? `Needs the plugin “${p.name}”. ` : 'Needs a fusion plugin. ' }),
+      p && p.how ? p.how : 'The data does not say where to get it.'));
+  }
+
+  function pageFusion() {
+    const U = S.fus, page = h('div', { class: 'page page-fusion' });
+    loadFusion();
+    page.append(pageHead('Pick two or three demons to see what they make, or pick the demon you want to see every way to make it.',
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Planner' },
+        [['forward', 'Fuse demons'], ['reverse', 'Find a recipe']].map(([id, label]) =>
+        h('button', { type: 'button', 'aria-pressed': String(U.view === id), onclick: () => { U.view = id; store.set('fus-view', id); render(); } }, label)))));
+    if (U.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: U.state === 'failed' ? 'The fusion data could not be loaded (fusion-data.json is missing beside the page).' : 'Loading the fusion data…' }));
+      return page;
+    }
+    page.append(U.view === 'reverse' ? fusionReverse(U.eng) : fusionForward(U.eng));
+    page.append(h('p', { class: 'note fus-foot', text: 'Demons, levels, races and special fusions: the NewMoon client. The race chart and the tri-fusion and elemental rules: the server’s fusion code, which NewMoon may have changed. Checked against the game: not yet.' }));
+    return page;
+  }
+
+  function fusionForward(E) {
+    const U = S.fus, box = h('div', { class: 'fus-body' });
+    const slots = h('div', { class: 'fus-slots' }), result = h('div', { class: 'fus-result-wrap' });
+    const drawResult = () => {
+      const xs = U.slots.filter((x) => x && x.d);
+      result.replaceChildren();
+      if (U.slots.filter(Boolean).length < 2 || xs.length < 2) { result.append(h('p', { class: 'note', text: 'Pick at least two demons. A third makes it a tri-fusion.' })); return; }
+      const r = E.fuse(xs.map((x) => ({ d: x.d, lvl: x.lvl })));
+      const card = h('section', { class: 'card fus-result' });
+      const d = r.id && E.byId.get(r.id);
+      card.append(h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: xs.length === 3 ? 'Tri-fusion result' : 'Fusion result' }),
+        r.special ? h('span', { class: 'tag tag-digi', text: 'Special fusion' }) : r.elemental ? h('span', { class: 'tag ' + (r.elemental > 0 ? 'fus-up' : 'fus-down'), text: r.elemental > 0 ? 'Rank up' : 'Rank down' }) : null));
+      if (d) card.append(h('div', { class: 'fus-out' }, demonPic(E, d, true), h('div', null, h('div', { class: 'fus-out-name', text: d.label }), h('div', { class: 'card-sub', text: `${d.raceName} · base level ${d.lvl}` })),
+        h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:auto', onclick: () => { U.view = 'reverse'; U.target = d; U.trail = []; render(); } }, 'Other ways to make it')));
+      else card.append(h('p', { class: 'fus-none', text: 'Nothing: these demons can’t be fused together.' }));
+      if (r.how.length) card.append(h('ul', { class: 'fus-how' }, r.how.map((t) => h('li', { text: t }))));
+      if (r.special) {
+        card.append(pluginLine(E, r.special));
+        if (r.special.plugin) {
+          const alt = E.fuse(xs.map((x) => ({ d: x.d, lvl: x.lvl })), { plugins: false }), ad = alt.id && E.byId.get(alt.id);
+          card.append(h('p', { class: 'note', text: ad ? `Without that plugin they make ${ad.label} (${ad.raceName}, level ${ad.lvl}).` : 'Without that plugin they make nothing.' }));
+        }
+      }
+      result.append(card);
+    };
+    const drawSlots = () => {
+      slots.replaceChildren(...[0, 1, 2].map((i) => {
+        const x = U.slots[i];
+        if (i === 2 && !x && !U.third) return h('button', { type: 'button', class: 'fus-slot fus-add', onclick: () => { U.third = true; drawSlots(); const inp = slots.querySelectorAll('input[type=search]')[2]; if (inp) inp.focus(); } },
+          icon('plus'), h('span', { text: 'Add a third demon (tri-fusion)' }));
+        const slot = h('div', { class: 'fus-slot card' });
+        slot.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: `Demon ${i + 1}` }),
+          i === 2 ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { U.slots[2] = null; U.third = false; drawSlots(); drawResult(); } }, 'Remove') : null));
+        slot.append(demonCombo(E, x && x.d, 'Search a demon or race', (d) => { U.slots[i] = d ? { d, lvl: d.lvl } : null; drawSlots(); drawResult(); }));
+        if (x && x.d) {
+          const lvl = h('input', { class: 'input fus-lvl', type: 'number', min: 1, max: 99, value: x.lvl, 'aria-label': `Demon ${i + 1}’s level`,
+            oninput: () => { const v = Math.max(1, Math.min(99, parseInt(lvl.value, 10) || x.d.lvl)); x.lvl = v; drawResult(); } });
+          slot.append(h('div', { class: 'fus-picked' }, demonPic(E, x.d, true), h('div', { class: 'fus-picked-text' }, h('div', { class: 'fus-out-name', text: x.d.label }), h('div', { class: 'card-sub', text: `${x.d.raceName} · base level ${x.d.lvl}` })),
+            h('label', { class: 'fus-lvl-box', 'data-tip': 'The demon’s level now. The result depends on it; a fresh demon is at its base level.' }, h('span', { text: 'Level' }), lvl)));
+        }
+        return slot;
+      }));
+    };
+    drawSlots(); drawResult();
+    box.append(slots, result);
+    return box;
+  }
+
+  function fusionReverse(E) {
+    const U = S.fus, box = h('div', { class: 'fus-body' });
+    const plan = (d) => { if (U.target) U.trail.push(U.target); U.target = d; U.shown2 = 30; U.shown3 = 30; render(); };
+    const top = h('div', { class: 'toolbar' }, demonCombo(E, U.target, 'Which demon do you want?', (d) => { U.target = d; U.trail = []; U.shown2 = 30; U.shown3 = 30; render(); }));
+    box.append(top);
+    if (U.trail.length) box.append(h('nav', { class: 'fus-trail', 'aria-label': 'Planned before' }, h('span', { class: 'src-count', style: 'margin-left:0', text: 'Back to:' }),
+      U.trail.map((d, i) => h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { U.target = d; U.trail = U.trail.slice(0, i); render(); } }, d.label))));
+    const T = U.target;
+    if (!T) { box.append(h('p', { class: 'note', text: 'Pick a demon to see every special fusion, two-demon fusion and tri-fusion that makes it, cheapest first. Click a demon in a recipe to see how to make that one too.' })); return box; }
+    box.append(h('div', { class: 'fus-out fus-target' }, demonPic(E, T, true), h('div', null, h('div', { class: 'fus-out-name', text: T.label }), h('div', { class: 'card-sub', text: `${T.raceName} · base level ${T.lvl}` }))));
+    if (!E.built()) {
+      // the first search works out every two- and three-demon fusion once (about a million): say so, then do it
+      box.append(h('p', { class: 'note', role: 'status' }, h('span', { class: 'spin ink', style: 'margin-right:8px;vertical-align:-2px' }), 'Working out every fusion once (a second or two)…'));
+      setTimeout(() => { E.build(); if (S.page === 'fusion') render(); }, 30);
+      return box;
+    }
+    const R = E.recipes(T);
+    let q = '';
+    const hasQ = (r) => !q || r.some((d) => d.label.toLowerCase().includes(q) || d.raceName.toLowerCase().includes(q));
+    const elemTag = (r) => {
+      const e = r.find((d) => E.isElemental(d)), o = r.find((d) => !E.isElemental(d));
+      if (!e || !o || r.length !== 2) return null;
+      const up = o.lvl < T.lvl || (o.lvl === T.lvl && o.id < T.id);
+      return h('span', { class: 'tag ' + (o.id === T.id ? 'fus-same' : up ? 'fus-up' : 'fus-down'), text: o.id === T.id ? 'Stays the same' : up ? 'Rank up' : 'Rank down' });
+    };
+    const recipeRow = (r) => h('li', { class: 'fus-recipe' }, r.map((d, i) => [i ? h('span', { class: 'fus-plus', text: '+' }) : null, demonChip(E, d, undefined, plan)]),
+      h('span', { class: 'fus-recipe-end' }, elemTag(r), h('span', { class: 'src-count', 'data-tip': 'The ingredients’ base levels added up', text: `Σ ${r.reduce((s2, d) => s2 + d.lvl, 0)}` })));
+    const section = (title, sub, rows, key) => {
+      const list = rows.filter(hasQ), shown = U[key] || 30;
+      const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, title, h('span', { class: 'src-count', text: q ? `${list.length} of ${rows.length}` : `${rows.length}` })), sub ? h('span', { class: 'card-sub', text: sub }) : null));
+      if (!list.length) sec.append(h('p', { class: 'note', text: rows.length ? `None with “${U.with.trim()}”.` : 'None.' }));
+      else sec.append(h('ul', { class: 'fus-recipes' }, list.slice(0, shown).map(recipeRow)));
+      if (list.length > shown) sec.append(h('button', { type: 'button', class: 'btn btn-sm', style: 'justify-self:start', onclick: () => { U[key] = shown + 60; drawLists(); } }, `Show ${Math.min(60, list.length - shown)} more`));
+      return sec;
+    };
+    const any = R.special.length || R.mitama.length || R.two.length || R.three.length;
+    if (!any) { box.append(h('p', { class: 'notice' }, icon('info'), h('span', { text: `No fusion makes ${T.label}. It comes from somewhere else in the game (a quest, an event, a contract), or only from demons the planner doesn’t list.` }))); return box; }
+    if (R.special.length) {
+      const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Special fusion' }), h('span', { class: 'card-sub', text: 'Always this result, whatever the levels' })));
+      R.special.forEach((sp) => {
+        const parts = sp.src.map(([id, variant]) => ({ d: E.byId.get(id), variant })).filter((p) => p.d);
+        sec.append(h('div', { class: 'fus-special' }, h('ul', { class: 'fus-recipes' }, h('li', { class: 'fus-recipe' },
+          parts.map((p, i) => [i ? h('span', { class: 'fus-plus', text: '+' }) : null, demonChip(E, p.d, undefined, plan), p.variant ? null : h('span', { class: 'tag', 'data-tip': 'Only this exact demon; its other versions don’t count', text: 'exact' })]),
+          h('span', { class: 'fus-recipe-end' }, h('span', { class: 'tag tag-digi', text: parts.length === 3 ? 'Tri-fusion' : 'Two demons' })))), pluginLine(E, sp)));
+      });
+      box.append(sec);
+    }
+    if (R.mitama.length) box.append(h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Mitama fusion' })),
+      h('ul', { class: 'fus-recipes' }, R.mitama.map((d) => h('li', { class: 'fus-recipe' }, demonChip(E, d, undefined, plan), h('span', { class: 'fus-plus', text: '+' }), h('span', { class: 'fus-chip' }, h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: 'Any Mitama' }), h('span', { class: 'fus-chip-sub', text: 'Ara, Nigi, Kusi or Saki' })))))),
+      h('p', { class: 'note', text: 'The game only allows it once the demon’s reunion ranks add up to 48 or more.' })));
+    const lists = h('div', { class: 'fus-body' });
+    const elemRows = R.two.filter((r) => r.some((d) => E.isElemental(d)));
+    const drawLists = () => {
+      q = (U.with || '').trim().toLowerCase();
+      lists.replaceChildren(section('Two demons', elemRows.length ? `${elemRows.length} with an elemental (rank up or down)` : '', R.two, 'shown2'),
+        section('Tri-fusion (three demons)', '', R.three, 'shown3'));
+    };
+    if (R.two.length || R.three.length) {
+      box.append(h('div', { class: 'toolbar' }, searchBox(U.with || '', 'Only recipes with this demon or race', (v) => { U.with = v; U.shown2 = 30; U.shown3 = 30; drawLists(); })), lists);
+      drawLists();
+    }
+    box.append(h('p', { class: 'note', text: 'Recipes use the demons the race chart can make, at their base levels; a demon that has levelled up can give a higher result. Special fusions and the Mitama fusion are listed whatever the levels.' }));
+    return box;
+  }
+
+  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, fusion: pageFusion };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;

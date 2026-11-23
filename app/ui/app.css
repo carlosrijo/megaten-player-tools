@@ -1024,3 +1024,60 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
   .sim-out > :first-child { order: 0; }
   .sim-edit { order: 1; }
 }
+
+/* ---------- Fusion Planner ---------- */
+.page-fusion { grid-template-columns: minmax(0, 1fr); }
+.fus-body { display: grid; gap: 14px; min-width: 0; }
+.fus-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.fus-slot { min-height: 132px; }
+.fus-add { all: unset; box-sizing: border-box; min-height: 132px; border: 1px dashed var(--border-strong); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text-2); cursor: pointer; font-size: 12px; padding: 12px; text-align: center; }
+.fus-add:hover { color: var(--text); background: var(--hover); }
+.fus-add:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.fus-combo { position: relative; min-width: 0; }
+.fus-combo .search { max-width: none; }
+.fus-target, .toolbar .fus-combo { flex: 1 1 260px; max-width: 420px; }
+.fus-menu { position: absolute; z-index: 20; left: 0; min-width: max(100%, 320px); top: calc(100% + 4px); max-height: 320px; overflow: auto; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; box-shadow: var(--shadow); padding: 4px; }
+.fus-opt { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.fus-slots > :nth-child(3) .fus-menu { left: auto; right: 0; }   /* the right-hand slot's list opens leftwards, inside the window */
+.fus-opt.on, .fus-opt:hover { background: var(--selected); }
+.fus-opt.empty { cursor: default; color: var(--text-2); }
+.fus-opt .dcm-icon { margin: 0; width: 24px; height: 24px; }
+.fus-opt .dcm-icon img { width: 24px; height: 24px; }
+.fus-opt-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fus-pic-big { width: 44px; height: 44px; border-radius: 8px; margin: 0; }
+.fus-pic-big img { width: 44px; height: 44px; }
+.fus-picked, .fus-out { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.fus-picked-text { flex: 1; min-width: 0; }
+.fus-out-name { font-size: 15px; font-weight: 600; font-family: var(--font-display); overflow-wrap: anywhere; }
+.fus-out .fus-out-name { font-size: 17px; }
+.fus-lvl-box { display: grid; gap: 2px; font-size: 11px; color: var(--text-2); }
+.fus-lvl { width: 64px; font-variant-numeric: tabular-nums; }
+.fus-result { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+:root[data-theme="dark"] .fus-result { border-color: rgba(196, 160, 255, .40); }
+.fus-none { color: var(--text-2); }
+.fus-how { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text-2); font-size: 13px; }
+.fus-plugin { display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--warn-bg); color: var(--warn-ink); font-size: 13px; }
+.fus-plugin svg.icon { flex: none; width: 16px; height: 16px; margin-top: 1px; color: var(--warn-mark); }
+.fus-plugin b { font-weight: 600; }
+.fus-trail { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.fus-sec .card-title { display: inline-flex; align-items: baseline; }
+.fus-recipes { list-style: none; margin: 0; padding: 0; display: grid; }
+.fus-recipe { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 7px 0; border-top: 1px solid var(--border); }
+.fus-recipe:first-child { border-top: 0; }
+.fus-recipe-end { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.fus-plus { color: var(--text-3); font-weight: 600; }
+.fus-chip { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 8px; padding: 3px 10px 3px 3px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); min-width: 0; max-width: 260px; }
+button.fus-chip { cursor: pointer; }
+button.fus-chip:hover { background: var(--hover); border-color: var(--border-strong); }
+button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.fus-chip .dcm-icon { margin: 0; }
+.fus-chip-text { display: grid; min-width: 0; line-height: 1.25; }
+.fus-chip-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fus-chip-sub { font-size: 11px; color: var(--text-2); white-space: nowrap; }
+.fus-special { display: grid; gap: 8px; }
+.fus-special + .fus-special { border-top: 1px solid var(--border); padding-top: 10px; }
+.tag.fus-up { border-color: transparent; color: var(--up); background: color-mix(in srgb, var(--up) 14%, transparent); }
+.tag.fus-down { border-color: transparent; color: var(--down); background: color-mix(in srgb, var(--down) 14%, transparent); }
+.tag.fus-same { border-style: dashed; }
+.fus-foot { margin-top: 4px; }
+@media (max-width: 900px) { .fus-slots { grid-template-columns: minmax(0, 1fr); } .fus-slot, .fus-add { min-height: 0; } }
