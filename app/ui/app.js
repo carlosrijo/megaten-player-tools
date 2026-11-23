@@ -1232,8 +1232,7 @@
       h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'What expertise adds in total' }), h('span', { class: 'card-sub', text: `${nCounted} passives counted` })),
       totals.length ? h('div', { class: 'tiles' }, totals.map((r) => h('div', { class: 'tile' },
         h('span', { class: 'tile-label', text: (r.group === 'Partner' ? 'Partner: ' : '') + r.bonus }), h('span', { class: 'tile-value', text: fmt(r.expertise, r.unit, true) }))))
-        : h('p', { class: 'note', text: 'No expertise bonuses counted yet.' }),
-      h('p', { class: 'note', text: 'Pursuit chance from the Enlightenment skills scales with your STR and CLS-R, so it moves when those stats do. NewMoon changed some expertise data, so a few numbers may differ from what the server really gives.' })));
+        : h('p', { class: 'note', text: 'No expertise bonuses counted yet.' })));
 
     const names = []; rows.forEach((r) => { if (!names.includes(r.expertise)) names.push(r.expertise); });
     const listHost = h('div');
