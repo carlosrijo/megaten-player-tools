@@ -22,12 +22,14 @@ and a **Take snapshot** button (F5) that runs the same read-only snapshot as the
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
 
 - **Overview:** beside your picture, Max HP, Max MP and the 12 stats as compact bars (base, bonus and, in the
-  Digitalized view, what the digitalize demon adds). Then one line per key stat (a bar only where the stat has a cap,
+  Digitalized view, what the digitalize demon adds). Under the demon's line, a **Gear** line: every piece you wear as
+  its icon from the game, then your complete sets. Hover an icon for the game's tooltip, click it to open that piece
+  on the Gear page. Then one line per key stat (a bar only where the stat has a cap,
   showing how close you are; it changes colour past the cap). Click a line to see what gear, expertise and the
   digitalize demon each add, and to jump to every source on Bonuses. Under it, the 5 biggest changes since an earlier
   snapshot ("Show all" lists the rest); beside it, one radar chart per element with your affinity boost,
   the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers. The digitalize demon's name is a dropdown to pick another one.
-  Under the radars, an **Expertise** card: your expertise points against the cap, as the game's Expertise window shows them (e.g. 52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its class-rank and the icons of the skills its ranks gave you, passive and active on separate lines (a switched-off toggle is dimmed). Click one to open it on the Expertise page, or "View more" for the whole page.
+  At the bottom, across the page, an **Expertise** card: your expertise points against the cap, as the game's Expertise window shows them (e.g. 52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its class-rank and the icons of the skills its ranks gave you, passive and active on separate lines (a switched-off toggle is dimmed), the chains side by side. Click one to open it on the Expertise page, or "View more" for the whole page.
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
   click the name in the header to switch.

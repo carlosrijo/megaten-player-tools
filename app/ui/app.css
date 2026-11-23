@@ -259,10 +259,21 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
 .exp-bar i { display: block; height: 100%; border-radius: 4px; background: var(--exp); }
 .exp-free { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.chain-list { display: grid; gap: 2px; }
-.chain { display: grid; gap: 6px; width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; border-top: 1px solid var(--border); padding: 8px 6px; cursor: pointer; border-radius: 6px; }
-.chain:first-child { border-top: 0; }
+.exp-points { max-width: 560px; }   /* the card spans the page: the bar keeps a readable length */
+/* the chains side by side, as many columns as fit (three at the app's width, two in a narrower window, then one) */
+.chain-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 6px 22px; }
+.chain { display: grid; gap: 6px; align-content: start; width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: 8px 6px; cursor: pointer; border-radius: 6px; }
 .chain:hover { background: var(--hover); }
+/* Overview: what you wear, one line under the demon's. Each worn piece is its game icon in a slot-like tile, then the
+   complete sets. Names and numbers are the Gear page's: a tile's tooltip is the game's, a click opens the piece there. */
+.gear-band { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 14px; padding: 10px 14px; }   /* title | the tiles, wrapping | View more */
+.gear-band-title { margin: 0 2px 0 0; font: 600 17px/1.2 var(--font-display); letter-spacing: -.01em; }
+.gear-pcs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.gear-sets { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; }
+.gear-sets .stat-label { margin-right: 4px; }
+.gear-pc { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; }
+.gear-pc:hover { border-color: var(--border-strong); background: var(--hover); }
+.gear-pc:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .chain-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .chain-name { font-weight: 600; min-width: 0; }
 .chain-rank { color: var(--exp); font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
@@ -271,7 +282,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .chain-kind { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; }
 .chain-kind-label { color: var(--text-2); font-size: 12px; line-height: 24px; }
 .chain-icons .skill-ico.off { opacity: .35; }
-.chain-more { margin-top: 10px; }
+.chain-more { margin-top: 10px; justify-self: start; }
 .sheet { padding: 12px 16px 6px; }
 .sheet-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px 32px; align-items: start; }   /* two columns when both fit with their labels in full, else one */
 .sheet-col { display: grid; gap: 14px; align-content: start; }

@@ -776,6 +776,25 @@
   /** After the list of demons changed (loaded, or read from the game): only that card, so an open demon list stays put. */
   function refreshSummoned() { const el = $('.page-head .summoned'); if (el) el.replaceWith(summonedCard()); }
 
+  /**
+   * What you wear, in one line under the demon's: every worn piece as its icon from the game in a slot-like tile, then
+   * the complete sets. No names or numbers here (those are the Gear page's): hovering a tile shows the game's tooltip,
+   * a click opens that piece on the Gear page. Null before any gear was read.
+   */
+  function gearBand() {
+    const items = S.v.gear.filter((g) => g.kind !== 'set'), sets = S.v.gear.filter((g) => g.kind === 'set');
+    if (!items.length) return null;
+    const open = (g) => { S.gear.view = 'pieces'; if (g) S.gear.sel = g.row; go('gear'); };
+    const tile = (g) => withTip(h('button', { type: 'button', class: 'gear-pc', onclick: () => open(g),
+      'aria-label': g.kind === 'set' ? `${setTitle(g)}, complete set` : `${g.slot}: ${g.item}` }, gearIcon(g)), gearTip(g));
+    return h('section', { class: 'card gear-band', 'aria-label': 'Gear' },
+      h('h3', { class: 'gear-band-title', text: 'Gear' }),
+      // one run of tiles that wraps in a narrow window; the sets stay together (their label never ends a line alone)
+      h('div', { class: 'gear-pcs' }, items.map(tile),
+        sets.length ? h('span', { class: 'gear-sets' }, h('span', { class: 'stat-label', text: sets.length === 1 ? 'Set' : 'Sets' }), sets.map(tile)) : null),
+      h('button', { type: 'button', class: 'btn btn-sm gear-more', 'data-tip': 'Every piece and what it adds, on the Gear page', onclick: () => open(null) }, 'View more'));
+  }
+
   function pageOverview() {
     const L = S.v.latest;
     const DG = S.data.digitalize;
@@ -815,6 +834,8 @@
         legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : []))),
       h('div', { class: 'dg-bars who-stats' }, mine.map(statRow))), summonedCard()));
     page.append(demonCard());   // always there: a demon, or "No demon"
+    const worn = gearBand();    // you, your demon, your gear: the three lines the page opens with
+    if (worn) page.append(worn);
 
     const missing = String(L.gear_missing || '').trim();
     if (missing) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
@@ -860,8 +881,10 @@
     const sheet = h('section', { class: 'card sheet' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' },
       col.map(([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow)))))));
 
-    // the sheet with what changed under it; affinity (two radars, one over the other) beside them
-    page.append(h('div', { class: 'over-grid' }, h('div', { class: 'over-main' }, sheet, changesCard()), h('div', { class: 'over-side' }, affinityCard(), chainCard())));
+    // the sheet with what changed under it and affinity beside them (two columns of about the same height), then
+    // expertise across the page, its chains side by side (under affinity it left the left column half empty)
+    page.append(h('div', { class: 'over-grid' }, h('div', { class: 'over-main' }, sheet, changesCard()), h('div', { class: 'over-side' }, affinityCard())));
+    page.append(chainCard());
 
     page.append(h('p', { class: 'note', text: 'Not included anywhere: buffs, clan and title bonuses, and your partner demon\u2019s own stats. The game only works those out on the server. Pick your digitalize demon above to add what it gives.' }));
     return page;
