@@ -606,3 +606,6 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .detail-row > td { background: var(--surface-2); padding: 6px 12px 12px 34px; }
 .dcm-parts { max-width: 760px; }
 .dcm-parts li:first-child { border-top: 0; }
+.dcm-icon { flex: none; width: 28px; height: 28px; border-radius: 6px; background: var(--surface-2); overflow: hidden; display: inline-grid; margin: -4px 0; }
+.dcm-icon img { width: 28px; height: 28px; display: block; image-rendering: auto; }
+.page-dcm .row-btn { align-items: center; }

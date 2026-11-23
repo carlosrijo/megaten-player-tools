@@ -57,6 +57,7 @@ Working on the app's page:
 Under **Tools** in the left bar. Lists every DCM (Demon Compendium Memory) and where the game data says it comes from:
 shops with prices, enemies with drop rates and zones, chests, event or NPC rewards, random boxes, and presents from the
 demon itself. Search by demon, enemy, zone or shop; the chips filter by kind of source. It works without a snapshot.
+Each row shows the demon's own icon from your game client when the client has one.
 
 The DCM list, zone names and shop stock are the NewMoon client's. Drops, chests, presents and events come from the
 public server data, so NewMoon may have changed them; DCMs with "No known source" are most likely NewMoon additions.

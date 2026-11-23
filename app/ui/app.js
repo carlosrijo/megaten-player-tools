@@ -1304,6 +1304,12 @@
     const shown = new Set();   // two chests of one place at one rate read the same: say it once
     return lines.sort((a, b) => a.rank - b.rank).filter((l) => { const k = [l.kind, l.text, l.sub, l.value, (l.tags || []).join()].join('|'); return !shown.has(k) && shown.add(k); });
   }
+  /** The demon's own icon (made by tools\\dcmexport from the client); an empty box when there is none. */
+  function dcmIcon(it) {
+    const box = h('span', { class: 'dcm-icon', 'aria-hidden': 'true' });
+    if (it.icon) box.append(h('img', { src: it.icon, alt: '', width: 28, height: 28, loading: 'lazy', onerror: (ev) => ev.target.remove() }));
+    return box;
+  }
   function pageDcm() {
     const D = S.dcm, page = h('div', { class: 'page page-dcm' });
     loadDcm();
@@ -1333,7 +1339,7 @@
         const toggle = () => { if (D.open.has(it.id)) D.open.delete(it.id); else D.open.add(it.id); draw(); };
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
-            h('span', { class: 'chev' }, icon('chevron')), h('span', null, it.demon, h('span', { class: 'src-count', text: it.lines.length === 1 ? '1 source' : `${it.lines.length} sources` })))),
+            h('span', { class: 'chev' }, icon('chevron')), dcmIcon(it), h('span', null, it.demon, h('span', { class: 'src-count', text: it.lines.length === 1 ? '1 source' : `${it.lines.length} sources` })))),
           best ? h('td', null, h('div', { class: 'dcm-best' }, h('span', { class: 'dcm-kind', text: best.kind }),
             h('span', null, best.text, best.sub ? h('span', { class: 'src-count', text: best.sub }) : null)))
             : h('td', { class: 'zero', text: 'No source in the game data' }),
