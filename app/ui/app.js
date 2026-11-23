@@ -1717,7 +1717,10 @@
       box.append(b); });
     if (!it.all.length && !it.sheetOnly) box.append(h('p', { class: 'note', text: 'This piece gives no stats or effects in the game data.' }));
     // Where to get it, in the game: what the game data says about the piece itself, then about the ticket it comes in.
-    const getLine = (g) => h('li', null, g.k ? h('span', { class: 'gdb-kind', text: g.k }) : null, h('b', { text: g.t }), g.s ? h('span', { class: 'src-count', text: g.s }) : null, g.v ? h('span', { class: 'gdb-rate', text: g.v }) : null);
+    // g.d: how deep the line sits under the one before it ("Open X", then where X comes from)
+    const getLine = (g, extra) => h('li', { style: (g.d || 0) + (extra || 0) ? `padding-left:${22 * ((g.d || 0) + (extra || 0))}px` : null },
+      g.k ? h('span', { class: 'gdb-kind', text: g.k }) : null, g.k ? h('b', { text: g.t }) : h('span', { class: 'src-count', style: 'margin-left:0', text: g.t }),
+      g.s ? h('span', { class: 'src-count', text: g.s }) : null, g.v ? h('span', { class: 'gdb-rate', text: g.v }) : null);
     const where = [];
     it.get.forEach((g) => where.push(getLine(g)));
     const tickets = new Map();
@@ -1725,7 +1728,7 @@
     tickets.forEach((lines, ticket) => {
       where.push(h('li', null, h('span', { class: 'gdb-kind', text: 'Comes in' }), h('b', { text: ticket }),
         lines.length ? null : h('span', { class: 'src-count', text: 'the game data does not say where this ticket comes from' })));
-      lines.forEach((g) => where.push(h('li', { class: 'gdb-sub' }, getLine(g).childNodes ? [...getLine(g).childNodes] : null)));
+      lines.forEach((g) => where.push(getLine(g, 1)));
     });
     if (where.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Where to get it' }), h('ul', { class: 'gdb-list gdb-get' }, where)));
     // What players wrote down about it (the place is the name of the sheet's page, usually the dungeon).
@@ -1762,7 +1765,7 @@
         const gives = it.all.slice(0, 3).join(' · ') + (it.all.length > 3 ? ` · and ${it.all.length - 3} more` : '');
         // the game's own answer first, then the ticket, then the place the players' notes file it under
         const ticket = (it.sources.find((s) => s.ticket) || {}).ticket;
-        const src = it.get.length ? `${it.get[0].k}: ${it.get[0].t}` : ticket ? ticket
+        const src = it.get.length ? (it.get[0].k === 'Open' ? `Open ${it.get[0].t}` : `${it.get[0].k}: ${it.get[0].t}`) : ticket ? `Open ${ticket}`
           : it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') : '';
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
