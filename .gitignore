@@ -12,5 +12,7 @@ data/cache/models/
 data/characters/*/cache/models/
 # demon and skill pictures for the Demon Database: the game's own art, made locally by newmoon-reader demondb
 app/ui/demon-db-icons/
+# skill pictures for the Skill List: the game's own art, made locally by newmoon-reader skilldb
+app/ui/skill-db-icons/
 # your own data (stats, gear, characters, pictures, paths on this PC): kept on disk, never committed
 data/
