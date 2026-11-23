@@ -3,3 +3,5 @@ obj/
 *.user
 .vs/
 .claude/settings.local.json
+# demon icons for the DCM Locator: the game's own art, made locally by tools\dcmexport
+app/ui/dcm-icons/

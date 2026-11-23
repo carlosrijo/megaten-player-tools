@@ -638,3 +638,19 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .demon-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; color: var(--text-2); }
 .dg-total b { color: var(--text); font-weight: 600; }
 .demon-extra .tag-off { opacity: .7; }
+
+/* Tools section of the sidebar, and the DCM Locator */
+.nav-head { margin: 14px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+@media (max-width: 900px) { .nav-head { margin: 10px 8px 4px; height: 1px; overflow: hidden; background: var(--border); color: transparent; } }
+.page-dcm { grid-template-columns: minmax(0, 1fr); }
+.page-dcm .tbl td:first-child { white-space: nowrap; }
+.page-dcm .search { max-width: 300px; }
+.dcm-best { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.dcm-kind { color: var(--text-2); font-size: 12px; }
+.dcm-best .src-count { white-space: normal; }
+.detail-row > td { background: var(--surface-2); padding: 6px 12px 12px 34px; }
+.dcm-parts { max-width: 760px; }
+.dcm-parts li:first-child { border-top: 0; }
+.dcm-icon { flex: none; width: 28px; height: 28px; border-radius: 6px; background: var(--surface-2); overflow: hidden; display: inline-grid; margin: -4px 0; }
+.dcm-icon img { width: 28px; height: 28px; display: block; object-fit: cover; object-position: 50% 20%; }
+.page-dcm .row-btn { align-items: center; }

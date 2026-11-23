@@ -212,6 +212,9 @@
   const bonusRowOf = (k, label, unit) => (S.data.bonuses || []).find((r) => r.group === 'Combat' && r.bonus === (BONUS_NAME[k] || label) && (r.unit || '') === (unit || ''));
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
+  // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
+  const TOOLS = [['dcm', 'DCM Locator', 'search']];
+  const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
     ['Partner', 'Partner', 'Your partner'], ['Only in some fights', 'Situational', 'Only in some fights · not added to the totals'],
@@ -250,13 +253,14 @@
     demons: null,   // the COMP demons as last listed (the picker shows these at once, then looks at the game again)
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
+    dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
     exp: { q: '', closed: new Set() },
     dg: { q: '', closed: new Set() },
     extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
     hist: { key: store.get('hist') || 'lngr' },
   };
   if (Q.get('page') === 'compare') { S.page = 'gear'; S.gear.view = 'table'; }   // --page compare, for captures
-  if (!PAGES.some((p) => p[0] === S.page)) S.page = 'overview';
+  if (!PAGES.concat(TOOLS).some((p) => p[0] === S.page)) S.page = 'overview';
   if (S.mode !== 'digi') S.mode = 'normal';
   const digi = () => S.mode === 'digi';
 
@@ -443,6 +447,9 @@
   const nav = $('#nav');
   PAGES.forEach(([id, label, ic], i) => nav.append(h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': `${label} (Ctrl+${i + 1})`, onclick: () => go(id) },
     icon(ic), h('span', { class: 'nav-label', text: label }))));
+  nav.append(h('div', { class: 'nav-head', text: 'Tools' }));
+  TOOLS.forEach(([id, label, ic]) => nav.append(h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => go(id) },
+    icon(ic), h('span', { class: 'nav-label', text: label }))));
   function go(page) {
     if (S.page === page) return;
     S.page = page; store.set('page', page);
@@ -461,7 +468,7 @@
     // Alignment is read from the game at each snapshot; before the first one the reader assumes Neutral, and the header says so.
     const al = S.meta.alignment ? S.meta.alignment.charAt(0) + S.meta.alignment.slice(1).toLowerCase() + (S.meta.alignmentKnown === false ? ' (assumed)' : '') : '';
     $('#who-sub').textContent = L ? [`Level ${fmt(L.level)}`, al].filter(Boolean).join(' · ') : (who ? 'No snapshot yet' : 'Log in to the game');
-    $('#page-title').textContent = (PAGES.find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
+    $('#page-title').textContent = (PAGES.concat(TOOLS).find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
     document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.page === S.page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     const foot = $('#side-foot');
     foot.replaceChildren();
@@ -1462,12 +1469,114 @@
   }
 
   // ---------- render ----------
-  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory };
+  // ---------- Tools: DCM Locator ----------
+  // dcm-sources.json is made by tools\dcmexport from the game data; dcm-notes.json is written by hand (what players
+  // found on NewMoon itself). Both sit beside this file.
+  const DCM_KINDS = [['all', 'All'], ['shop', 'Shop'], ['drop', 'Enemy drop'], ['chest', 'Chest or loot'], ['event', 'Event or NPC'], ['present', 'Present only'], ['none', 'No known source']];
+  const pct = (v) => `${nf.format(n0(v))}%`;
+  function loadDcm() {
+    if (S.dcm.state !== 'idle') return;
+    S.dcm.state = 'loading';
+    const get = (p) => fetch(p, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    Promise.all([get('dcm-sources.json'), get('dcm-notes.json')]).then(([d, n]) => {
+      S.dcm.data = d; S.dcm.notes = (n && n.notes) || {};
+      S.dcm.state = d ? 'ready' : 'failed';
+      if (d) d.items.forEach((it) => { it.lines = dcmLines(it); it.kinds = new Set(it.lines.map((l) => l.group)); it.hay = [it.demon, ...it.lines.map((l) => [l.text, l.sub || '', ...(l.tags || [])].join(' '))].join(' ').toLowerCase(); });
+      if (S.page === 'dcm') render();
+    });
+  }
+  /** One DCM's sources as display lines, best first: { group, kind, text, sub, value, tags }. */
+  function dcmLines(it) {
+    const lines = [], by = (k) => it.sources.filter((s) => s.kind === k);
+    const zones = (list) => { const z = [...new Set(list.map((s) => s.zone).filter(Boolean))]; return z.length > 6 ? z.slice(0, 6).join(', ') + ` and ${z.length - 6} more` : z.join(', '); };
+    const grouped = (list, key) => { const m = new Map(); list.forEach((s) => { const k = key(s); if (!m.has(k)) m.set(k, []); m.get(k).push(s); }); return [...m.values()]; };
+    (S.dcm.notes[it.id] || []).forEach((t) => lines.push({ group: 'note', kind: 'NewMoon note', text: String(t), rank: 0 }));
+    // A shop's moon mask: bit n = moon phase n (0 new, 8 full), the phases it is sold in.
+    const moon = (mask) => 'Moon: ' + [...Array(16).keys()].filter((i) => mask & (1 << i)).map((i) => (i === 0 ? 'new' : i === 8 ? 'full' : i < 8 ? `${i}/8 waxing` : `${16 - i}/8 waning`)).join(', ');
+    // "201010_halloween" (the server's folder of a seasonal event) -> "Halloween 2010 event"
+    const season = (v) => { const m = /^(\d{4})\d{2}_(.+)$/.exec(v); return m ? `${m[2].charAt(0).toUpperCase() + m[2].slice(1).replace(/_/g, ' ')} ${m[1]} event` : v; };
+    const tagsOf = (s) => (s.season ? [season(s.season)] : []);
+    const NOPLACE = 'The data does not say where';
+    grouped(by('shop'), (s) => s.shopId + '|' + s.price).forEach((g) => lines.push({ group: 'shop', kind: 'Shop', text: g[0].shop, sub: g[0].tab, value: `${fmt(g[0].price)} ${g[0].currency}`,
+      tags: g[0].moon ? [moon(g[0].moon)] : [], rank: 1 }));
+    grouped(by('drop'), (s) => s.enemy + '|' + s.rate + '|' + (s.season || '')).sort((a, b) => b[0].rate - a[0].rate).forEach((g) => lines.push({ group: 'drop', kind: 'Enemy drop', text: g[0].enemy, sub: zones(g) || NOPLACE, value: pct(g[0].rate),
+      tags: tagsOf(g[0]), rank: 2 }));
+    grouped(by('loot').concat(by('chest')), (s) => (s.ref || s.dropSetId) + '|' + s.rate).sort((a, b) => b[0].rate - a[0].rate).forEach((g) => lines.push({ group: 'chest', kind: 'Chest',
+      text: zones(g) || g[0].desc || NOPLACE, value: pct(g[0].rate), tags: tagsOf(g[0]), rank: 3 }));
+    grouped(by('plasma'), (s) => s.zone + '|' + s.rate).forEach((g) => lines.push({ group: 'chest', kind: 'Plasma', text: g[0].zone || NOPLACE, value: pct(g[0].rate), tags: tagsOf(g[0]), rank: 3 }));
+    grouped(by('event'), (s) => s.zone + '|' + (s.season || '')).forEach((g) => { const who = [...new Set(g.map((s) => s.npc).filter(Boolean))];
+      lines.push({ group: 'event', kind: 'Event or NPC', text: g[0].zone || NOPLACE, sub: who.length ? 'Talk to ' + who.join(', ') : '', tags: tagsOf(g[0]), rank: 4 }); });
+    by('box').forEach((s) => lines.push({ group: 'chest', kind: 'Random box', text: s.desc || `Box ${s.dropSetId}`, value: pct(s.rate), rank: 5 }));
+    by('destiny').concat(by('demonquest'), by('dropset')).forEach((s) => lines.push({ group: 'drop', kind: s.kind === 'destiny' ? 'Destiny box' : s.kind === 'demonquest' ? 'Demon quest' : 'Drop table',
+      text: s.desc || `Drop set ${s.dropSetId}`, sub: s.kind === 'dropset' ? 'The data does not say which enemy uses this table' : '', value: pct(s.rate), rank: 6 }));
+    by('present').forEach((s) => lines.push({ group: 'present', kind: 'Present', text: `From ${s.demon} as your partner`, sub: `${s.tier} present`, rank: 7 }));
+    const shown = new Set();   // two chests of one place at one rate read the same: say it once
+    return lines.sort((a, b) => a.rank - b.rank).filter((l) => { const k = [l.kind, l.text, l.sub, l.value, (l.tags || []).join()].join('|'); return !shown.has(k) && shown.add(k); });
+  }
+  /** The demon's own icon (made by tools\\dcmexport from the client); an empty box when there is none. */
+  function dcmIcon(it) {
+    const box = h('span', { class: 'dcm-icon', 'aria-hidden': 'true' });
+    // No picture in the client: its own skull icon. Satan has none either, and (the user's joke) wears the player's face.
+    const joke = !it.icon && it.demon === 'Satan' && S.meta.picture;
+    const src = it.icon || joke || (S.dcm.data && S.dcm.data.noIcon);
+    if (src) box.append(h('img', { src, alt: '', width: 28, height: 28, loading: 'lazy', onerror: (ev) => ev.target.remove() }));
+    return box;
+  }
+  function pageDcm() {
+    const D = S.dcm, page = h('div', { class: 'page page-dcm' });
+    loadDcm();
+    page.append(pageHead('Every DCM (Demon Compendium Memory) and where the game data says it comes from. Click a row for all its sources.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The DCM list could not be loaded (dcm-sources.json is missing beside the page).' : 'Loading the DCM list…' }));
+      return page;
+    }
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
+      'The DCM list, zone names and shop stock are the NewMoon client\'s. Drops, chests, presents and events come from the public server data, so NewMoon may have changed them. Lines marked “NewMoon note” are confirmed by players.')));
+    const items = D.data.items;
+    const inKind = (it, k) => k === 'all' ? true : k === 'none' ? !it.lines.length : k === 'present' ? it.lines.length > 0 && it.lines.every((l) => l.group === 'present') : it.kinds.has(k);
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by source' });
+    const body = h('tbody');
+    const drawChips = () => chips.replaceChildren(...DCM_KINDS.map(([id, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
+        label, h('span', { class: 'count', text: items.filter((it) => inKind(it, id)).length }))));
+    const lineEl = (l) => h('li', null, h('span', { class: 'kind', text: l.kind }),
+      h('span', null, l.text, (l.tags || []).map((t) => h('span', { class: 'tag', style: 'margin-left:8px', text: t })), l.sub ? h('small', { text: l.sub }) : null),
+      h('span', { class: 'pv', text: l.value || '' }));
+    const draw = () => {
+      body.replaceChildren();
+      const q = D.q.trim().toLowerCase();
+      const rows = items.filter((it) => inKind(it, D.kind) && (!q || it.hay.includes(q))).sort((x, y) => !x.lines.length - !y.lines.length);
+      rows.forEach((it) => {
+        const open = D.open.has(it.id), best = it.lines[0];
+        const toggle = () => { if (D.open.has(it.id)) D.open.delete(it.id); else D.open.add(it.id); draw(); };
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+          h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+            h('span', { class: 'chev' }, icon('chevron')), dcmIcon(it), h('span', null, it.demon, h('span', { class: 'src-count', text: it.lines.length === 1 ? '1 source' : `${it.lines.length} sources` })))),
+          best ? h('td', null, h('div', { class: 'dcm-best' }, h('span', { class: 'dcm-kind', text: best.kind }),
+            h('span', null, best.text, best.sub ? h('span', { class: 'src-count', text: best.sub }) : null)))
+            : h('td', { class: 'zero', text: 'No source in the game data' }),
+          h('td', { class: 'num' + (best && best.value ? '' : ' zero'), text: best && best.value ? best.value : '—' })));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 },
+          it.lines.length ? h('ul', { class: 'parts dcm-parts' }, it.lines.map(lineEl))
+            : h('p', { class: 'note', text: 'Nothing in the data gives this DCM. It is most likely a NewMoon addition whose source only the live server knows.' }),
+          h('p', { class: 'note', style: 'margin-top:8px', text: `Item ${it.id} · ${it.name}` }))));
+      });
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 3, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No DCM in this group.' })));
+    };
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, enemy, zone or shop', (v) => { D.q = v; draw(); }), chips));
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'DCM' }), h('th', { scope: 'col', text: 'Best known source' }), h('th', { scope: 'col', class: 'num', text: 'Rate or price' }))), body)));
+    page.append(h('p', { class: 'note', text: `${items.length} DCMs, data made on ${D.data.generatedAt}. Rates are the chance per kill or per chest. A present is what the demon may give you while it is your partner.` }));
+    drawChips(); draw();
+    return page;
+  }
+
+  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
     hideTip();
-    main.replaceChildren(S.v && S.v.latest ? RENDER[S.page]() : firstRun());
+    main.replaceChildren(isTool(S.page) || (S.v && S.v.latest) ? RENDER[S.page]() : firstRun());
     main.scrollTop = top;
   }
   let resizeTimer = null;
