@@ -22,6 +22,7 @@
   --law: #2e7de9;           /* alignment colours (Tokyo Night Day): Law blue, Neutral green, Chaos red, as the game marks them */
   --neutral: #4d8a1c;       /* Neutral: green, as the game shows it (Tokyo Night Day's green, a step more vivid) */
   --chaos: #f52a65;
+  --fuse: #33635c;          /* fusion bonus on a piece's stats ("(82 + 45) MAX"): Tokyo Night teal (the user's choice) */
   --base: #b5b3aa;          /* de-emphasised: a stat's own base */
   --accent: #4c1d95;        /* the app's own colour: deep purple, as in the logo (blue stays the "gear" data colour) */
   --accent-hover: #5b21b6;
@@ -64,6 +65,7 @@
   --law: #7aa2f7;           /* Tokyo Night blue / green / red */
   --neutral: #9ece6a;       /* Neutral: Tokyo Night green, as the game shows it (the comment-lavender #a9b1d6 looked white around a picture) */
   --chaos: #f7768e;
+  --fuse: #73daca;
   --base: #5e5d58;
   --accent: #4c1d95;
   --accent-hover: #5b21b6;
@@ -353,8 +355,11 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 [aria-expanded="true"] > .chev { transform: rotate(90deg); }
 .src-count { color: var(--text-3); font-size: 12px; margin-left: 6px; white-space: nowrap; }
 .parts { list-style: none; margin: 0; padding: 0; display: grid; max-width: 640px; }
-.parts li { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 12px; align-items: baseline; padding: 5px 0; border-top: 1px solid var(--border); font-size: 12px; }
+.parts li { display: grid; grid-template-columns: 24px 92px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 3px 0; border-top: 1px solid var(--border); font-size: 12px; }
+.parts .slot-icon { zoom: .75; image-rendering: auto; }   /* the gear icon at 24px, to suit the smaller rows */
 .parts .kind { color: var(--text-2); }
+.parts .part-from { color: var(--text-2); font-weight: 400; }
+.parts .part-from::before { content: "·"; margin: 0 6px; color: var(--text-3); }
 .parts .pv { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .parts small, .sub { display: block; color: var(--text-2); font-size: 12px; }
 .empty-row { padding: 22px 12px; color: var(--text-2); text-align: center; }
@@ -363,15 +368,34 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .gear-layout { display: grid; grid-template-columns: minmax(250px, 330px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .slot-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; display: grid; gap: 1px; }
 .list-head { color: var(--text-3); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 10px 8px 4px; }
-.slot { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 7px 8px; border-radius: 7px; cursor: pointer; }
+.slot { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 32px 62px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 4px 8px; border-radius: 7px; cursor: pointer; }
 .slot:hover { background: var(--hover); }
 .slot[aria-selected="true"] { background: var(--selected); }
 .slot:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.slot-icon { display: block; width: 32px; height: 32px; flex: none; image-rendering: pixelated; }
+/* game-style tooltips on icons: icon and name, then the game's text with its section headings */
+.tip.tip-rich { max-width: 380px; padding: 10px 12px; font-variant-numeric: normal; }
+.tt-head { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--border); }
+.tt-head .slot-icon { zoom: 1; image-rendering: pixelated; }
+.tt-title { font: 600 13px/1.25 var(--font-display); }
+.tt-sub { color: var(--text-2); font-size: 11px; margin-top: 2px; }
+.tt-sec { color: var(--text-3); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin: 8px 0 2px; }
+.tt-line { white-space: pre-wrap; line-height: 1.45; }
+.tt-line.tt-gap { margin-top: 6px; }
+.tt-fuse { color: var(--fuse); }
+.tt-max { margin-left: 6px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--fuse); }
+.slot-icon.orbs { position: relative; }
+.orbs img { position: absolute; width: 18px; height: 18px; border-radius: 50%; object-fit: cover; background: var(--surface-2); box-shadow: 0 0 0 1px var(--border-strong); }
+.orbs-2 img:nth-child(1) { left: 0; top: 2px; } .orbs-2 img:nth-child(2) { left: 14px; top: 12px; }
+.orbs-3 img:nth-child(1) { left: 7px; top: 0; } .orbs-3 img:nth-child(2) { left: 0; top: 14px; } .orbs-3 img:nth-child(3) { left: 14px; top: 14px; }
+.orbs-4 img:nth-child(1) { left: 0; top: 0; } .orbs-4 img:nth-child(2) { left: 14px; top: 0; } .orbs-4 img:nth-child(3) { left: 0; top: 14px; } .orbs-4 img:nth-child(4) { left: 14px; top: 14px; }
+.detail-id { margin-left: 8px; color: var(--text-3); font: 400 13px/1 var(--font); font-variant-numeric: tabular-nums; }
+.detail-head { display: flex; align-items: center; gap: 12px; }
 .slot-name { color: var(--text-2); font-size: 12px; }
 .slot-item { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slot[aria-selected="true"] .slot-item { font-weight: 600; }
 .slot-n { color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; }
-.detail { position: sticky; top: 16px; }
+.card.detail { position: sticky; top: 16px; }   /* the Gear page's card only: the Bonuses table's tr.detail rows must not stick */
 .detail-title { font: 600 17px/1.25 var(--font-display); }
 .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; }
 .kv-group { display: grid; }
@@ -500,7 +524,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
   .gear-layout { grid-template-columns: minmax(0, 1fr); }
   .cmp { grid-template-columns: minmax(0, 1fr); }
   .cmp-panel { position: static; order: -1; max-height: 240px; }
-  .detail { position: static; }
+  .card.detail { position: static; }
   .page { padding: 18px 16px 32px; }
 }
 @media (max-width: 640px) {

@@ -133,11 +133,11 @@
         }
         if (cmd === 'load') {
           const empty = Q.get('empty') === '1' || fake.active !== 'Rubito';
-          const [snapshots, gear, expertise, bonuses, ranks, digitalize] = empty ? [[], [], [], [], null, null] : await Promise.all([
+          const [snapshots, gear, expertise, bonuses, ranks, digitalize, icons] = empty ? [[], [], [], [], null, null, {}] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
-            get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null)]);
+            get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {})]);
           const damage = empty ? null : await get('../../data/dash/damage.json', null);
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, damage, damageModel: !empty, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png' } };
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, damage, damageModel: !empty, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png' } };
         }
         // stand-in: the saved result again after a moment, stamped as the one asked for (the app runs the gear analysis)
         if (cmd === 'damage') { await wait(1500); const d = await get('../../data/dash/damage.json', null); return d ? { ...d, for: args.for, at: new Date().toISOString().slice(0, 19) } : null; }
@@ -215,8 +215,8 @@
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
     ['Partner', 'Partner', 'Your partner'], ['Only in some fights', 'Situational', 'Only in some fights · not added to the totals'],
   ];
-  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon' };
-  const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'dlevel', 'quest', 'compendium', 'demon'];
+  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon' };
+  const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon'];
   const lowIsGood = (name) => /taken|cooldown|cast time/i.test(name);
 
   // Stats that give nothing past a ceiling (from the user, 2026-11-23). The ceiling applies to the whole value
@@ -248,7 +248,7 @@
     damage: { busy: null, failed: null, error: '' },   // the damage calculation in flight (what it is for), the one that failed
     demons: null,   // the COMP demons as last listed (the picker shows these at once, then looks at the game again)
     bonus: { q: '', group: 'all', open: new Set() },
-    gear: { view: store.get('gearview') === 'table' ? 'table' : 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
+    gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
     exp: { q: '', closed: new Set() },
     hist: { key: store.get('hist') || 'lngr' },
   };
@@ -277,7 +277,22 @@
     });
     // Which bonuses each item / set contributes to: from the per-source parts of the all-bonuses list.
     const setKey = (text) => { const m = /\((?:\d+\/\d+, )?(fusion set|set) (\d+)\)\s*$/.exec(String(text || '')); return m ? `${m[1]}:${m[2]}` : null; };
-    const partKey = (part) => ((part.kind === 'set' || part.kind === 'fusion set') ? setKey(part.source) : (part.kind === 'expertise' ? null : 'item:' + part.source));
+    // Sets made of the same pieces (the game gives some gear two set bonuses, e.g. sets 2021 and 2022) are one row:
+    // the later ones are folded into the first, and their bonuses are filed under its key.
+    const alias = new Map(), byPieces = new Map(), gearRows = [];
+    d.gear.forEach((g) => {
+      const key = g.kind === 'set' ? setKey(g.item) : 'item:' + g.item;
+      const id = g.kind === 'set' ? (/set (\d+)\)\s*$/.exec(String(g.item || '')) || [])[1] : null;
+      const same = g.kind === 'set' && g.shown_as ? byPieces.get(g.slot + '|' + g.shown_as) : null;
+      if (same) { alias.set(key, same.key); if (id) same.setIds.push(id); return; }
+      const row = { ...g, key, setIds: id ? [id] : [] };
+      if (g.kind === 'set' && g.shown_as) byPieces.set(g.slot + '|' + g.shown_as, row);
+      gearRows.push(row);
+    });
+    const partKey = (part) => {
+      const key = (part.kind === 'set' || part.kind === 'fusion set') ? setKey(part.source) : (part.kind === 'expertise' ? null : 'item:' + part.source);
+      return alias.get(key) || key;
+    };
     const contrib = new Map();
     d.bonuses.forEach((row) => (Array.isArray(row.parts) ? row.parts : []).forEach((part) => {
       const key = partKey(part);
@@ -285,10 +300,7 @@
       if (!contrib.has(key)) contrib.set(key, []);
       contrib.get(key).push({ row, part });
     }));
-    const gear = d.gear.map((g) => {
-      const key = g.kind === 'set' ? setKey(g.item) : 'item:' + g.item;
-      return { ...g, key, parts: contrib.get(key) || [] };
-    });
+    const gear = gearRows.map((g) => ({ ...g, parts: contrib.get(g.key) || [] }));
     const ranks = new Map();
     ((d.ranks && d.ranks.ranks) || []).forEach((r) => ranks.set(r.name, r));
     // Compare columns: every bonus at least one worn piece or complete set adds to, with what each piece adds
@@ -306,7 +318,10 @@
       });
       return per.size ? { id: row.row, row, per } : null;
     }).filter(Boolean);
-    S.v = { snaps, latest, by, gear, ranks, cols };
+    // The worn piece or set a bonus part comes from (for its icon on the Bonuses page); undefined for other sources.
+    const gearByKey = new Map(gear.map((g) => [g.key, g]));
+    const gearOf = (part) => gearByKey.get(partKey(part));
+    S.v = { snaps, latest, by, gear, ranks, cols, gearOf };
     if (!gear.some((g) => g.row === S.gear.sel)) S.gear.sel = gear.length ? gear[0].row : null;
   }
   /** One combat stat in the current mode. */
@@ -322,11 +337,30 @@
   const tipEl = $('#tip');
   /** Puts the tip at `left`, with its top at `below`, or (when that would run off the window) its bottom at `above`. */
   function placeTip(text, left, below, above) {
-    tipEl.textContent = text; tipEl.hidden = false;
+    // a plain one-line hint, or a ready-made element (the game-style tooltips of icons)
+    const rich = text instanceof Node;
+    if (!rich) tipEl.textContent = text; else if (tipEl.firstChild !== text || tipEl.childNodes.length !== 1) tipEl.replaceChildren(text);
+    tipEl.classList.toggle('tip-rich', rich); tipEl.hidden = false;
     const w = tipEl.offsetWidth, hgt = tipEl.offsetHeight;
     tipEl.style.left = Math.max(8, Math.min(left, window.innerWidth - w - 8)) + 'px';
-    tipEl.style.top = (below + hgt > window.innerHeight ? above - hgt : below) + 'px';
+    tipEl.style.top = Math.max(8, below + hgt > window.innerHeight ? Math.min(above - hgt, window.innerHeight - hgt - 8) : below) + 'px';
   }
+  /** Gives an element a game-style tooltip: `build` makes its content the first time the pointer is over it. */
+  const withTip = (el, build) => { el.dataset.rich = ''; el._rich = build; return el; };
+  const tipHead = (iconEl, title, sub) => h('div', { class: 'tt-head' }, iconEl, h('div', null, h('div', { class: 'tt-title', text: title }), sub ? h('div', { class: 'tt-sub', text: sub }) : null));
+  /** Tooltip text as lines: "[Section]" lines become headings; Japanese flavour lines are left out. */
+  const tipLines = (text) => {
+    const out = []; let blank = true;
+    String(text || '').replace(/\r/g, '').split('\n').forEach((line) => {
+      if (/[ぁ-ゖァ-ヺ一-鿿]/.test(line)) return;   // kana or kanji (not the "・" bullet the English text uses)
+      const t = line.replace(/　/g, ' ').replace(/\s+$/, '');
+      if (!t.trim()) { blank = true; return; }
+      const sec = /^\[(.+)\]$/.exec(t.trim());
+      out.push(sec ? h('div', { class: 'tt-sec', text: sec[1] }) : h('div', { class: 'tt-line' + (blank && out.length && !sec ? ' tt-gap' : ''), text: t.replace(/^ {2}(?! )/, '') }));
+      blank = false;
+    });
+    return out;
+  };
   const showTip = (text, x, y) => placeTip(text, x + 14, y + 18, y - 10);   // beside the pointer
   let tipFor = null;   // the element a keyboard-focus tip describes
   const hideTip = () => {
@@ -334,6 +368,8 @@
     if (tipFor) { tipFor.removeAttribute('aria-describedby'); tipFor = null; }
   };
   document.addEventListener('pointermove', (ev) => {
+    const rich = ev.target instanceof Element ? ev.target.closest('[data-rich]') : null;
+    if (rich && rich._rich) { showTip(rich._richNode || (rich._richNode = rich._rich()), ev.clientX, ev.clientY); return; }
     const t = ev.target instanceof Element ? ev.target.closest('[data-tip]') : null;
     if (t) showTip(t.dataset.tip, ev.clientX, ev.clientY); else if (!ev.target.closest || !ev.target.closest('.chart')) hideTip();
   });
@@ -830,9 +866,15 @@
     return h('ul', { class: 'parts' }, parts.map((p) => {
       const notes = [];
       if (p.note) notes.push(String(p.note).replace(/^(When|If) /, (m) => m.toLowerCase()));
+      // a tarot or soul fusion line also names the crystal fused into the piece (the piece alone doesn't say which)
+      const piece = S.v.gearOf(p), crystal = piece && (p.kind === 'soul' ? piece.soul : p.kind === 'tarot' ? piece.tarot : null);
+      const other = { icon: p.icon === 'demon' ? S.meta.demonPicture : S.data.icons[p.icon] };
       return h('li', null,
+        // the worn piece's or set's icon; a skill's own icon (expertise, demon skills); the demon's picture for the rest it gives
+        // hovering it shows a game-style tooltip
+        piece ? withTip(gearIcon(piece), gearTip(piece)) : withTip(gearIcon(other), sourceTip(p, other)),
         h('span', { class: 'kind', text: KIND[p.kind] || p.kind || '' }),
-        h('span', null, p.source, isTrue(p.digi) ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null,
+        h('span', null, p.source, crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null,
           notes.length ? h('small', { text: notes.join(' · ') }) : null),
         h('span', { class: 'pv', text: p.value === null || p.value === undefined ? '' : fmt(p.value, row.unit, true) }));
     }));
@@ -907,16 +949,84 @@
 
   // ---------- Gear ----------
   const setTitle = (g) => String(g.item || '').replace(/\s*\((\d+\/\d+), (fusion )?set \d+\)\s*$/, '');
-  const setId = (g) => { const m = /set (\d+)\)\s*$/.exec(String(g.item || '')); return m ? m[1] : ''; };
+  const setIds = (g) => g.setIds || [];
+  // The short name in lists: "Set 1430", or "2 sets" when several sets share the same pieces.
+  const setLabel = (g) => (setIds(g).length > 1 ? `${setIds(g).length} sets` : `${g.slot === 'Fusion set' ? 'Fusion' : 'Set'} ${setIds(g)[0] || ''}`);
+  // The hover tooltip of a worn piece: the game's own tooltip text (kept from the snapshot), under its icon and name.
+  // A set has no tooltip in the game: it lists its pieces and what the set adds.
+  // The order of a piece's tooltip sections (the user's, not the game's); the set bonus always goes before them.
+  const TIP_ORDER = ['appearance bonus', 'basic features', 'characteristics', 'tarot fusion', 'soul fusion', 'modification slot'];
+  const gearTip = (g) => () => {
+    const box = h('div', { class: 'tt' });
+    if (g.kind === 'set') {
+      const worn = /\((\d+)\/(\d+),/.exec(String(g.item || ''));
+      box.append(tipHead(gearIcon(g), setTitle(g), [g.slot, worn ? `${worn[1]} of ${worn[2]} worn` : '', setIds(g).map((id) => `set ${id}`).join(', ')].filter(Boolean).join(' · ')));
+      if (g.shown_as) box.append(h('div', { class: 'tt-sec', text: g.slot === 'Fusion set' ? 'Crystals' : 'Set pieces' }), ...String(g.shown_as).split(', ').map((p) => h('div', { class: 'tt-line', text: p })));
+      if (g.parts.length) box.append(h('div', { class: 'tt-sec', text: 'Activation effects' }),
+        ...g.parts.map(({ row, part }) => h('div', { class: 'tt-line', text: `${row.bonus} ${part.value === null || part.value === undefined ? '' : fmt(part.value, row.unit, true)}${isTrue(part.digi) ? ' (digitalized)' : ''}` })));
+      return box;
+    }
+    // The first line is the piece's in-game name; one the game shows untranslated gives way to the English item name.
+    const raw = String(g.tip || '').replace(/\r/g, ''), nl = raw.indexOf('\n'), name = (nl < 0 ? raw : raw.slice(0, nl)).trim();
+    const lines = raw ? [null, ...tipLines(nl < 0 ? '' : raw.slice(nl + 1))] : [];
+    box.append(tipHead(gearIcon(g), name && !/[ぁ-ゖァ-ヺ一-鿿]/.test(name) ? name : g.item, g.slot));
+    // The stats block first, then the sections in the order the user asked for (not the game's); any other section
+    // (set bonuses...) keeps its place after those.
+    const blocks = [[]];
+    lines.slice(1).forEach((el) => { if (el.classList.contains('tt-sec')) blocks.push([el]); else blocks[blocks.length - 1].push(el); });
+    const rank = (b) => { const i = TIP_ORDER.indexOf(b[0].textContent.toLowerCase()); return i < 0 ? TIP_ORDER.length : i; };
+    // The game prints a set's pieces and effects on some pieces only (Spiral ones, not the Resolute ones): that text
+    // is left out, and every piece of a complete set gets the same set section, from the set's own row.
+    const [stats, ...all] = blocks;
+    const secs = all.filter((b) => !/^(set bonus \d+|set pieces|activation effects)$/i.test(b[0].textContent.trim()));
+    const noSetLine = (el) => !/^Set Bonus \d+$/i.test(el.textContent.trim());   // the heading line of the game's set text
+    // What the piece is (type, affinity, sex, level, durability) stays on top; its own stats become a "Basic Features"
+    // section; the set bonus is a section too; then all sections go in TIP_ORDER.
+    const isInfo = (el) => /^\s*(Type|Affinity|Sex|Level|Durability)\s*:/.test(el.textContent);
+    const own = stats.filter(noSetLine), basic = own.filter((el) => !isInfo(el));
+    box.append(...own.filter(isInfo));
+    // Fusion great-success bonuses, the way the game's Features tab writes them: "+127 (82 + 45) MAX"
+    (g.fuse || []).forEach((f) => {
+      const el = basic.find((b) => b.textContent.trim().startsWith(f.stat + ':')), m = el && /([+-]?\d+)\s*$/.exec(el.textContent);
+      if (!m) return;
+      el.append(h('span', { class: 'tt-fuse', text: ` (${Number(m[1]) - f.bonus} + ${f.bonus})` }));
+      if (isTrue(f.max)) el.append(h('span', { class: 'tt-max', text: 'MAX' }));
+    });
+    if (basic.length) { basic[0].classList.remove('tt-gap'); secs.unshift([h('div', { class: 'tt-sec', text: 'Basic Features' }), ...basic]); }
+    const sets = S.v.gear.filter((s) => s.kind === 'set' && (s.piece_ids || []).includes(g.item_id)).flatMap((s) => [
+      h('div', { class: 'tt-sec', text: `Set bonus · ${setIds(s).map((id) => `set ${id}`).join(', ')}` }),
+      h('div', { class: 'tt-line', text: `Pieces: ${s.shown_as || ''}` }),
+      ...s.parts.map(({ row, part }) => h('div', { class: 'tt-line', text: `* ${row.bonus} ${part.value === null || part.value === undefined ? '' : fmt(part.value, row.unit, true)}${isTrue(part.digi) ? ' (digitalized)' : ''}` }))]);
+    box.append(...sets, ...secs.map((b, i) => ({ b, i })).sort((x, y) => rank(x.b) - rank(y.b) || x.i - y.i).flatMap((x) => x.b.filter(noSetLine)));
+    if (!lines.length) box.append(h('div', { class: 'tt-line', text: 'No tooltip was read for this piece.' }));
+    return box;
+  };
+  // The hover tooltip of any other bonus source: its icon and name, and the game's description when it is a skill.
+  const sourceTip = (p, iconOf) => () => h('div', { class: 'tt' },
+    tipHead(gearIcon(iconOf), String(p.source).replace(/ \((Other learned skills|Quest bonus[^)]*\)|Demonic Compendium[^)]*\))\)?$/, ''), KIND[p.kind] || p.kind || ''),
+    ...tipLines(p.tip), p.note ? h('div', { class: 'tt-line tt-gap', text: p.note }) : null);
+  // A piece's icon from the game (32x32, pixel-crisp); an empty box of the same size for sets and pieces without one.
+  // A set shows its pieces' icons as a cluster of small round "orbs" (up to four).
+  const gearIcon = (g) => {
+    const one = g.icon || ((g.icons || []).length === 1 ? g.icons[0] : null);   // a lone icon is shown whole, not as an orb
+    if (one) return h('img', { class: 'slot-icon', src: one, alt: '' });
+    const orbs = (g.icons || []).slice(0, 4);
+    return h('span', { class: 'slot-icon' + (orbs.length ? ` orbs orbs-${orbs.length}` : '') }, orbs.map((src) => h('img', { src, alt: '' })));
+  };
   function gearDetail(g) {
     const card = h('section', { class: 'card detail' });
     if (!g) return card;
     const isSet = g.kind === 'set';
     const m = /\((\d+)\/(\d+), (?:fusion )?set (\d+)\)\s*$/.exec(String(g.item || ''));
-    card.append(h('div', null, h('span', { class: 'stat-label', text: g.slot }), h('h2', { class: 'detail-title', text: isSet ? setTitle(g) : g.item })));
+    card.append(h('div', { class: 'detail-head' }, g.icon || (g.icons || []).length ? gearIcon(g) : null,
+      h('div', null, h('span', { class: 'stat-label', text: g.slot }), h('h2', { class: 'detail-title' }, isSet ? setTitle(g) : g.item,
+        !isSet && g.item_id ? h('span', { class: 'detail-id', 'data-tip': 'Item id', text: `#${g.item_id}` }) : null))));
     const meta = h('div', { class: 'detail-meta' });
-    if (isSet && m) meta.append(h('span', { class: 'tag', text: `${m[1]} of ${m[2]} worn` }), h('span', { class: 'tag', text: `Set ${m[3]}` }));
+    if (isSet && m) meta.append(h('span', { class: 'tag', text: `${m[1]} of ${m[2]} worn` }), ...(setIds(g).length ? setIds(g) : [m[3]]).map((id) => h('span', { class: 'tag', text: `Set ${id}` })));
     if (!isSet && g.tarot) meta.append(h('span', { class: 'tag', text: `Tarot: ${g.tarot}` }));
+    // fusion great-success bonuses on the piece's own stats ("MAX" = at the top of the game's table)
+    if (!isSet && (g.fuse || []).length) meta.append(h('span', { class: 'tag', 'data-tip': 'Fusion bonus on its basic stats',
+      text: 'Fusion: ' + g.fuse.map((f) => `${f.stat} +${f.bonus}${isTrue(f.max) ? ' MAX' : ''}`).join(', ') }));
     if (meta.children.length) card.append(meta);
     if (isSet && g.shown_as) card.append(h('p', { class: 'note', text: `Pieces: ${g.shown_as}` }));
     if (!isSet && g.shown_as && g.shown_as !== g.item) card.append(h('p', { class: 'note', text: `In game: ${g.shown_as}` }));
@@ -1008,7 +1118,7 @@
       }));
       const body = h('tbody', null, list.map((g) => h('tr', null,
         h('td', { class: 'pin' }, h('div', { class: 'pin-row', 'data-tip': g.kind === 'set' ? `${setTitle(g)} (${g.shown_as || ''})` : (g.tarot ? `${g.item} · Tarot: ${g.tarot}` : g.item) },
-          h('span', { class: 'slot-name', text: g.kind === 'set' ? `${g.slot === 'Fusion set' ? 'Fusion' : 'Set'} ${setId(g)}` : g.slot }),
+          h('span', { class: 'slot-name', text: g.kind === 'set' ? setLabel(g) : g.slot }),
           h('span', { class: 'slot-item', text: g.kind === 'set' ? setTitle(g).replace(/^Set with /, '') : g.item }))),
         shown.map((c) => { const v = val(c, g); return h('td', { class: 'num' + (sort && sort.id === c.id ? ' emph' : ''), text: v ? fmt(v, c.row.unit, true) : '' }); }))));
       const foot = h('tfoot', null, h('tr', null, h('td', { class: 'pin', text: 'All gear' }), shown.map((c) => {
@@ -1075,7 +1185,7 @@
   function pageGear() {
     const page = h('div', { class: 'page' + (S.gear.view === 'table' ? ' wide' : '') });
     const view = h('div', { class: 'seg', role: 'group', 'aria-label': 'View' },
-      [['pieces', 'By piece'], ['table', 'Compare']].map(([id, label]) => h('button', { type: 'button', 'aria-pressed': String(S.gear.view === id), onclick: () => { S.gear.view = id; store.set('gearview', id); render(); } }, label)));
+      [['pieces', 'By piece'], ['table', 'Compare']].map(([id, label]) => h('button', { type: 'button', 'aria-pressed': String(S.gear.view === id), onclick: () => { S.gear.view = id; render(); } }, label)));
     page.append(pageHead(S.gear.view === 'pieces'
       ? 'Pick a piece to see everything it adds: its own bonuses, tarot, soul fusion, mods and appearance bonus.'
       : 'Every piece side by side. Choose the columns on the right; click a column heading to sort by it.', view));
@@ -1090,7 +1200,8 @@
       detailHost.replaceChildren(gearDetail(g));
     };
     const slotBtn = (g) => h('button', { type: 'button', class: 'slot', role: 'option', 'data-row': g.row, 'aria-selected': String(g.row === S.gear.sel), onclick: () => select(g) },
-      h('span', { class: 'slot-name', text: g.kind === 'set' ? `${g.slot === 'Fusion set' ? 'Fusion' : 'Set'} ${setId(g)}` : g.slot }),
+      withTip(gearIcon(g), gearTip(g)),
+      h('span', { class: 'slot-name', text: g.kind === 'set' ? setLabel(g) : g.slot }),
       h('span', { class: 'slot-item', 'data-tip': g.kind === 'set' ? setTitle(g) : null, text: g.kind === 'set' ? setTitle(g).replace(/^Set with /, '') : g.item }),
       h('span', { class: 'slot-n', 'data-tip': `${g.parts.length} bonuses`, text: g.parts.length || '' }));
     list.append(...items.map(slotBtn));
@@ -1268,7 +1379,7 @@
   async function reload() {
     const d = await host.call('load');
     S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null,
-      damage: d.damage || null, damageModel: !!d.damageModel };
+      damage: d.damage || null, damageModel: !!d.damageModel, icons: d.icons || {} };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
     derive();

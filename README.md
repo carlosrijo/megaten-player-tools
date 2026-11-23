@@ -17,7 +17,7 @@ After a change, with the app possibly open: `pwsh -NoProfile -File tools\rebuild
 and the app, and opens it again. (A build with the app open only updates the page files, not the program: Windows
 locks those.)
 
-"NewMoon Build Tracker": one window with Overview, Bonuses, Gear, Expertise and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
+"NewMoon Build Tracker": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
 
