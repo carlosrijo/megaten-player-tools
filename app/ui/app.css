@@ -504,6 +504,10 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .dg-tile.on { border-color: color-mix(in srgb, var(--demon) 70%, transparent); cursor: default; }
 .dg-tile.on:hover { background: var(--surface); }
 .dg-tile[disabled] { opacity: .6; cursor: progress; }
+.dg-tile.static, .dg-tile.static:hover { cursor: default; background: var(--surface); border-color: var(--border); }
+/* Overview: the summoned demon, to the right of the character's stats (the picker's card without its bonus list) */
+.summoned { flex: 0 1 340px; min-width: 260px; }
+.summoned.none { display: none; }
 .dgt-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .dgt-head .demon-pic { align-self: center; }
 .dgt-id { display: grid; gap: 1px; min-width: 0; }
