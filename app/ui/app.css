@@ -1145,3 +1145,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-group-row .src-count { font-weight: 400; }
 .dun-group-pre { font-weight: 400; color: var(--text-2); }
 .tbl tr.dun-in-group > td:first-child { padding-left: 34px; }
+.dun-faces { display: inline-flex; align-items: center; gap: 3px; margin-left: 12px; vertical-align: middle; }
+.dun-face { width: 22px; height: 22px; border-radius: 5px; object-fit: cover; object-position: 50% 20%; background: var(--surface-2); }
+.dun-face.boss { box-shadow: 0 0 0 1.5px var(--focus); }   /* the purple of the Boss tag */
+.dun-faces-more { margin-left: 3px; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }

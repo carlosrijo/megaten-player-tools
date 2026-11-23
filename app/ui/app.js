@@ -2224,6 +2224,24 @@
         h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
     return box;
   }
+  /**
+   * A place's enemies at a glance: small pictures beside its name, bosses first, then the strongest; each picture once
+   * (enemy versions of one demon share it). Hovering one names it; "+N" says how many more there are.
+   */
+  const DUN_FACES = 8;
+  function dunFaces(x) {
+    if (!x.faces) {
+      const seen = new Set();
+      x.faces = [...x.mobs].sort((a, b) => !!b.boss - !!a.boss || b.mob.level - a.mob.level)
+        .filter((e) => e.mob.icon && !seen.has(e.mob.icon) && seen.add(e.mob.icon));
+    }
+    if (!x.faces.length) return null;
+    const more = x.faces.length - DUN_FACES;
+    return h('span', { class: 'dun-faces', 'aria-hidden': 'true' },
+      x.faces.slice(0, DUN_FACES).map((e) => h('img', { class: 'dun-face' + (e.boss ? ' boss' : ''), src: e.mob.icon, alt: '', width: 22, height: 22, loading: 'lazy',
+        'data-tip': `${e.mob.name}${e.boss ? ' (boss)' : ''} · level ${e.mob.level}`, onerror: (ev) => ev.target.remove() })),
+      more > 0 ? h('span', { class: 'dun-faces-more', 'data-tip': `${more} more enemy ${more === 1 ? 'picture' : 'pictures'}; open the place for all its enemies`, text: `+${more}` }) : null);
+  }
   function pageDungeons() {
     const D = S.dun, page = h('div', { class: 'page page-dcm' });
     loadDungeons();
@@ -2258,7 +2276,8 @@
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : '') + (D.group ? ' dun-in-group' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')),
-            h('span', null, x.name, door ? h('span', { class: 'src-count', text: `entered from ${x.from}` }) : null, hits ? h('span', { class: 'src-count', text: hits === 1 ? '1 matching enemy' : `${hits} matching enemies` }) : null))),
+            h('span', null, x.name, door ? h('span', { class: 'src-count', text: `entered from ${x.from}` }) : null, hits ? h('span', { class: 'src-count', text: hits === 1 ? '1 matching enemy' : `${hits} matching enemies` }) : null)),
+            dunFaces(x)),
           h('td', null, h('span', { class: 'tag', text: x.kind })),
           h('td', { class: 'num', text: x.levels }),
           h('td', { class: 'num' }, String(x.mobs.length), x.bosses ? h('span', { class: 'src-count', text: x.bosses === 1 ? '1 boss' : `${x.bosses} bosses` }) : null)));
