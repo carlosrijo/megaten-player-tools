@@ -71,6 +71,17 @@ filter by kind of quest.
 The quest names, objective text and counts are the game's own. The steps come from the public server's event files
 (468 quests have them; the rest show the game's objective text only), so NewMoon may have changed them. Valuables
 (key items) are shown with the name in the game data, which is Japanese.
+### Tools: Gear Database
+
+Under **Tools** in the left bar. Every piece of gear in the game (10,270) with what it gives: stats, effects, appearance
+bonus, the sets it belongs to, mod slots, and who can wear it. Where a piece comes from (dungeon, ticket, exchange)
+is traced through the game data (drops, chests, shops, NPC exchanges, the ticket a piece comes in), with community notes from
+SnowSheet's gear reference for NewMoon beside it. Search with several
+words at once ("limit break celu"), filter by slot, and untick "Only gear with a known source" to see everything.
+
+Stats and effects are read from the NewMoon client's current item tables, not from the spreadsheets. 963 spreadsheet
+rows matched no item in the game data (different spelling); they are listed with the sheet's own text, marked
+"sheet only". The cosmetic ticket tabs (Vanities) are left out.
 ## Commands
 
 ```

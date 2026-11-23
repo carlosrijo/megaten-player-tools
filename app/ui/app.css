@@ -669,3 +669,17 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .q-asks { font-style: italic; }
 .q-asks::before { content: open-quote; }
 .q-asks::after { content: close-quote; }
+
+/* Gear Database */
+.gdb-block { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+.gdb-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.gdb-list .src-count { margin-left: 8px; }
+.gdb-gives { color: var(--text-2); font-size: 12px; }
+.gdb-more { display: flex; align-items: center; gap: 12px; }
+.gdb-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); cursor: pointer; }
+.page-dcm .search { max-width: 380px; }.page-dcm .tbl tr.detail-row > td { white-space: normal; }
+.gdb-list li { overflow-wrap: anywhere; }
+.gdb-with { color: var(--text-2); font-size: 12px; }
+.gdb-kind { display: inline-block; min-width: 96px; margin-right: 8px; color: var(--text-2); font-size: 12px; }
+.gdb-rate { margin-left: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gdb-sub { padding-left: 22px; }
