@@ -135,10 +135,10 @@
         }
         if (cmd === 'load') {
           const empty = Q.get('empty') === '1' || fake.active !== 'Rubito';
-          const [snapshots, gear, expertise, bonuses, ranks, digitalize, icons] = empty ? [[], [], [], [], null, null, {}] : await Promise.all([
+          const [snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks] = empty ? [[], [], [], [], null, null, {}, []] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
-            get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {})]);
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
+            get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {}), get('../../data/dash/digi-unlocks.json', [])]);
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
         }
         if (cmd === 'snapshot') {
           await wait(1400);
@@ -530,7 +530,6 @@
     if (!digi() || !DG) return h('section', { class: 'card demon-card closed' },
       h('div', { class: 'demon-pic none', 'aria-hidden': 'true' }, h('span', { text: '–' })),
       h('div', { class: 'demon-main' }, h('div', { class: 'demon-id' },
-        h('span', { class: 'stat-label', text: 'Digitalize demon' }),
         h('h3', { class: 'demon-name' }, S.over.switching
           ? h('span', { class: 'demon-switching', role: 'status' }, h('span', { class: 'spin ink' }), `Switching to ${S.over.switching}…`)
           : h('button', { type: 'button', class: 'name-btn', popovertarget: 'demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick a demon to see your numbers while digitalized with it',
@@ -539,7 +538,8 @@
     const why = isTrue(DG.digitalized_when_taken) ? 'you were digitalized with it when it was saved' : 'it is the demon you last digitalized with or picked';
     // its icon from the game (32x32, shown at double size, pixel-crisp); its initial when there is none
     // framed in the colour of its alignment (Law / Neutral / Chaos)
-    const pic = h('div', { class: 'demon-pic ' + alignClass(DG.alignment), 'aria-hidden': 'true' }, h('span', { text: String(DG.demon || '?').charAt(0) }));
+    // (no "Digitalize demon" label: the user found it redundant; what it explained is the picture's tip now)
+    const pic = h('div', { class: 'demon-pic ' + alignClass(DG.alignment), 'aria-hidden': 'true', 'data-tip': `Your digitalize demon. Its passives, features and Mitama sets count when the boost for them is learned. Chosen because ${why}.` }, h('span', { text: String(DG.demon || '?').charAt(0) }));
     if (S.meta.demonPicture) {
       const img = h('img', { src: S.meta.demonPicture, alt: '' });
       img.onerror = () => img.remove();
@@ -603,7 +603,9 @@
     // The name is the picker: click it for the dropdown of COMP demons (popovertarget opens and closes it; the click
     // only says which button it hangs from).
     const open = S.over.demon;
-    const actions = h('span', { class: 'demon-actions' },
+    // its own skills: closed, the icons of its slotted skills on the line; open, the skills and features under the rest
+    const SK = demonSkills(DG);
+    const actions =h('span', { class: 'demon-actions' },
       h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'aria-expanded': String(open), 'data-tip': open ? 'Back to one line' : 'The stats it adds, what counts, and its boosts per level',
         onclick: () => { S.over.demon = !open; store.set('demon-open', open ? '0' : '1'); render(); } }, h('span', { class: 'chev' }, icon('chevron')), open ? 'Less' : 'Details'));
     const name = S.over.switching
@@ -611,12 +613,11 @@
       : h('button', { type: 'button', class: 'name-btn', popovertarget: 'demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick another demon, or no demon',
         onclick: (ev) => { demonsFor = ev.currentTarget; } }, DG.demon, h('span', { class: 'chev down' }, icon('chevron')));
     const id = h('div', { class: 'demon-id' },
-      h('span', { class: 'stat-label', tabindex: 0, 'data-tip': `Its passives, features and Mitama sets count when the assist for them is learned. Chosen because ${why}.`, text: 'Digitalize demon' }),
-      h('h3', { class: 'demon-name' }, name), open ? chips : chips.slice(0, idChips), actions);
+      h('h3', { class: 'demon-name' }, name), open ? chips : chips.slice(0, idChips), open || !SK ? null : SK.icons, actions);
     if (!open) return h('section', { class: 'card demon-card closed' }, pic, h('div', { class: 'demon-main' }, id));
     return h('section', { class: 'card demon-card' }, pic,
       h('div', { class: 'demon-main' }, id, extra.length ? h('div', { class: 'demon-extra' }, extra) : null, bars),
-      assists);
+      assists, SK ? SK.parts : null);
   }
 
   /**
@@ -660,11 +661,11 @@
   const AFF_SERIES = [['boost', 'Boost'], ['cap', 'Cap'], ['res', 'Resistance']];
   function affinityCard() {
     const DG = S.data.digitalize, aff = affinity(), n = aff.boost.length;
-    const card = h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Affinity' }),
-      h('span', { class: 'card-sub', text: digi() && DG ? `While digitalized with ${DG.demon}` : 'Not digitalized' })));
+    const card = h('section', { class: 'card' });
+    const wrap = sect('Affinity', digi() && DG ? `While digitalized with ${DG.demon}` : 'Not digitalized', null, card);
     if (n < 3) {   // a radar needs three spokes
       card.append(h('p', { class: 'note', text: n ? aff.boost.concat(aff.resistance).filter((e) => e.total).map((e) => `${e.name} ${fmt(e.total, '%')}`).join(' · ') : 'No affinity boosts or resistances yet.' }));
-      return card;
+      return wrap;
     }
     const focus = AFF_SERIES.some(([k]) => k === S.over.aff) ? S.over.aff : null;
     const val = { boost: aff.boost.map((e) => e.total), cap: aff.cap.map((e) => e.total), res: aff.resistance.map((e) => e.total) };
@@ -731,7 +732,7 @@
     if (focus) card.append(h('p', { class: 'note', text: focus === 'cap' ? 'Boosts stop at 100%' + (raised.length ? `, except where something of yours raises the cap: ${raised.map((c) => `${c.name} ${fmt(c.total)}%`).join(', ')}.` : '. Nothing of yours raises it for any element.')
       : focus === 'res' ? 'How much of each element you resist. Inside the 0 ring is a weakness.'
       : 'What you add to the damage you deal with each element.' }));
-    return card;
+    return wrap;
   }
 
 
@@ -832,8 +833,8 @@
   function chainCard() {
     const R = S.data.ranks || {}, P = R.points || null;
     const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
-    const card = h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Expertise' }),
-      P ? h('span', { class: 'card-sub', text: P.cap ? `${pt(P.total)} / ${pt(P.cap)}` : `${pt(P.total)}, no cap` }) : null));
+    const card = h('section', { class: 'card' });
+    const wrap = sect('Expertise', P ? (P.cap ? `${pt(P.total)} / ${pt(P.cap)}` : `${pt(P.total)}, no cap`) : null, null, card);
     if (P && P.cap) {
       const free = n0(P.cap) - n0(P.total);
       card.append(h('div', { class: 'exp-points', 'data-tip': `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})`
@@ -843,7 +844,7 @@
     } else if (!P) card.append(h('p', { class: 'note', text: 'Take a snapshot to read your expertise points and cap.' }));
     const chains = ((R.ranks) || []).filter((r) => r.chain);
     const more = h('button', { type: 'button', class: 'btn btn-sm chain-more', onclick: () => { S.exp.q = ''; go('expertise'); } }, 'View more');
-    if (!chains.length) { card.append(h('p', { class: 'note', text: 'No chain expertise unlocked yet.' }), more); return card; }
+    if (!chains.length) { card.append(h('p', { class: 'note', text: 'No chain expertise unlocked yet.' }), more); return wrap; }
     // One line of icons per kind. The skills come from the ranks file ("skills": every skill of the reached ranks,
     // actives too); a passive's row in expertise.json says whether a toggle is switched off (shown dimmed).
     // Older data without "skills" shows the passives from expertise.json only.
@@ -865,7 +866,7 @@
         h('span', { class: 'chain-head' }, h('span', { class: 'chain-name', text: c.name }), h('span', { class: 'chain-rank', text: `${c.class}-${c.rank}` })),
         all.length ? [iconLine('Passive', passives), iconLine('Active', actives)] : h('span', { class: 'chain-none', text: 'No skills from its ranks yet' }));
     })), more);
-    return card;
+    return wrap;
   }
 
   function changesCard() {
@@ -873,15 +874,13 @@
     const earlier = snaps.slice(0, -1);
     const card = h('section', { class: 'card' });
     if (!earlier.length) {
-      card.append(h('h3', { class: 'card-title', text: 'What changed' }),
-        h('p', { class: 'note', text: 'Take another snapshot after you change gear, and the differences will be listed here.' }));
-      return card;
+      card.append(h('p', { class: 'note', text: 'Take another snapshot after you change gear, and the differences will be listed here.' }));
+      return sect('What changed', null, null, card);
     }
     const base = earlier.find((x) => x.taken_at === S.compare) || earlier[earlier.length - 1];
     const sel = h('select', { class: 'select', 'aria-label': 'Compare with snapshot', onchange: () => { S.compare = sel.value; render(); } },
       earlier.slice().reverse().map((x) => h('option', { value: x.taken_at, selected: x.taken_at === base.taken_at, text: when(x.taken_at) })));
-    card.append(h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'What changed' }),
-      h('label', { class: 'card-sub', style: 'display:inline-flex;align-items:center;gap:8px' }, 'since', sel)));
+    const wrap = sect('What changed', h('label', { class: 'card-sub', style: 'display:inline-flex;align-items:center;gap:8px' }, 'since', sel), null, card);
 
     const sfx = digi() ? '_digi' : '';
     const groups = [
@@ -900,7 +899,7 @@
         h('span', { class: 'delta ' + (good ? 'good' : 'bad'), text: (d > 0 ? '▲ ' : '▼ ') + fmt(d, unit, true) })) };
     }).filter(Boolean)]);
     const count = changed.reduce((n, [, rows]) => n + rows.length, 0);
-    if (!count) { card.append(h('p', { class: 'note', text: `Nothing changed since ${when(base.taken_at)}: same stats, same gear bonuses.` })); return card; }
+    if (!count) { card.append(h('p', { class: 'note', text: `Nothing changed since ${when(base.taken_at)}: same stats, same gear bonuses.` })); return wrap; }
     // the biggest few first; the whole list, grouped, on request
     const all = S.over.allChanges || count <= TOP_CHANGES;
     if (all) changed.forEach(([title, rows]) => { if (rows.length) list.append(h('div', { class: 'chg-group', text: title }), ...rows.map((r) => r.el)); });
@@ -910,7 +909,7 @@
     if (changed[2][1].length) card.append(h('p', { class: 'note', text: 'Bonus lines compare gear only; expertise and the digitalize demon are not in them.' }));
     if (count > TOP_CHANGES) card.append(h('button', { type: 'button', class: 'btn btn-sm chg-more', 'aria-expanded': String(all),
       onclick: () => { S.over.allChanges = !S.over.allChanges; render(); } }, all ? `Show the ${TOP_CHANGES} biggest` : `Show all ${count} changes`));
-    return card;
+    return wrap;
   }
 
   // ---------- Bonuses ----------
@@ -1003,7 +1002,17 @@
     // Quest bonus and Demonic Compendium: what each step gives (their values are already in the rows above)
     const extras = S.data.expertise.filter(isExtra);
     if (extras.length) {
-      passiveList(page, extras, S.extra, { heading: 'Quest bonus and Demonic Compendium', noIcons: true, empty: '' });
+      // one section each, the title outside the box like every other section ("Quest bonus (32 quests)" -> title + count)
+      const names = []; extras.forEach((r) => { if (!names.includes(r.expertise)) names.push(r.expertise); });
+      names.forEach((name) => {
+        const mine = extras.filter((r) => r.expertise === name), m = /^(.*?)\s*\((.*)\)\s*$/.exec(name);
+        const counted = mine.some((r) => isTrue(r.counted));
+        page.append(sect(m ? m[1] : name, [m ? m[2] : null, mine.length === 1 ? '1 bonus' : `${mine.length} bonuses`].filter(Boolean).join(' · '),
+          counted ? null : h('span', { class: 'tag tag-off', text: 'Not counted' }),
+          h('section', { class: 'card step-list' }, mine.map((r) => h('div', { class: 'passive' + (isTrue(r.counted) ? '' : ' off') },
+            h('span', { class: 'skill' }, h('span', { text: r.skill || '—' })),
+            h('span', { class: 'fx' }, String(r.effects || '').split('; ').filter(Boolean).map((t) => h('span', { text: t }))))))));
+      });
       page.append(h('p', { class: 'note', text: 'What each step gives. The counted ones are already in the Expertise column above.' }));
     }
     return page;
@@ -1085,10 +1094,23 @@
         !isSet && g.item_id ? h('span', { class: 'detail-id', 'data-tip': 'Item id', text: `#${g.item_id}` }) : null))));
     const meta = h('div', { class: 'detail-meta' });
     if (isSet && m) meta.append(h('span', { class: 'tag', text: `${m[1]} of ${m[2]} worn` }), ...(setIds(g).length ? setIds(g) : [m[3]]).map((id) => h('span', { class: 'tag', text: `Set ${id}` })));
-    if (!isSet && g.tarot) meta.append(h('span', { class: 'tag', text: `Tarot: ${g.tarot}` }));
-    // fusion great-success bonuses on the piece's own stats ("MAX" = at the top of the game's table)
-    if (!isSet && (g.fuse || []).length) meta.append(h('span', { class: 'tag', 'data-tip': 'Fusion bonus on its basic stats',
-      text: 'Fusion: ' + g.fuse.map((f) => `${f.stat} +${f.bonus}${isTrue(f.max) ? ' MAX' : ''}`).join(', ') }));
+    // Tarot and soul fusion: hovering the label shows what the crystal gives, as the game's own tooltip of the piece
+    // says it (its "[Tarot Fusion]" / "[Soul Fusion]" part: the crystal's name, then its lines up to the next blank line).
+    const fusionTag = (label, crystal, section) => {
+      const tag = h('span', { class: 'tag', tabindex: 0, text: `${label}: ${crystal}` });
+      const all = String(g.tip || '').replace(/\r/g, '').split('\n'), at = all.findIndex((l) => l.trim() === `[${section}]`);
+      if (at < 0) return tag;
+      let end = at + 1;
+      while (end < all.length && all[end].trim() && !/^\[.+\]$/.test(all[end].trim())) end++;
+      const lines = all.slice(at + 1, end).map((l) => l.trim()).filter((l) => l && l !== String(crystal).trim());
+      if (!lines.length) return tag;
+      return withTip(tag, () => h('div', null, tipHead(null, crystal, label), ...tipLines(lines.join('\n'))));
+    };
+    if (!isSet && g.tarot) meta.append(fusionTag('Tarot', g.tarot, 'Tarot Fusion'));
+    if (!isSet && g.soul) meta.append(fusionTag('Soul fusion', g.soul, 'Soul Fusion'));
+    // fusion great-success bonuses on the piece's own stats ("MAX" = at the top of the game's table); the user calls it Limit
+    if (!isSet && (g.fuse || []).length) meta.append(h('span', { class: 'tag', 'data-tip': 'Limit bonus on its basic stats',
+      text: 'Limit: ' + g.fuse.map((f) => `${f.stat} +${f.bonus}${isTrue(f.max) ? ' MAX' : ''}`).join(', ') }));
     if (meta.children.length) card.append(meta);
     if (isSet && g.shown_as) card.append(h('p', { class: 'note', text: `Pieces: ${g.shown_as}` }));
     if (!isSet && g.shown_as && g.shown_as !== g.item) card.append(h('p', { class: 'note', text: `In game: ${g.shown_as}` }));
@@ -1289,8 +1311,17 @@
   /** Quest bonus and Demonic Compendium rows: they ride along in the expertise data, and are shown on the Bonuses page. */
   const isExtra = (r) => /^(Quest bonus|Demonic Compendium)/.test(String(r.expertise || ''));
   /** The "adds in total" card: one tile per bonus. */
+  /**
+   * A section of a page: its heading outside the box (the title, a short line beside it, anything else at the right end),
+   * then the box. The same on every page, so a card never carries its own title.
+   */
+  const sect = (title, sub, right, ...body) => h('div', { class: 'sect' },
+    h('div', { class: 'toolbar' }, h('h2', { class: 'section-title', text: title }),
+      sub ? (typeof sub === 'string' ? h('span', { class: 'card-sub', text: sub }) : sub) : null,
+      right ? [h('span', { class: 'toolbar-spacer' }), right] : null),
+    ...body);
   const totalsCard = (title, sub, tiles, none, note) => h('section', { class: 'card' },
-    h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: title }), h('span', { class: 'card-sub', text: sub })),
+    title ? h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: title }), h('span', { class: 'card-sub', text: sub })) : null,   // no title: the page gives the section its own heading
     tiles.length ? h('div', { class: 'tiles' }, tiles.map(([r, v]) => h('div', { class: 'tile' },
       h('span', { class: 'tile-label', text: (r.group === 'Partner' ? 'Partner: ' : '') + r.bonus }), h('span', { class: 'tile-value', text: fmt(v, r.unit, true) }))))
       : h('p', { class: 'note', text: none }),
@@ -1326,7 +1357,15 @@
               /^(Quest bonus|Demonic Compendium)/.test(name) ? (anyCounted ? (mine.length === 1 ? '1 bonus' : `${mine.length} bonuses`) : null)
                 : mine.length === 1 ? '1 passive' : `${mine.length} passives`].filter(Boolean).join(' · ') }),
             o.tag ? o.tag(name) : null,
-            anyCounted ? null : h('span', { class: 'tag tag-off', text: 'Not counted' })),
+            anyCounted ? null : h('span', { class: 'tag tag-off', text: 'Not counted' }),
+            // closed: its passives as a row of small icons (hidden by the stylesheet while the group is open)
+            // (a passive the game has no icon for is left out of the row; it is in the list when the group is open)
+            o.noIcons ? null : h('span', { class: 'exp-icons' }, mine.filter((r) => r.icon).map((r) => {
+              const ic = skillIcon(r);
+              if (!isTrue(r.counted)) ic.classList.add('off');
+              ic.dataset.tip = [r.skill || '—', r.rank ? `(${r.rank})` : null].filter(Boolean).join(' ') + (r.effects ? ': ' + String(r.effects).split('; ').join(' · ') : '');
+              return ic;
+            }))),
           h('div', { class: 'exp-body' }, hit.map((r) => h('div', { class: 'passive' + (isTrue(r.counted) ? '' : ' off') },
             h('span', { class: 'rank', 'data-tip': o.rankTip, text: r.rank || '' }), h('span', { class: 'skill' }, o.noIcons ? null : skillIcon(r), h('span', { text: r.skill || '—' })),
             h('span', { class: 'fx' }, String(r.effects || '').split('; ').filter(Boolean).map((t) => h('span', { text: t })))))));
@@ -1335,12 +1374,11 @@
       });
       if (!shown) listHost.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty-row', text: q ? `Nothing matches “${st.q.trim()}”.` : o.empty })));
     };
-    page.append(h('div', { class: 'toolbar' },
+    page.append(h('div', { class: 'sect' }, h('div', { class: 'toolbar' },
       h('h2', { class: 'section-title', text: o.heading }), h('span', { class: 'toolbar-spacer' }),
       o.search ? searchBox(st.q, o.search, (v) => { st.q = v; draw(); }) : null,
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { st.closed.clear(); draw(); } }, 'Expand all'),
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => st.closed.add(n)); draw(); } }, 'Collapse all')));
-    page.append(listHost);
+      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => st.closed.add(n)); draw(); } }, 'Collapse all')), listHost));
     draw();
   }
 
@@ -1350,22 +1388,124 @@
     page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and your other learned passives. Digitalization Levels are on the Digitalize page; the quest bonus and Demonic Compendium are on Bonuses.'));
     // the expertise share of each bonus, without what the Digitalization Levels, quest bonus and compendium put into it
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, round2(n0(r.expertise) - shareOf(r, ['dlevel', 'quest', 'compendium']))]).filter(([, v]) => v);
-    page.append(totalsCard('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, totals, 'No expertise bonuses counted yet.'));
+    page.append(sect('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, null,
+      totalsCard(null, null, totals, 'No expertise bonuses counted yet.')));
     passiveList(page, rows, S.exp, { heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
     return page;
   }
 
   // ---------- Digitalize ----------
+  /**
+   * The digitalize demon's own skills (digitalize.json "skills"), for the demon card: `icons` is the one-line version
+   * (the icons of the skills in its slots, no features; the game's description on hover), `parts` the opened one
+   * (the skills, then the features: kind, icon and name, and what each gives). A skill you don't get while
+   * digitalized is dimmed (the reason, "why" in the data, is not shown: the user didn't want the label). Null when the saved data has no skills yet.
+   */
+  function demonSkills(DG) {
+    if (!DG || !Array.isArray(DG.skills)) return null;
+    const row = (s) => {
+      const name = h('span', { class: 'skill', tabindex: 0 }, skillIcon(s), h('span', { text: s.name }));
+      if (s.tip) withTip(name, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind === 'Equipment' ? 'Demon equipment' : s.kind), ...tipLines(s.tip)));
+      const fx = (s.effects || []).length ? s.effects
+        : s.kind === 'Active' && isTrue(s.counted) ? ['You can use it while digitalized'] : isTrue(s.counted) ? ['No stat bonus'] : [];
+      return h('div', { class: 'passive' + (isTrue(s.counted) ? '' : ' off') },
+        h('span', { class: 'rank', text: s.kind }), name,
+        h('span', { class: 'fx' }, fx.map((t) => h('span', { text: t })),
+          s.replaces ? h('span', { text: `In place of the feature ${s.replaces}` }) : null));
+    };
+    const isFeature = (s) => s.kind === 'Feature' || s.kind === 'Equipment';
+    const slots = DG.skills.filter((s) => !isFeature(s)), feats = DG.skills.filter(isFeature);
+    const count = (part) => `${part.filter((s) => isTrue(s.counted)).length} of ${part.length} apply while digitalized`;
+    const icons = slots.length ? h('span', { class: 'dg-skill-icons' }, slots.map((s) => {
+      const ic = skillIcon(s);
+      ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name);
+      if (!isTrue(s.counted)) ic.classList.add('off');
+      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip)));
+    })) : null;
+    const part = (label, rows, none) => [
+      h('div', { class: 'dg-skill-head' }, h('h4', { class: 'section-title', text: label }), rows.length ? h('span', { class: 'card-sub', text: count(rows) }) : null),
+      rows.length ? h('div', { class: 'dg-skill-list' }, rows.map(row)) : h('p', { class: 'note', text: none })];
+    return { icons, parts: h('div', { class: 'demon-skills' }, part('Skills', slots, 'No skills in its slots.'), part('Features', feats, 'It has no features.')) };
+  }
+
+  /**
+   * One COMP demon as a card, for the demon dropdown: who it is, the share of its stats you get, the skills in its
+   * slots and the key bonuses it would add ("offer", worked out by the reader with your learned boosts).
+   * `pick` runs on a click; `on` marks the demon in use.
+   */
+  function demonTile(d, on, pick) {
+    const O = d.offer || null;
+    const pic = h('span', { class: 'demon-pic ' + alignClass(O && O.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
+    if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+    const slots = O ? (O.skills || []).filter((s) => s.kind !== 'Feature' && s.kind !== 'Equipment') : [];
+    const icons = slots.map((s) => {
+      const ic = skillIcon(s);
+      if (!isTrue(s.counted)) ic.classList.add('off');
+      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip)));
+    });
+    const adds = O ? COMBAT.filter(([k]) => n0(O.combat && O.combat[k])).map(([k, label, unit]) => h('span', { class: 'dgt-add' }, h('span', { text: label }), h('b', { text: fmt(O.combat[k], unit, true) }))) : [];
+    const hp = O && (O.stats || []).find((s) => s.stat === 'Max HP'), mp = O && (O.stats || []).find((s) => s.stat === 'Max MP');
+    return h('button', { type: 'button', class: 'dg-tile' + (on ? ' on' : ''), 'aria-current': on ? 'true' : null, onclick: pick },
+      h('span', { class: 'dgt-head' }, pic,
+        h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: d.name }),
+          h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race, O && O.alignment ? alignName(O.alignment) : null, d.mitama ? `${d.mitama} Mitama` : null].filter(Boolean).join(' · ') })),
+        on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null),
+      O ? h('span', { class: 'dgt-line' }, `${fmt(O.rate)}% of its stats`, hp ? ` · HP ${fmt(hp.value, '', true)}` : '', mp ? ` · MP ${fmt(mp.value, '', true)}` : '')
+        : d.forceStack || d.equipment ? h('span', { class: 'dgt-line', text: [d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }) : null,
+      icons.length ? h('span', { class: 'dg-skill-icons' }, icons) : null,
+      adds.length ? h('span', { class: 'dgt-adds' }, adds) : null);
+  }
+
+  /**
+   * The demons your Digitalization Levels have unlocked (digi-unlocks.json, from the game's level table): one line per
+   * race you have a level in, its demons in the order the levels unlock them. One a higher level unlocks is dimmed
+   * and says which level. A demon you have in the COMP demons seen is marked.
+   */
+  function unlockedDemons() {
+    const races = (S.data.unlocks || []).filter((r) => (r.demons || []).length);
+    const got = races.reduce((n, r) => n + r.demons.filter((d) => isTrue(d.unlocked)).length, 0);
+    const all = races.reduce((n, r) => n + r.demons.length, 0);
+    const chip = (d) => {
+      const open = isTrue(d.unlocked);
+      const pic = h('span', { class: 'demon-pic ' + alignClass(d.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
+      if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+      return h('span', { class: 'dgu-demon' + (open ? '' : ' off'), tabindex: 0,
+        'data-tip': `${d.name}: unlocked at Digitalization Level ${d.level}` + (open ? '' : ', not reached yet') + (isTrue(d.in_comp) ? '. You have one in your COMP.' : '') },
+        pic, h('span', { class: 'dgu-text' }, h('span', { class: 'dgu-name', text: d.name }),
+          h('span', { class: 'dgt-line', text: `DLv ${d.level}` + (isTrue(d.in_comp) ? ' · in COMP' : '') })));
+    };
+    // Closed (the default): only a grid of small pictures, every race together. "Details" opens the lines per race.
+    const open = store.get('dgu-open') === '1';
+    const toggle = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'aria-expanded': String(open), 'data-tip': open ? 'Back to the pictures' : 'By race, with names and the level that unlocks each',
+      onclick: () => { store.set('dgu-open', open ? '0' : '1'); render(); } }, h('span', { class: 'chev' }, icon('chevron')), open ? 'Less' : 'Details');
+    const small = (r, d) => {
+      const pic = h('span', { class: 'demon-pic ' + alignClass(d.alignment) + (isTrue(d.unlocked) ? '' : ' off'), tabindex: 0, role: 'img', 'aria-label': d.name,
+        'data-tip': `${d.name} · ${r.race} · Digitalization Level ${d.level}` + (isTrue(d.unlocked) ? '' : ', not reached yet') + (isTrue(d.in_comp) ? ' · in your COMP' : '') },
+        h('span', { text: String(d.name || '?').charAt(0) }));
+      if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+      return pic;
+    };
+    return sect('Demons you have unlocked', all ? `${got} of ${all} in your races` : null, races.length ? toggle : null,
+      !races.length ? h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty-row', text: 'No Digitalization Levels read yet. Take a snapshot.' }))
+        : !open ? h('section', { class: 'card dgu-small' }, races.flatMap((r) => r.demons.map((d) => small(r, d))))
+          : h('section', { class: 'card dgu' }, races.map((r) => h('div', { class: 'dgu-race' },
+            h('div', { class: 'dgu-head' }, h('span', { class: 'dgu-race-name', text: r.race }), h('span', { class: 'dgt-line', text: `DLv ${r.level}` })),
+            h('div', { class: 'dgu-list' }, r.demons.map(chip))))));
+  }
+
   function pageDigitalize() {
     const rows = S.data.expertise.filter(isDlevel), DG = S.data.digitalize;
     const page = h('div', { class: 'page' });
-    page.append(pageHead('The demon you digitalize with, and the passives your Digitalization Levels teach.'));
+    page.append(pageHead('The demons you digitalize with, and the passives you unlocked.'));
     page.append(demonCard());
+    page.append(unlockedDemons());
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, dlevelShare(r)]).filter(([, v]) => v);
-    page.append(totalsCard('What Digitalization Levels add in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, totals, 'No Digitalization Level bonuses counted yet.',
-      'These passives are always on, digitalized or not, so they count in both views. What the demon itself adds only counts in the Digitalized view.'));
+    // a section heading like the page's other sections (the card then has no title of its own)
+    page.append(sect('What Digitalization Levels add in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, null,
+      totalsCard(null, null, totals, 'No Digitalization Level bonuses counted yet.',
+        'These passives are always on, digitalized or not, so they count in both views. What the demon itself adds only counts in the Digitalized view.')));
     const race = (name) => name.replace(/^Digitalize: /, '');
-    passiveList(page, rows, S.dg, { heading: 'Every Digitalization Level passive', search: 'Search a race, passive or effect', rankTip: 'The Digitalization Level that teaches this passive',
+    passiveList(page, rows, S.dg, { heading: 'Unlocked Digitalization passives', search: 'Search a race, passive or effect', rankTip: 'The Digitalization Level that teaches this passive',
       empty: 'No Digitalization Levels read yet. Take a snapshot.', title: race,
       tag: (name) => (DG && DG.race && race(name).toLowerCase() === String(DG.race).toLowerCase() ? h('span', { class: 'tag tag-demon', 'data-tip': `${DG.demon} is of this race`, text: DG.demon }) : null) });
     return page;
@@ -1440,10 +1580,8 @@
 
     const pts = snaps.map((r) => ({ t: date(r.taken_at).getTime(), v: num(r[field]), at: r.taken_at })).filter((p) => p.v !== null && !Number.isNaN(p.t));
     const chart = h('div', { class: 'chart' });
-    page.append(h('section', { class: 'card' },
-      h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: label }),
-        h('label', { class: 'card-sub', for: 'hist-stat', style: 'display:inline-flex;align-items:center;gap:8px' }, 'Stat', sel)),
-      chart));
+    page.append(sect(label, null, h('label', { class: 'card-sub', for: 'hist-stat', style: 'display:inline-flex;align-items:center;gap:8px' }, 'Stat', sel),
+      h('section', { class: 'card' }, chart)));
     requestAnimationFrame(() => drawHistory(chart, pts, cur[1], cur[2]));
 
     const desc = snaps.slice().reverse();
@@ -1687,7 +1825,7 @@
   // ---------- actions ----------
   async function reload() {
     const d = await host.call('load');
-    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {} };
+    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [] };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
     derive();
@@ -1770,19 +1908,16 @@
       onclick: () => { demonsMenu.hidePopover(); if (digi()) { setMode('normal'); render(); } } },
       h('span', { class: 'dm-icon dm-none dm-off', text: '–' }),
       h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: 'No demon' }), h('span', { class: 'char-line', text: 'Not digitalized' })));
-    const row = (d) => { const on = digi() && d.current; return h('button', { type: 'button', class: 'char', 'aria-current': on ? 'true' : null,
-      onclick: () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render()) : useDemon(d)) },
-      d.icon ? h('img', { class: 'dm-icon', src: d.icon, alt: '' }) : h('span', { class: 'dm-icon dm-none', text: d.name.charAt(0) }),
-      h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: d.name }),
-        h('span', { class: 'char-line', text: [`Lv ${d.level}`, d.race, d.mitama ? `${d.mitama} Mitama` : null,
-          d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }))); };
+    // each demon as a card: what digitalizing with it would give (demonTile)
+    const row = (d) => { const on = digi() && d.current; return demonTile(d, on,
+      () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render()) : useDemon(d))); };
     list.replaceChildren(none, ...demons.map(row));
     const load = $('#demons-load');
     load.disabled = !!loading;
     load.textContent = loading ? 'Reading the game…' : 'Load demons from the game';
     $('#demons-status').textContent = status || (!S.demons ? '' : !demons.length ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
     placeDemons();
-    if (had) { const b = list.querySelector('.char[aria-current="true"]') || list.querySelector('.char'); if (b) b.focus(); }
+    if (had) { const b = list.querySelector('[aria-current="true"]') || list.querySelector('button'); if (b) b.focus(); }
   }
   /** The demons seen before (at once), or with `scan` a fresh look at the game added to them. */
   async function loadDemons(scan) {
@@ -1804,12 +1939,12 @@
     if (ev.newState !== 'open') { demonsLook++; return; }
     if (S.demons) drawDemons(); else loadDemons(false);   // never the game: only what is cached
     placeDemons();
-    const b = $('#demons-list .char[aria-current="true"]') || $('#demons-list .char');
+    const b = $('#demons-list [aria-current="true"]') || $('#demons-list button');
     if (b && demonsFor && demonsFor.matches(':focus-visible')) b.focus();   // opened from the keyboard: go into the list
   });
   demonsMenu.addEventListener('keydown', (ev) => {
     if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
-    const rows = [...demonsMenu.querySelectorAll('.char, #demons-load')], i = rows.indexOf(document.activeElement);
+    const rows = [...demonsMenu.querySelectorAll('.char, .dg-tile, #demons-load')], i = rows.indexOf(document.activeElement);
     const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
     if (next) { next.focus(); ev.preventDefault(); }
   });

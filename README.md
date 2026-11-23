@@ -101,6 +101,15 @@ isn't learned are listed but not counted. Boosted Mitama set bonuses apply when 
 Enhancement - Iron Man" (read from the learned skills; `--mitama-boost yes|no` overrides). Checked against the game:
 digitalized with the Specter, Rubito's stats rose by exactly the computed amounts.
 
+**The demon's skills.** In the Digitalized view, the demon's card (Overview and Digitalize) shows the demon's own skills.
+Closed, its line has the icons of the skills in its slots. "Details" also lists them: the skills, then its features. Each has its icon, what it gives you, and the game's description on hover. A
+skill you don't get while digitalized is dimmed (for example, its features when the race's Features boost isn't learned).
+
+**Demons you have unlocked.** The Digitalize page shows them as a grid of small pictures; "Details" lists, per race you have a Digitalization Level in, the demons those
+levels unlock, with the level that unlocks each. Demons of a level you haven't reached are dimmed, and one you have in
+your COMP is marked. The demon dropdown shows each COMP demon as a card: the share of its stats you would get, the
+skills in its slots and the key bonuses it would add, worked out with your learned Digitalize boosts.
+
 **Digitalize demon on the page.** A snapshot taken while digitalized saves that demon as the character's digitalize
 demon (`data\cache\digitalize.json`). To pick one without digitalizing, click the demon's name on the Overview's demon line (in the
 app; a dropdown of "No demon" and the demons seen before, with "Load demons from the game" at the end to read the COMP again), or `demon "<name>" --use`. The picker lists the COMP demons the game has loaded (all of them while the COMP or Demon
