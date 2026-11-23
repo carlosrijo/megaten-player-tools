@@ -2227,6 +2227,8 @@
     if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }),
       h('div', { class: 'dun-loot' }, loot.map((l) => withTip(h('span', { class: 'dun-loot-item', tabindex: 0, role: 'img', 'aria-label': `${l.item}, up to ${nf.format(l.best)}%` },
         dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => dunLootTip(l))))));
+    // Dark Babel and other NewMoon areas: the public server data gives their enemies nothing (NewMoon sets it on its own server)
+    else box.append(h('p', { class: 'note', text: 'No enemy drops: the public server data this page is built from gives the enemies here nothing. NewMoon sets these drops on its own server, so they can\'t be shown.' }));
     box.append(h('table', { class: 'tbl dun-mobs' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }),
         h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
