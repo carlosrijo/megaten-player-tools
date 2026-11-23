@@ -1785,7 +1785,7 @@
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Gear' }), h('th', { scope: 'col', text: 'Slot' }), h('th', { scope: 'col', text: 'Gives' }), h('th', { scope: 'col', text: 'Where to get it' }))), body)));
     page.append(more);
-    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data; ${items.filter((x) => x.id && x.known).length} with a known way to get them. Data made on ${D.data.generatedAt}. Players' notes are from SnowSheet's gear reference and Midori's Post Wipe Re:FC.` }));
+    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data; ${items.filter((x) => x.id && x.known).length} with a known way to get them. Data made on ${D.data.generatedAt}. Players' notes are from SnowSheet's gear reference.` }));
     drawChips(); draw();
     return page;
   }
