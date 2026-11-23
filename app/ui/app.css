@@ -176,6 +176,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 /* as many columns as fit, each wide enough for its label, bar and number (never squeezed into each other) */
 .dg-bars.who-stats { grid-template-rows: none; grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 2px 18px; }
 .who-stats .dg-row { grid-template-columns: 38px minmax(20px, 1fr) 40px; }
+.dg-bars.who-stats .dg-row .strack i { border-radius: 0; }   /* the player's bars have square ends (asked for); the demon's own keep the rounded one */
 
 /* ---------- controls ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; white-space: nowrap; }
