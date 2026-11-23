@@ -952,16 +952,20 @@
       return sect('What changed', null, null, card);
     }
     const base = earlier.find((x) => x.taken_at === S.compare) || earlier[earlier.length - 1];
-    const sel = h('select', { class: 'select', 'aria-label': 'Compare with snapshot', onchange: () => { S.compare = sel.value; render(); } },
-      earlier.slice().reverse().map((x) => h('option', { value: x.taken_at, selected: x.taken_at === base.taken_at, text: when(x.taken_at) })));
-    const wrap = sect('What changed', h('label', { class: 'card-sub', style: 'display:inline-flex;align-items:center;gap:8px' }, 'since', sel), null, card);
-
     const sfx = digi() ? '_digi' : '';
     const groups = [
       ['Character', [['level', 'Level', ''], ['max_hp', 'Max HP', ''], ['max_mp', 'Max MP', '']]],
       ['Stats', STATS.map(([k, label]) => [k, label, ''])],
       [digi() ? 'Gear bonuses, digitalized' : 'Gear bonuses', COMBAT.map(([k, label, unit]) => [k + sfx, label, unit])],
     ];
+    // Each snapshot in the picker says how many of those lines differ from the latest (many snapshots differ in none),
+    // counted the same way as the list below.
+    const differs = (x) => groups.reduce((n, [, keys]) => n + keys.filter(([k]) => { const a = num(x[k]), b = num(L[k]); return a !== null && b !== null && a !== b; }).length, 0);
+    const countText = (n) => (n ? `${n} change${n === 1 ? '' : 's'}` : 'no changes');
+    const sel = h('select', { class: 'select', 'aria-label': 'Compare with snapshot', onchange: () => { S.compare = sel.value; render(); } },
+      earlier.slice().reverse().map((x) => h('option', { value: x.taken_at, selected: x.taken_at === base.taken_at, text: `${when(x.taken_at)} · ${countText(differs(x))}` })));
+    const wrap = sect('What changed', h('label', { class: 'card-sub', style: 'display:inline-flex;align-items:center;gap:8px' }, 'since', sel), null, card);
+
     const list = h('div', { class: 'chg-list' });
     // every change, with how big it is next to the number it changed from (so 50 on 365 and 51 on 524 can be compared)
     const changed = groups.map(([title, keys]) => [title, keys.map(([k, label, unit]) => {

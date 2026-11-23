@@ -37,7 +37,7 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   your affinity boost, the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes
   Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers.
   At the bottom, across the page, **What changed**: the 5 biggest changes since an earlier snapshot ("Show all" lists
-  the rest).
+  the rest). The snapshot picker says how many changes each one has.
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
   click the name in the header to switch.
