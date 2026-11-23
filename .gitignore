@@ -5,6 +5,8 @@ obj/
 .claude/settings.local.json
 # demon icons for the DCM Locator: the game's own art, made locally by tools\dcmexport
 app/ui/dcm-icons/
+# enemy pictures for the Dungeon Explorer: game art, made locally by newmoon-reader dungeons --client
+app/ui/dungeon-icons/
 # the assistant's 3D model: the game's own art, made locally from the client (newmoon-reader.exe model, or the app on first use)
 data/cache/models/
 data/characters/*/cache/models/

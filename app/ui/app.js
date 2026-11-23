@@ -28,6 +28,7 @@
     fuse: '<circle cx="8" cy="8" r="3.5"/><circle cx="16" cy="8" r="3.5"/><path d="M8 11.5v1.5a4 4 0 0 0 4 4 4 4 0 0 0 4-4v-1.5M12 17v3.5"/>',
     flask: '<path d="M9 3.5h6M10 3.5v5.2L5.2 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.8-2.9L14 8.7V3.5"/><path d="M7.6 14.5h8.8"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    gate: '<path d="M5 20.5V10a7 7 0 0 1 14 0v10.5"/><path d="M3 20.5h18"/><path d="M9.5 20.5v-5a2.5 2.5 0 0 1 5 0v5"/>',
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
     trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 10.5v6M14 10.5v6"/>',
   };
@@ -236,7 +237,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['fusion', 'Fusion Planner', 'fuse'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['dungeons', 'Dungeon Explorer', 'gate'], ['fusion', 'Fusion Planner', 'fuse'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -280,6 +281,7 @@
     gdb: { q: '', slot: 'all', known: true, open: new Set(), shown: 150, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
+    dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle' },   // Dungeon Explorer: opened places, opened enemies
     // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
       // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
@@ -2128,6 +2130,129 @@
     drawChips(); draw();
     return page;
   }
+  // ---------- Tools: Dungeon Explorer ----------
+  // dungeons.json is made by "newmoon-reader dungeons" (src\Build\Dungeons.cs): the server's zone, instance and drop
+  // files for where each enemy is, the NewMoon client's demon table for what it is. Only enemies that can't be
+  // contracted are in it. Enemy pictures sit in dungeon-icons\ beside it (made locally from the client, not in git).
+  const DUN_KINDS = [['all', 'All'], ['Dungeon', 'Dungeons'], ['Field', 'Fields'], ['other', 'Other places']];
+  const STAT_NAMES = ['STR', 'MAG', 'VIT', 'INT', 'SPD', 'LUCK'], COMBAT_NAMES = ['CLS-R', 'LNG-R', 'Spell', 'Support', 'P.Def', 'M.Def'];
+  function loadDungeons() {
+    if (S.dun.state !== 'idle') return;
+    S.dun.state = 'loading';
+    fetch('dungeons.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.dun.data = d; S.dun.state = d ? 'ready' : 'failed';
+      if (d) {
+        const sk = (id) => (d.skills[id] ? d.skills[id][0] : '');
+        Object.values(d.mobs).forEach((m) => { m.hay = [m.name, m.race || '', ...m.skills.map(sk), ...m.enemySkills.map(sk), ...m.traits.map(sk)].join(' ').toLowerCase(); });
+        d.dungeons.forEach((x, i) => {
+          x.key = i;
+          x.mobs.forEach((e) => { e.mob = d.mobs[e.m]; e.hay = [e.mob.hay, e.where || '', ...(e.drops || []).map((g) => g.item)].join(' ').toLowerCase(); });
+          x.hay = [x.name, x.from || ''].join(' ').toLowerCase();
+          x.bosses = x.mobs.filter((e) => e.boss).length;
+        });
+      }
+      if (S.page === 'dungeons') render();
+    });
+  }
+  const dunIcon = (m) => h('span', { class: 'dcm-icon', 'aria-hidden': 'true' }, m.icon ? h('img', { src: m.icon, alt: '', width: 28, height: 28, loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null);
+  /** One enemy's card: what kind of enemy it is, its numbers, its affinities, what it can do and what it drops. */
+  function dunMobDetail(e) {
+    const m = e.mob, D = S.dun.data, box = h('div', { class: 'dun-mob' });
+    box.append(h('div', { class: 'detail-meta' },
+      m.race ? h('span', { class: 'tag', text: m.race }) : null, h('span', { class: 'tag', text: `Level ${m.level}` }),
+      e.boss ? h('span', { class: 'tag tag-boss', text: 'Boss' }) : null,
+      h('span', { class: 'tag', 'data-tip': e.talk ? 'You can talk to it, but it never joins you (no contract)' : 'Talking to it always fails', text: e.talk ? 'Talks, never joins' : 'Can\'t be talked to' }),
+      e.xp ? h('span', { class: 'tag', text: `${fmt(e.xp)} XP` }) : null));
+    const cell = (k, v, tip) => h('div', { class: 'dun-stat', 'data-tip': tip || null }, h('span', { class: 'dun-stat-k', text: k }), h('span', { class: 'dun-stat-v', text: fmt(v) }));
+    box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Stats' }),
+      h('div', { class: 'dun-stats' },
+        cell('Max HP', m.hp, 'With the extra HP the game gives this enemy'), cell('Max MP', m.mp),
+        m.stats.map((v, i) => cell(STAT_NAMES[i], v)), m.combat.map((v, i) => cell(COMBAT_NAMES[i], v)))));
+    // affinities: weak (takes more), resists (takes less), and the chance to null, reflect or absorb a hit
+    const groups = [['Weak to', m.aff.filter((a) => a.res < 0), (a) => `${a.el} ${Math.abs(a.res)}%`, 'dun-weak'],
+      ['Resists', m.aff.filter((a) => a.res > 0), (a) => `${a.el} ${a.res}%`, 'dun-res'],
+      ...['Null', 'Reflect', 'Absorb'].map((k) => [k === 'Null' ? 'Nulls' : k === 'Reflect' ? 'Reflects' : 'Absorbs', m.aff.filter((a) => a.kind === k), (a) => (a.pct >= 100 ? a.el : `${a.el} ${a.pct}%`), 'dun-nra'])]
+      .filter((g) => g[1].length);
+    box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Affinities' }),
+      groups.length ? h('div', { class: 'dun-aff' }, groups.map(([label, list, txt, cls]) => h('div', { class: 'dun-aff-row' },
+        h('span', { class: 'dun-aff-k', text: label }), h('span', { class: 'chips' }, list.map((a) => h('span', { class: 'tag ' + cls, text: txt(a) }))))))
+        : h('span', { class: 'zero', text: 'No weakness or resistance' })));
+    const skills = (label, ids, tip) => {
+      const list = ids.filter((id) => D.skills[id]);
+      return list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label, 'data-tip': tip || null }),
+        h('ul', { class: 'gdb-list dun-skills' }, list.map((id) => { const [n, d] = D.skills[id];
+          return h('li', null, h('b', { text: n }), d ? h('span', { class: 'dun-desc', text: d.replace(/\s*\n\s*/g, ' ') }) : null); }))) : null;
+    };
+    [skills('Skills', m.skills), skills('Enemy-only skills', m.enemySkills, 'Skills only this enemy version uses'), skills('Traits', m.traits, 'Its innate passive features')].forEach((b) => b && box.append(b));
+    if (e.drops) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Drops' }),
+      h('ul', { class: 'gdb-list' }, e.drops.map((g) => h('li', null, h('span', { class: 'gdb-kind dun-rate', text: `${nf.format(g.rate)}%` }), g.item, g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null)))));
+    return box;
+  }
+  function dunDetail(x, q, redraw) {
+    const D = S.dun, box = h('div', { class: 'dun-detail' });
+    const only = q && !x.hay.includes(q) ? x.mobs.filter((e) => e.hay.includes(q)) : x.mobs;   // a search for an enemy shows that enemy
+    const body = h('tbody');
+    only.forEach((e) => {
+      const k = x.key + '|' + e.m + (e.boss ? '|b' : ''), open = D.mob.has(k);
+      const toggle = () => { if (D.mob.has(k)) D.mob.delete(k); else D.mob.add(k); redraw(); };
+      body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+        h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+          h('span', { class: 'chev' }, icon('chevron')), dunIcon(e.mob),
+          h('span', null, e.mob.name, e.boss ? h('span', { class: 'tag tag-boss', style: 'margin-left:8px', text: 'Boss' }) : null, e.where ? h('span', { class: 'src-count', text: e.where }) : null))),
+        h('td', { class: e.mob.race ? '' : 'zero', text: e.mob.race || '—' }),
+        h('td', { class: 'num', text: e.mob.level }),
+        h('td', { class: 'num', text: fmt(e.mob.hp) })));
+      if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, dunMobDetail(e))));
+    });
+    if (x.shared) box.append(h('p', { class: 'note', text: 'Every enemy here can also drop: ' + x.shared.slice(0, 12).map((g) => `${g.item} (${nf.format(g.rate)}%)`).join(', ') + (x.shared.length > 12 ? ` and ${x.shared.length - 12} more` : '') }));
+    box.append(h('table', { class: 'tbl dun-mobs' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', text: 'Race' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }))), body));
+    return box;
+  }
+  function pageDungeons() {
+    const D = S.dun, page = h('div', { class: 'page page-dcm' });
+    loadDungeons();
+    page.append(pageHead('Every dungeon and the enemies in it that can\'t be contracted. Click a dungeon for its enemies, and an enemy for its stats, affinities, skills and traits.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The dungeon list could not be loaded (dungeons.json is missing beside the page).' : 'Loading the dungeons…' }));
+      return page;
+    }
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
+      'Names, stats, skills and traits are the NewMoon client\'s. Which enemies are where, their levels, whether they talk and their drops come from the public server data, so NewMoon may have changed them. Stats are the enemy\'s own at that level, before its passive skills and traits.')));
+    const list = D.data.dungeons;
+    const inKind = (x, k) => (k === 'all' ? true : k === 'other' ? x.kind !== 'Dungeon' && x.kind !== 'Field' : x.kind === k);
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of place' });
+    const body = h('tbody');
+    const drawChips = () => chips.replaceChildren(...DUN_KINDS.map(([id, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
+        label, h('span', { class: 'count', text: list.filter((x) => inKind(x, id)).length }))));
+    const draw = () => {
+      body.replaceChildren();
+      const q = D.q.trim().toLowerCase();
+      const rows = list.filter((x) => inKind(x, D.kind) && (!q || x.hay.includes(q) || x.mobs.some((e) => e.hay.includes(q))));
+      rows.forEach((x) => {
+        const open = D.open.has(x.key);
+        const toggle = () => { if (D.open.has(x.key)) D.open.delete(x.key); else D.open.add(x.key); draw(); };
+        const hits = q && !x.hay.includes(q) ? x.mobs.filter((e) => e.hay.includes(q)).length : 0;
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+          h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+            h('span', { class: 'chev' }, icon('chevron')),
+            h('span', null, x.name, x.from ? h('span', { class: 'src-count', text: `entered from ${x.from}` }) : null, hits ? h('span', { class: 'src-count', text: hits === 1 ? '1 matching enemy' : `${hits} matching enemies` }) : null))),
+          h('td', null, h('span', { class: 'tag', text: x.kind })),
+          h('td', { class: 'num', text: x.levels }),
+          h('td', { class: 'num' }, String(x.mobs.length), x.bosses ? h('span', { class: 'src-count', text: x.bosses === 1 ? '1 boss' : `${x.bosses} bosses` }) : null)));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, dunDetail(x, q, draw))));
+      });
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 4, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No place in this group.' })));
+    };
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a dungeon, enemy, skill or drop', (v) => { D.q = v; draw(); }), chips));
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Place' }), h('th', { scope: 'col', text: 'Kind' }), h('th', { scope: 'col', class: 'num', text: 'Levels' }), h('th', { scope: 'col', class: 'num', text: 'Enemies' }))), body)));
+    page.append(h('p', { class: 'note', text: `${list.length} places, ${Object.keys(D.data.mobs).length} enemy kinds that can't be contracted. Data made on ${D.data.generatedAt}. An enemy can't be contracted when talking to it always fails, or when it talks but never joins. Drop rates are the chance per kill.` }));
+    drawChips(); draw();
+    return page;
+  }
+
   // ---------- Simulator (Tools): other gear and expertise ranks, and what they would give ----------
   // The numbers come from the reader (host "simInit" / "simulate" / "simCatalog": src\Build\Simulator.cs), so they are
   // worked out by the same code as the rest of the app. The page only keeps the build being tried, asks for its result
@@ -3614,7 +3739,7 @@
     return box;
   }
 
-  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, fusion: pageFusion };
+  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
