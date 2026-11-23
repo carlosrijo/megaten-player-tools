@@ -27,6 +27,7 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   digitalize demon each add, and to jump to every source on Bonuses. Under it, the 5 biggest changes since an earlier
   snapshot ("Show all" lists the rest); beside it, one radar chart per element with your affinity boost,
   the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers. The digitalize demon's name is a dropdown to pick another one.
+  Under the radars, an **Expertise** card: your expertise points against the cap, as the game's Expertise window shows them (e.g. 52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its class-rank and the icons of the skills its ranks gave you, passive and active on separate lines (a switched-off toggle is dimmed). Click one to open it on the Expertise page, or "View more" for the whole page.
 - **Damage per shot** (to the right of the stats): the expected damage of the character's main skill against the
   enemy its build is planned for, worked out by the gear analysis (`smt-gear-analysis`, the folder next to this repo
   or `gearAnalysis` in `data\config.json`) from this reader's data, by `tools\damage.ps1`. It is recalculated after a

@@ -814,10 +814,54 @@
       col.map(([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow)))))));
 
     // the sheet with what changed under it; affinity (two radars, one over the other) beside them
-    page.append(h('div', { class: 'over-grid' }, h('div', { class: 'over-main' }, sheet, changesCard()), affinityCard()));
+    page.append(h('div', { class: 'over-grid' }, h('div', { class: 'over-main' }, sheet, changesCard()), h('div', { class: 'over-side' }, affinityCard(), chainCard())));
 
     page.append(h('p', { class: 'note', text: 'Not included anywhere: buffs, clan and title bonuses, and your partner demon\u2019s own stats. The game only works those out on the server. Pick your digitalize demon above to add what it gives.' }));
     return page;
+  }
+
+  /**
+   * Expertise on Overview: points spent against the cap (as the game's Expertise window shows them: points / 100, "pt"),
+   * then each chain expertise the character has unlocked with its class-rank and the icons of the skills its reached
+   * ranks give. No stats here: what they add is on the Expertise and Bonuses pages. A chain opens the Expertise page on it.
+   */
+  function chainCard() {
+    const R = S.data.ranks || {}, P = R.points || null;
+    const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
+    const card = h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Expertise' }),
+      P ? h('span', { class: 'card-sub', text: P.cap ? `${pt(P.total)} / ${pt(P.cap)}` : `${pt(P.total)}, no cap` }) : null));
+    if (P && P.cap) {
+      const free = n0(P.cap) - n0(P.total);
+      card.append(h('div', { class: 'exp-points', 'data-tip': `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})`
+          + (P.level === 99 ? ' + 1000.00pt at 99' : '') + ` + ${P.extension} expansions × 1000.00pt` },
+        h('span', { class: 'exp-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })),
+        h('span', { class: 'exp-free', text: free > 0 ? `${pt(free)} free` : 'At the cap' })));
+    } else if (!P) card.append(h('p', { class: 'note', text: 'Take a snapshot to read your expertise points and cap.' }));
+    const chains = ((R.ranks) || []).filter((r) => r.chain);
+    const more = h('button', { type: 'button', class: 'btn btn-sm chain-more', onclick: () => { S.exp.q = ''; go('expertise'); } }, 'View more');
+    if (!chains.length) { card.append(h('p', { class: 'note', text: 'No chain expertise unlocked yet.' }), more); return card; }
+    // One line of icons per kind. The skills come from the ranks file ("skills": every skill of the reached ranks,
+    // actives too); a passive's row in expertise.json says whether a toggle is switched off (shown dimmed).
+    // Older data without "skills" shows the passives from expertise.json only.
+    const iconLine = (label, list) => (list.length ? h('span', { class: 'chain-kind' }, h('span', { class: 'chain-kind-label', text: label }),
+      h('span', { class: 'chain-icons' }, list.map((s) => {
+        const ic = skillIcon(s);
+        ic.dataset.tip = `${s.name} (${s.rank})` + (s.off ? ', toggle switched off' : '');
+        if (s.off) ic.classList.add('off');
+        return ic;
+      }))) : null);
+    card.append(h('h4', { class: 'list-head', text: 'Chain expertise' }), h('div', { class: 'chain-list' }, chains.map((c) => {
+      const rows = S.data.expertise.filter((r) => r.expertise === c.name && !isExtra(r));
+      const offIds = new Set(rows.filter((r) => r.toggle && !r.toggle_on).map((r) => r.skill_id));
+      const all = Array.isArray(c.skills) ? c.skills.map((s) => ({ ...s, off: offIds.has(s.id) }))
+        : rows.map((r) => ({ id: r.skill_id, name: r.skill || '—', icon: r.icon, rank: r.rank || '', active: false, off: r.toggle && !r.toggle_on }));
+      const passives = all.filter((s) => !s.active), actives = all.filter((s) => s.active);
+      return h('button', { type: 'button', class: 'chain', 'data-tip': `Open ${c.name} on the Expertise page`,
+        onclick: () => { S.exp.q = c.name; go('expertise'); } },
+        h('span', { class: 'chain-head' }, h('span', { class: 'chain-name', text: c.name }), h('span', { class: 'chain-rank', text: `${c.class}-${c.rank}` })),
+        all.length ? [iconLine('Passive', passives), iconLine('Active', actives)] : h('span', { class: 'chain-none', text: 'No skills from its ranks yet' }));
+    })), more);
+    return card;
   }
 
   function changesCard() {
