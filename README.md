@@ -197,6 +197,22 @@ talked into a contract, are under "Enemy only". Search by name, race, skill, fea
 race and alignment (Law, Neutral, Chaos); sort by level, name or race. Demons, stats, skills, tarot and soul are the NewMoon client's; spawns are the
 public server data, so NewMoon may have changed them.
 
+### Tools: Skill Database
+
+Under **Tools** in the left bar. Every skill in the game, separated by action type: Attack, Spin, Rush, Shot, Rapid,
+Guard, Counter, Dodge, Talk, Threaten, Provoke and Curative (the game's own names and order, from its Help), then
+Passive and Switch skills, which have no action type. Each row has the skill's picture, element, cost (MP, HP,
+bullets or items), cast time, cooldown, modifier and stiffness (the two numbers the game's description ends with) and who can get it. Pick a type at the top to
+see only those skills and what the game's Help says about that type (what it beats and what beats it). Click a skill
+for its in-game description, its target, reach and the stat it uses, the expertise rank that teaches it and every
+demon that learns it (with the level) or has it as a feature; click a demon to open it in the Demon Database.
+
+The list opens on the skills you can get (learned by a compendium demon, a demon feature, from expertise, or a fusion
+skill: 1,451). "Who can get it" narrows that down or shows every skill in the game data (3,120, with enemy and event
+skills). Search by name, element, words of the description, expertise or demon; filter by element; sort by name,
+modifier, stiffness or cooldown. Item uses, debug skills and the 777 skills the client only names in Japanese are left out.
+Destruction magic (Agi, Zio...) is a Shot skill in the game data; healing, support and curse spells are Curative.
+
 ### Tools: Simulator
 
 Under **Tools** in the left bar. Try other gear and expertise ranks and watch your stats change, without touching the

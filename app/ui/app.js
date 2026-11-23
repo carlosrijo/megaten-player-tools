@@ -238,7 +238,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['dungeons', 'Dungeon Explorer', 'gate'], ['fusion', 'Fusion Planner', 'fuse'], ['ddb', 'Demon Database', 'horns'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['dungeons', 'Dungeon Explorer', 'gate'], ['fusion', 'Fusion Planner', 'fuse'], ['ddb', 'Demon Database', 'horns'], ['skills', 'Skill Database', 'bolt'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -284,7 +284,9 @@
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
-    ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle' },
+    ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null },   // only: a demon id a link opened
+    // Skill Database: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
+    skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), shown: 200, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
     // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
       // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
@@ -505,6 +507,7 @@
   });
   function go(page) {
     if (S.page === page) return;
+    if (S.page === 'ddb') S.ddb.only = null;   // a demon a link opened alone: the whole list again next time
     S.page = page; store.set('page', page);
     render(); $('#main').scrollTop = 0;
   }
@@ -2378,7 +2381,7 @@
         x.hay = [x.name, x.race, x.align, ...x.traits.concat(x.mt ? x.mt.traits : []).map((t) => sk(t).name), ...x.skills.map(([id]) => sk(id).name),
           ...[x.tarot, x.soul].filter(Boolean).flatMap((e) => [e.name, ...e.lines]), ...x.contract.map((c) => c.zone)].join(' ').toLowerCase();
       });
-      if (S.page === 'ddb') render();
+      if (S.page === 'ddb' || S.page === 'skills') render();
     });
     loadDcm();   // a demon's DCM, when there is one, links to the DCM Locator
   }
@@ -2498,15 +2501,20 @@
     const inPick = (x) => (!D.race || x.race === D.race) && (!D.align || x.align === D.align);   // the Race and Alignment dropdowns
     const races = [...new Set(all.map((x) => x.race))].sort();
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Which demons' });
-    const body = h('tbody'), count = h('p', { class: 'note' });
+    const body = h('tbody'), count = h('p', { class: 'note' }), onlyBar = h('div');
     const drawChips = () => chips.replaceChildren(...DDB_KINDS.map(([id, label]) =>
-      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(!D.only && D.kind === id), onclick: () => { D.kind = id; D.only = null; drawChips(); draw(); } },
         label, h('span', { class: 'count', text: all.filter((x) => inKind(x, id) && inPick(x)).length }))));
     const SORTS = { level: (a, b) => a.level - b.level || a.name.localeCompare(b.name), name: (a, b) => a.name.localeCompare(b.name), race: (a, b) => a.race.localeCompare(b.race) || a.level - b.level };
     const draw = () => {
       body.replaceChildren();
       const words = D.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      const rows = all.filter((x) => inKind(x, D.kind) && inPick(x) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
+      // opened from a link (the Skill Database): that one demon only. A search by its name would also list every
+      // demon whose skills, features or race have the word ("Power" matches 57), burying the one clicked.
+      const only = D.only != null ? all.find((x) => x.id === D.only) : null;
+      onlyBar.replaceChildren(...(only ? [h('div', { class: 'notice ddb-only' }, icon('info'), h('span', null, 'Showing only ', h('b', { text: only.name }), '.'),
+        h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.only = null; drawChips(); draw(); } }, 'Show all demons'))] : []));
+      const rows = only ? [only] : all.filter((x) => inKind(x, D.kind) && inPick(x) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
       rows.forEach((x) => {
         const open = D.open.has(x.id);
         const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
@@ -2528,15 +2536,183 @@
     };
     const sel = (label, value, options, onchange) => h('label', { class: 'gdb-check' }, label,
       h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
-    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, race, skill, feature, tarot or zone', (v) => { D.q = v; draw(); }),
-      sel('Race', D.race, [['', 'All races']].concat(races.map((r) => [r, r])), (v) => { D.race = v; drawChips(); draw(); }),
-      sel('Alignment', D.align, [['', 'All'], ['Law', 'Law'], ['Neutral', 'Neutral'], ['Chaos', 'Chaos']], (v) => { D.align = v; drawChips(); draw(); }),
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, race, skill, feature, tarot or zone', (v) => { D.q = v; D.only = null; drawChips(); draw(); }),
+      sel('Race', D.race, [['', 'All races']].concat(races.map((r) => [r, r])), (v) => { D.race = v; D.only = null; drawChips(); draw(); }),
+      sel('Alignment', D.align, [['', 'All'], ['Law', 'Law'], ['Neutral', 'Neutral'], ['Chaos', 'Chaos']], (v) => { D.align = v; D.only = null; drawChips(); draw(); }),
       sel('Sort', D.sort, [['level', 'Level'], ['name', 'Name'], ['race', 'Race']], (v) => { D.sort = v; draw(); })));
-    page.append(chips);
+    page.append(chips, onlyBar);
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Demon' }), h('th', { scope: 'col', class: 'num', text: 'Lv' }), h('th', { scope: 'col', text: 'Alignment' }),
         h('th', { scope: 'col', text: 'Where to contract' }), h('th', { scope: 'col', text: 'Tarot · Soul' }))), body)));
     page.append(count);
+    drawChips(); draw();
+    return page;
+  }
+  // ---------- Tools: Skill Database ----------
+  // skill-db.json is made by "newmoon-reader skilldb" (src\Build\SkillDb.cs): every skill of the NewMoon client grouped
+  // by its action type (the game's Help names them), with element, cost, timings, power and the expertise ranks that
+  // unlock it. Which demons learn it or have it as a feature comes from demon-db.json (the Demon Database), read here.
+  // Icons are in skill-db-icons\ beside this file.
+  const SKL_WHO = [['get', 'Skills you can get'], ['demon', 'Learned by demons'], ['feature', 'Demon features'], ['exp', 'From expertise'], ['fusion', 'Fusion skills'], ['all', 'Every skill in the game data']];
+  /** Text as searchable words: lower case, each word after one space (punctuation is a space). */
+  const sklWords = (s) => ' ' + String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
+  const SKL_NO_ICON = { none: 'The game has no picture for this skill (fusion skills and most demon features have none).',
+    missing: 'The game names a picture for this skill, but the client does not include it.' };
+  /** A skill's picture; an empty box says why there is none. */
+  const sklIcon = (x) => { const box = ddbImg(x.icon, 24, 'skill-ico'); if (!x.icon && SKL_NO_ICON[x.noIcon]) box.setAttribute('data-tip', SKL_NO_ICON[x.noIcon]); return box; };
+  function loadSkillDb() {
+    loadDemonDb();   // who learns each skill
+    if (S.skl.state !== 'idle') return;
+    S.skl.state = 'loading';
+    fetch('skill-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.skl.data = d; S.skl.state = d ? 'ready' : 'failed';
+      if (d) d.skills.forEach((x) => { x.hay0 = sklWords([x.name, x.el, x.desc, ...(x.exp || []), x.fusion ? 'fusion' : ''].join(' ')); });
+      if (S.page === 'skills') render();
+    });
+  }
+  /** skill id -> the compendium demons that learn it or have it as a feature (from the Demon Database's data), made once. */
+  function sklDemons() {
+    const D = S.skl, dd = S.ddb.data;
+    if (!dd) return null;
+    if (D.byDemon && D.byDemonFrom === dd) return D.byDemon;
+    const m = new Map(), add = (id, row) => { if (!m.has(id)) m.set(id, []); const l = m.get(id); if (!l.some((r) => r.d === row.d && r.how === row.how && r.mt === row.mt)) l.push(row); };
+    dd.demons.forEach((x) => {
+      x.traits.forEach((t) => add(t, { d: x, how: 'feature', lv: 0 }));
+      x.skills.forEach(([id, at]) => add(id, { d: x, how: 'skill', lv: at }));
+      if (x.mt) {
+        x.mt.traits.filter((t) => !x.traits.includes(t)).forEach((t) => add(t, { d: x, how: 'feature', lv: 0, mt: true }));
+        (x.mt.skills || []).filter(([id]) => !x.skills.some(([s]) => s === id)).forEach(([id, at]) => add(id, { d: x, how: 'skill', lv: at, mt: true }));
+      }
+    });
+    m.forEach((l) => l.sort((a, b) => (a.how === b.how ? 0 : a.how === 'skill' ? -1 : 1) || a.lv - b.lv || a.d.level - b.d.level || a.d.name.localeCompare(b.d.name)));
+    D.data.skills.forEach((x) => { x.hay = x.hay0 + sklWords((m.get(x.id) || []).map((r) => r.d.name).join(' ')); });
+    D.byDemon = m; D.byDemonFrom = dd;
+    return m;
+  }
+  function sklDetail(x, who) {
+    const box = h('div', { class: 'q-detail skl-detail' });
+    const block = (label, ...kids) => h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('div', null, ...kids));
+    if (x.desc) box.append(block('In game', h('p', { class: 'ddb-desc skl-desc', text: x.desc })));
+    const facts = [['Target', x.target], ['Reach', x.reach != null ? String(x.reach) : null, 'In the game\'s own distance units: compare skills with each other.'],
+      ['Damage from', x.stat, 'The stat its damage or effect is worked out from.'], ['Needs', x.weapon],
+      ['Heals', x.heal != null ? String(x.heal) : null, 'The healing modifier (a % is of the target\'s Max HP).'],
+      ['MP while held', x.drain ? `${x.drain} MP` : null, 'Drained while the stance is held.']].filter((f) => f[1]);
+    if (facts.length) box.append(block('Details', h('div', { class: 'skl-facts' }, facts.map(([k, v, tip]) =>
+      h('div', { class: 'ddb-stat', 'data-tip': tip || null }, h('span', { class: 'q-key', text: k }), h('b', { text: v }))))));
+    const get = h('ul', { class: 'gdb-list gdb-get' });
+    (x.exp || []).forEach((e) => get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Expertise' }), h('b', { text: e }))));
+    if (x.fusion) get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Fusion' }), h('span', null, 'A fusion skill: the game data marks it as one, it does not say which pair makes it.')));
+    if (get.childNodes.length) box.append(block('How to get it', get));
+    if (who && who.length) {
+      const open = (d) => { S.ddb.only = d.id; S.ddb.q = ''; S.ddb.open = new Set([d.id]); go('ddb'); };
+      const tag = (r) => (r.how === 'feature' ? 'feature' : r.lv ? `learns at Lv ${r.lv}` : 'knows it') + (r.mt ? ' · Mitama-fused' : '');
+      box.append(block(`Demons (${new Set(who.map((r) => r.d.id)).size})`, h('ul', { class: 'gdb-list skl-demons' }, who.map((r) =>
+        h('li', null, h('button', { type: 'button', class: 'skl-demon', 'data-tip': 'Open in the Demon Database', onclick: () => open(r.d) },
+          ddbFace(r.d), h('span', null, h('b', { text: r.d.name }), h('span', { class: 'src-count', text: `${r.d.race} · Lv ${r.d.level} · ${tag(r)}` }))))))));
+    } else if (!x.exp && !x.fusion) box.append(block('How to get it', h('span', { class: 'zero', text: S.ddb.data ? 'No compendium demon and no expertise rank has it: enemies, events or unused.' : 'Loading the demons…' })));
+    return box;
+  }
+  function pageSkills() {
+    const D = S.skl, page = h('div', { class: 'page page-dcm' });
+    loadSkillDb();
+    page.append(pageHead('Every skill in the game, separated by action type. Click a skill for what it does and who can learn it.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The skill database could not be loaded (skill-db.json is missing beside the page).' : 'Loading the skills…' }));
+      return page;
+    }
+    const d = D.data, all = d.skills, byDemon = sklDemons() || new Map();
+    const types = d.types, typeOf = Object.fromEntries(types.map((t) => [t.key, t]));
+    const whoOf = (x) => byDemon.get(x.id) || [];
+    const inWho = (x, k) => {
+      const w = whoOf(x);
+      if (k === 'all') return true;
+      if (k === 'demon') return w.some((r) => r.how === 'skill');
+      if (k === 'feature') return w.some((r) => r.how === 'feature');
+      if (k === 'exp') return !!x.exp;
+      if (k === 'fusion') return !!x.fusion;
+      return w.length > 0 || !!x.exp || !!x.fusion;
+    };
+    const words = () => sklWords(D.q).trim().split(' ').filter(Boolean);   // each must start a word: "agi" finds Agi, not Magic
+    const match = (x) => inWho(x, D.who) && (!D.el || x.el === D.el) && words().every((w) => (x.hay || x.hay0).includes(' ' + w));
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Action type' });
+    const helpBox = h('div'), body = h('tbody'), more = h('div', { class: 'skl-more' }), count = h('p', { class: 'note' });
+    const drawChips = () => {
+      const pool = all.filter(match);
+      chips.replaceChildren(...[['', 'All types']].concat(types.map((t) => [t.key, t.name])).map(([k, label]) =>
+        h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.type === k), onclick: () => { D.type = k; D.shown = 200; drawChips(); draw(); } },
+          label, h('span', { class: 'count', text: k ? pool.filter((x) => x.type === k).length : pool.length }))));
+    };
+    const drawHelp = () => {
+      const t = typeOf[D.type];
+      const p = (s) => h('p', { class: 'skl-help', text: s.replace(/\n\s*\n+/g, '\n') });
+      helpBox.replaceChildren(h('div', { class: 'notice skl-notice' }, icon('info'), h('div', null,
+        t ? [h('b', { text: `${t.name} · from the game's Help` }), t.help ? p(t.help) : p('The game\'s Help says nothing more about this type.'),
+          t.key === 'shot' && t.also ? [h('b', { text: 'Destruction magic is a Shot skill too' }), p(t.also)] : null,
+          t.key === 'support' ? [h('b', { text: 'Support and curse spells are Curative skills too' }), t.also ? p(t.also) : null, t.also2 ? p(t.also2) : null] : null]
+          : [h('b', { text: 'Action types · from the game\'s Help' }), p(d.intro + ' Passive and switch skills are not used in a fight, so they have no action type of their own: they are listed after the others.')])));
+    };
+    const SORTS = { name: (a, b) => a.name.localeCompare(b.name) || a.id - b.id, power: (a, b) => (b.power || 0) - (a.power || 0) || a.name.localeCompare(b.name),
+      stiff: (a, b) => (b.stiff || 0) - (a.stiff || 0) || a.name.localeCompare(b.name),
+      cd: (a, b) => parseFloat(a.cd || 0) - parseFloat(b.cd || 0) || a.name.localeCompare(b.name) };
+    const whoSummary = (x) => {
+      const w = whoOf(x), n = new Set(w.filter((r) => r.how === 'skill').map((r) => r.d.id)).size, f = new Set(w.filter((r) => r.how === 'feature').map((r) => r.d.id)).size;
+      const parts = [];
+      if (x.exp) parts.push(x.exp.length === 1 ? x.exp[0] : `${x.exp.length} expertise ranks`);
+      if (n) parts.push(n === 1 ? w.find((r) => r.how === 'skill').d.name : `${n} demons`);
+      if (f) parts.push(f === 1 ? `Feature of ${w.find((r) => r.how === 'feature').d.name}` : `Feature of ${f} demons`);
+      if (x.fusion) parts.push('Fusion skill');
+      return parts.length ? h('span', { class: 'skl-who', text: parts.join(' · ') }) : h('span', { class: 'zero', text: '—' });
+    };
+    const COLS = 7;
+    const row = (x) => {
+      const open = D.open.has(x.id);
+      const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
+      const cell = (v, cls) => h('td', { class: (cls || 'num') + (v ? '' : ' zero'), text: v || '—' });
+      body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+        h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+          h('span', { class: 'chev' }, icon('chevron')), sklIcon(x), h('span', null, x.name, x.el ? h('span', { class: 'src-count', text: x.el }) : null))),
+        cell(x.cost, 'dim'), cell(x.cast), cell(x.cd), cell(x.power != null ? String(x.power) : x.heal != null ? `heals ${x.heal}` : ''), cell(x.stiff != null ? fmt(x.stiff) : ''),
+        h('td', null, whoSummary(x))));
+      if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: COLS }, sklDetail(x, whoOf(x)))));
+    };
+    const draw = () => {
+      body.replaceChildren(); more.replaceChildren();
+      const rows = all.filter((x) => (!D.type || x.type === D.type) && match(x));
+      const order = types.map((t) => t.key);
+      rows.sort((a, b) => (D.type ? 0 : order.indexOf(a.type) - order.indexOf(b.type)) || SORTS[D.sort](a, b));
+      let shown = 0, last = null;
+      for (const x of rows) {
+        if (shown >= D.shown) break;
+        if (!D.type && x.type !== last) {
+          last = x.type;
+          const n = rows.filter((r) => r.type === x.type).length;
+          body.append(h('tr', { class: 'dun-group-row', onclick: () => { D.type = x.type; D.shown = 200; drawChips(); draw(); window.scrollTo(0, 0); } },
+            h('td', { colspan: COLS }, typeOf[x.type].name, h('span', { class: 'src-count', text: `${n} skill${n === 1 ? '' : 's'} · show only these` }))));
+        }
+        row(x); shown++;
+      }
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: COLS, class: 'empty-row', text: D.q.trim() ? `Nothing matches “${D.q.trim()}”.` : 'No skill in this group.' })));
+      if (rows.length > D.shown) more.append(h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.shown += 300; draw(); } }, `Show more (${rows.length - D.shown} left)`));
+      drawHelp();
+      const nGet = all.filter((x) => inWho(x, 'get')).length;
+      count.textContent = `Showing ${Math.min(rows.length, D.shown)} of ${rows.length} skills (${all.length} in the game data, ${nGet} of them can be learned by a demon, come from expertise or are fusion skills). `
+        + (S.ddb.state === 'ready' ? '' : 'Still loading the demons: who learns each skill shows once they are in. ')
+        + `${d.skipped.untranslated} skills the client only names in Japanese, item uses and debug skills are left out. Data made on ${d.generatedAt}.`;
+    };
+    const sel = (label, value, options, onchange) => h('label', { class: 'gdb-check' }, label,
+      h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
+    const els = [...new Set(all.map((x) => x.el).filter(Boolean))].sort();
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a skill, element, effect, expertise or demon', (v) => { D.q = v; D.shown = 200; drawChips(); draw(); }),
+      sel('Who can get it', D.who, SKL_WHO, (v) => { D.who = v; D.shown = 200; drawChips(); draw(); }),
+      sel('Element', D.el, [['', 'All']].concat(els.map((e) => [e, e])), (v) => { D.el = v; D.shown = 200; drawChips(); draw(); }),
+      sel('Sort', D.sort, [['name', 'Name'], ['power', 'Modifier'], ['stiff', 'Stiffness'], ['cd', 'Cooldown']], (v) => { D.sort = v; draw(); })));
+    page.append(chips, helpBox);
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl skl-tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Skill' }), h('th', { scope: 'col', text: 'Cost' }), h('th', { scope: 'col', class: 'num', text: 'Cast' }),
+        h('th', { scope: 'col', class: 'num', text: 'Cooldown' }), h('th', { scope: 'col', class: 'num', 'data-tip': 'The skill\'s damage modifier, as its description in game gives it. A heal shows its healing modifier.', text: 'Modifier' }),
+        h('th', { scope: 'col', class: 'num', 'data-tip': 'How long a hit leaves the target stunned, as the skill\'s description in game gives it.', text: 'Stiffness' }),
+        h('th', { scope: 'col', text: 'Who can get it' }))), body)));
+    page.append(more, count);
     drawChips(); draw();
     return page;
   }
@@ -4055,7 +4231,7 @@
     return box;
   }
 
-  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, ddb: pageDemonDb };
+  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, ddb: pageDemonDb, skills: pageSkills };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
