@@ -117,7 +117,7 @@ Under **Tools** in the left bar. Two views:
   **Rank up** or **Rank down**. Click any demon in a recipe to see how to make that one too ("Back to" returns).
 
 Demons, levels, races and special fusions are the NewMoon client's. The race chart and the tri-fusion and elemental
-rules are the comp_hack server's fusion code, which NewMoon may have changed: not yet checked against the game.
+rules are the comp_hack server's fusion code, which NewMoon may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.
 ### Tools: Dungeon Explorer
 
 Under **Tools** in the left bar. Every dungeon (175; each difficulty such as Bronze, Silver and Gold on its own), field and other place with enemies, and the enemies in it that

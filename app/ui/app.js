@@ -3815,7 +3815,7 @@
       return page;
     }
     page.append(U.view === 'reverse' ? fusionReverse(U.eng) : fusionForward(U.eng));
-    page.append(h('p', { class: 'note fus-foot', text: 'Demons, levels, races and special fusions: the NewMoon client. The race chart and the tri-fusion and elemental rules: the server’s fusion code, which NewMoon may have changed. Checked against the game: not yet.' }));
+    page.append(h('p', { class: 'note fus-foot', text: 'Demons, levels, races and special fusions: the NewMoon client. The race chart and the tri-fusion and elemental rules: the server’s fusion code, which NewMoon may have changed. Checked in game: two two-demon fusions (one the community chart lacks), a tri-fusion and the refusal of Mitama-fused demons, all as the planner says. Special fusions and elemental rank changes are not checked yet.' }));
     return page;
   }
 
