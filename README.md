@@ -117,7 +117,8 @@ Under **Tools** in the left bar. Two views:
   fusion that needs a plugin says which key item; hover it for how to get it in game. Recipes with an elemental are marked
   **Rank up** or **Rank down**. Click any demon in a recipe to see how to make that one too ("Back to" returns).
 
-Mitama-fused demons are not in the lists: the game won't fuse them.
+Mitama-fused demons are not in the lists: the game won't fuse them. **Find a recipe** only offers demons some fusion
+makes (417 of 850); the others come from quests, events or contracts.
 
 Demons, levels, races and special fusions are the NewMoon client's. The race chart and the tri-fusion and elemental
 rules are the comp_hack server's fusion code, which NewMoon may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.

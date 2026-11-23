@@ -3773,7 +3773,19 @@
     }
     // the pickers leave out Mitama-fused demons: the game won't fuse them, and the planner only makes them from a Mitama
     const pickable = demons.filter((d) => !d.mitamaFused);
-    return { F, demons, pickable, byId, fuse, recipes, raceName, pool, ranges, built: () => !!two, build: buildAll, isElemental: (d) => d.race === ELEMENTAL_RACE };
+    // the demons some fusion makes (special, two-demon or tri-fusion): the only ones "Find a recipe" offers
+    let makeable = null;
+    function canMake(d) {
+      if (!makeable) {
+        buildAll();
+        makeable = new Set(F.specials.map((sp) => sp.result));
+        for (const id of two) if (id > 0) makeable.add(id);
+        for (const id of three) if (id > 0) makeable.add(id);
+      }
+      return makeable.has(d.id);
+    }
+    const targets = () => pickable.filter(canMake);
+    return { F, demons, pickable, targets, canMake, byId, fuse, recipes, raceName, pool, ranges, built: () => !!two, build: buildAll, isElemental: (d) => d.race === ELEMENTAL_RACE };
   }
 
   /** A demon picker: a search field that lists matching demons under it (arrow keys, Enter, Esc). */
@@ -3867,7 +3879,7 @@
       card.append(h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: xs.length === 3 ? 'Tri-fusion result' : 'Fusion result' }),
         r.special ? h('span', { class: 'tag tag-digi', text: 'Special fusion' }) : r.elemental ? h('span', { class: 'tag ' + (r.elemental > 0 ? 'fus-up' : 'fus-down'), text: r.elemental > 0 ? 'Rank up' : 'Rank down' }) : null));
       if (d) card.append(h('div', { class: 'fus-out' }, demonPic(E, d, true), h('div', null, h('div', { class: 'fus-out-name', text: d.label }), h('div', { class: 'card-sub', text: `${d.raceName} · base level ${d.lvl}` })),
-        h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:auto', onclick: () => { U.view = 'reverse'; U.target = d; U.trail = []; render(); } }, 'Other ways to make it')));
+        d.mitamaFused ? null : h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:auto', onclick: () => { U.view = 'reverse'; U.target = d; U.trail = []; render(); } }, 'Other ways to make it')));
       else card.append(h('p', { class: 'fus-none', text: 'Nothing: these demons can’t be fused together.' }));
       if (r.how.length) card.append(h('ul', { class: 'fus-how' }, r.how.map((t) => h('li', { text: t }))));
       if (r.special) {
@@ -3904,20 +3916,22 @@
 
   function fusionReverse(E) {
     const U = S.fus, box = h('div', { class: 'fus-body' });
-    const plan = (d) => { if (U.target) U.trail.push(U.target); U.target = d; U.shown2 = 30; U.shown3 = 30; render(); };
-    const top = h('div', { class: 'toolbar' }, demonCombo(E, U.target, 'Which demon do you want?', (d) => { U.target = d; U.trail = []; U.shown2 = 30; U.shown3 = 30; render(); }));
+    if (!E.built()) {
+      // the list of demons to pick from needs every two- and three-demon fusion worked out once (about a million): say so, then do it
+      box.append(h('p', { class: 'note', role: 'status' }, h('span', { class: 'spin ink', style: 'margin-right:8px;vertical-align:-2px' }), 'Working out every fusion once (a second or two)…'));
+      setTimeout(() => { E.build(); if (S.page === 'fusion') render(); }, 30);
+      return box;
+    }
+    // an ingredient can be clicked to plan it only when some fusion makes it
+    const plan0 = (d) => { if (U.target) U.trail.push(U.target); U.target = d; U.shown2 = 30; U.shown3 = 30; render(); };
+    const chip = (d, tag) => demonChip(E, d, undefined, E.canMake(d) ? plan0 : null, tag);
+    const top = h('div', { class: 'toolbar' }, demonCombo(E, U.target, 'Which demon do you want?', (d) => { U.target = d; U.trail = []; U.shown2 = 30; U.shown3 = 30; render(); }, E.targets()));
     box.append(top);
     if (U.trail.length) box.append(h('nav', { class: 'fus-trail', 'aria-label': 'Planned before' }, h('span', { class: 'src-count', style: 'margin-left:0', text: 'Back to:' }),
       U.trail.map((d, i) => h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { U.target = d; U.trail = U.trail.slice(0, i); render(); } }, d.label))));
     const T = U.target;
     if (!T) { box.append(h('p', { class: 'note', text: 'Pick a demon to see every special fusion, two-demon fusion and tri-fusion that makes it, cheapest first. Click a demon in a recipe to see how to make that one too.' })); return box; }
     box.append(h('div', { class: 'fus-out fus-target' }, demonPic(E, T, true), h('div', null, h('div', { class: 'fus-out-name', text: T.label }), h('div', { class: 'card-sub', text: `${T.raceName} · base level ${T.lvl}` }))));
-    if (!E.built()) {
-      // the first search works out every two- and three-demon fusion once (about a million): say so, then do it
-      box.append(h('p', { class: 'note', role: 'status' }, h('span', { class: 'spin ink', style: 'margin-right:8px;vertical-align:-2px' }), 'Working out every fusion once (a second or two)…'));
-      setTimeout(() => { E.build(); if (S.page === 'fusion') render(); }, 30);
-      return box;
-    }
     const R = E.recipes(T);
     let q = '';
     const hasQ = (r) => !q || r.some((d) => d.label.toLowerCase().includes(q) || d.raceName.toLowerCase().includes(q));
@@ -3931,7 +3945,7 @@
     // card of a section the same size (CSS: grid-auto-rows 1fr)
     const rcard = (parts, head, foot) => h('li', { class: 'fus-rcard' },
       h('div', { class: 'fus-rcard-head' }, head || null, h('span', { class: 'src-count fus-sum', 'data-tip': 'The ingredients’ base levels added up', text: `Σ ${parts.reduce((s2, p) => s2 + p.d.lvl, 0)}` })),
-      parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, demonChip(E, p.d, undefined, plan, p.tag)]),
+      parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, chip(p.d, p.tag)]),
       foot || null);
     const recipeRow = (r) => rcard(r.map((d) => ({ d })), elemTag(r));
     const section = (title, sub, rows, key) => {
