@@ -1,0 +1,720 @@
+#id	type (server QuestData; NORMAL/REPEATABLE count for the quest bonus)	bonusEnabled	name (client CQuestData)
+1	NORMAL	true	Demon Buster Basic Training 1
+2	NORMAL	true	Demon Buster Basic Training 2
+3	NORMAL	true	Demon Buster Basic Training 3
+4	NORMAL	true	Demon Buster Basic Training 4
+5	NORMAL	true	The Guard's Desire
+6	NORMAL	true	Fellow Adventurers
+7	NORMAL	true	Let's Trade!
+8	NORMAL	true	Gun Practice
+9	NORMAL	true	Close Counters
+10	NORMAL	true	A Gentleman's Lesson
+11	NORMAL	true	Understanding Plasma
+12	NORMAL	true	Extract the Aluminum!
+13	NORMAL	true	The Road to Smithing
+14	NORMAL	true	Smith Crown
+15	NORMAL	true	The Ultimate Equipment
+16	NORMAL	true	Earn 10000 Macca
+17	NORMAL	true	Collect 1000 Magnetite
+18	INACTIVE	false	Check out the COMP_Shop
+19	NORMAL	true	Negotiation: Wanderer Nozuchi
+20	NORMAL	true	Fusion: Shikigami
+21	NORMAL	true	Fusion: Wanderer Alp
+22	NORMAL	true	Demon Hunt: Inexperienced Orthrus
+23	NORMAL	true	Demon Hunt: Nekomata
+24	NORMAL	true	The First Collection
+25	NORMAL	true	G1 Challenge
+26	INACTIVE	false	The Bond With Your Demon
+27	NORMAL	true	Where Spirits Reside
+28	REPEATABLE	true	Criticals and Limit Breaks
+29	NORMAL	true	Negotiation: Inexperienced Garm
+30	NORMAL	true	Pursuit
+31	NORMAL	true	Demon Equipment
+32	NORMAL	true	A White Demon and a Mysterious Man and Woman
+33	NORMAL	true	Gaia's Punishment
+34	NORMAL	true	Rhapsody of Freedom
+35	NORMAL	true	Agent of Divine Punishment
+36	NORMAL	true	Recovery of Messian's Reports
+37	NORMAL	false	
+38	NORMAL	true	Ghost of the Bottomless Swamp
+39	NORMAL	true	In order to become stronger
+40	NORMAL	true	Supply of Goods
+41	NORMAL	true	The Great Queen
+42	NORMAL	true	Something You Can Do Yourself
+43	NORMAL	true	I Want to See a Rare Demon
+44	NORMAL	true	The God of Swords
+45	NORMAL	true	A Woman's Sex Appeal
+46	NORMAL	true	What is fashionable these days?
+47	NORMAL	true	The Great Duke of Hell
+48	NORMAL	true	Special Moves Research
+49	NORMAL	true	For the Ones I Want to Protect
+50	NORMAL	true	For the Fortune of Others
+51	NORMAL	true	Tales of Nerddom
+52	REPEATABLE	true	Hidden Dreams
+53	NORMAL	true	A Superficial Contract
+54	REPEATABLE	true	Class Preparation: Item Delivery
+55	INACTIVE	false	Class Preparation: Demon Gathering
+56	REPEATABLE	true	Class Preparation: Demon Hunt
+57	REPEATABLE	true	Class Preparation: Behemoth Hunt
+58	REPEATABLE	true	Scaredy Guard: Cait Sith
+59	REPEATABLE	true	Scaredy Guard: Onmoraki
+60	REPEATABLE	true	Scaredy Guard: Cu Sith
+62	REPEATABLE	true	Where the TMG Blueprint Lies
+63	REPEATABLE	true	Shouldering Burden
+64	REPEATABLE	true	Beastly Desires
+65	REPEATABLE	true	Recipe for Passion
+66	REPEATABLE	true	Research of Dissimilant Variants
+67	NORMAL	true	Another Door
+68	NORMAL	true	Suginami Tunnels BEARCAT Survey 1
+69	NORMAL	true	Suginami Tunnels BEARCAT Survey 2
+70	NORMAL	true	Suginami Tunnels BEARCAT Survey 3
+71	NORMAL	true	A Demon on good terms
+72	NORMAL	true	In search of a Clan
+73	NORMAL	true	Master Smith Dwarf
+74	NORMAL	true	Awakening of Demon Force
+75	NORMAL	true	Spirit Shot
+76	NORMAL	true	Digitalize
+77	NORMAL	true	Aims of the Teacher
+78	NORMAL	true	Full-Fledged DB
+79	NORMAL	true	Manifestation of Masakado
+80	NORMAL	true	Rainy days never stay
+81	NORMAL	true	The die is cast
+82	REPEATABLE	true	Rainy days will never change
+101	ITIME	false	Show the Glowing Stone
+102	ITIME	false	Find the husband
+103	ITIME	false	I want to see a Hua Po
+104	ITIME	false	Find the Protection Stones
+105	ITIME	false	The Spirited Songstress
+106	ITIME	false	Salving the Day
+107	ITIME	false	A Protective Gem
+108	ITIME	false	In Search of Cypress
+109	ITIME	false	Man's BFF
+110	ITIME	false	In Search of Crepes
+111	ITIME	false	A Drug to Break Limits?
+112	ITIME	false	Crossing Dimensions
+113	ITIME	false	Blown Away
+114	ITIME	false	I Want the Jack Frost Card
+115	ITIME	false	The Lost Ring
+116	ITIME	false	A Present for the Employee
+117	ITIME	false	A Giant Problem
+118	ITIME	false	I Want to Fix My Shoes
+119	ITIME	false	Tricked the Queen?
+120	ITIME	false	God Save (Me from) the Queen
+121	ITIME	false	Don't Attack People
+122	ITIME	false	I Love Aquamarines
+123	ITIME	false	Beware the Kissing Demon
+124	ITIME	false	Good Fortune
+125	ITIME	false	A Sweet Delivery
+126	ITIME	false	More Than You Can Chew
+127	ITIME	false	Mild Resistance
+128	ITIME	false	A Ball With Words on It
+129	ITIME	false	Horsing Around
+130	ITIME	false	Relic Collector?
+131	NORMAL	true	The Sky is Falling
+132	NORMAL	true	The Fountain of Youth
+133	ITIME	false	Where Is Luck
+134	ITIME	false	Deformation Relieves Anxiety!?
+135	ITIME	false	An Exceptional Healer
+136	ITIME	false	Find the Little Guy
+137	ITIME	false	Atonement
+138	ITIME	false	The Unlucky Master
+139	ITIME	false	How Do You Heal a Special Mind?
+140	ITIME	false	Let's Be Decisive!
+141	ITIME	false	Of the 36 Strategems, Fleeing is best
+142	ITIME	false	Scientific Irritation
+143	ITIME	false	Anti Magic Demon Power
+144	ITIME	false	Heavier than Chopsticks...
+145	ITIME	false	At Least the Aluminum Can
+146	ITIME	false	Disgraceful Nickname
+147	ITIME	false	Deciciveness is Desirable
+148	NORMAL	true	So She'll like Me
+149	ITIME	false	I Want to Know About the Horned Demon
+150	ITIME	false	Whippersnappers
+151	ITIME	false	A Reliable Ally
+152	ITIME	false	A Curious Horn
+153	ITIME	false	The True Form
+154	ITIME	false	VIP Ticket
+155	ITIME	false	How About 5 Stones to Teleport to Kakyo?
+156	ITIME	false	How About 1 Stone to Teleport to Kakyo?
+157	ITIME	false	How About an OOPTHS of Small Celebration?
+158	ITIME	false	How About a Casino Charm?
+159	ITIME	false	How About a Raktavija's Bloodstone?
+160	ITIME	false	How About an Orb of Promise (Loop)?
+161	ITIME	false	How About a HEPA?
+162	ITIME	false	How About a Zip 1.0?
+163	ITIME	false	How About a Dirt of Ymir?
+164	ITIME	false	A Jewel the Same Color as My Clothes
+165	ITIME	false	The God With Knowledge
+166	ITIME	false	The God that Mediated the Argument
+167	ITIME	false	The Bird that Guided to the Destination
+168	ITIME	false	Let Me Meet Ame no Uzume
+169	ITIME	false	The Flower Whose Meaning is Passion
+170	ITIME	false	The Sword in the Snake
+171	ITIME	false	The Necklace with the Motif of the Gods' Vessel
+172	ITIME	false	The Spear that Gives Birth to Countries and Gods
+173	ITIME	false	The Grandfather of Sumo
+174	ITIME	false	The Tengu of Kurama
+175	ITIME	false	The Sword With the Power of Shinatsuhiko
+176	ITIME	false	The Sword that Subjugated a Country
+177	ITIME	false	The Ugly God of the Sea Bottom
+178	ITIME	false	The God Who Looks Like the Ancient Spaceman Figure
+299	EPISODE	false	Act 0: The Sin of Weakness
+300	EPISODE	false	Act.1: A Demon Friend
+301	EPISODE	false	Act 2: Omen
+302	EPISODE	false	Act 3: The Raid
+303	EPISODE	false	Act 4: Azura
+304	EPISODE	false	Act 5: The Thick Forest
+305	EPISODE	false	Act 6: The Obelisk of Balance
+306	EPISODE	false	Act 7: DB License
+307	EPISODE	false	Act 8: The Obelisk of Form and Power
+308	EPISODE	false	Act 9: Setsu's Anxiety
+309	EPISODE	false	Act 10: Azura's Search
+310	EPISODE	false	Act 11: Azura's Special Training
+311	EPISODE	false	Act 12: Vizionz of the Past
+312	EPISODE	false	Act 13: Envoy for the Messian Church
+313	EPISODE	false	Act 13: Envoy for the Gaian Church
+314	EPISODE	false	Act 14: Ogami
+315	EPISODE	false	Act 15: The Prisoners
+316	EPISODE	false	Act 16: Spiral Waltz
+317	NORMAL	true	Brother and Sister
+318	EPISODE	false	Act.17 No other Gods before me
+319	EPISODE	false	Act.18 Do not make cast idols
+320	EPISODE	false	Act.19 Don't take my Name -1-
+321	EPISODE	false	Act.19 Don't take my Name -1-
+322	EPISODE	false	Act.19 Don't take my Name -1-
+323	EPISODE	false	Act.19 Don't take my Name -2-
+324	EPISODE	false	Act.19 Don't take my Name -2-
+325	EPISODE	false	Act.19 Don't take my Name -2-
+326	EPISODE	false	Act.19 Don't take my Name -3-
+327	EPISODE	false	Act.19 Don't take my Name -3-
+328	EPISODE	false	Act.19 Don't take my Name -3-
+329	EPISODE	false	Act.19 Don't take my Name -4-
+330	EPISODE	false	Act.20 Remember the Sabbath -1-
+331	EPISODE	false	Act.20 Remember the Sabbath -1-
+332	EPISODE	false	Act.20 Remember the Sabbath -1-
+333	EPISODE	false	Act.20 Remember the Sabbath -2-
+334	EPISODE	false	Act.XX Imagine there's Heaven.
+335	EPISODE	false	Act.XX I'm not the only One.
+336	EPISODE	false	Side.a Land of the Beginning
+337	EPISODE	false	Side.b Paradise lost
+400	EVENT	false	Confronting Poltergeist
+401	EVENT	false	Confronting Harpy
+402	EVENT	false	Deliver a Garnet
+403	EVENT	false	Confronting Angel
+404	EVENT	false	Deliver a Katana of Renki
+405	EVENT	false	Deliver a Treasure Jewel
+406	EVENT	false	Deliver a Chakra Candy
+407	EVENT	false	Confronting Pixie
+408	EVENT	false	Confronting a Lost Hua Po
+409	EVENT	false	Talking to a Leader Pixie
+410	EVENT	false	Deliver a Sweeper
+411	EVENT	false	Deliver an Amber Necklace
+412	EVENT	false	Confronting Cu Sith
+413	EVENT	false	Confronting Inexperienced Slime
+414	EVENT	false	Talking to Inexperienced Orthrus
+415	EVENT	false	Deliver a Suginami Tunnels Plate (Bronze)
+416	EVENT	false	Deliver a Demon Compendium Memory: Aquans
+417	EVENT	false	Confronting Onmoraki
+418	EVENT	false	Confronting the Rowdy Avatar Kodama
+419	EVENT	false	Talking to Cait Sith
+420	EVENT	false	Deliver Glittering Ore
+421	EVENT	false	Deliver a Demon Compendium Memory: Erthys
+422	EVENT	false	Confronting Sudama
+423	EVENT	false	Confronting the Rowdy Avatar Cait Sith
+424	EVENT	false	Talking to Jack Frost
+425	EVENT	false	Deliver Soul Shards
+426	EVENT	false	Deliver a Demon Compendium Memory: Lilim
+427	EVENT	false	Confronting Great Beast Garm
+428	EVENT	false	Confronting Nekomata
+429	EVENT	false	Talking to Inugami
+430	EVENT	false	Deliver an Unknown Sword
+431	EVENT	false	Confronting Mirror Inugami
+432	EVENT	false	Confronting Embodiment of Power Kikuri-Hime
+433	EVENT	false	Deliver Kreuz
+434	EVENT	false	Confronting Lustful Fiend Legion
+435	EVENT	false	Confronting Embodiment of Form Odin
+436	EVENT	false	Deliver a Yanagiba
+437	EVENT	false	Deliver a Small Runestone of Victory
+438	EVENT	false	Confronting Gyuki
+439	EVENT	false	Confronting Mothman
+440	EVENT	false	Talking to Pyro Jack
+441	EVENT	false	Deliver a Demon Compendium Memory: Knocker
+442	EVENT	false	Deliver an Ocypete Card
+443	EVENT	false	Confronting Dwarf
+444	EVENT	false	Confronting Shining Aello
+445	EVENT	false	Talking to High Pixie
+446	EVENT	false	Deliver a Nebiros Card
+447	EVENT	false	Deliver a Reaper's Colt
+448	EVENT	false	Confronting Incubus
+449	EVENT	false	Confronting Former SDF Officer Specter
+450	EVENT	false	Talking to Kirin
+451	EVENT	false	Deliver a Demon Compendium Memory: Ubelluris
+452	EVENT	false	Deliver a Human Bone
+453	EVENT	false	Confronting Accomplished Forneus
+454	EVENT	false	Confronting Flood Caller Tan-Ki
+455	EVENT	false	Talking to Ubelluris
+456	EVENT	false	Deliver Relic Piece: Reaper's Colt
+457	EVENT	false	Deliver Stone Gazer
+458	EVENT	false	Confronting Omoikane
+459	EVENT	false	Confronting Unhappy Wife's Husband Oberon
+460	EVENT	false	Talking to Vetala
+461	EVENT	false	Confronting Embodiment of Power Arahabaki
+462	EVENT	false	Confronting Black Frost
+463	EVENT	false	Confronting Nightmare Arahabaki
+464	EVENT	false	Confronting Mythical Beast of White Mist Bai Hu
+465	EVENT	false	Confronting Beast of Bixia Qing-Long
+466	EVENT	false	Deliver an Arahabaki Crystal
+467	EVENT	false	Deliver Relic Piece: Fan of Exorcism
+468	EVENT	false	Confronting Obsession Enslaved Scathach
+469	EVENT	false	Confronting Madness-Driven Pisaca
+470	EVENT	false	Confronting Kaleidoscopic Inugami
+471	EVENT	false	Talking to Accomplished Yaksni
+472	EVENT	false	Deliver Relic Piece: Gram
+473	EVENT	false	Deliver a Pallas Athena Crystal
+474	EVENT	false	Confronting Assassin
+475	EVENT	false	Confronting Nightmare Throne
+476	EVENT	false	Talking to Deformed Hanuman
+477	EVENT	false	Deliver a Jikokuten Crystal
+478	EVENT	false	Confronting Pure Wind Aeros
+479	EVENT	false	Confronting Crazy Tao Tie
+480	EVENT	false	Confronting Nightmare Tarasque
+481	EVENT	false	Talking to Deformed Fenrir
+482	EVENT	false	Deliver Relic Piece: Axe of Pluto
+483	EVENT	false	Deliver a Morrigan Crystal
+484	EVENT	false	Confronting Lone Island Lord Yamata-no-Orochi
+485	EVENT	false	Confronting Obsessive Demon God Thor
+486	EVENT	false	Talking to Shining Furiae
+487	EVENT	false	Deliver a Masakadus
+488	EVENT	false	Deliver Gae Bolg
+489	EVENT	false	Confronting Reincarnated Demonics Tokisada
+490	EVENT	false	Confronting Mad Holy Beast Bai Hu
+491	EVENT	false	Talking to Precocious Phoenix
+492	EVENT	false	Deliver a Bai Hu Crystal
+501	REPEATABLE	true	Wake Up Call
+502	REPEATABLE	true	Lights Out
+503	NORMAL	true	Find the Map of Souhonzan!
+504	NORMAL	true	Land Clearing Investigative Report
+505	NORMAL	true	Gain Expertise in Attack!
+506	NORMAL	true	Gain Expertise in Shot!
+507	NORMAL	true	Gain Expertise in Destruction Magic!
+508	NORMAL	true	Fanatical Gaians
+509	REPEATABLE	true	A Simple Quandary: Case 1
+510	REPEATABLE	true	A Simple Quandary: Case 2
+511	REPEATABLE	true	A Simple Quandary: Case 3
+512	REPEATABLE	true	A Simple Quandary: Case 4
+513	REPEATABLE	true	A Simple Quandary: Case 5
+514	REPEATABLE	true	A Simple Quandary: Case 6
+515	NORMAL	true	Believe
+516	REPEATABLE	true	Soul Shards: The Sequel
+517	NORMAL	true	The Oppressed
+518	REPEATABLE	true	A Complex Quandary I
+519	REPEATABLE	true	A Complex Quandary II
+520	REPEATABLE	true	A Complex Quandary III
+521	REPEATABLE	true	A Complex Quandary IV
+523	INACTIVE	false	Defend Souhonzan!
+524	INACTIVE	false	Arcadia Wars
+525	NORMAL	true	Days of Happiness
+526	NORMAL	true	Seeking Demon Info!
+527	NORMAL	true	Troubled Pixie
+528	NORMAL	true	Overcoming Fear
+529	REPEATABLE	true	Card Maniacs
+530	REPEATABLE	true	Arcadia Wars (Level 1)
+531	REPEATABLE	true	Arcadia Wars (Level 2)
+532	REPEATABLE	true	Arcadia Wars (Level 3)
+533	REPEATABLE	true	Arcadia Wars (Level 4)
+534	REPEATABLE	true	Arcadia Wars (Level 5)
+535	REPEATABLE	true	Defend Souhonzan! (White Unit)
+536	REPEATABLE	true	Defend Souhonzan! (Yellow Unit)
+537	REPEATABLE	true	Defend Souhonzan! (Green Unit)
+538	REPEATABLE	true	Defend Souhonzan! (Red Unit)
+539	REPEATABLE	true	Defend Souhonzan! (Black Unit)
+540	EVENT	false	With Lantern 1st
+541	EVENT	false	The Challenge You Can't Get Enough Of 1st
+542	NORMAL	true	Hohenheim's Embryo
+543	NORMAL	true	Nettesheim's Biblio
+544	EVENT	false	Gathering Great Beast Garm's Combat Data
+545	EVENT	false	Gathering Fanatic Girimehkala's Combat Data
+546	EVENT	false	Gathering Enforcer of Law Dominion's Combat Data
+547	EVENT	false	Gathering Wilder Garm's Demon Data
+548	EVENT	false	Gathering Avian Phoenix's Demon Data
+549	EVENT	false	Gathering Tyrant King Frost's Demon Data
+550	EVENT	false	Gathering Pixie Crystal Data
+551	EVENT	false	Gathering Frost + Pyro Crystal Data
+552	EVENT	false	Gathering Leyding (Female) Data
+553	EVENT	false	Rakan Barentein Festival (Pixie)
+554	EVENT	false	Rakan Barentein Festival (Kodama)
+555	EVENT	false	Rakan Barentein Festival (Azumi)
+556	NORMAL	true	Albertus' Oratorio
+557	NORMAL	true	Correct Way to Use a Gun
+558	EVENT	false	With the Lantern
+559	EVENT	false	The Challenge You Can't Get Enough Of
+560	EVENT	false	Take Me in a Pumpkin Carriage
+561	EVENT	false	Soul on Fire
+562	EVENT	false	The Night Santa & the Tyrant Laughed
+563	REPEATABLE	true	Gathering Remains
+564	NORMAL	true	Meeting DB Harumi
+565	NORMAL	true	Delivering the Goods
+566	NORMAL	true	The Secret of Gunfighting
+567	INACTIVE	false	Travel to the Home III Camp
+568	INACTIVE	false	Pop Quiz
+569	INACTIVE	false	I'll Teach Ya! (Temporary 1)
+570	NORMAL	true	A Trial from Kano
+571	NORMAL	true	Kano in Nakano
+572	NORMAL	true	The Great Garm Hunt
+573	NORMAL	true	Lessons of the Past
+574	NORMAL	true	The Surly Gunfighter
+575	NORMAL	true	Dewdrops from a Flower
+576	NORMAL	true	That's the Way Love Goes
+577	EVENT	false	A Message for the Inexperienced Shishimai
+578	EVENT	false	Dungeon Demon Disaster
+579	EVENT	false	Supplies Delivery
+580	EVENT	false	Field Demon Disaster
+581	EVENT	false	Urgent Request: Calamity from Outer Space
+582	EVENT	false	Sweet Panic: Babel
+583	EVENT	false	Sweet Panic: Arcadia
+584	EVENT	false	Sweet Panic: Souhonzan
+585	NORMAL	true	Yaginuma's Letter
+586	NORMAL	true	Clash of the Titans: VERSUS
+587	REPEATABLE	true	Errand for the Newbie Yagiya
+588	INACTIVE	false	Old Tokyo Metro Investigation
+589	REPEATABLE	true	Pixie Hunt!
+590	REPEATABLE	true	Kodamas in the Wastelands
+591	NORMAL	true	Apprentice Mechanic - Tired Out
+592	INACTIVE	false	Till the End of the Line
+593	NORMAL	true	An Invitation to Mixology
+594	REPEATABLE	true	Arcadia Wars (Level 6)
+595	REPEATABLE	true	Arcadia Wars (Level 7)
+596	REPEATABLE	true	Arcadia Wars (Level 8)
+597	REPEATABLE	true	Defend Souhonzan! (Yin)
+598	REPEATABLE	true	Defend Souhonzan! (Yang)
+599	REPEATABLE	true	Defend Souhonzan! (Tai Chi)
+600	NORMAL	true	Healing Winds
+601	NORMAL	true	Requiem of Fire
+602	INACTIVE	false	Hakamada, the Weapon Shop Owner
+603	INACTIVE	false	Demon's Forgotten Item
+604	INACTIVE	false	Suginami Camp Ground Report
+605	INACTIVE	false	Suginami Tunnels Report
+606	INACTIVE	false	Nakano Field Report
+607	NORMAL	true	Supplies to the Suginami Tunnels
+608	NORMAL	true	Supplies to the Home III Camp
+609	REPEATABLE	true	Demon Hunt: Giant Beast Garm
+610	NORMAL	true	Demon Hunt: Giant Beast Garm (x5)
+611	REPEATABLE	true	Demon Hunt: Beast Nekomata
+612	REPEATABLE	true	Demon Hunt: Earth Element Sudama
+613	REPEATABLE	true	Demon Hunt: Divine Angel
+614	REPEATABLE	true	Demon Hunt: Raptor Onmoraki
+620	REPEATABLE	true	The Magician's Apprentice: Swordsmith C0 Arcadia
+621	REPEATABLE	true	The Magician's Apprentice: Swordsmith C1 Arcadia
+622	REPEATABLE	true	The Magician's Apprentice: Swordsmith C2 Arcadia
+623	REPEATABLE	true	The Magician's Apprentice: Swordsmith C3 Arcadia
+624	REPEATABLE	true	The Magician's Apprentice: Swordsmith C4 Arcadia
+625	REPEATABLE	true	The Magician's Apprentice: Swordsmith C5 Arcadia
+626	REPEATABLE	true	The Magician's Apprentice: Swordsmith C6 Arcadia
+627	REPEATABLE	true	The Magician's Apprentice: Swordsmith C7 Arcadia
+630	REPEATABLE	true	The Magician's Apprentice: Swordsmith C0 Souhonzan
+631	REPEATABLE	true	The Magician's Apprentice: Swordsmith C1 Souhonzan
+632	REPEATABLE	true	The Magician's Apprentice: Swordsmith C2 Souhonzan
+633	REPEATABLE	true	The Magician's Apprentice: Swordsmith C3 Souhonzan
+634	REPEATABLE	true	The Magician's Apprentice: Swordsmith C4 Souhonzan
+635	REPEATABLE	true	The Magician's Apprentice: Swordsmith C5 Souhonzan
+636	REPEATABLE	true	The Magician's Apprentice: Swordsmith C6 Souhonzan
+637	REPEATABLE	true	The Magician's Apprentice: Swordsmith C7 Souhonzan
+640	REPEATABLE	true	The Magician's Apprentice: Arms Maker C0 Arcadia
+641	REPEATABLE	true	The Magician's Apprentice: Arms Maker C1 Arcadia
+642	REPEATABLE	true	The Magician's Apprentice: Arms Maker C2 Arcadia
+643	REPEATABLE	true	The Magician's Apprentice: Arms Maker C3 Arcadia
+644	REPEATABLE	true	The Magician's Apprentice: Arms Maker C4 Arcadia
+645	REPEATABLE	true	The Magician's Apprentice: Arms Maker C5 Arcadia
+646	REPEATABLE	true	The Magician's Apprentice: Arms Maker C6 Arcadia
+647	REPEATABLE	true	The Magician's Apprentice: Arms Maker C7 Arcadia
+650	REPEATABLE	true	The Magician's Apprentice: Arms Maker C0 Souhonzan
+651	REPEATABLE	true	The Magician's Apprentice: Arms Maker C1 Souhonzan
+652	REPEATABLE	true	The Magician's Apprentice: Arms Maker C2 Souhonzan
+653	REPEATABLE	true	The Magician's Apprentice: Arms Maker C3 Souhonzan
+654	REPEATABLE	true	The Magician's Apprentice: Arms Maker C4 Souhonzan
+655	REPEATABLE	true	The Magician's Apprentice: Arms Maker C5 Souhonzan
+656	REPEATABLE	true	The Magician's Apprentice: Arms Maker C6 Souhonzan
+657	REPEATABLE	true	The Magician's Apprentice: Arms Maker C7 Souhonzan
+658	REPEATABLE	true	Unity of the Vessel, Spirit and Bond
+659	REPEATABLE	true	Growth of the Vessel, Spirit and Bond
+660	NORMAL	true	Changing Thoughts
+661	REPEATABLE	true	Punks Fight Round 1
+662	REPEATABLE	true	Punks Fight Round 2
+663	REPEATABLE	true	Punks Fight Round 3
+664	NORMAL	true	Beginning of Vengeance
+665	REPEATABLE	true	The Meaning of Support
+666	NORMAL	true	New world
+667	NORMAL	true	Caring World
+668	NORMAL	true	Unreasonable World
+669	REPEATABLE	true	Bloody World
+670	NORMAL	true	Kannabaru
+671	NORMAL	true	It's not all about the money
+672	REPEATABLE	true	Consonance with the Soul
+673	NORMAL	true	Research achievements in the outland
+674	NORMAL	true	Original Form
+675	REPEATABLE	true	Reward for Abundant Food
+676	NORMAL	true	Gift Melon Recipe
+677	REPEATABLE	true	Logic of Sands of Logic
+678	NORMAL	true	One who Thirsts
+679	NORMAL	true	Kano's challenge: Hunting in West Nakano 1
+680	NORMAL	true	Kano's challenge: Hunting in West Nakano 2
+681	NORMAL	true	Kano's challenge: Hunting in West Nakano 3
+682	NORMAL	true	Kano's challenge: Hunting in Central Nakano 1
+683	NORMAL	true	Kano's challenge: Hunting in East Nakano 1
+684	NORMAL	true	Kano's challenge: Hunting in East Nakano 2
+685	NORMAL	true	Kano's challenge: Hunting in East Nakano 3
+686	NORMAL	true	Yamaguchi's challenge: Magical Demon
+687	NORMAL	true	Yamaguchi's challenge: Close-range Demon
+688	NORMAL	true	Yamaguchi's challenge: Healing Demon
+689	NORMAL	true	Right Brainer
+690	NORMAL	true	10 Diamonds
+691	NORMAL	true	Father's Medicine
+692	REPEATABLE	true	SANPACHI DE DONPACHI
+693	NORMAL	true	Proof of Brotherhood
+694	REPEATABLE	true	Tears of the Brotherhood
+695	REPEATABLE	true	Amnesia
+696	NORMAL	true	Play catch
+697	NORMAL	true	Running away
+698	REPEATABLE	true	Begging for help
+699	NORMAL	true	Sudden completion
+700	NORMAL	true	Shadows in the TMG Building
+701	NORMAL	true	Lord of the Flies
+702	EVENT	false	Panic in Tokyo!
+703	EVENT	false	Golden Afternoon
+704	EVENT	false	Merry Xmas, Mr. Frost!
+705	EVENT	false	The Faith of Others
+706	EVENT	false	Miracle in the Snow
+707	EVENT	false	Mutation (Frame Shift)
+708	EVENT	false	Trial and Error (Algorithms)
+709	EVENT	false	Decision-Making (Heuristic)
+710	EVENT	false	Time Travel (Time Leap)
+711	EVENT	false	White Blues
+712	EVENT	false	DEVIL KNOWS YOU -REBIRTH-
+713	EVENT	false	DEVIL KNOWS YOU -DEATH-
+714	EVENT	false	Kappa's Wish
+715	EVENT	false	A Kappa's Suffering
+716	EVENT	false	Desperately Seeking Alice...
+717	EVENT	false	Dressmaker Lily's Favor
+718	EVENT	false	Dressmaker Lily's Favor - Continued
+719	EVENT	false	True Dressmaker Lily's Favor
+720	EVENT	false	The Foolish Man's Favor
+721	EVENT	false	Wet Hot Beach
+722	EVENT	false	Christmas Devil
+723	EVENT	false	Inexperienced Santa Frost's Punishment
+724	EVENT	false	The One Who Brings Sorrow
+725	EVENT	false	HUSH-A-BYE, DEVIL
+726	EVENT	false	Trick Rank 1
+727	EVENT	false	Trick Rank 2
+728	EVENT	false	Trick Rank 3
+729	EVENT	false	Trick Rank 4
+730	EVENT	false	Trick Rank 5
+731	EVENT	false	Trick Rank 6
+732	EVENT	false	Trick Rank 7
+733	EVENT	false	Trick Rank 8
+734	EVENT	false	Trick Rank 9
+735	EVENT	false	Treat Rank 1
+736	EVENT	false	Treat Rank 2
+737	EVENT	false	Treat Rank 3
+738	EVENT	false	Treat Rank 4
+739	EVENT	false	Treat Rank 5
+740	EVENT	false	Treat Rank 6
+741	EVENT	false	Treat Rank 7
+742	EVENT	false	Treat Rank 8
+743	EVENT	false	Treat Rank 9
+744	EVENT	false	Horse Painting Demon Fusion
+745	EVENT	false	Memories Go Round
+746	EVENT	false	Path of the Hack - White
+747	EVENT	false	Path of the Hack - Black
+748	EVENT	false	Extermination of Messengers from Nemesis LV1
+749	EVENT	false	Extermination of Messengers from Nemesis LV2
+750	EVENT	false	Extermination of Messengers from Nemesis LV3
+751	EVENT	false	AMP High Power Blaster Enhancement　LV1
+752	EVENT	false	AMP High Power Blaster Enhancement　LV2
+753	EVENT	false	AMP High Power Blaster Enhancement　LV3
+754	EVENT	false	Floor Clear　LV1
+755	EVENT	false	Floor Clear LV2
+756	EVENT	false	Floor Clear　LV3
+757	EVENT	false	Devil Passions Chocolate
+758	EVENT	false	Nightmare Ride Show
+759	EVENT	false	The Greatest Battle in History: Rebirth
+760	EVENT	false	The Greatest Battle in History: Growth
+761	EVENT	false	The Greatest Battle in History: Complete
+762	EVENT	false	The Greatest Battle in History: Rebirth (HELLCAT)
+763	EVENT	false	The Greatest Battle in History: Growth (HELLCAT)
+764	EVENT	false	The Greatest Battle in History: Complete (HELLCAT)
+765	EVENT	false	The Greatest Battle in History: Rebirth (TIGERCAT)
+766	EVENT	false	The Greatest Battle in History: Growth (TIGERCAT)
+767	EVENT	false	The Greatest Battle in History: Complete (TIGERCAT)
+768	EVENT	false	The Peacock's Job
+769	EVENT	false	The Onigirimaru Boy's Request
+770	NORMAL	true	Expert Cap Raising Training 1
+771	NORMAL	true	Expert Cap Raising Training 2
+772	NORMAL	true	Expert Cap Raising Training 3
+773	EVENT	false	The Peacock's Desire
+774	EVENT	false	Onigirimaru Boy's Desire
+775	EVENT	false	Saien's (!) Request
+776	EVENT	false	May You Never Die
+777	EVENT	false	For Whom Do You Play the Violin
+778	EVENT	false	Night of the Great Annoyance
+779	EVENT	false	Do Demon Busters Dream of Demon Sheep?
+780	EVENT	false	Bringing Up the Sheep
+781	EVENT	false	Make a Soul Certificate
+782	EVENT	false	Borrow the Soul Certificate
+783	EVENT	false	Magic God Thoth's Request
+784	REPEATABLE	false	Live Short and Love, Demon: Side H
+785	REPEATABLE	false	Live Short and Love, Demon: Side D
+800	REPEATABLE	true	The Missing Frost
+801	REPEATABLE	true	A Hidden Talent
+802	NORMAL	true	A Dish Served Cold
+803	NORMAL	true	Ikebukuro Demon Bash
+804	EVENT	false	I Want to Meet the Mascot Character!
+805	EVENT	false	I Want to Meet a Cute, Inexperienced Fairy!
+806	EVENT	false	Delivery for the Wounded
+807	EVENT	false	The Strongest Sweet Tooth in Ikebukuro?
+808	EVENT	false	Bring a Unique Food
+809	EVENT	false	Bring a Knife of This World
+810	EVENT	false	I Want the Food That Makes You Smarter!
+811	EVENT	false	How to Handle Being Attacked
+812	EVENT	false	I Want a Drink to Wake Me Up!
+813	REPEATABLE	true	Nakano Yagiya Support 1
+814	REPEATABLE	true	Nakano Yagiya Support 2
+815	REPEATABLE	true	Nakano Yagiya Support 3
+816	REPEATABLE	true	Nakano Yagiya Support 4
+817	REPEATABLE	true	Nakano Yagiya Support 5
+818	REPEATABLE	true	Shibuya Yagiya Support 1
+819	REPEATABLE	true	Shibuya Yagiya Support 2
+820	REPEATABLE	true	Shibuya Yagiya Support 3
+821	REPEATABLE	true	Shibuya Yagiya Support 4
+822	REPEATABLE	true	Shibuya Yagiya Support 5
+823	NORMAL	true	To Raise the Expert Cap 1
+824	NORMAL	true	To Raise the Expert Cap 2
+825	REPEATABLE	true	Demon Raising Support
+826	NORMAL	true	Lightning Inserting Plugin
+827	NORMAL	true	The Infecting Plugin
+828	NORMAL	true	The Smoking Plugin
+829	NORMAL	true	Regarding the Three Origins Advanced Skills 1
+830	NORMAL	true	Regarding the Three Origins Advanced Skills 2
+831	NORMAL	true	The Bottling Plugin
+832	REPEATABLE	true	Top Secret Work
+833	NORMAL	true	Foreign Country in the Woods - Beginning
+834	NORMAL	true	Foreign Country in the Woods - Middle
+835	NORMAL	true	Foreign Country in the Woods - End
+836	NORMAL	true	Foreign Country in the Woods - ?
+837	REPEATABLE	true	The Shadow Standing in the Red Evening
+838	REPEATABLE	true	The Bright Ball That Opens the Door
+839	REPEATABLE	true	Fox Doesn't Like His Medicine?
+840	NORMAL	false	Fox Doesn't Like His Medicine?
+841	NORMAL	false	Fox Doesn't Like His Medicine?
+842	REPEATABLE	true	Drunken Snake Hunter
+843	REPEATABLE	true	Barong Elimination
+844	REPEATABLE	true	Rangda Elimination
+845	REPEATABLE	true	Brass Tears
+846	NORMAL	true	Eternal Rest
+847	REPEATABLE	true	The 4th mat. Dances -Bladesmith Chapter 1-
+848	REPEATABLE	true	The 4th mat. Dances -Bladesmith Ch. 2-
+849	REPEATABLE	true	The 4th mat. Dance in Full Moon -Bladesmith Ch. 2-
+850	REPEATABLE	true	The 4th mat. Dance in New Moon -Bladesmith Ch. 2-
+851	REPEATABLE	true	The 4th mat. Dances -Bladesmith Ch. 3-
+852	REPEATABLE	true	The 4th mat. Dance in Full Moon -Bladesmith Ch. 3-
+853	REPEATABLE	true	The 4th mat. Dance in New Moon -Bladesmith Ch. 3-
+854	REPEATABLE	true	The 4th mat. Dances -Bladesmith Ch. 4-
+855	REPEATABLE	true	The 4th mat. Dance in Full Moon -Bladesmith Ch. 4-
+856	REPEATABLE	true	The 4th mat. Dance in New Moon -Bladesmith Ch. 4-
+857	REPEATABLE	true	The 4th mat. Dances -Gunsmith Ch. 1-
+858	REPEATABLE	true	The 4th mat. Dances -Gunsmith Ch. 2-
+859	REPEATABLE	true	The 4th mat. Dance in Full Moon -Gunsmith Ch. 2-
+860	REPEATABLE	true	The 4th mat. Dance in New Moon -Gunsmith Ch. 2-
+861	REPEATABLE	true	The 4th mat. Dances -Gunsmith Ch. 3-
+862	REPEATABLE	true	The 4th mat. Dance in Full Moon -Gunsmith Ch. 3-
+863	REPEATABLE	true	The 4th mat. Dance in New Moon -Gunsmith Ch. 3-
+864	REPEATABLE	true	The 4th mat. Dances -Gunsmith Ch. 4-
+865	REPEATABLE	true	The 4th mat. Dance in Full Moon -Gunsmith Ch. 4-
+866	REPEATABLE	true	The 4th mat. Dance in New Moon -Gunsmith Ch. 4-
+867	REPEATABLE	true	The 4th mat. Dances -Item Alchemy Ch. 1-
+868	REPEATABLE	true	The 4th mat. Dances -Item Alchemy Ch. 2-
+869	REPEATABLE	true	The 4th mat. Dance in Full Moon -Item Alchemy Ch. 2-
+870	REPEATABLE	true	The 4th mat. Dance New Moon -Item Alchemy Ch. 2-
+871	REPEATABLE	true	The 4th mat. Dances -Item Alchemy Ch. 3-
+872	REPEATABLE	true	The 4th mat. Dance in Full Moon -Item Alchemy Ch. 3-
+873	REPEATABLE	true	The 4th mat. Dance in New Moon -Item Alchemy Ch. 3-
+874	REPEATABLE	true	The 4th mat. Dances -Item Alchemy Ch. 4-
+875	REPEATABLE	true	The 4th mat. Dance in Full Moon -Item Alchemy Ch. 4-
+876	REPEATABLE	true	The 4th mat. Dance in New Moon -Item Alchemy Ch. 4-
+877	REPEATABLE	true	The 4th mat. Dances -Armor Alchemy Ch. 1-
+878	REPEATABLE	true	The 4th mat. Dances -Armor Alchemy Ch. 2-
+879	REPEATABLE	true	The 4th mat. Dance in Full Moon -Armor Alchemy Ch. 2-
+880	REPEATABLE	true	The 4th mat. Dance in New Moon -Armor Alchemy Ch. 2-
+881	REPEATABLE	true	The 4th mat. Dances -Armor Alchemy Ch. 3-
+882	REPEATABLE	true	The 4th mat. Dance in Full Moon -Armor Alchemy Ch. 3-
+883	REPEATABLE	true	The 4th mat. Dance in New Moon -Armor Alchemy Ch. 3-
+884	REPEATABLE	true	The 4th mat. Dances -Armor Alchemy Ch. 4-
+885	REPEATABLE	true	The 4th mat. Dance in Full Moon -Armor Alchemy Ch. 4-
+886	REPEATABLE	true	The 4th mat. Dance in New Moon -Armor Alchemy Ch. 4-
+887	REPEATABLE	true	Researching The 4th mat. -Law Ch. 1-
+888	REPEATABLE	true	Researching The 4th mat. -Law Ch. 2-
+889	REPEATABLE	true	Researching The 4th mat. -Neutral Ch. 1-
+890	REPEATABLE	true	Researching The 4th mat. -Neutral Ch. 2-
+891	REPEATABLE	true	Researching The 4th mat. -Chaos Ch. 1-
+892	REPEATABLE	true	Researching The 4th mat. -Chaos Ch. 2-
+893	NORMAL	true	Regarding the Three Origins Advanced Skills 3
+894	NORMAL	true	Shiho's Job - L
+895	NORMAL	true	Shiho's Job - C
+896	NORMAL	true	Shiho's Job - N
+897	NORMAL	true	Wiles of the Lady of the Lake
+900	NORMAL	true	To My Beloved
+901	NORMAL	true	A Deranged Scheme
+902	EPISODE	false	Act 1: Demonization
+903	EPISODE	false	Act 2: The Missing Demon Buster
+904	EPISODE	false	Act 3: Curse of the Gods
+905	EPISODE	false	Act 4: Sukunahikona
+906	EPISODE	false	Act 5: Search for the Seven-Branched Sword
+907	EPISODE	false	Act 6: The Mysterious Girl
+908	EPISODE	false	Act.7　DB Murder Incident
+909	EPISODE	false	Act.8　Sting Operation
+910	EPISODE	false	Act.9　The Mysterious Sand
+911	EPISODE	false	Act.10 Song of Blood
+912	EPISODE	false	Act.11 Revival
+10001	EPISODE	false	Chapter.1 DB License
+10002	EPISODE	false	Chapter.2 The Children of Adam
+10003	EPISODE	false	Chapter.0　Chain of Curse
+10004	EPISODE	false	Chapter.3 The Ten Commandments
+10005	EPISODE	false	Extra Chapter
+200	NORMAL	true	
+201	NORMAL	false	Demon Disguise Kit
+202	REPEATABLE	false	Expedition: Izumo Island
+203	REPEATABLE	false	Expedition: Nakano Boundless Domain
+204	REPEATABLE	false	Expedition: Shinagawa Ice Cave
+205	REPEATABLE	false	Expedition: TMG Building
+206	REPEATABLE	false	Demon Hunt: Shibuya
+207	REPEATABLE	false	Demon Hunt: Ichigaya
+208	REPEATABLE	false	Demon Hunt: East Ikebukuro
+209	REPEATABLE	false	Demon Hunt: Kuchinawa Cave
+210	REPEATABLE	false	Material Delivery: Suginami
+211	REPEATABLE	false	Material Delivery: Nakano
+212	REPEATABLE	false	Material Delivery: Ichigaya
+213	REPEATABLE	false	Material Delivery: Ueno
+214	REPEATABLE	false	Crystal Quest: Air
+215	REPEATABLE	false	Crystal Quest: Fire
+216	REPEATABLE	false	Crystal Quest: Water
+217	REPEATABLE	false	Crystal Quest: Earth
+218	REPEATABLE	false	Arts and Crafts: Drill Bits
+219	REPEATABLE	false	Arts and Crafts: Grains of Sand
+220	REPEATABLE	false	Arts and Crafts: Cigars
+221	REPEATABLE	false	Arts and Crafts: Eggs
+222	REPEATABLE	true	Dungeon Exploration: Beginner
+223	REPEATABLE	true	Dungeon Exploration: Intermediate
+224	REPEATABLE	true	Dungeon Exploration: Beginner WILDCAT
+225	REPEATABLE	true	Dungeon Exploration: DB Normal
+226	REPEATABLE	true	Dungeon Exploration: DB WILDCAT
+227	REPEATABLE	true	Dungeon Exploration: Beginner BEARCAT
+228	REPEATABLE	true	Dungeon Exploration: Intermediate BEARCAT
+229	REPEATABLE	true	Dungeon Exploration: DB DIGITALIZE
+230	REPEATABLE	true	Dungeon Exploration: Samael Normal
+231	REPEATABLE	true	Dungeon Exploration: Samael WILDCAT
+232	REPEATABLE	true	Extermination: Abaddon Normal
+233	REPEATABLE	true	Advanced Expedition: Mound of Masakado
+234	REPEATABLE	true	Advanced Expedition: Suginami Sewers
+235	REPEATABLE	true	Advanced Expedition: Fairy Forest
+236	REPEATABLE	true	Extermination: Pan-Gu Normal
+237	REPEATABLE	true	Advanced Expedition: Shibuya Metro
+238	NORMAL	true	A Mentor’s Guidance

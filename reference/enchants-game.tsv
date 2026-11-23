@@ -1,0 +1,1656 @@
+1	1	7001	tarot	Satan's 	50	16255			does nothing, silly!
+1	1	7001	soul	@Satanic 	95	0			-Weapon- / Almighty-based damage
+2	21	7002	tarot	Metatron's 	50	16255	360099,362059,		STR, MAG +1, Expel-based skill effects +5%
+2	21	7002	soul	 of Enoch	90	4	363056,	2:4,0,>362069,60360,;2:1,0,>363071,;	- Neck - / STR, MAG +2 /  / If Player is LAW: /  Expel-based skill effects +15% /  Null Physical LVL * 0.1% /  / If Player is CHAOS: /  Expel Resistance -30%
+3	22	7003	tarot	Seraph's 	70	16255	360115,141413,	2:4,0,>361807,;2:4,0,>141414,;	Player/Demon Almighty damage + 2% /  / If Player is LAW: /  Player/Demon Fire damage +3%
+3	22	7003	soul	 of Love	90	2048	363223,670053,	2:4,0,>880091,;	- Back - / Final Critical Correction + 3% / Level * (0.05)% Absorb Fire for Demon /  / If Player is LAW: /  Pursuit chance + (Luck * 0.01)%, Pursuit Power + 5%
+4	23	7004	tarot	Michael's 	80	16255	363045,290128,		STR, SPD, MAG +2, All Skill Cooldown -1%
+4	23	7004	soul	 of Justification	90	8192	180554,	2:4,0,>270023,;2:1,0,>290002,;	- Weapon - / Damage to CHAOS enemies +30% /  / If Player is LAW: /  Spell Skill Stack +1 /  / If Player is CHAOS: /  All Skill Cooldown +50%
+5	24	7005	tarot	Gabriel's 	40	16255	141141,		Partner inflicts Electric-based skill effects +1%
+5	24	7005	soul	 of Madonna Lilies	85	256	90186,640075,	2:4,0,>20032,;	- Ring - / Null Paralyze, Electric Stun /  / If Player is LAW: /  Electric-based skill effects +5% / Partner inflicts Electric-based skill effects +15%
+6	25	7006	tarot	Rafael's 	60	16255	360259,360339,		Critical +5 / Block Critical +5
+6	25	7006	soul	 of Azaleas	80	512	50066,150015,	2:4,0,>362671,;2:1,0,>362654,;	- Earring - / Damage suffered from Magica species -30%, LUC +2 to all Party members /  / If Player is LAW: /  LUC +5, Critical +20, Block Critical +5 /  / If Player is CHAOS: /  LUC -5, Critical -20, Block Critical -15
+7	26	7007	tarot	Uriel's 	50	16255	360126,		STR +1 / Fire resistance +3%, Ice resistance -2%
+7	26	7007	soul	 of Tartarus	60	256	60080,360127,	2:4,0,>430395,;2:1,0,>110029,;	- Ring - / LV x 0.5% Fire absorb, Ice resistance -50%, Close-range damage +5% / If Player is LAW with less than 30% HP, CLS-R damage +50% /  / If Player is CHAOS: /  HP cost of all skills +50%
+8	41	7008	tarot	Alilat's 	40	16255	360297,360317,	1:1,80,>363209,;	Magical/Physical Defense +3 / If Player is below level 80: +3% Magnetite gain / Close-range/Long-range/Magic Damage Dealt -3%
+8	41	7008	soul	 of Obsidian	70	16	150003,150015,	149:30,0,>950005,;	- Arms - / +1 INT to party members / If Synthesis is Class 3 or higher: LUC + 2, Bethel earned +5%
+9	42	7009	tarot	Albion's 	40	16255	362674,363203,	1:1,80,>363235,;	MAX HP + 5, HP Regeneration + 5 / If Player is below level 80: +3% Macca gain / Close-range/Long-range/Magic Damage Dealt -3%
+9	42	7009	soul	@Towering Pride 	60	2048	110000,380008,		- Back - / HP Cost of all skills -5% / HP Cost of all skills -4% for each Class of Guard
+10	61	7010	tarot	Brahman's 	40	16255			Nothing
+10	61	7010	soul	 of Brahman	50	0			Nothing
+11	62	7011	tarot	Vishnu's 	70	16255	362849,	2:4,0,>361907,;	MAG, INT +5 /  / If Player is LAW: /  Electric-based skill effects +3%
+11	62	7011	soul	 of Avatara	85	8	362850,361934,	2:4,0,>362716,;2:3,0,>362851,;	- Top - / Magic +10, Critical +15, Electric-based skill effects +30% /  / If Player is LAW: /  Spell damage +8% /  / If Player is CHAOS or NEUTRAL: /  MAX MP -20, Block Critical -20
+12	63	7012	tarot	Mithra's 	45	16255	360158,		Blunt, Thrust, Slash resistance +2%
+12	63	7012	soul	 of Maitreya	55	1	150041,30004,	2:4,0,>60252,60254,;2:4,0,>60253,;	- Head - / Shot damage +10% / Magic +5 to all Party members /  / If Player is LAW: /  LV x 0.25% Null Blunt, Thrust, Slash-based attacks
+13	64	7013	tarot	Baal's 	75	16255	150025,363382,		Party Member's Luck + 3 / User receives +5% Close-range/Long-range/Magic damage
+13	64	7013	soul	@Crimson Tome 	70	2	1110023,1110008,		- Face - / Demon Partner's Rush/Rapid damage + 20%
+14	65	7014	tarot	Odin's 	40	16255	360115,		Almighty-based skill effects +2%
+14	65	7014	soul	 of Runes	50	8192	350006,	2:4,0,>362064,;	- Weapon - / Weapon gains Expel-affinity /  / If Player is LAW: /  Expel-based skill effects +10%
+15	66	7015	tarot	Atavaka's 	50	16255	150139,		Party member's close-range +1
+15	66	7015	soul	@Twin Continent 	55	16	30000,30012,	2:4,0,>110001,;1:1,0,>30009,;	- Arms - / +5% Attack/Spin/Rush damage /  / If Player is LAW: /  HP Cost -10%
+16	67	7016	tarot	Thor's 	60	16255	360097,	2:4,0,>362633,360024,;	Electric-based skill effects +2% /  / If Player is LAW: /  STR +3, VIT +1
+16	67	7016	soul	 of Bilskirnir	75	8	362655,420508,	2:4,0,>361919,;2:1,0,>362656,;	- Top - / STR +5, MAG +3, Null Electric 5% /  / If Player is LAW: /  Electric-based skill effects +15% /  / If Player is CHAOS: /  Electric-based skill effects -15%
+17	68	7017	tarot	Horus's 	70	16255	270147,		Rapid skill stack + 1
+17	68	7017	soul	@Celestial Eye's 	70	256	80140,		- Ring - / +300% Close-range/Long-range/Magic damage against Seth
+18	69	7018	tarot	Indra's 	50	16255	360175,	2:4,0,>110042,;	Close-range +1 /  / If Player is LAW: /  HP Cost -2%
+18	69	7018	soul	@War God's 	55	16	410006,		- Arms - / -3% Cooldown time for each Class of Weapon Knowledge
+19	70	7019	tarot	Thoth's 	35	16255	280071,362611,		INT +2, MAG +1 / Spell incantation time -1%
+19	70	7019	soul	 of Hieratics	40	1	362612,	13:50,0,>90010,;2:4,0,>362613,;	- Head - / MAX MP +10, STR, SPD -5 /  / If player has 50 INT or more, Null Muddle /  / If Player is LAW: /  MAX MP +15
+20	81	7020	tarot	Seth's 	75	16255		2:4,0,>360113,360177,;2:1,0,>360091,360217,;	 / If Player is LAW: /  MAG + 2, Close-range + 3 /  / If Player is CHAOS: /  Spell + 3, STR + 2
+20	81	7020	soul	@Fierce Sandstorm and Thunder's 	85	8192	360269,870027,		- Weapon - / Critical +15, Technical Attack power + 5%
+21	82	7021	tarot	Nyarlathotep's 	75	16255	362650,362673,		Spell damage +3%, Fire resistance -5%
+21	82	7021	soul	 of Crawling Chaos	80	32	362657,360339,	2:4,0,>362314,362264,;2:1,0,>362605,362658,;	- Bottom - / Block Critical +5, Spell damage +20% /  / If Player is LAW: /  Mind-based, Mystic-based skill effects +10% /  / If Player is CHAOS: /  MAG -10, Fire resistance -25%
+22	83	7022	tarot	Mada's 	55	16255	362946,	2:4,0,>362951,;	STR +3, Critical +10 /  / If Player is LAW: /  Received Close-range damage -1%
+22	83	7022	soul	 of Viceless way	65	4096	330143,	2:4,0,>330144,;	- Talisman - / Bind, Charm, Muddle skill success rate +20% /  / If Player is LAW: /  Poison, Paralyze, Stone skill success rate +30%
+23	84	7023	tarot	Samael's 	60	16255	150220,150015,		MAX HP -8, LUC +2 to all Party members
+23	84	7023	soul	 of Blood Viper	80	2048	361019,330145,		- Back - / Death resistance +15% / Poison skill success rate +40%
+24	85	7024	tarot	Tao Tie's 	30	16255	362974,		STR +2, VIT +1, INT -1
+24	85	7024	soul	@Magic-Eater's 	75	4	361009,	2:4,0,>362114,;	- Neck - / Death Resistance +5% /  / If Player is LAW: /  Death-based skill effects +10% /  / With Tao Wu: / STR, SPD, VIT, MAG +4 / Attack, Spin, Rush damage +5%
+25	86	7025	tarot	Pazuzu's 	45	16255	360855,362602,		Force resistance +1% / Spell damage +1%
+25	86	7025	soul	@Swirling Miasma	70	1024	420676,362672,	2:4,0,>361969,;	- Extra - / MAG +3, INT +2, Force Absorb +5% /  / If Player is LAW: /  Force-based skill effects +15%
+26	87	7026	tarot	Tezcatilpoca's 	20	16255			Nothing
+26	87	7026	soul	@Smoking Mirror 	30	0			Nothing
+27	88	7027	tarot	Baphomet's 	10	16255	360023,		MAG +1
+27	88	7027	soul	 de Grimoire	20	8	50015,		- Top - / Damage suffered from God species -20%
+28	101	7028	tarot	Garuda's 	40	16255	360160,		Mystic-based, Nerve resistance +5%
+28	101	7028	soul	@Winged Lord 	50	3	370539,370540,	2:4,0,>290007,;	- Head, Face - / Partner of Birds species, HP and MP regeneration +10 /  / If Player is LAW: /  Fire-based skill cool-down time -20%
+29	102	7029	tarot	Yatagarasu's 	30	16255	360087,		Force, Nerve resistance +1%
+29	102	7029	soul	 of Sunlight	40	8192	40052,		- Weapon - / Damage to Magica species +20%
+30	103	7030	tarot	Suparna's 	20	16255	362952,360080,		HP regeneration +2, MP regeneration +3
+30	103	7030	soul	@Beautifully Winged 	30	3	370543,370544,	2:4,0,>290017,;	- Head, Face - / Partner of Birds species, HP and MP regeneration +5 / If the Player is LAW, Fire-based skill cool-down -10%
+31	104	7031	tarot	Zhu Que's 	30	16255	290057,		Fire-based skill cool-down time -1%
+31	104	7031	soul	@Scarlet Plumed 	45	2048	362567,290017,		- Back - / Fire resistance +15%, Ice resistance -5% / Fire-based skill cool-down time -10% /  / With Bei Hu, Qing Long and Xuan Wu: / Fire, Ice, Force, Electric Skill Cooldown Time -20% / Player gains the Elemental Dodge skill / During the Full Moon, Fire and Force Resistance +100% / During the New Moon, Ice and Electric Resistance +100%
+32	105	7032	tarot	Phoenix's 	20	16255	362614,		MAX HP +5, MAX MP +5
+32	105	7032	soul	@Firebird's 	30	4	362615,	12:30,0,>362616,;13:30,0,>362617,;	- Neck - / MAX HP +10, MAX MP +10 /  / When Vitality is 30+, / MAX HP +20 /  / When Intelligence is 30+, / MAX MP +20
+33	106	7033	tarot	Jatayu's 	10	16255	360025,		SPD +1
+33	106	7033	soul	 of Vultures	20	8192	40234,		- Weapon - / Damage to Wilder family +20%
+34	107	7034	tarot	Feng Huang's 	10	16255	360024,		VIT +1
+34	107	7034	soul	 of Energy	20	4	360078,	12:30,0,>360079,;13:30,0,>360080,;	- Neck - / HP regeneration +3, MP regeneration +1 / If VIT is 30+, HP regeneration +7 / If INT is 30+, MP regeneration +3
+35	121	7035	tarot	Anat's 	75	16255		2:4,0,>30063,;2:1,0,>30064,;	 / If Player is LAW: /  Rapid damage + 6% /  / If Player is CHAOS: /  Rush damage + 6%
+35	121	7035	soul	 of Insanity	70	4		2:4,0,>60204,;2:1,0,>60192,;	- Neck - /  / If Player is LAW: /  (Level * 0.5)% Null Mind /  / If Player is CHAOS: /  (Level * 0.5)% Null Nerve
+36	122	7036	tarot	Norns's 	50	16255	362580,360236,		INT + 3 / Support + 2
+36	122	7036	soul	 of Twine	55	512	570020,363089,		- Earring - / +INT + (level * 0.1) / Close-range damage suffered +20%
+37	123	7037	tarot	Lakshmi's 	45	16255	362991,330147,		STR -5, INT +3 / Charm success rate +4%
+37	123	7037	soul	 of Shuri	60	4096	60352,360324,		- Talisman - / LV x 0.25% Null Nerve, Magic Defense +10
+38	124	7038	tarot	Pallas Athena's 	65	16255	362659,	2:4,0,>360091,;	STR, MAG +1 / Death resistance -5% /  / If Player is LAW: /  STR +2
+38	124	7038	soul	@Saint Cloth 	70	16	90002,60278,	2:4,0,>360022,360023,;2:1,0,>30067,;	- Arms - / Null Stone, LVL * 0.25% Mystic-affinity reflect /  / If Player is LAW: /  STR, MAG +1 /  / If Player is CHAOS: /  Rush damage -10%
+39	125	7039	tarot	Scathach's 	60	16255	362660,	2:4,0,>360113,;	STR, MAG +1 / Electric resistance -5% /  / If Player is LAW: /  MAG +2
+39	125	7039	soul	@Gallant Heroine's 	65	32	362661,	2:4,0,>560011,;2:1,0,>362662,;	- Bottom - / STR, MAG +2, Electric-based skill effects -15% /  / If Player is LAW: /  LV x 0.3% Rush damage /  / If Player is CHAOS: /  Spell damage -20% /  / With Cu Chulainn: / Magic-affinity +20%
+40	126	7040	tarot	Sati's 	40	16255	360157,		MAG+2, Fire resistance +3%, Ice resistance -2%
+40	126	7040	soul	@Virtuous 	55	2048	60255,360162,	2:4,0,>360163,;	- Back - / LV x 0.25% Chance to Reflect Fire, Ice resistance -50% /  / If Player is LAW: /  Ice resistance +15%
+41	127	7041	tarot	Freya's 	20	16255	360086,		Fire, Mind resistance +1%
+41	127	7041	soul	 of Vanadis	30	4	90011,		- Neck - / Null Mute
+42	128	7042	tarot	Sarasvati's 	10	16255	360027,		Luck +1
+42	128	7042	soul	@Abundant 	20	8	50105,		- Top - / Damage suffered from Foul species -20%
+43	129	7043	tarot	Ameno-Uzume's 	10	16255	360041,		Fire resistance +2%, Electric resistance -1%
+43	129	7043	soul	@Dancer's 	20	32	50215,		- Bottom - / Damage suffered from Evil Demon family -20%
+44	130	7044	tarot	Hathor's 	10	16255	360026,		INT +1
+44	130	7044	soul	@Fortunate 	18	8	50095,		- Top - / Damage suffered from Evil Spirit species -20%
+45	141	7322	tarot	Amaterasu's 	70	16255	362638,360080,	2:4,0,>150001,;	MAG + 4 / HP Regen + 3 /  / If Player is LAW: /  Party member's MAG + 1
+45	141	7322	soul	 of Mahoroba	80	1	363105,290089,	2:4,0,>550108,;	- Head - / -10 Intelligence / +10 Luck / Cooldown of all magic skills -20% /  / If Player is LAW: /  During the day, Magic damage +25% /  / With Tsukuyomi and Susano-o: / Limit Break Chance +10% / Limit Break Power +20% /  / During the Day: / Fire-affinity damage +40% / Electric-affinity damage +40% /  / During the Night: / Ice-affinity damage +40% / Force-affinity damage +40%
+46	142	7046	tarot	Tsukuyomi's 	60	16255	360196,360216,		Spell + 2 / Long-range + 2
+46	142	7046	soul	 Dominating the Night	75	2	550172,540055,	2:4,0,>60390,;	- Face - / From 18:01 to 6:00, Magic damage + 15%, Limit Break power + 30% / During the Full Moon: Magic damage + 85%, Limit Break power + 60% /  / If Player is LAW: /  Reflect all magic at (Level * 0.07)% /  / With Amaterasu and Susano-o: / Limit Break Chance +10% / Limit Break Power +20% /  / During the Day: / Fire-affinity damage +40% / Electric-affinity damage +40% /  / During the Night: / Ice-affinity damage +40% / Force-affinity damage +40%
+47	143	7047	tarot	Take-Mikazuchi's 	30	16255	30037,360805,		Electric resistance +1%, Rush damage +1%
+47	143	7047	soul	@Lightning 	50	256	60269,30009,	2:4,0,>361909,;	- Ring - / LV x 0.1% Electric absorb / Rush damage +5%, Penetrate resistance -25% /  / If Player is LAW: /  Electric-based skill effects +5%
+48	144	7048	tarot	Hino-Kagutsuchi's 	30	16255	360037,360095,		Fire resistance + 2% / Fire damage + 2% / Ice resistance - 1%
+48	144	7048	soul	@Moment of Burn out 	50	8192	350001,980024,	1:1,0,>1150012,1040105,;	- Weapon - / Weapon gains Fire-affinity / Fire affinity cap + 50% / When using Fire-affinity skills, +10% Final critical correction / While Digitalized: +100% Fire damage
+49	145	7049	tarot	Omoikane's 	20	16255	362560,		INT +1, LUC +2, MAG -1
+49	145	7049	soul	@All-Encompassing 	25	3	362561,	149:20,0,>360112,360027,;	- Head, Face - / INT +2, LUC +1 /  / If player has Class 2 Synthesis or more, INT +2, LUC +1
+50	161	7050	tarot	Hresvelgr's 	35	16255	362559,		SPD +3, VIT -3
+50	161	7050	soul	 of Soultakers	60	2048	362558,	2:4,0,>430444,;	- Back - / SPD +10, INT +5, MP regeneration -10 / If Player is LAW and have less than 20% HP, Long-range damage +50%
+51	162	7051	tarot	Anzu's 	50	16255	50050,		Damage suffered from demons of the Dragons Species -1%
+51	162	7051	soul	of Ningirsu	50	32	50055,		- Bottom - / Damage suffered from demons of the Dragons Species -20%
+52	163	7052	tarot	Camazotz's 	50	16255	363002,760062,		Close-range damage -3% / Partner inflicts Blunt-based skill effects +3%
+52	163	7052	soul	 of Vectors	50	8192	40058,	14:50,0,>360262,362706,;	- Weapon - / Damage to Birds species +10% /  / If player has 50+ Speed, Critical +8, Long-range damage +8%
+53	164	7053	tarot	Gurr's 	50	16255	361009,361209,		Death Resistance +5%, Mind Resistance +5%
+53	164	7053	soul	@Black Winged 	60	16	370543,370544,	0:0,0,>370565,370566,;2:4,0,>361819,;	- Arms - / Partner of Birds species, HP and MP regeneration +5, MAX HP and MP +5 /  / If Player is LAW: /  Fire-based skill effects +15%
+54	165	7054	tarot	Furiae's 	10	16255	360044,		Ice resistance +2%, Force resistance -1%
+54	165	7054	soul	 of Jailers	20	8192	40262,		- Weapon - / Damage to Brute family +20%
+55	166	7055	tarot	Zhen's 	10	16255	360030,		SPD +2, STR, MAG -1
+55	166	7055	soul	@Poison Fowl 	20	8	50055,		- Top - / Damage suffered from Dragon species -20%
+56	167	7056	tarot	Onmoraki's 	1	16255	360000,		Death resistance +1%, Expel resistance -1%
+56	167	7056	soul	@Moaning 	1	8	360065,		- Top - / MAX HP +10 / MAX MP +10
+57	181	7057	tarot	Throne's 	30	16255	362754,		MAG +3, STR -3, LUC -3
+57	181	7057	soul	 of the Ophanim	45	8	362755,	2:6,0,>290001,;	- Top - / Fire resistance +20%, Fire-based skill effects +5% /  / If Player is LAW or NEUTRAL: /  Spin cool-down time -20%
+58	182	7058	tarot	Dominion's 	30	16255	362756,		INT +3, VIT -5, LUC -2
+58	182	7058	soul	 of the Hashmalim	40	32	362757,	2:6,0,>290089,;	- Bottom - / MAX HP +50, MAX MP -25, Expel-based skill effects +5% /  / If Player is LAW or NEUTRAL: /  Spell cool-down time -20%
+59	183	7059	tarot	Virtue's 	20	16255	290052,		Expel-based skill cool-down -2%
+59	183	7059	soul	 of the Cosmos	35	3	362569,	2:6,0,>280061,;	- Head, Face - / INT +5, VIT -5 /  / If Player is LAW or NEUTRAL: /  Expel-based skill effects incantation -50%
+60	184	7060	tarot	Power's 	20	16255	40343,		Damage to Foul family +3%
+60	184	7060	soul	 of Vanguards	30	8192	40080,	2:6,0,>40346,;	- Weapon - / Damage to Foul family +20% /  / If Player is LAW or NEUTRAL: /  damage to Foul family +20%
+61	185	7061	tarot	Principality's 	10	16255	360036,		Expel resistance +2%, Death resistance -1%
+61	185	7061	soul	 of Evangelis	20	8192	40269,		- Weapon - / Damage to Haunt family +20%
+62	186	7062	tarot	Archangel's 	10	16255	360050,		Slash-based skill effects +1%
+62	186	7062	soul	 of Punishers	17	8192	40311,		- Weapon - / Damage to Evil Dragon family +20%
+63	187	7063	tarot	Angel's 	1	16255	360001,		Expel resistance +1%, Death resistance -1%
+63	187	7063	soul	 of Millenarian	10	4	90004,		- Neck - / Null Charm
+64	201	7064	tarot	Hecatonchires's 	35	16255	30057,		Rapid damage +4%
+64	201	7064	soul	@One hundred arms Giant's 	50	1	30084,	2:4,0,>280016,;104:50,0,>30061,;	- Head - / Counter damage +300% /  / If Player is LAW: /  Counter incantation time -20% /  / If player has Class 5 Rapid or more, Counter-based damage +200%
+65	202	7065	tarot	Girimehkala's 	30	16255	363057,363058,		STR+2, VIT+5 / Force Resistance -15%
+65	202	7065	soul	@Black Elephant's 	40	256	362643,363059,	2:4,0,>60366,;	- Ring - / Close-range Damage +5%, Force Resistance -50% /  / If Player is LAW: /  Lvl*0.1% Reflect Physical
+66	203	7066	tarot	Edimmu's 	20	16255	362997,		Macca gained -2% / XP earned +3%
+66	203	7066	soul	 of Thickness	30	16	361909,	1:41,0,>60096,;	- Arms - / Electric-based skill effects +5% / For Players 41+, Lvl*0.5% Null Electric
+67	204	7067	tarot	Cyclops's 	10	16255	360052,		Blunt-based skill effects +1%
+67	204	7067	soul	@Herokiller 	20	8192	40227,		- Weapon - / Damage to Demigod family +20%
+68	205	7068	tarot	Rakshasa's 	10	16255	360064,		STR +1, SPD +1, VIT -1, MAG -1
+68	205	7068	soul	@Protection 	20	8	50075,		- Top - / Damage suffered from Birds species -20%
+69	207	7069	tarot	Ogre's 	1	16255	360006,		STR +1 MAG -1
+69	207	7069	soul	 of Hercules	10	16	360028,	100:30,0,>360091,;	- Arms - / STR +2, MAG, SPD -1 /  / If player has Class 3 Attack or more, STR +2
+70	221	7070	tarot	Morrigan's 	40	16255	362758,		Critical +10 / SPD +2, MAG -5
+70	221	7070	soul	 of Great Queen	30	2048	362759,		- Back - / MP regeneration +10, SPD +5, VIT +5 /   / With Macha: / CRT +15 / Rapid damage +10% /   / With Badb Catha: / Damage to Vile family +23%
+71	222	7071	tarot	Badb Catha's 	10	16255	360063,		MAG +1 SPD +1 INT -1 LUC -1
+71	222	7071	soul	 of Wings	20	8192	40115,		- Weapon - / Damage to Vile family +20% /   / With Morrigan: /  at the same time: / Damage to Vile family +30%
+72	223	7072	tarot	Aello's 	10	16255	360056,		Slash resistance +2%, Thrust resistance -1%
+72	223	7072	soul	@Gale 	20	3	360025,		- Head, Face - / SPD +1 /  / With Ocypete and Celaeno: / MP +10, SPD +7, INT +5, CRT +50
+73	224	7073	tarot	Celaeno's 	10	16255	360057,		Thrust resistance +2%, Blunt resistance -1%
+73	224	7073	soul	@Stormcloud 	20	8	360049,		- Top - / CRT +4 /  / With Aello and Ocypete: / MP +10, SPD +7, INT +5, CRT +50
+74	225	7074	tarot	Ocypete's 	10	16255	360058,		Blunt resistance +2%, Slash resistance -1%
+74	225	7074	soul	@Sonic Speed 	20	32	360065,		- Bottom - / MAX HP +10, MAX MP +10 /  / With Aello and Celaeno: / MP +10, SPD +7, INT +5, CRT +50
+75	226	7075	tarot	Macha's 	1	16255	360005,		Force resistance +1%, Electric resistance -1%
+75	226	7075	soul	 of Ravens	10	8192	360066,	15:20,0,>360067,;	- Weapon - /  / If player has 20 LUC or more, Critical +14 /   / With Morrigan: / CRT +15 / Rapid damage +10%
+76	227	7076	tarot	Harpy's 	1	16255	360010,		SPD +1, STR -1
+76	227	7076	soul	 of Raptors	7	3	360025,		- Head, Face - / SPD +1
+77	241	7077	tarot	Ganesha's 	30	16255	362976,	2:4,0,>362603,;	INT, LUC +1 /  / If Player is LAW: /  Macca earned +1%
+77	241	7077	soul	@Lord of Obstacles 	40	256	362580,362977,		- Ring - / INT +3, Macca gained +5%
+78	242	7078	tarot	Efreet's 	30	16255	362998,		Experienced gained -3% / Expertise gained +6%
+78	242	7078	soul	 of Prominence	40	64	361809,	1:42,0,>60072,;	- Shoes - / Fire-based skill effects +5% / If Player is Level 42+, Null Fire-based attacks LV x 0.5%
+79	243	7079	tarot	Purski's 	50	16255	40308,		Damage to demons of the Evil Dragon race +3%
+79	243	7079	soul	 of the Elephant-headed God	50	8192	40312,		- Weapon - / Damage to demons of the Evil Dragon race +30%
+80	244	7080	tarot	Jinn's 	10	16255	362603,		Macca earned +1%
+80	244	7080	soul	 of 1,000 Nights	20	2048	361959,	1:44,99,>60268,;	- Back - / Force-based skill effects +5% / If Player is 44+, LV x 0.1% Null Force
+81	245	7081	tarot	Onkot's 	10	16255	330003,		Stun skill success rate +5%
+81	245	7081	soul	 of Generals	20	8192	40164,		- Weapon - / Damage to Yoma family +20%
+82	246	7082	tarot	Dis' 	10	16255	360032,		MAX MP +3
+82	246	7082	soul	 of Destiny	20	8	50065,		- Top - / Damage suffered from Magica species -20%
+83	247	7083	tarot	Isora's 	1	16255	360020,		Electric-based skill effects +1%
+83	247	7083	soul	@Sea Breeze 	10	1792	360038,		- Ring / Earring / Extra - / Ice resistance +2%, Fire resistance -1%
+84	248	7084	tarot	Apsaras' 	1	16255	360013,		MAX MP +2
+84	248	7084	soul	 of Swans	8	64	360068,360069,		- Shoes - / SPD +2, MAG +2, Electric resistance +5% /  / With Gandharva: / HP +20, LUC +5
+85	261	7085	tarot	Gogmagog's 	50	16255	30053,		Counter damage + 20%
+85	261	7085	soul	 at the Albion	60	64	360774,360824,	2:4,0,>60388,;	- Shoes - / Ice resistance + 20% / Electric resistance + 20% /  / If Player is LAW: /  (Level * 0.07)% Null all physical
+86	262	7086	tarot	Titan	40	16255	362978,		STR +4, MAG, SPD -2 / Physical defense +2
+86	262	7086	soul	 of Gods	50	32	362979,	2:2,0,>360869,;	- Bottom - / STR +4, MAG, SPD -1 /  / If Player is NEUTRAL: /  Force resistance +15%
+87	263	7087	tarot	Sarutahiko's 	40	16255	141186,363054,		Spell Damage -3% / Partner's Slash-based skill effects +3%
+87	263	7087	soul	 of the Illuminated Road	40	8192	40031,	2:4,0,>40410,370567,;	- Weapon - / Damage to Guardians species +20% /  / If Player is LAW: /  damage to Guardians species -10%, To summoned Guardians species Critical +20
+88	264	7088	tarot	Ubelluris's 	20	16255	360039,360805,		Electric resistance +3%, Force resistance -1%
+88	264	7088	soul	 of Ullikummi	30	8	362618,360299,		- Top - / STR -3, SPD -3, MAG -3 / Physical defense +5, Critical defense +15
+89	265	7089	tarot	Dwarf's 	20	16255	360111,		Blunt, Electric resistance +1%
+89	265	7089	soul	@Artisan's 	30	8192	40339,		- Weapon - / Damage to Machine family +20%
+90	266	7090	tarot	Bucca-Boo's 	10	16255	360045,		Electric resistance +2%, Fire resistance -1%
+90	266	7090	soul	@Silver Rain	20	8192	40241,		- Weapon - / Damage to Dragon King family +20%
+91	267	7091	tarot	Sudama's 	10	16255	360060,		Thrust resistance +2%, Slash resistance -1%
+91	267	7091	soul	 of Exorcism	17	8192	40283,		- Weapon - / Damage to Fallen Angel family +20%
+92	268	7092	tarot	Knocker's 	1	16255	360017,		Blunt resistance +1%, Slash resistance -1%
+92	268	7092	soul	 of Miners	10	32	360070,		- Bottom - / MAX HP +20
+93	269	7093	tarot	Hua Po's 	1	16255	360002,		Fire resistance +1%, Ice resistance -1%
+93	269	7093	soul	@Abloom 	5	4096	90006,		- Talisman - / Null Blaze Stun Effect
+94	270	7094	tarot	Kodama's 	1	16255		1:3,20,>360031,;	If Player's Level is between 3 and 20, MAX HP +4
+94	270	7094	soul	@Wavering 	3	4096	90008,		- Talisman - / Null Shock Stun Effect
+95	501	7095	tarot	Mot's 	75	16255	290129,280072,		Cool-down time for all skills -2% / Incantation time for all skills -1%
+95	501	7095	soul	 of the Dead	70	8192	180553,362664,	2:4,0,>180579,;2:1,0,>180585,;	- Weapon - / Critical +5, damage to CHAOS enemies +25% /  / If Player is LAW: /  damage to CHAOS enemies -20% /  / If Player is CHAOS: /  damage to CHAOS enemies -50%
+96	502	7096	tarot	Beiji Weng's 	80	16255	362663,	2:2,0,>330104,;	Critical +7, Expel resistance +7% /  / If Player is NEUTRAL: /  Instant Death skill success rate +1%
+96	502	7096	soul	@Reflecting Seven Stars 	80	8192	180543,180552,	2:4,0,>290150,;2:1,0,>280132,;	- Weapon - / Damage to LAW and CHAOS enemies +20% /  / If Player is LAW: /  cool-down time for all skills +30% /  / If Player is CHAOS: /  incantation time for all skills +30%
+97	503	7097	tarot	Guede's 	50	16255	361008,280073,	135:20,0,>363007,;2:1,0,>290141,;	Death Resistance +4% / All Skill Incantation -2% / If Pursuit Expertise is Class 2+, MAG +3, Critical +7 /  / If Player is CHAOS: /  All Skill Cooldown Time +5%
+97	503	7097	soul	Someday 	50	8192	180544,	2:4,0,>180570,;2:1,0,>290150,;	- Weapon - / Damage to LAW enemies +25% /  / If Player is LAW: /  damage to LAW enemies -20% /  / If Player is CHAOS: /  All Skill Cooldown Time +30%
+98	504	7098	tarot	Chernobog's 	40	16255	360161,		Death-based skill effects +2%
+98	504	7098	soul	 of Obliteration	60	1	360164,	2:2,0,>360165,;	- Head - / STR +10, Blunt resistance -30%, Fire resistance -20% /  / If Player is NEUTRAL: /  STR +5
+99	505	7099	tarot	Persephone's 	30	16255		0:0,0,>199988,;	Demon Partner's Support +3 / Demon Partner's Magic Damage +3%
+99	505	7099	soul	 of the Underworld	40	4096	199987,		- Talisman - / Player gains the Shining Eye skill.
+100	506	7100	tarot	Hel's 	35	16255	360167,		MAG +2 / MAX MP +2
+100	506	7100	soul	 of the Underworld	40	1024	360166,	2:2,0,>290008,;	- Extra - / MAG +3 /  / If Player is NEUTRAL: /  Ice-based skill cool-down time -20%
+101	521	7101	tarot	Sleipnir's 	35	16255	362762,		STR -2, MAG -2, SPD -2 / Movement speed +2% / 	(Returns to normal speed during  / 		battle and skill execution)
+101	521	7101	soul	@Distance Dash 	50	32	360874,280056,	2:2,0,>60347,;	- Bottom - / Force resistance +20%, Force-based skill incantation -10% /  / If Player is NEUTRAL: /  LV x 0.25% Null Expel
+102	522	7102	tarot	Chimera's 	40	16255	141140,		Partner inflicts Fire-based skill effects +1%
+102	522	7102	soul	@Dissonant Illusion 	55	8192	450545,362966,		- Weapon - / STR +5, Fire resistance +10%, Ice resistance -5% /  / If Player is NEUTRAL: /  Fire-based skill effects +10%
+103	523	7103	tarot	Bai Hu's 	30	16255	290058,		Ice-based skill cool-down time -1%
+103	523	7103	soul	@Glittering white nails 	45	16	362973,290018,		- Back - / Ice resistance +15%, Fire resistance -5% / Ice-based skill cool-down time -10% /  / With Zhu Que, Qing Long and Xuan Wu: / Fire, Ice, Force, Electric Skill Cooldown Time -20% / Player gains the Elemental Dodge skill / During the Full Moon, Fire and Force Resistance +100% / During the New Moon, Ice and Electric Resistance +100%
+104	524	7104	tarot	Kirin's 	35	16255	362619,		INT +1, LUC +2 / Mystic-affinity resistance -2%
+104	524	7104	soul	@Loyal Beast 	30	32	362620,362621,	108:40,0,>20069,20068,;110:40,0,>290097,;	- Bottom - / Fire, Ice, Electric, Force resistance +2%, Mystic-affinity - 8% /  / If player has Class 4 Curative Magic or more, Curative-based skill effects +15% /  / If player has Class 4 Support Magic or more, Support-based skill cool-down time -10%
+105	525	7105	tarot	Senri's 	20	16255	360856,		Force resistance +2%
+105	525	7105	soul	@Mist Claw 	30	4	90009,360027,		- Neck - / Null Stun / LUC +1
+106	526	7106	tarot	Pa Bil Sag's 	20	16255	361706,360151,		Penetrate-based skill effects +2% / -10 MAX HP
+106	526	7106	soul	 of Deathstalkers	30	64	360151,360093,	103:40,0,>30003,;104:40,0,>30006,;	- Shoes - / If player has Class 4 Shot or more, Shot damage +5% /  / If player has Class 4 Rapid or more, Rapid damage +5%
+107	527	7107	tarot	Bai Ze's 	20	16255	362570,		LUC +1 INT +1 VIT -2
+107	527	7107	soul	@Purified Disaster 	27	32	362572,	13:20,0,>362571,;	- Bottom - / LUC + 3 /  / If player has 20 Intelligence or more, LUC +2
+108	528	7108	tarot	Apis' 	10	16255	360031,		MAX HP +4
+108	528	7108	soul	@Precipice 	20	32	50225,		- Bottom - / Damage suffered from Wild Bird family -20%
+109	529	7109	tarot	Unicorn's 	10	16255	360040,		Force resistance -2%, Electric resistance -1%
+109	529	7109	soul	@Consecrated 	20	32	50155,		- Bottom - / Damage suffered from Vile family -20%
+110	530	7110	tarot	Shiisa's 	10	16255	360051,		Thrust-based skill effects +1%
+110	530	7110	soul	@Slumbering Lion 	13	32	50355,		- Bottom - / Damage suffered from Nocturne family -20%
+111	541	7111	tarot	Gryphon's 	40	16255	370341,		+2% final critical correction for demons of the Beast species
+111	541	7111	soul	 of Curved Beak	60	512	90018,	2:6,0,>363406,;2:3,0,>363408,;	- Earring - / Null Instant Death / 						 / If Player is LAW or NEUTRAL: /  Magic damage suffered -50% /   / If Player is NEUTRAL or CHAOS: /  Close-range damage suffered -50%
+112	542	7112	tarot	Cerberus' 	30	16255	360174,		Fire resistance +3%, Ice resistance -2%
+112	542	7112	soul	 of Hellhounds	40	2	90101,		- Face - / Null Makanda / * Cancels out Makakaja /  / With Orthrus: / Fire-affinity +50% / Nulls "-nda" status ailments
+113	543	7113	tarot	Dawon's 	40	16255	363003,141175,		STR +3, INT -2, MAG -2 / Partner's Fire resistance +2%
+113	543	7113	soul	@Spiraling Flame 	40	64	363004,		- Shoes - / STR, MAG +1, Fire resistance +25%, Fire-based skill effects +5% /  / With Parvati
+114	544	7114	tarot	Tan-Ki's 	10	16255	360024,		VIT +1
+114	544	7114	soul	@Eon after Eon 	20	8	220007,210007,	2:2,0,>220003,210003,;2:2,0,>362600,;	- Top - / Chance to Null knockback +30%, Chance to Null stun +30% /  / If Player is NEUTRAL: /  gain Superarmor, Close-range, Long-range, Spell damage suffered +50%
+115	545	7115	tarot	Orthrus' 	10	16255	360037,		Fire resistance +2%, Ice resistance -1%
+115	545	7115	soul	 of Watchdogs	20	4	90100,		- Neck - / Null Tarunda / * Cancels out Tarukaja /  / With Cerberus: / Fire-affinity +50% / Nulls "-nda" status ailments
+116	546	7116	tarot	Nekomata's 	10	16255	360043,		Ice resistance +2%, Electric resistance -1%
+116	546	7116	soul	@Alluring Claw 	20	16	330004,		- Arms - / Charm skill success rate +50%
+117	547	7117	tarot	Inugami's 	10	16255	360042,		Fire resistance +2%, Force resistance -1%
+117	547	7117	soul	 of Curses	18	4	20046,		- Neck - / Death-based skill effects +20%
+118	548	7118	tarot	Cu Sith's 	1	16255	360016,		Thrust resistance +1%, Blunt resistance -1%
+118	548	7118	soul	 of Hunters	10	64	280005,		- Shoes - / Rush-based skill incantation time -20%
+119	549	7119	tarot	Cait Sith's 	1	16255	360015,		Slash resistance +1%, Thrust resistance -1%
+119	549	7119	soul	 of Lord Carabas	7	64	290001,		- Shoes - / Spin-based skill cool-down time -20%
+120	561	7120	tarot	Titania's 	30	16255	360100,		MAG +1 INT +1
+120	561	7120	soul	@Moonlight Dream 	40	32	360104,		- Bottom - / MAX HP -30, MAX MP +30, STR -2, MAG +3 /  / With Oberon: / MAX HP +30, MAX MP +20, STR +2, MAG +2
+121	562	7121	tarot	Oberon's 	30	16255	360099,		STR +1 MAG +1
+121	562	7121	soul	@Midsummer Squall	40	8	360103,		- Top - / MAX HP +50, MAX MP -20, STR +3, MAG -2 /  / With Titania: / MAX HP +30, MAX MP +20, STR +2, MAG +2
+122	563	7122	tarot	Troll's 	10	16255	360038,		Ice resistance +2%, Fire resistance -1%
+122	563	7122	soul	@Powerful Blessing 	20	32	50235,		- Bottom - / Damage suffered from Yoma family -20%
+123	564	7123	tarot	Elf's 	10	16255	360029,		MAG +2, STR -1, SPD -1
+123	564	7123	soul	@Ogre-Ward 	20	8	50045,		- Top - / Damage suffered from Demoniac species -20%
+124	565	7124	tarot	Kelpie's 	10	16255	330001,		Freeze skill success rate +5%
+124	565	7124	soul	@Wandering Spirit 	20	32	50375,		- Bottom - / Damage suffered from Brute family -20%
+125	566	7125	tarot	Gandharva's 	10	16255	360062,		STR +1 MAG +1 INT -1 VIT -1
+125	566	7125	soul	 of Buskers	20	32	50395,		- Bottom - / Damage suffered from Dragon family -20% /  / With Apsaras: / HP +20, LUC +5
+126	567	7126	tarot	Pyro Jack's 	1	16255	360018,		Fire-based skill effects +1%
+126	567	7126	soul	@Hee-hot Shot 	10	8192	300001,		- Weapon - / Player gains the Magic Shot skill /  / With Jack Frost: / Player gains the D.B.B. skill
+127	568	7127	tarot	High Pixie's 	1	16255	360014,		CRT +3
+127	568	7127	soul	@Glamour 	10	64	360071,360072,		- Shoes - / MAG, INT +2, Force resistance +5%
+128	569	7128	tarot	Jack Frost's 	1	16255	360003,		Ice resistance +1%, Fire resistance -1%
+128	569	7128	soul	@Chill Hee-ho Punch 	10	16	300000,		- Arms - / Player gains the Frost's Punch skill /  / With Pyro Jack: / Player gains the D.B.B. skill /  / With King Frost, Santa Frost and Shishimai Frost: / Ice-affinity +50% / Player gains the Galactica Frost Punch skill
+129	570	7129	tarot	Pixie's 	1	16255	360012,		MAX HP +3
+129	570	7129	soul	@Scintillating 	2	1792	360073,		- Ring / Earring / Extra - / MAX MP +8
+130	581	7130	tarot	Flaemies' 	20	16255	360095,		Fire-based skill effects +2%
+130	581	7130	soul	 of Clubs	20	8192	350001,		- Weapon - / Weapon gains Fire-affinity
+131	582	7131	tarot	Aquans's 	15	16255	360096,		Ice-based skill effects +2%
+131	582	7131	soul	 of Hearts	15	8192	350002,		- Weapon - / Weapon gains Ice-affinity
+132	583	7132	tarot	Aeros's 	11	16255	360098,		Force-based skill effects +2%
+132	583	7132	soul	 of Spades	11	8192	350003,		- Weapon - / Weapon gains Force-affinity
+133	584	7133	tarot	Erthys' 	7	16255	360097,		Electric-based skill effects +2%
+133	584	7133	soul	 of Diamonds	7	8192	350004,		- Weapon - / Weapon gains Electric-affinity
+134	601	7134	tarot	Masakado's 	65	16255	1120016,		Limit Break Damage Cap + 60
+134	601	7134	soul	@New Emperor's 	70	8	1110011,1050010,	1:1,0,>1050051,;	- Top - / Demon Partner's Spin damage + 10% / While Digitalized: / Demon Partner's Almighty damage + 10%, Close-range damage + 30%
+135	602	7135	tarot	Trumpeter's 	65	16255	362638,362635,	2:2,0,>360237,;1:1,0,>360112,360024,;	MAG + 4 / SPD + 3 / INT + 2 / STR + 1 /  / If Player is NEUTRAL: /  Support + 3
+135	602	7135	soul	 of Sound	70	2048	362744,30004,		- Back - / +10 MAG / +10% Shot damage (Includes Destruction Magic)
+136	603	7136	tarot	Mother Harlot's 	70	16255	362652,360269,		Spell damage +4% / CRT +15
+136	603	7136	soul	 of Babylon	80	16	362579,60360,		- Arms - / +10 LUC / LVL * 0.1% Null all Physical
+137	604	7137	tarot	Pale Rider's 	50	16255	360259,290129,		Critical+5 / Cooldown-2%
+137	604	7137	soul	@Disease for Death 	60	8	360264,290096,		- Top - / Critical +10 / Cooldown -10%
+138	605	7138	tarot	Yoshitsune's 	50	16255	140001,140654,	119:30,0,>140000,;	Demon Partner's HP - 5 / Demon Partner's Close-range + 2 / If Player is has Class 3 or higher Weapon Knowledge, Demon Partner's Close-range + 1
+138	605	7138	soul	 of Shana	60	1024	141226,	2:2,0,>141305,;	- Extra - / Demon Partner's STR + 10 /  / If Player is NEUTRAL: /  Demon Partner's Slash, Blunt, and Thrust based damage + 8%
+139	606	7139	tarot	Black Rider's 	50	16255	360169,		MAG +5
+139	606	7139	soul	@Starvation 	60	1	362744,120049,		- Head - / MAG +10 / MP Cost -3%
+140	607	7140	tarot	Red Rider's 	50	16255	360165,		STR +5
+140	607	7140	soul	@Disturbance 	55	2048	362743,363060,		- Back - / STR +10 / Slash/Blunt/Thrust based skills +2%
+141	608	7141	tarot	White Rider's 	50	16255	362637,		SPD +5
+141	608	7141	soul	@Victory 	52	16	362745,363061,		- Arms - / SPD +10 / Handgun/Penetrade/Spread based Skill Effects +2%
+142	609	7142	tarot	Jeanne D'Arc's 	50	16255		2:2,0,>440244,;	If Neutral: Weapon based skill +2%
+142	609	7142	soul	 Du Pucelle	50	8192	440245,20069,	2:2,0,>180542,180551,;2:5,0,>363048,;	- Weapon - / Weapon based skill+3% / Curative based skill+10% /  / If Player is NEUTRAL: /  Damage against Law and Chaos +15% /   / If Player is LAW/CHAOS: /  Damage taken +10%
+143	610	7143	tarot	Tokisada's 	50	16255	360115,363013,	2:2,0,>362622,;	Maximum MP - 15, Almighty Damage +2% /  / If Player is NEUTRAL: /  Maximum MP +5
+143	610	7143	soul	@Makai 	60	1	362014,	2:2,0,>280144,290020,;2:5,0,>280128,290146,;	- Head - / +10% Almighty damage /  / If Player is NEUTRAL: /  Cool-down for all Almighty skills -10% /   / If Player is LAW/CHAOS: /  Cool-down for all skills +10%
+144	611	7144	tarot	Hell Biker's 	42	16255	363062,	2:2,0,>360095,30037,;	STR +1, SPD +2, LUC -2 /  / If Player is NEUTRAL: /  Fire-based Skill Effects +2%, Rush +1%
+144	611	7144	soul	 of Last Riding	42	64	363063,	2:2,0,>361824,;102:50,0,>30011,;	-Shoes - / STR +3, SPD +4 /  / If Player is NEUTRAL: /  Fire-based Skill Effects +20% / If Rush Expertise is Class 5+, Rush +20%
+145	612	7145	tarot	Daisoujou's 	50	16255	363082,	2:2,0,>363083,;	+1% Mind, Nerve, Death, Curse, and Expel based damage / Max HP - 15 /  / If Player is NEUTRAL: /  +1% Electric, Force, Ice, Fire damage, Maximum HP + 10
+145	612	7145	soul	@Refuge 	55	4096	90018,60204,	2:2,0,>362404,120029,;	- Talisman - / Null Instant Death / Null Mind Lvl *0.5% / If NEUTRAL: +50% Nerve affinity, MP cost of all skills +50%
+146	613	7146	tarot	Alice's 	35	16255	362980,	2:2,0,>360161,;	STR -1, MAG +2 /  / If Player is NEUTRAL: /  Death-based skill effects +2%
+146	613	7146	soul	 of Alice	35	8	300159,		- Top - / Player gains the M. Tea Party skill
+147	614	7147	tarot	Matador's 	30	16255	363064,		SPD +1, Slash-based Skill effects +1%, Blunt Resistance -2%
+147	614	7147	soul	 of Double Step	30	32	362635,361509,	2:5,0,>363065,;	- Bottom - / SPD +3, Slash-based Skill effects +5% /  / If Player is LAW or CHAOS: /  Blunt Resistance -10%
+148	621	7148	tarot	Saki Mitama's 	15	16255	360027,140804,		LUC + 1 / Demon Partner's LUC + 1
+148	621	7148	soul	 of Grace	25	256	362571,363021,	1:0,50,>363025,;118:20,0,>363029,;	- Ring - / LUC + 2 / SPD - 1 / If Player's level is 50 or lower, LUC + 1, Physical Defense + 5, SPD - 1 / If Demonology is Class 2 or higher, LUC + 3, Support + 5 /  / With all 4 Mitamas: / STR, MAG, SPD, LUC +10
+149	622	7149	tarot	Kusi Mitama's 	15	16255	360025,141184,		SPD + 1 / Demon Partner's SPD + 1
+149	622	7149	soul	 of Miracle	22	512	360093,363022,	1:0,50,>363026,;118:20,0,>363030,;	- Earring - / SPD + 2 / LUC - 1 / If Player's level is 50 or lower, SPD + 1, Magical Defense + 5, LUC - 1 / If Demonology is Class 2 or higher, SPD + 3, Long-range + 5 /  / With all 4 Mitamas: / STR, MAG, SPD, LUC +10
+150	623	7150	tarot	Nigi Mitama's 	15	16255	360023,141183,		MAG + 1 / Demon Partner's MAG + 1
+150	623	7150	soul	 of Peace	19	16	360113,363023,	1:0,50,>363027,;118:20,0,>363031,;	- Arms - / MAG + 2 / STR - 1 / If Player's level is 50 or lower, MAG + 1, Maximum MP + 10, STR - 1 / If Demonology is Class 2 or higher, MAG + 2, Spell + 5 /  / With all 4 Mitamas: / STR, MAG, SPD, LUC +10
+151	624	7151	tarot	Ara Mitama's 	15	16255	360022,141182,		STR + 1 / Demon Partner's STR + 1
+151	624	7151	soul	Rough 	15	2048	360091,363024,	1:0,50,>363028,;118:20,0,>363032,;	- Back - / STR + 2 / MAG - 1 / If Player's level is 50 or lower, STR + 1, Maximum HP + 15, MAG - 1 / If Demonology is Class 2 or higher, STR + 2, Close-range + 5 /  / With all 4 Mitamas: / STR, MAG, SPD, LUC +10
+152	641	7152	tarot	Hanuman's 	65	16255	362665,		STR +3, LUC +1, VIT -2
+152	641	7152	soul	@White monkey 	55	256	60279,362666,	2:2,0,>361964,30012,;	- Ring - / (Lv × 0.1%) Chance to drain Force /  / If Player is NEUTRAL: /  Force-based skill effects +10%, Spin damage +5%
+153	642	7153	tarot	Hayagriva's 	50	16255	370545,370546,		Partner of Holy Beast family, Fire-based skill effects +3% / Partner of Holy Beast family, Physical defense +2
+153	642	7153	soul	@Furious Haste 	50	8	460312,	2:4,0,>361819,361919,;2:2,0,>362692,;	- Top - /  / If Player is NEUTRAL: /  MAX HP +100 /  / If Player is LAW: /  Fire and Electric-based skill effects +15% /  / If Player is CHAOS: /  Spin damage +5%
+154	643	7154	tarot	Cu Chulainn's 	30	16255	360085,		STR +1 CR +2
+154	643	7154	soul	 of Geis	40	8192	350005,		- Weapon - / Weapon gains Mystic-affinity /   / With Scathach: / Magic-affinity +20% /  / With Morrigan: / If HP is less than 20%, Weapon-based skill effects +10%
+155	644	7155	tarot	Kurama-Tengu's 	30	16255	360956,		Expel resistance +2%
+155	644	7155	soul	@Black Lacquer 	40	8192	40038,		- Weapon - / Damage to Demoniacs species +20%
+156	645	7156	tarot	Valkyrie's 	20	16255	360101,		INT +1 VIT +1 LUC +1
+156	645	7156	soul	@Triumphant Spirit 	30	1792	360105,		- Ring / Earring / Extra - / Physical defense +1, Magic defense +1
+157	646	7157	tarot	Setanta's 	10	16255	360022,		STR +1
+157	646	7157	soul	@Beast Slaying 	20	8192	40192,		- Weapon - / Damage to Holy Beast family +20%
+158	681	7158	tarot	Tao Wu's 	60	16255	363005,290162,	2:2,0,>363006,;	VIT +2, SPD -1 / Weapon-based skill cool-down time -1% /  / If Player is NEUTRAL: /  Bad Status Resistance +3
+158	681	7158	soul	@Disciplined Student 	60	8	362124,	2:2,0,>362965,;	- Top - / Death-based skill effect +20% /  / If Player is NEUTRAL: /  Close-range, Long-range, Spell damage suffered -10% /  / With Tao Tie: / STR, SPD, VIT, MAG +4 / Attack, Spin, Rush damage +5%
+159	682	7159	tarot	Fenrir's 	30	16255	360091,		STR +2
+159	682	7159	soul	@Howling 	40	4	360092,		- Neck - / STR +3, Ice resistance +1%
+160	683	7160	tarot	Catoblepas's 	30	16255	330105,		Stone skill success rate +5%
+160	683	7160	soul	 of Red Eyes	40	2	330106,360023,		- Face - / MAG +1, Stone skill success rate +50%
+161	684	7161	tarot	Mothman's 	20	16255	361155,361205,		Mystic-affinity resistance +1%
+161	684	7161	soul	 of Prophecy	30	4096	330025,		- Talisman - / Muddle skill success rate +50%
+162	685	7162	tarot	Nue's 	20	16255	363066,		VIT +2, STR +1, INT -1, LUC -1
+162	685	7162	soul	 of Strange	30	4	362891,	2:2,0,>361557,;	- Neck - / VIT +5 /  / If Player is NEUTRAL: /  Blunt-based Skill Effects +3%
+163	686	7163	tarot	Raiju's 	10	16255	360020,280041,		Electric-based skill effects +1% / Electric-based skill incantation time -1%
+163	686	7163	soul	@Appeared with Lightning 	20	512	60269,		- Earring - / LV x 0.1% absorb Electric
+164	687	7164	tarot	Gyuki's 	10	16255	360055,		Spread-based skill effects +1%
+164	687	7164	soul	@Ferocious 	20	8192	40206,		- Weapon - / Damage to Fairy family +20%
+165	688	7165	tarot	Bicorn's 	1	16255	360018,		Fire-based skill effects +1%
+165	688	7165	soul	@Lustful 	10	3	340024,340000,		- Head, Face - / Threaten-based skill success rate +5%, Talk-based skill success rate -5%
+166	689	7166	tarot	Garm's 	1	16255	360007,		STR +1 SPD -1
+166	689	7166	soul	 of Gjallarhorn	9	4	360074,		- Neck - / STR +2 CRT +5
+167	701	7167	tarot	Vritra's 	45	16255	980073,1150062,		Fire affinity cap + 5% / While using Fire affinity skills: Limit Break Chance + 1%, Limit Break Power + 3%
+167	701	7167	soul	@Sky Covering 	40	1024	362329,362379,	1:1,0,>380011,;2:2,0,>630011,;	- Extra - / Mind/Mystic damage + 25% / For each Class of Crushing Technique, -4% HP cost for all skills /  / If Player is NEUTRAL: /  Success Rate of all Status Changing skills + (Level * 0.12)
+168	702	7168	tarot	Yamata-no-Orochi's 	50	16255	362633,360093,		STR, +3, SPD +2
+168	702	7168	soul	@Yamata-no-	50	2048	361014,30013,	2:2,0,>60280,;	- Back - / Death resistance +10%, Spin damage +10% /  / If Player is NEUTRAL: /  LV x 0.1% Null Fire
+169	703	7169	tarot	Yurlungur's 	45	16255	362992,150222,		Physical defense, Magic defense -2 / VIT, INT +1 to all Party members
+169	703	7169	soul	@Rainbow snake's 	60	256	362993,		- Ring - / Fire, Ice, Electric, Force resistance +20% / Mystic-affinity resistance -50%
+170	704	7170	tarot	Raja Naga's 	40	16255	280042,360805,		Electric-based skill incantation time -2% / Electric resistance +1%
+170	704	7170	soul	@Dragonite General 	30	16	30010,362771,	1:45,55,>361914,;	- Arms - / Rush damage +10%, Fire resistance -30% / If Player's Level is between 45 - 55, Electric-based skill effects +10%
+171	705	7171	tarot	Mizuchi's 	20	16255	360019,360755,		Ice-based skill effects +1% / Ice resistance +1%
+171	705	7171	soul	@Underwater Lord 	30	64	280036,290018,		- Shoes - / Ice-based skill effects incantation -10% / Ice-based skill cool-down -10%
+172	706	7172	tarot	Naga's 	20	16255	40365,		Damage to Evil Dragon family +1%
+172	706	7172	soul	@Dragonite Soldier 	24	16	30009,362604,		- Arms - / Rush damage +5%, Fire resistance -15%
+173	707	7173	tarot	Nozuchi's 	1	16255		1:14,20,>110000,;	If Player's Level is between 1-20, HP cost for all Skills -5%
+173	707	7173	soul	@Dragon Scaled 	10	32	30013,		- Bottom - / Spin damage +10%
+174	721	7174	tarot	Lilith's 	75	16255	362667,	2:2,0,>;	Talk-based skill success rate +2% / MAG +2 / MAX MP +5
+174	721	7174	soul	 of Black Moon	75	4096	300109,	2:2,0,>90217,360100,;	- Talisman - / Player gains the Whisper of Temptation skill /  / If Player is NEUTRAL: /  Null Charm, Sleep, INT +1, MAG +1
+175	722	7175	tarot	Nyx's 	50	16255	363090,	137:30,0,>140202,;	Magic damage suffered +2% / If Bless is Class 3 or higher, Demon partner's spell +3
+175	722	7175	soul	 of Nocturnes	55	8192		118:20,0,>680004,;116:20,0,>140838,;	- Weapon - / If Demonology is Class 2 or higher, Soul points earned +5% / If Occultism is Class 2 or higher, +25% experience earned to Demon partner.
+176	723	7176	tarot	Black Frost's 	50	16255	141218,		Demon partner's Fire resistance + 2% / Demon partner's Ice resistance + 2% / Demon partner's INT -1
+176	723	7176	soul	 of the Dark Hero	60	3	363109,		- Head, Face - / Close-range damage + 1% / Magic damage + 1% / Ice-based skills effect +5% / MAX HP - 20
+177	724	7177	tarot	Queen Mab's 	40	16255	360097,360805,		Electric-based skill effects +2% / Electric resistance +1%
+177	724	7177	soul	 of Neverland	40	1024	362761,	2:2,0,>361914,;109:5,0,>420550,;	- Extra - / MAG, INT +2 /  / If Player is NEUTRAL: /  Electric-based skill effects +10% /  / If player has Class 5 Destruction Magic or more, Electric absorb 5%
+178	725	7178	tarot	Loa's 	40	16255	363007,290163,	2:1,0,>280123,;	Critical +7 / MAG +3 / Death-based skill cool-down time -7% /  / If Player is CHAOS: /  All Skill Incantation Time +5%
+178	725	7178	soul	 of the Holy Spirit	50	4096	360166,	2:4,0,>90005,;2:1,0,>363012,;	- Talisman - / MAG +3 /  / If Player is LAW: /  Null Confusion /  / If Player is CHAOS: /  MAG -3, Status ailment resistance -100
+179	726	7179	tarot	Kaiwan's 	25	16255	150005,		LUC to all Party members +1
+179	726	7179	soul	@Starry-Night 	30	8	362580,362571,	149:30,0,>362591,;	- Top - / INT +3, LUC+2 /  / If player has Class 3 Synthesis or more, INT +3, LUC +2
+180	727	7180	tarot	Succubus' 	20	16255	360130,		Mind resistance +1% / Mind-based skill effects +2%
+180	727	7180	soul	 of Nymphomania	30	8	360128,		- Top - / INT +4 MAX MP +10 /  / With Incubus: / Player gains the Dream Eater skill
+181	728	7181	tarot	Incubus' 	20	16255	360131,		Nerve resistance +1% / Nerve-based skill effects +2%
+181	728	7181	soul	 of Satyriasis	30	32	360129,		- Bottom - / VIT +4 MAX HP +20 /  / With Succubus: / Player gains the Dream Eater skill
+182	729	7182	tarot	Fomorian's 	10	16255	360028,		+2 STR, -1 MAG, -1 SPD
+182	729	7182	soul	 of Giants	20	32	50295,		- Bottom - / Damage suffered from Fairy family -20%
+183	730	7183	tarot	Lilim's 	10	16255	360039,		Electric resistance +2%, Force resistance -1%
+183	730	7183	soul	@Covert 	20	4096	90003,360023,		- Talisman - / Null Sleep / MAG +1
+184	731	7184	tarot	Empusa's 	1	16255	360009,		MAG +1, SPD -1
+184	731	7184	soul	 of Stardust	10	8	120000,		- Top - / MP cost for all skills -5%
+185	732	7185	tarot	Alp's 	1	16255		1:8,20,>120000,;	If Player's Level is between 8 and 20, MP cost for all skills -5%
+185	732	7185	soul	@Risque 	8	3	360023,		- Head, Face - / MAG +1
+186	741	7186	tarot	Barong's 	60	16255	141239,		Demon Partner's Expel-based skills + 3%
+186	741	7186	soul	 of Ratu Sakti	70	256	90018,363130,		- Ring - / Ailment resistance - 20 / Null Instant Death
+187	742	7187	tarot	Anubis' 	30	16255	420760,420697,		Null Expel 5%  / Null Death 5%
+187	742	7187	soul	@Underworld Judge's 	55	1	363269,30006,	2:2,0,>30107,;	- Head - / Speed + 5 / Vitality - 10 / Rapid Damage +5% /  / If Player is NEUTRAL: /  Rapid damage +5%
+188	743	7188	tarot	Narasimha's 	40	16255	362981,		STR +2, VIT +1, MAG -1, LUC -2
+188	743	7188	soul	@Lion headed	50	16	362982,	2:2,0,>362983,;	- Arms - / STR +3, SPD, MAG +2 /  / If Player is NEUTRAL: /  Critical +10, Block Critical +5
+189	744	7189	tarot	Xuan Wu's 	30	16255	290059,		Electric-based skill cool down -1%
+189	744	7189	soul	@Fully covered black shell 	40	64	360814,360864,		- Shoes - / Electric resistance + 10% / Force Resistance + 10% /  / With Zhu Que, Qing Long and Bai Hu: / Fire, Ice, Force, Electric Skill Cooldown Time -20% / Player gains the Elemental Dodge skill / During the Full Moon, Fire and Force Resistance +100% / During the New Moon, Ice and Electric Resistance +100%
+190	745	7190	tarot	Sphinx's 	45	16255	150003,150001,		Party member's Magic/Intelligence + 1 
+190	745	7190	soul	@Protected 	55	4096	363202,	2:2,0,>120002,270049,;	- Talisman - / Status ailment resistance + 10 /  / If Player is NEUTRAL: /  -15% MP cost for all skills, +1 Mystic-affinity stack
+191	746	7191	tarot	Nandi's 	30	16255	20089,362622,		MAX MP +5 / Curative-based skill effects +3%
+191	746	7191	soul	 of Crescent	30	8	90011,362623,	1:44,54,>270040,;2:2,0,>20069,;	- Top - / Null Mute / INT +2, STR -2 / If Player's Level is between 44 -54, Support-based consecutive skill +1 /  / If Player is NEUTRAL: /  Curative-based skill effects +10%
+192	747	7192	tarot	Kaichi's 	25	16255	360026,290098,		INT +1 / Support-based skill cool-down time -2%
+192	747	7192	soul	@The Auctioneer 	20	4	90016,362624,		- Neck - / Null Bind / INT, LUC +1, STR -1
+193	748	7193	tarot	Makami's 	10	16255	330000,		Chance of inflicting aflame ailment +5%
+193	748	7193	soul	@Twisting	20	32	50325,		- Bottom - / Damage suffered from Demigod family -20%
+194	1001	7194	tarot	Shadow's 	40	16255	363008,		Block Critical -5 / Death-based Skill Effects +3%
+194	1001	7194	soul	 of Innocent Dark	65	8192	180543,	2:2,0,>180570,590049,;2:1,0,>180570,180552,;	- Weapon - /  / If Player is NEUTRAL: /  Damage suffered from NEUTRAL -20% /  / If Player is LAW: /  Damage to enemies of LAW alignment +20% /  / If Player is CHAOS: /  Damage to enemies of CHAOS alignment +20%
+195	1002	7195	tarot	Phantom's 	80	16255	362668,290033,		Death resistance +3% / Death-based skill effects +3% / Death-based skill cool-down time -5%
+195	1002	7195	soul	 of Stand-by	80	64	362669,	2:1,0,>30011,280133,;	- Shoes - / MAG +3, Death resistance +5%, Expel resistance -3% /  / If Player is CHAOS: /  Rush damage +20%, Suicide-based skill incantation -30%
+196	1003	7196	tarot	Black Ooze's 	10	16255	160002,		Spin-based skill HP cost -3%
+196	1003	7196	soul	 of Acid	20	32	50365,		- Bottom - / Damage suffered from Godly Beast family -20%
+197	1004	7197	tarot	Specter's 	10	16255	360035,		Death resistance +1% / Expel resistance -1%
+197	1004	7197	soul	@Twisted Grudge 	20	32	50275,		- Bottom - / Damage suffered from Holy Beast family -20%
+198	1005	7198	tarot	Blob's 	10	16255	170002,		Shot-based skill MP cost -3%
+198	1005	7198	soul	@Slimy 	16	8192	40290,		- Weapon - / Damage to Femme family +20%
+199	1006	7199	tarot	Mou-Ryou's 	10	16255	360054,		Penetrate-based skill effects +1%
+199	1006	7199	soul	@Impudent 	11	1792	360082,		- Ring / Earring / Extra - / Death resistance +5% / Expel resistance -3% / MAG +1
+200	1007	7200	tarot	Slime's 	1	16255		1:6,20,>30000,;	If Player's Level is between 6 - 20, Attack damage +10%
+200	1007	7200	soul	@Squirming 	6	1792	360075,		- Ring / Earring / Extra - / VIT +2, INT -2
+201	1008	7201	tarot	Will O'Wisp's 	1	16255		1:1,20,>30004,;	If Player's Level is between 1 - 20, Shot damage +10%
+201	1008	7201	soul	@Glowing 	1	4	360023,		- Neck - / MAG +1
+202	1021	7202	tarot	Ongyo-Ki's 	70	16255	362752,		STR, MAG +2 / Death-based skill effects +2% / Death resistance +2%
+202	1021	7202	soul	@Nightmare Judgement's 	50	1	362753,	2:1,0,>550150,550151,;2:6,0,>362600,;	- Head - / STR, MAG +2, MAX HP -20 /  / If Player is CHAOS: / damage dealt during nighttime +25% /   / If Player is LAW or NEUTRAL: / damage suffered during daytime +50% /   / With Kin-Ki, Sui-Ki and Fuu-Ki: / STR + (Base x LV x 0.002) / MAG + (Base x LV x 0.002) / CRT +15 / Fire resistance +30%, Electric resistance +30% / MAX HP +20
+203	1022	7203	tarot	Shiki-Ouji's 	30	16255	360805,30035,		Electric resistance +1% / Attack damage +1%
+203	1022	7203	soul	@Shiki-gami Curse 	40	256	60269,30000,	2:1,0,>362605,;2:1,0,>361909,;	- Ring - / LV x 0.1% absorb Electric / Attack damage +5% / Fire Resistance - 50% /  / If Player is CHAOS: /  Electric-based skill effects +5%
+204	1023	7204	tarot	Yomotsu-Ikusa's 	30	16255	361609,		Thrust-based Skill Effects +5%
+204	1023	7204	soul	@Camp in Yomi 	40	4096	362984,150221,	2:1,0,>361614,;	- Talisman - / Max HP -10, STR -5 / Party Members' Max HP +25, STR +10 /  / If Player is CHAOS: /  Thrust-based Skill Effects +10%
+205	1024	7205	tarot	Yaksa's 	30	16255	50200,	100:3,0,>362639,;	Damage from Divines -1% / If Attack is Class 3+, Close-range Damage +1%
+205	1024	7205	soul	@Terrifying military power 	50	512	360259,150000,	2:1,0,>30022,;	- Earring - / Critical +5 / Party Members' STR +1 /  / If Player is CHAOS: /  Rush Damage +15%
+206	1025	7206	tarot	Karasu-Tengu's 	20	16255	360084,		SPD +1, CRT +2
+206	1025	7206	soul	@Fallen Phoenix 	28	8192	40122,		- Weapon - / Damage to Avian family +20%
+207	1026	7207	tarot	Turdak's 	10	16255	360059,		Slash resistance +2% / Blunt resistance -1%
+207	1026	7207	soul	 of Nosferatu	20	32	50265,		- Bottom - / Damage suffered from Reaper family -20%
+208	1027	7208	tarot	Momunofu's 	10	16255	160006,		Rush-based skill cost -3% HP
+208	1027	7208	soul	@Warrior Soul's 	19	32	50285,		- Bottom - / Damage suffered from Beast family -20%
+209	1028	7209	tarot	Koppa-Tengu's 	10	16255	360053,		Handgun-based skill effects +1%
+209	1028	7209	soul	@White Wolf's 	15	8192	40199,		- Weapon - / Damage to Beast family +20%
+210	1029	7210	tarot	Azumi's 	1	16255	360019,		Ice-based skill effects +1%
+210	1029	7210	soul	 of Divers	10	64	360076,360077,		- Shoes - / STR, LUC +2 / Ice resistance +5%
+211	1030	7211	tarot	Shikigami's 	1	16255	360004,		Electric resistance +1% / Force resistance -1%
+211	1030	7211	soul	@Kin'u Gyokuto 	5	2048	60096,		- Back - / LV x 0.5% Null Electric
+212	1031	7212	tarot	Oni's 	10	16255	330002,		Electric shock skill success rate +5%
+212	1031	7212	soul	@Sadistic 	20	8192	40171,		- Weapon - / Damage to Earth Element family +20%
+213	1041	7213	tarot	Kumbhanda's 	40	16255	362999,141160,		HP/MP - 10 / Demon Partner's Physical/Magical defense + 1
+213	1041	7213	soul	@Lifeforce Vampire	40	1	110029,120039,	0:0,0,>363000,;	- Head - / HP regeneration + 50 / MP regeneration + 30 / HP cost + 50% / MP cost + 100%
+214	1042	7214	tarot	Vetala's 	30	16255	362670,		Nerve Resistance +3 / Max HP -2
+214	1042	7214	soul	@Zombie Master 	30	8192	350008,		- Weapon - / Weapon gains Nerve-affinity
+215	1043	7215	tarot	Legion's 	20	16255	50020,		Damage suffered from Aerial species -1%
+215	1043	7215	soul	 of Many	30	8192	40024,		- Weapon - / Damage to Aerial species +20%
+216	1044	7216	tarot	Pisaca's 	20	16255	360957,362105,		Death-based skill effects +1% / Expel resistance -3%
+216	1044	7216	soul	@Death-devouring 	30	2048	60270,362604,		- Back - / LV x 0.1% Null Mind-based skills / Fire resistance -15%
+217	1045	7217	tarot	Chatterskull's 	20	16255	362355,		Nerve-based skill effects +1%
+217	1045	7217	soul	 of Dark Whispers	30	8192	40255,		- Weapon - / Damage to Godly Beast family +20%
+218	1046	7218	tarot	Yakkha's 	10	16255	360047,		Force resistance +2% / Fire resistance -1%
+218	1046	7218	soul	@Hexed 	20	1792	360081,		- Ring / Earring / Extra - / VIT +1 / HP regeneration +3
+219	1047	7219	tarot	Choronzon's 	10	16255	360033,		MAX HP +3, MAX MP +1
+219	1047	7219	soul	 of Angelbane	17	8192	40150,		- Weapon - / Damage to Divine family +20%
+220	1048	7220	tarot	Ghoul's 	1	16255	360094,		Mystic-affinity skill effects +1%
+220	1048	7220	soul	 of Death Eaters	10	8	360070,		- Top - / MAX HP +20
+221	1049	7221	tarot	Preta's 	1	16255		1:7,20,>30003,;	If Player's Level is between 7 - 20, Shot damage +5%
+221	1049	7221	soul	@Starved 	7	16	360030,	103:30,0,>360093,;	- Arms - / SPD +2 / STR, MAG -1 /  / If player has Class 3 Shot or more, SPD +
+222	1050	7222	tarot	Poltergeist's 	1	16255	360011,		SPD +1, MAG -1
+222	1050	7222	soul	@Clamorous 	4	32	30010,		- Bottom - / Rush-based skill effects +10%
+223	1061	7223	tarot	Huang Long's 	50	16255			Effect of Weapon based Skill +2% / Unimplemented
+223	1061	7223	soul	 of the four Beasts	60	0			- Head - / Effect of Weapon based Skill + 20% /  / If CHAOS / STR +2 SPD +2 MAG +2 /  / And HP is less than 10% / Effect of Weapon based Skill +25% /  / If LAW, / Incantation time of all skills +25% / Unimplemented
+224	1062	7224	tarot	Ananta's 	70	16255	141125,141126,		Demon Partner's Max HP +50, Max MP +25 / Demon Partner's VIT +5, INT +5
+224	1062	7224	soul	@The Infinite 	85	256	141127,		- Ring - / Demon Partner's HP and MP Regeneration +20 / Demon Partner's Limit Break Chance +10%
+225	1063	7225	tarot	Quetzalcoatl's 	40	16255	360088,		STR +1, MAG +1 MAX HP +2
+225	1063	7225	soul	 of Venus	50	2048	360090,		- Back - / Fire, Ice, Electric, Force resistance +10%
+226	1064	7226	tarot	Qing Long's 	20	16255	290061,		Force-based skill cool-down -1%
+226	1064	7226	soul	@Rising Blue Scale 	30	1	290021,290019,		- Head - / Force-based skill cool-down -10%, Electric-based skill cool-down -10% /  / With Zhu Que, Bai Hu and Xuan Wu: / Fire, Ice, Force, Electric Skill Cooldown Time -20% / Player gains the Elemental Dodge skill / During the Full Moon, Fire and Force Resistance +100% / During the New Moon, Ice and Electric Resistance +100%
+227	1065	7227	tarot	Ganga's 	25	16255	362625,290099,		+2 INT / STR -1, MAG -1, SPD -1 / Support-based skill cool-down time -3%
+227	1065	7227	soul	@Mother River's 	30	8	362626,362627,	1:39,49,>20070,;2:1,0,>270041,;	- Top - / Bad aliment resistance +20, INT +2, STR -3 / If Player's Level is between 39 - 49, Curative-based skill effects +20% /  / If Player is CHAOS: /  Curative-based skill stack +1
+228	1066	7228	tarot	Coatlicue's 	20	16255	360078,		HP regeneration +3, MP regeneration +1
+228	1066	7228	soul	@Just Born 	25	32	50115,		- Bottom - / Damage suffered from Elemental family -20%
+229	1081	7229	tarot	Azazel's 	65	16255	363112,140665,	116:30,0,>360165,360169,;	LUC + 3 / Close-range, Magic damage + 2% / Partner's MAX HP -100 /  / If player has Class 3 Occultism or higher, STR + 5, MAG + 5
+229	1081	7229	soul	 of Grigori	75	4	360165,360264,	2:1,0,>360014,360066,;2:4,0,>363113,;	- Neck - / STR + 5 / Critical + 10 /  / If Player is CHAOS: /  Critical + 10 /  / If Player is LAW: /  LUC - 10
+230	1082	7230	tarot	Flauros's 	40	16255	141153,140659,		Partner's Slash and Blunt-based skill effects +1% / Partner's MAX HP -10 / Partner's Ice Resistance -2%
+230	1082	7230	soul	 of Grandi	30	8192	350009,		- Weapon - / Weapon gains Mind-affinity
+231	1083	7231	tarot	Abraxas's 	50	16255	363405,		Support damage + 2%
+231	1083	7231	soul	 of 365	70	128		116:40,0,>440263,;	- COMP - / If Occultism is Class 4 or higher, Weapon-based skill effects +50%
+232	1084	7232	tarot	Gomory's 	30	16255	363353,362307,	1:1,0,>363354,;	Intelligence + 5 / Luck + 5 / Macca earned +3%
+232	1084	7232	soul	 of Gaeneron	40	512	380010,390011,	152:80,0,>630015,;	- Earrings - / For every Class of Pursuit, HP/MP cost -4%,  / If Curse of the Wretched is Class 8 or higher, All Status-Changing Skills Success Rate +(Level * 0.2)%
+233	1085	7233	tarot	Ose's 	30	16255	361506,	1:0,73,>363009,;	Slash-based Skill Effects +2% / If Level 73 or Below, STR +2, MAG +2, INT +2
+233	1085	7233	soul	 of Hell's Fuehrer	70	1	360091,361519,	2:1,0,>30022,;2:2,0,>150020,150021,;	- Head - / STR +2, Slash-based Skill Effects +15% /  / If Player is CHAOS: /  Rush Damage +15% /  / If Player is NEUTRAL: /  Party Members' STR +3, MAG +3
+234	1086	7234	tarot	Orobas' 	30	16255	360296,30050,		Physical Defense +2 / Counter Damage +5%
+234	1086	7234	soul	 of Descend	50	2048	60120,340043,	2:3,0,>20070,;	- Back - / LVL * 0.5% Null Force / Negotiation Skill Success Rate +20% /  / If Player is CHAOS or NEUTRAL: /  +20% Curative effects
+235	1087	7235	tarot	Berith's 	25	16255	40405,		Damage to Aerial species +2%
+235	1087	7235	soul	 of the Death Lord	40	8192	180541,	2:3,0,>180685,;	- Weapon - / Damage to LAW enemies +10% /  / If Player is NEUTRAL or CHAOS: /  damage to LAW enemies +5% /   / With Thrust-based skill effects +20%
+236	1088	7236	tarot	Decarabia's 	20	16255	360113,		MAG +2
+236	1088	7236	soul	@Rhythmic 	30	3	300004,		- Head, Face - / Player gains the Lemegeton skill /  / With Forneus: / Player gains the Heptameron skill
+237	1089	7237	tarot	Eligor's 	30	16255	30032,		Rush damage +2%
+237	1089	7237	soul	 of the Red Baron	30	32	362765,	1:43,53,>30011,;	- Bottom - / If Player's Level is between 43 - 53, Rush damage +20% /   / With Eligor: / Thrust-based skill effects +20%
+238	1090	7238	tarot	Forneus' 	20	16255	360135,		VIT +1 / Ice resistance +2, Fire resistance -2%
+238	1090	7238	soul	 of the Deep	29	3	360136,		- Head, Face - / STR, VIT +1, Ice resistance +3% /  / With Decarabia: / Player gains the Heptameron skill
+239	1091	7239	tarot	Andras' 	10	16255	360034,		MAX HP +2 MAX MP +2
+239	1091	7239	soul	@Wicked Minds 	15	32	50205,		- Bottom - / Damage suffered from Divine family -20%
+240	1101	7240	tarot	Rangda's 	60	16255	141240,		Demon Partner's Death-based damage +3%
+240	1101	7240	soul	 of Ratu Arit	70	512	60328,330120,		- Earring - / All Status-Changing Skills Success Rate +10% / LVL * 0.1% Null Death
+241	1102	7241	tarot	Atropos' 	40	16255	362994,	109:10,0,>360080,;	MAG +3, INT +1 / If Destruction Magic is Class 1+, MP Regeneration +3
+241	1102	7241	soul	 of the Unavoidable	60	8	362722,	15:30,0,>362678,150233,;	- Top - / Spell Damage +15% / If LUC is 30+, Max HP +30, Party Members' LUC +5, MAG +5 /  / With Clotho and Lachesis: / MAG + (Base x LV x 0.001) / INT + (Base x LV x 0.001) / Spell Damage +20%
+242	1103	7242	tarot	Lachesis' 	40	16255	360071,	110:10,0,>330113,;	MAG +2, INT +2 / If Support Magic is Class 1+, All Status-Changing Skills Success Rate +3%
+242	1103	7242	soul	 of Life	60	32	280067,	15:30,0,>360349,150234,;	- Bottom - / Spell Incantation -30% / If LUC is 30+, Critical Defense +15, Party Members' LUC +5, STR +5 /  / With Clotho and Atropos: / MAG + (Base x LV x 0.001) / INT + (Base x LV x 0.001) / Spell Damage +20%
+243	1104	7243	tarot	Clotho's 	30	16255	362995,	108:10,0,>150008,;	MAG +1, INT +3 / If Curative Magic is Class 1+, Party Members' HP Regeneration +1 /  / With Lachesis and Atropos: / MAG + (Base x LV x 0.001) / INT + (Base x LV x 0.001) / Spell Damage +20%
+243	1104	7243	soul	 of Birth	60	3	362747,	15:30,0,>362925,150235,;	- Head, Face - / MP Regeneration +15 / If LUC is 30+, Max MP +30, Party Members' LUC +5, VIT +5
+244	1105	7244	tarot	Dakini's 	30	16255	362985,		STR +2 CRT +15 VIT-10
+244	1105	7244	soul	 of Sky Dancers	40	16	30009,150000,	2:1,0,>360269,;	- Arms - / Rush Damage +5% / Party Members' STR +1 /  / If Player is CHAOS: /  Critical +15
+245	1106	7245	tarot	Yaksini's 	30	16255	40147,		Damage to Divine family +3%
+245	1106	7245	soul	@Luxurious 	40	16	150000,	2:1,0,>360269,;	- Arms - / STR +1 to all Party members /  / If Player is CHAOS: /  CRT +20
+246	1107	7246	tarot	Yomotsu-Shikome's 	30	16255	330108,		Stone, Sleep, Charm, Confuse, Burn, Freeze, Shock, Stun skill success rate +1%
+246	1107	7246	soul	@Manhunting 	30	4096	330109,	2:3,0,>330110,;	- Talisman - / Poison, Paralyze, Stone skill success rate +15% /  / If Player is CHAOS: /  Bind, Charm, Muddle skill success rate +15%
+247	1108	7247	tarot	Gorgon's 	20	16255	360102,		Long-range, Penetrate, Spread resistance +1%
+247	1108	7247	soul	 of Medusa	30	16	90002,360023,		- Arms - / Null Stone / MAG +1
+248	1109	7248	tarot	Taraka's 	10	16255	360046,		Electric resistance +2% / Ice resistance +1%
+248	1109	7248	soul	 of Stars	20	32	50195,		- Bottom - / Damage suffered from Raptor family -20%
+249	1110	7249	tarot	Lamia's 	30	16255	330107,		Charm skill success rate +5%
+249	1110	7249	soul	@Full of Melting Love 	30	1792	362309,	2:3,0,>90149,;	- Ring, Earring and Extra - / Mind-based skill effects +5% /  / If Player is NEUTRAL or CHAOS: /  Null Charm, Bind
+250	1111	7250	tarot	Datsue-Ba's 	1	16255	360008,		MAG +1 STR -1
+250	1111	7250	soul	 of Tormentors	9	16	360029,	111:30,0,>360071,;	- Arms - / MAG +2 / STR, SPD -1 /  / If player has Class 3 Curse Magic or more, INT, MAG +2
+251	1121	7251	tarot	Arahabaki's 	40	16255	360114,		Critical +10 / Block Critical -10
+251	1121	7251	soul	@Rebellious 	50	8192	350007,	2:1,0,>362114,;	- Weapon - / Weapon gains Death-affinity /  / If Player is CHAOS: /  Death-based skill effects +10%
+252	1122	7252	tarot	Take-Minakata's 	30	16255	30038,360020,		Spin damage +1% / Electric damage +1%
+252	1122	7252	soul	@Competing for Power 	50	512	50673,	2:1,0,>361919,360714,;2:1,0,>360814,;	- Earring - / Damage taken from demons of the Guardian species -15% /  / If Player is CHAOS: /  Electric damage + 15%, Fire resistance + 10%, Electric resistance +10%
+253	1123	7253	tarot	Onamuchi's 	30	16255	360025,361756,		SPD +1 / Spread-based skill effects +2%
+253	1123	7253	soul	 of Nation Handover	40	32	360025,280134,	2:1,0,>30003,30006,;	- Bottom - / SPD +1, Shot incantation time -10% /  / If Player is CHAOS: /  Shot, Rapid damage +5% /  / With Sukona Hikona: / INT +8, SPD +5, CRT +30
+254	1124	7254	tarot	Okuninushi's 	45	16255	150000,		STR +1 to all Party members
+254	1124	7254	soul	@Nation-Building 	55	8	150056,	2:1,0,>150042,150043,;	- Top - / Party members' max HP + 25 /  / If Player is CHAOS: /  VIT, INT +5 to all Party members
+255	1125	7371	tarot	Sukuna-Hikona's 	30	16255	360038,360096,		Ice resistance + 2% / Ice damage + 2% / Fire resistance - 1%
+255	1125	7371	soul	@Moment of Hail	50	8192	350002,980025,	1:1,0,>1150013,2000206,;	- Weapon - / Weapon gains Ice-affinity / Ice affinity cap + 50% / When using Ice-affinity skills, +10% Final critical correction / While Digitalized: +100% Ice damage
+256	1141	7256	tarot	Isis's 	40	16255	141143,		Partner inflicts Ice-based skill effects +1%
+256	1141	7256	soul	 of Virginia	85	8192	140877,640076,	2:1,0,>20028,;	- Weapon - / Partner inflicts Curative-based skill effects +20% /  / If Player is CHAOS: /  Ice-based skill effects +5% / Partner inflicts Ice-based skill effects +5%
+257	1142	7257	tarot	Skadi's 	45	16255	360170,		Force resistance +1% / Force-based skill effects +2%
+257	1142	7257	soul	 of Srymheimr	50	32	280017,	2:1,0,>360169,;	- Bottom - / Spell incantation time -20% /  / If Player is CHAOS: /  MAG +5
+258	1143	7258	tarot	Kali's 	40	16255	362988,		STR +2, MAG -3 / Critical +10
+258	1143	7258	soul	@Tyrant's Lover's 	50	16	270001,		- Arms - / "Tyrannical Jaw" stack +1
+259	1144	7259	tarot	Parvati's 	40	16255	360173,		INT +2 MAG +2 STR -5
+259	1144	7259	soul	@Beloved 	50	32	90011,	2:1,0,>360172,;	- Bottom - / Null Mute /  / If Player is CHAOS: /  INT +10, MAG +4
+260	1145	7260	tarot	Artemis's 	20	16255	360134,		MAG +1 LUC +1
+260	1145	7260	soul	@Lunatic 	30	4096	300008,		- Talisman - / Player gains the Protection of the Silver Moon skill
+261	1146	7261	tarot	Kushinada-Hime's 	20	16255	120125,		Curative-based skills cost -5% MP
+261	1146	7261	soul	@Jade Hairpin 	26	1792	362590,360023,		- Ring / Earring / Extra - / MAG +1, MAX MP +3 /  / With Susano-o: / STR + 5, MAG + 5  / +15% Force-based damage, +30% Curative  /  / If Player is CHAOS: /  Close-range damage +5%
+262	1147	7262	tarot	Kikuri-Hime's 	18	16255	20068,		Curative-based skill effects +5%
+262	1147	7262	soul	@Fated 	18	1792	360100,		- Ring / Earring / Extra - / MAG +1 INT +1
+263	1161	7263	tarot	Vasuki's 	45	16255	362990,330146,		MAG -5, VIT +3 / Poison Success Rate +4%
+263	1161	7263	soul	@Poisonous Breath 	60	1024	60351,360304,		- Extra - / Lvl*0.25% Null Death Affinity / Physical Defense +10
+264	1162	7264	tarot	Kingu's 	50	16255	40411,		Damage to Dragon species +2%
+264	1162	7264	soul	 of Sin	50	8192	40045,		- Weapon - / Damage to Dragon species +20%
+265	1163	7265	tarot	Nidhoggr's 	30	16255	362607,		Fire, Ice, Electric resistance +1% / Thrust resistance -5%
+265	1163	7265	soul	 of World Eaters	40	8192	40143,		- Weapon - / Damage to Group, Raptor +20%
+266	1164	7266	tarot	Typhon's 	35	16255	362764,280022,		Fire resistance +2% / Fire-based skill incantation -2%
+266	1164	7266	soul	 of Volcano	30	8	50016,360719,		- Top - / Fire resistance +15% / Damage suffered from God species -30%
+267	1165	7267	tarot	Basilisk's 	20	16255	362355,		Mind-based skill effects +1%
+267	1165	7267	soul	@Evil eyed 	30	2	300071,300067,		- Face - / Player gains the Paralysis Eye skill / Player gains the Petra Eyes skill
+268	1166	7268	tarot	Tarasque's 	10	16255	360061,		Blunt resistance +2%, Thrust resistance -1%
+268	1166	7268	soul	@Steel Hide	17	8	50085,		- Top - / Damage suffered from Beast species -20%
+269	1167	7269	tarot	Cockatrice's 	8	16255	360048,		Force resistance +2%, Ice resistance -1%
+269	1167	7269	soul	 of Wings	8	8	50025,		- Top - / Damage suffered from Aerial species -20%
+270	1181	7270	tarot	Bishamonten's 	50	16255	362592,	2:1,0,>360091,;	STR +1, VIT +2 /  / If Player is CHAOS: /  STR +2
+270	1181	7270	soul	 Vaisravana	55	1	30013,290151,	2:1,0,>361609,;	- Head - / Spin damage +10%, Spin cool-down time +60% /  / If Player is CHAOS: /  Thrust-based skill effects +5% /  / With Jikokuten, Koumokuten and Zouchouten: / Weapon-based skill effects +10% / VIT +10, INT +10 /  / If Player is LAW: /  MAX HP -100, CLS-R -15
+271	1182	7271	tarot	Jikokuten's 	40	16255	362593,		VIT +1, STR +2
+271	1182	7271	soul	 Dhrtara	45	8	362596,	2:1,0,>361509,;	- Top - / VIT +10, INT -5 /  / If Player is CHAOS: /  Slash-based skill effects +5% /  / With Bishamonten, Koumokuten and Zouchouten: / Weapon-based skill effects +10% / VIT +10, INT +10 /  / If Player is LAW: /  MAX HP -100, CLS-R -15
+272	1183	7272	tarot	Koumokuten's 	35	16255	362594,		MAX HP +20 / Close-range -2
+272	1183	7272	soul	 Virupaksa	40	32	362597,	2:1,0,>361559,;	- Bottom - / INT +10, VIT -5 /  / If Player is CHAOS: /  Blunt-based skill effects +5% /  / With Bishamonten, Jikokuten and Zouchouten: / Weapon-based skill effects +10% / VIT +10, INT +10 /  / If Player is LAW: /  MAX HP -100, CLS-R -15
+273	1184	7273	tarot	Zouchouten's 	30	16255	362595,		+2 STR, -20 MAX HP
+273	1184	7273	soul	 Vidudabha	35	64	30010,280065,	2:1,0,>180541,;	- Shoes - / Rush damage +10%, Rush incantation time +60% /  / If Player is CHAOS: /  damage to LAW enemies +10% /  / With Bishamonten, Koumokuten and Jikokuten: / Weapon-based skill effects +10% / VIT +10, INT +10 /  / If Player is LAW: /  MAX HP -100, CLS-R -15
+274	1201	7274	tarot	Shiva's 	70	16255	362846,	2:1,0,>440243,;	STR +5, VIT +5 /  / If Player is CHAOS: /  Weapon-based skill effects +1%
+274	1201	7274	soul	 of Natraja	85	8	362847,440242,	2:1,0,>362696,;2:6,0,>362848,;	- Top - / STR +10, Critical +15, Weapon-based skill effects +10% /  / If Player is CHAOS: /  Close-range damage +8% /  / If Player is LAW or NEUTRAL: /  MAX HP -50, Block Critical -20
+275	1202	7275	tarot	Indrajit's 	50	16255	360215,	2:1,0,>120048,;	MAG + 1 /  / If Player is CHAOS: /  MP cost -2%
+275	1202	7275	soul	 of Meghanada	55	2048	410007,		- Back - / -3% cooldown for all skills for each Class of Gun Knowledge
+276	1203	7276	tarot	Susano-o's 	70	16255	363103,	100:50,0,>30030,;	STR +3, VIT +3, MAG -3 /  / If player has Class 5 Attack or higher, Attack damage +2%
+276	1203	7276	soul	@Rising Clouds 	60	4	361919,	2:4,0,>363089,;2:1,0,>361869,362643,;	- Neck - / Electric-based Skill Effects +15% / If Player is LAW Close-range damage suffered +20% /  / If Player is CHAOS: /  Ice-based skill effects + 15%, Close-range damage +5% /  / With Kushinada-Hime: / STR + 5, MAG + 5  / +15% Force-based damage, +30% Curative  /  / If Player is CHAOS: /  Close-range damage +5% /  / With Amaterasu and Tsukuyomi: / Limit Break Chance +10% / Limit Break Power +20% /  / During the Day: / Fire-affinity damage +40% / Electric-affinity damage +40% /  / During the Night: / Ice-affinity damage +40% / Force-affinity damage +40%
+277	1204	7277	tarot	Kartikeya's 	50	16255	360095,	2:1,0,>360706,;	Fire-based Skill Effects +2% /  / If Player is CHAOS: /  Fire Resistance +2%
+277	1204	7277	soul	 of Skanda	60	2048	361809,	2:1,0,>60353,;	- Back - / Fire-based Skill Effects +5% /  / If Player is CHAOS: /  Lvl*0.1% Null Slash
+278	1205	7278	tarot	Dionysus's 	40	16255	30031,	2:1,0,>20078,;	Rapid damage +2% /  / If Player is CHAOS: /  Fire-based skill effects +3%
+278	1205	7278	soul	 of Bacchus	50	1		2:1,0,>362986,;	- Head - /  / If Player is CHAOS: /  Long-range damage +10%, Nerve resistance +20%
+279	1206	7279	tarot	Wu Kong's 	30	16255	60260,360091,		STR +2 / LV x 0.02% reflect Fire
+279	1206	7279	soul	 of Phoenix Feathers	30	1	440240,	2:1,0,>290152,30013,;	- Head - / Weapon-based skill effects +5% /  / If player has less than 50% HP, Weapon-based skill effects +5% /  / If Player is CHAOS: /  Spin damage +10%, Spin cool-down time +20%
+280	1221	7280	tarot	Fly Beelzebub's 	80	16255	360169,30003,		MAG +5 / Shot Damage +5%
+280	1221	7280	soul	 of Lord of the Flies	50	2	360169,30024,	2:1,0,>362134,;2:4,0,>363043,;	- Face - / MAG +5, Shot Damage +15% /  / If Player is CHAOS: /  Death-based Skill Effects +30% /  / If Player is LAW: /  MAG -5
+281	1222	7281	tarot	Human Beelzebub's 	70	16255	362948,		SPD, LUCK +5 / CRT +4
+281	1222	7281	soul	 of Baalzebul	85	8	362947,30004,		- Top - / SPD +10, CRT +15, Shot damage +10%
+282	1223	7282	tarot	Amorphous Mara's 	40	16255	361607,	2:1,0,>30032,;	Thrust-based skill effects +3% / If player is CHAOS: /  +2% Rush damage
+282	1223	7282	soul	 of Rebirth	50	32	30047,280161,	2:1,0,>361634,280158,;2:4,0,>363067,;	- Bottom - / +25% Rush damage, Rush-based skill incantation time +100% /  / If Player is CHAOS: /  Thrust-based skill effects +30%, Rush-based skill incantation time -50% /   / If Player is LAW: /  Thrust-based skill effects -30%
+283	1224	7283	tarot	Ahriman's 	40	16255			Nothing
+283	1224	7283	soul	 of Angra Mainyu	50	0			Nothing
+284	1225	7284	tarot	Astaroth's 	40	16255	363068,		Max MP +2, MAG +4
+284	1225	7284	soul	 of Diabolos	50	2048	363069,	2:1,0,>290096,;	- Back - / Max MP +30 , MAG +5, LUC -10, Electric-based skill effects +5% /  / If Player is CHAOS: /  cool-down time -10%
+285	1226	7285	tarot	Alciel's 	40	16255	1180009,		While Digitalized: / 	Demon Partner's Pursuit Chance/Power + 3%
+285	1226	7285	soul	 of Black Sun	50	1	970043,1130007,		- Head - / Demon Partner's Limit Break Damage Cap + 500 / Demon Partner's Technical Attack Chance + 3% / Demon Partner's Technical Attack Power + 5%
+286	1227	7286	tarot	Chi You's 	40	16255	360855,363205,	0:0,0,>30037,30038,;	Blunt resistance +1% / Rush/Spin damage +1% / Fire resistance -3%
+286	1227	7286	soul	@Wind Caller 	50	8192	40213,	2:1,0,>361964,;	- Weapon - / Damage to Fiend species +20% / Force-based skill effects +10%
+287	1228	7287	tarot	Lucifuge's 	90	16255	1120023,1130017,		Player/Demon's Limit Break Damage Cap + 150
+287	1228	7287	soul	 Avoiding the Light	90	128	1040015,1040111,	1:1,0,>1050057,1050059,;	- COMP - / While Digitalized: / Player/Demon's Final Critical Rate Correction + 5%, / Limit Break Chance + 5%, Limit Break Power + 10%
+288	1229	7288	tarot	Surt's 	40	16255	360132,		Fire-based skill effects +2% / Fire resistance +1%
+288	1229	7288	soul	 of Twilight	50	8192	40017,	2:1,0,>361814,;2:4,0,>362588,;	- Weapon - / Damage to God species +20% /  / If Player is CHAOS: /  Fire-based skill effects +10% /  / If Player is LAW: /  STR, SPD -10
+289	1230	7289	tarot	Abaddon's 	50	16255	130007,2100149,		STR +6, / Demon Partner's STR +6
+289	1230	7289	soul	 of Avarice	95	32	2100151,2100152,	1:1,0,>2100153,2100154,;1:1,0,>2100155,;	- Bottom - / For Player and Demon Partner                                                    /     Almighty Damage +6%, /     Attack-based Skills Limit Break Cap  /      +(CLRS x 0.6), /     Party's Lifesteal Chance +6% and  /      Lifesteal Power +1% / 
+290	1231	7290	tarot	Loki's 	40	16255	360133,		MAG +2 / Mystic-affinity resistance +2%
+290	1231	7290	soul	 of Tricksters	50	8192	300015,	2:1,0,>362269,;2:4,0,>362589,;	- Weapon - / Player gains the Bloody Attack skill /  / If Player is CHAOS: /  Mystic-affinity skill effects +15% /  / If Player is LAW: /  Mystic-affinity skill effects -10%
+291	1232	7291	tarot	Moloch's 	35	16255	362674,362649,	0:0,0,>141176,;	Max HP +5, Spell Damage +2% / Partner's Max HP -25
+291	1232	7291	soul	@Sacrificial Ceremony 	50	32	50305,	2:1,0,>60349,141177,;	- Bottom - / Damage taken from Fiend family -20% /  / If Player is CHAOS: /  Lvl*0.05% Null Physical / Partner's Received Damage +20%
+292	1233	7292	tarot	Hecate's 	30	16255	362590,		MAX MP +3
+292	1233	7292	soul	 of Triangles	50	8	150021,	2:1,0,>430497,;	- Top - / MAG +3 to all Party members / If Player is CHAOS and has less than 30% HP, Spell damage +50%
+293	1234	7293	tarot	King Frost's 	30	16255	360096,360755,		Ice-based skill effects +2% / Ice resistance +1%
+293	1234	7293	soul	 of the Snow Kingdom	40	2048	60084,	2:1,0,>150056,150053,;	- Back - / 	 / LV x 0.5% Null Ice /  / If Player is CHAOS: /  MAX HP +30 to all Party members /  / With Jack Frost, Santa Frost and Shishimai Frost: / Ice-affinity +50% / Player gains the Galactica Frost Punch skill
+294	750	7294	tarot	Santa Frost's 	11	16255	150052,		MAX MP +1 to all Party members
+294	750	7294	soul	 of Snow White	11	1792	360137,360101,		- Ring, Earring, Extra - / STR +1 MAG +1 SPD +1 / INT +1 VIT +1 LUC +1 /  / With Jack Frost, King Frost and Shishimai Frost: / Ice-affinity +50% / Player gains the Galactica Frost Punch skill
+295	751	7295	tarot	Shishimai Frost's 	11	16255	150051,		MAX HP +1 to all Party members
+295	751	7295	soul	 of New Beginnings	11	1792	360137,360101,		- Ring, Earring, Extra - / STR +1 MAG +1 SPD +1 / INT +1 VIT +1 LUC +1 /  / With Jack Frost, King Frost and Santa Frost: / Ice-affinity +50% / Player gains the Galactica Frost Punch skill
+296	752	7296	tarot	Santa Pyro's 	11	16255	150052,		MAX MP +1 to all Party members
+296	752	7296	soul	 of White Holly	11	1792	360137,360101,		- Rings, Earrings, Extra] / STR +1 MAG +1 SPD +1 / INT +1 VIT +1 LUC +1
+297	1032	7299	tarot	Kinki's 	50	16255	362748,		STR +1 / Electric-based skill effects +1% / Electric resistance +1%
+297	1032	7299	soul	@Endless Lightning 	55	2048	362749,	2:1,0,>60344,60345,;2:1,0,>60346,362768,;	- Back - / CRT -15, BLK CRT -10, Physical defense -5 /  / If Player is CHAOS: /  LV x 0.15% Null Blunt, Thrust, Slash / Physical defense +10, CRT-DEF +20 /   / With Sui-Ki, Fuu-Ki and Ongyo-Ki: / STR + (Base x LV x 0.002) / MAG + (Base x LV x 0.002) / CRT +15 / Fire resistance +30%, Electric resistance +30% / MAX HP +20
+298	1034	7297	tarot	Fuki's 	50	16255	362750,		STR +1 / Force-based skill effects +1% / Force resistance +1%
+298	1034	7297	soul	@Dark Gale 	45	256	30000,362769,	2:1,0,>361959,;2:6,0,>362770,;	- Ring -  / Attack-based skill effects +5%, Electric resistance +30% /  / If Player is CHAOS: /  Force-based skill effects +5% /  / If Player is LAW or NEUTRAL: /  Electric resistance -20% /   / With Sui-Ki, Kin-Ki and Ongyo-Ki: / STR + (Base x LV x 0.002) / MAG + (Base x LV x 0.002) / CRT +15 / Fire resistance +30%, Electric resistance +30% / MAX HP +20
+299	1033	7298	tarot	Suiki's 	50	16255	362751,		STR +1 / Ice-based skill effects +1% / Ice resistance +1%
+299	1033	7298	soul	@Turbid Stream	45	64	30012,362771,	2:1,0,>361859,;2:6,0,>362772,;	- Shoes - / Spin damage +5%, Fire resistance -30% /  / If Player is CHAOS: /  Ice-based skill effects +5% /  / If Player is LAW or NEUTRAL: /  Fire resistance -20% /   / With Kin-Ki, Fuu-Ki and Ongyo-Ki: / STR + (Base x LV x 0.002) / MAG + (Base x LV x 0.002) / CRT +15 / Fire resistance +30%, Electric resistance +30% / MAX HP +20
+300	0	7300	tarot	Thirsty Man's	70	16255	362949,		STR +7 / MAG +7 / SPD +7
+300	0	7300	soul	 of Extraordinary Thirst	85	32	362950,		- Bottom - / Close-Range +7% / Long-Range +7% / Spell +7%
+301	1235	7320	tarot	 of Tzitzimitl	60	16255	360166,360094,		MAG +3 / Mystic-affinity damage +1%
+301	1235	7320	soul	 of the Dark Demon	80	8192	362638,362256,	2:1,0,>910000,;	- Weapon - / MAG + 4 / Mystic-affinity damage +2% /  / If Player is CHAOS: /  damage to Women +20%
+302	146	7319	tarot	Demi-fiend's 	60	16255	363085,		VIT・INT +5 / MAX HP +50 MAX MP +25
+302	146	7319	soul	 of the Half Human, Half Demon	80	256	363086,		- Ring - / HP/MP Regeneration +20 / Limit Break Chance +10%
+303	148	7321	tarot	Tajikarao's 	20	16255	160001,160005,	1:70,0,>120048,;	Rush, Spin / HP Cost -2% /  / If Level is 70 or above:  / MP Cost -2%
+303	148	7321	soul	 of Superhuman STR	30	16	90016,150002,	123:30,0,>360274,;	- Arm - / Null Bind / Party Member's VIT +1 / ※Must be in the same area /  / If Crushing Technique is Class 3 or above:  / CRT +20
+304	147	7045	tarot	Amaterasu's 	70	16255	362638,360759,	2:4,0,>150001,;	MAG +4 / HP Regeneration +3 /  / If Player is LAW: /  Party Member's MAG +1 / ※Must be in the same area
+304	147	7045	soul	 of the Day	80	1	363104,290089,	2:4,0,>550108,;	- Head - / LUC +10 SPD -10 / Magic Skill Cooldown -20% /  / If Player is LAW: /  During the Day: / Spell +25% /  / With Tsukuyomi and Susano-o: / Limit Break Chance +10% / Limit Break Power +20% /  / During the Day: / Fire-affinity damage +40% / Electric-affinity damage +40% /  / During the Night: / Ice-affinity damage +40% / Force-affinity damage +40%
+305	295	7323	tarot	Moh Shuvuu's 	15	16255	360021,360113,		Force-affinity damage +1% / MAG +2
+305	295	7323	soul	 of Fluttering Wings	20	2048	360068,363110,		- Back - / MAG +2 SPD +2 /  / Suicide-affinity damage +50% / Suicide resistance +50%
+306	1236	7324	tarot	Leanan Sidhe's 	45	16255	362922,360023,	2:1,0,>141219,;	MAX MP +1, MAG +1 /  / If Player is CHAOS: /  Partner's Nerve-affinity damage +3%
+306	1236	7324	soul	 of Wisdom	45	1	362995,363111,		- Head - / INT +3, MAG +1 / Ice resistance +10% / Fire resistance -10%
+307	756	7325	tarot	Vouivre's 	45	16255	363108,		STR +2 MAG +1 VIT +2 / LUC -10
+307	756	7325	soul	 of Flames	50	8192		2:5,0,>361809,;2:2,0,>361814,;	- Weapon - / Fire-affinity damage +5% /  / If Player is NEUTRAL: /  Fire-affinity damage +5%
+308	0	7326	tarot	Iron Cage of the Underworld's 	60	16255	363114,150283,		Physical Defense +5 / Magic Defense +5 /  / Party Member's MAX HP +10 / Party Member's MAX MP +5 / ※Must be in the same area。
+308	0	7326	soul	@Darkness Consuming 	85	2	40054,50067,	1:1,0,>362791,730022,;	- Face - / . Damage suffered from demons of the Magica Race -50% / . Damage to demons of the Magica Race +50% / . Out of Darkness Damage +50% and LB Cap Damage +1500 / . Limit Break Chance +10%
+309	89	7327	tarot	Mishaguji-Sama's 	50	16255	360124,362571,	121:10,0,>330113,;	VIT +2, LUC +2 /  / If Psychology is Class 1 or above:  / Chance to inflict all Ailments +3%
+309	89	7327	soul	 of the Fortress	55	4096	410008,		- Talisman - / For each class of Magic Control / All Skill Cooldown -3%
+310	647	7328	tarot	Kresnik's 	50	16255	360855,	123:40,0,>30019,;	Force resistance +1% /  / If Crushing Technique is Class 4 or above:  / Spin damage +3%
+310	647	7328	soul	 of the White Beast	55	4	363050,	2:5,0,>363115,;	- Neck - / CRT +30 /  / If Player is LAW/CHAOS: /  Thrust resistance -20%
+311	1051	7329	tarot	Kudlak's 	50	16255	360755,	123:40,0,>30015,;	Ice resistance +1% /  / If Crushing Technique is Class 4 or above:  / Shot damage +3% / ※includes destruction magic
+311	1051	7329	soul	 of the Black Beast	55	1024	360093,60367,		- Extra - / SPD +2 / Lv*0.25% Chance to Mystic-affinity Absorb
+312	1207	7330	tarot	Ares' 	40	16255	361506,361606,		Slash-affinity damage +2% / Thrust-affinity damage +2%
+312	1207	7330	soul	@Waft of Blood 	50	8192	30001,	2:1,0,>360179,;	- Weapon - / Attack damage +10% /  / If Player is CHAOS: / Close-Range +5
+313	249	7331	tarot	Kinnari's 	20	16255	140866,		Partner's Curative-based skill effects +5%
+313	249	7331	soul	 of the Half Man, Half Horse	30	2	90011,	108:30,0,>362582,;	- Face - / Null Mute /  / If Curative Magic is Class 3 or above:  / INT +5
+314	1112	7332	tarot	Acheri's 	40	16255	363145,330157,		SPD +1, MAG +1, STR -2 / Chance to inflict Bind, Paralyze and Poison /  +5%
+314	1112	7332	soul	 of Red Code	30	4	90017,90015,		- Neck - / Null Paralyze and Poison
+315	1113	7333	tarot	Arachne's 	50	16255	362635,	2:1,0,>290128,;	SPD +3 /  / If Player is CHAOS: /  All Skill Cooldown -1%
+315	1113	7333	soul	 of Spiders	50	16	90015,60368,	2:4,0,>440274,;2:1,0,>440247,;	- Arm - / Lv*0.25% Chance to Nerve Reflect / Paralyze Null /  / If Player is LAW: /  Weapon-based-affinity damage -5% /  / If Player is CHAOS: /  Weapon-based-affinity damage +5%
+316	1148	7334	tarot	Ishtar's 	75	16255	363146,362649,	108:30,0,>362602,;110:30,0,>363149,;	Magic Damage +2% / MAG +2 VIT +2 /  / If Curative Magic is Class 3 or above:  / Magic Damage +1% /  / If Support Magic is Class 3 or above:  / Magic Damage +1%
+316	1148	7334	soul	@Sealed 	85	32	363147,280082,	2:1,0,>150048,150049,;	- Bottom - / MAX MP +25 / All Skill Incantation -20% /  / If Player is CHAOS: /  Party Member's  /  HP Regeneration +5 /  MP Regeneration +5 / ※Must be in the same area
+317	1114	7335	tarot	Yuki Jyorou's 	30	16255	363205,141144,		Fire resistance -3% / Partner's Ice-affinity damage +2%
+317	1114	7335	soul	 of Snow Storms	40	64	330001,90007,		- Shoes - / Freeze Ailment inflict Chance +50% / Freeze Null
+318	571	7336	tarot	Vivian's 	30	16255	141295,		Partner's STR +1, MAG +1, SPD +1
+318	571	7336	soul	@Maiden's Gift 	50	8192	360259,20000,	10:50,0,>360262,440250,;	- Weapon - / CRT +5 / Slash-affinity damage +5% /  / STRが50 or above:  / CRT +8 / Weapon-based-affinity damage +8%
+319	572	7337	tarot	Tam Lin's 	40	16255	141036,360166,	1:1,0,>363208,360264,;	CRT +10 / MAG +3, INT -5, SPD -5
+319	572	7337	soul	@Innocence Taking 	40	1280	360093,30003,	2:2,0,>90112,;	- Ring, Extra - / SPD +2 / Shot damage +5% / ※includes destruction magic /  / If Player is NEUTRAL: /  Burn、Stone Null
+320	648	7338	tarot	Frost Ace's 	35	16255	362634,360757,		STR +4 / Ice resistance +3%
+320	648	7338	soul	 of Ace	45	16	60084,20028,		- Arm - / Lv*0.5% Chance to  Null Ice / Ice-affinity damage +5%
+321	43	7339	tarot	Urizen's 	30	16255	141322,140654,		Partner's Fire-affinity damage +2% / Partner's MAX HP -5 
+321	43	7339	soul	 of the South	50	1024	40087,	2:4,0,>420408,20025,;	- Extra - / +20% Damage to demons of the Elemental Race /  / If Player is LAW:  / Fire Reflect +10%  / Fire-affinity damage +10% 
+322	44	7340	tarot	Tharmas' 	30	16255	141144,140654,		Partner's Ice-affinity damage +2% / Partner's MAX HP -5 
+322	44	7340	soul	 of the West	50	4096	40087,	2:4,0,>420471,20029,;	- Talisman - / +20% Damage to demons of the Elemental Race / If Player is LAW:  / Ice Reflect +10%  / Ice-affinity damage +10% 
+323	45	7341	tarot	Urthuna's 	30	16255	141323,140654,		Partner's Electric-affinity damage +2% / Partner's MAX HP -5 
+323	45	7341	soul	 of the North	50	4	40087,	2:4,0,>420534,20033,;	- Neck - / +20% Damage to demons of the Elemental Race / If Player is LAW:  / Electric Reflect +10%  / Electric-affinity damage +10%
+324	46	7342	tarot	Luvah's 	30	16255	141324,140654,		Partner's Force-affinity damage +2% / Partner's MAX HP -5 
+324	46	7342	soul	 of the East	50	2	40087,	2:4,0,>420660,20037,;	- Face - / +20% Damage to demons of the Elemental Race / If Player is LAW:  / Force Reflect +10%  / Force-affinity damage +10%
+325	1238	7343	tarot	Mara's 	50	16255	363240,	2:1,0,>363241,;	VIT +2, INT +2, SPD +2 /  / If Player is CHAOS: /  Thrust、Nerve、Mind-affinity damage +5%
+325	1238	7343	soul	 of Desire	60	32	380009,390010,	1:1,0,>300296,;	- Bottom - / For each class of Fusion / HP/MP Cost -3% /  / Player gains Maralagidyne Skill
+326	615	7344	tarot	David's 	30	16255	360022,360025,	2:2,0,>10100035,;	STR +1, SPD +1 /  / If Player is NEUTRAL: /  Low chance of causing Instant Death  /  when knocking back the enemy
+326	615	7344	soul	@Lure of Death 	30	128	362965,630014,	1:1,0,>141338,;	- COMP - / Close-Range/Long-Range/Magic Damage Taken: -10% / Ailment Infliction Rate: +(Level × 0.15)% / Partner's Strength/Magic/Speed: +8
+327	131	7345	tarot	Fortuna's 	30	16255	362573,	2:4,0,>363350,;	LUC +4 /  / If Player is LAW: /  Macca gain +2% /  Magnetite gain +2%
+327	131	7345	soul	@Wheel of 	40	128	1110010,400018,	2:4,0,>770016,780018,;	- COMP - / Partner's Spin damage +5% /  / For every Class of Bless: / All Skill Incantation -4% /  / If Player is LAW: /  Partner's  /  Spin HP cost -30% /  Partner's  /  Spin MP cost -30%
+328	188	8119	tarot	Ose Hallel's 	30	16255	1040081,	137:90,0,>361505,;	While Digitalized:  / Close-Range +6% /  / Bless Class 9 or above:  / Close-Range +4 / Long-Range +4 / Spell +4
+328	188	8119	soul	 of Hallelujah	40	32	1040047,	2:2,0,>363048,;2:1,0,>362970,;	- Bottom - / While Digitalized:  / Close-Range, Long-Range, Magic Damage +20% /  / If Player is NEUTRAL: /  Close-Range, Long-Range and Magic Damage Taken +10% /  / If Player is CHAOS: /  Close-Range, Long-Range and Magic Damage Taken +20% /  / With Flauros Hallel: / STR + (Base x LV x 0.002)
+329	189	8120	tarot	Flauros Hallel's 	30	16255	362640,	2:4,0,>362634,;137:90,0,>870095,;	Close-Range +2% /  / If Player is LAW: /  STR +4 /  / Bless Class 9 or above:  / Technical Attack Chance +1% / Technical Attack Power +1%
+329	189	8120	soul	@Blessed 	40	2	1040080,	2:2,0,>363048,;2:1,0,>362970,;	- Face - / While Digitalized:  / Limit Break Power +10% /  / If Player is NEUTRAL: /  Close-Range, Long-Range and Magic damage +10% /  / If Player is CHAOS: /  Close-Range, Long-Range and Magic damage +20% /  / With Ose Hallel: / STR + (Base x LV x 0.002)
+330	0	38107	tarot	Abyss' 	90	16255	362815,870094,		Limit Break Power +2% / Technical Attack Power +2%
+330	0	38107	soul	 of Hell	80	8	362920,	2:1,0,>220003,200003,;2:1,0,>210003,;	- Top - / MAX HP +500 /  / If Player is CHAOS: /  Null Knockback chance +100% /  Null Stun chance +100%
+331	0	8121	tarot	God's Majesty's 	95	16255	363195,		Final Critical Rate +5%
+331	0	8121	soul	 of Judgement	85	16383	1120008,363362,		- All (except bullets) - / Limit Break Cap +900 / Close-Range +10 / Long-Range +10 / Spell +10 / LUC +10
+332	1168	7346	tarot	Bai Suzhen's 	15	16255	20089,363370,	1:1,0,>363371,;	Curative-based skill effects +3% / Curative received +3% / Ailment resistance -2
+332	1168	7346	soul	 of the White Snake	20	2	140831,	2:1,0,>141387,140876,;	- Face - / Partner's INT +20 /  / If Player is CHAOS: /  Partner's  /  Mystic-affinity damage +15% /  Curative-based skill effects +15%
+333	0	8122	tarot	Purgatory Ore's 	75	16255	1060007,880102,		Digitalize duration +2% /  / While Digitalized:  /  Pursuit Chance +3% /  Pursuit Power +3% /  ※Pursuit Power Cap is 100%
+333	0	8122	soul	 of the Gehenna	85	64	1992633,		- Shoes - / Black Sun will not inflict knockback on targets / ※Enemies will still be subject to /  "incant interruption" when hit and will /  flinch when they are damaged. / ※Targets can still be attacked even /  while flinching from damage. / ※If an enemy has effects to negate /  these changes, then their effects will /  take priority. / ※In VERSUS, enemies will not be subject /  to "incant interruption" and also will /  not flinch from the damage. /  / Black Sun Skill Stack +1
+334	1126	7347	tarot	Ouyamatsumi's 	45	16255		2:1,0,>363350,;	If Player is CHAOS: /  Macca gain +2% / Magnetite gain +2%
+334	1126	7347	soul	@Blessing Bringing 	50	64	150097,	2:1,0,>150042,;	- Shoes - / Party Member's MAX HP +50 / ※Must be in the same area /  / If Player is CHAOS: /  Party Member's VIT +5 / ※Must be in the same area
+401	9001	7301	tarot	【ＩＣ】Onmoraki's 	1	16255	360091,360027,		STR +2 LUC +1
+401	9001	7301	soul	@【ＩＣ】Moaning	1	512	360176,20069,		- Earring - / Close-Range +2 / Curative-based skill effects +10%
+402	9002	7302	tarot	【ＩＣ】Hua Po's 	1	16255	360113,363019,		MAG +2, VIT +1
+402	9002	7302	soul	@【ＩＣ】Abloom 	1	4096	360216,360070,		- Talisman - / Spell +2 MAX HP +20
+403	9003	7303	tarot	【ＩＣ】Kodama's 	1	16255	360093,363019,		SPD +2 VIT +1
+403	9003	7303	soul	@【ＩＣ】Wavering 	1	512	360196,360070,		- Earring - / Long-Range +2 MAX HP +20
+404	9004	7304	tarot	【ＩＣ】Cait Sith's 	1	16255	360091,360026,		STR +2 INT +1
+404	9004	7304	soul	 of Lord Carabas【ＩＣ】	1	4096	360176,362924,		- Talisman - / Close-Range +2 MAX MP +10
+405	9005	7305	tarot	【ＩＣ】Pixie's 	1	16255	360113,363020,		MAG +2 LUC +1
+405	9005	7305	soul	@【ＩＣ】Scintillating 	1	1024	360216,20069,		- Extra - / Spell +2 / Curative-based skill effects +10%
+406	9006	7306	tarot	【ＩＣ】Alp's 	1	16255	360093,363020,		SPD +2 LUC +1
+406	9006	7306	soul	@【ＩＣ】Risque 	1	4096	360196,20069,		- Talisman - / Long-Range +2 / Curative-based skill effects +10%
+407	9007	7307	tarot	【ＩＣ】Shikigami's 	1	16255	360113,360026,		MAG +2 INT +1
+407	9007	7307	soul	@【ＩＣ】Kin`u Gyokuto 	1	512	360216,362924,		- Earring - / Spell +2 MAX MP +10
+408	9008	7308	tarot	【ＩＣ】Preta's 	1	16255	360091,363019,		STR +2 VIT +1
+408	9008	7308	soul	@【ＩＣ】Starved 	1	1024	360176,360070,		- Extra - / Close-Range +2 MAX HP +20
+409	9009	7309	tarot	【ＩＣ】Poltergeist's 	1	16255	360093,360026,		SPD +2 INT +1
+409	9009	7309	soul	@【ＩＣ】Clamorous 	1	1024	360196,362924,		- Extra - / Long-Range +2 MAX MP +10
+410	9010	7310	tarot	【ＩＣ】Power's 	1	16255	362633,360315,		STR +3 Magic Defense +1
+410	9010	7310	soul	 of Vanguards【ＩＣ】	1	4	30010,362613,		- Neck - / Rush damage +10% / MAX MP +15
+411	9011	7311	tarot	【ＩＣ】Suparna's 	1	16255	362635,360315,		SPD +3 Magic Defense +1
+411	9011	7311	soul	@【ＩＣ】Beautifully Winged 	1	1	30007,362678,		- Head - / Rapid damage +10% / MAX HP +30
+412	9012	7312	tarot	【ＩＣ】Cerberus' 	1	16255	362633,360295,		STR +3 Physical Defense +1
+412	9012	7312	soul	 of Hellhounds【ＩＣ】	1	2	30013,362678,		- Face - / Spin damage +10% / MAX HP +30
+413	9013	7313	tarot	【ＩＣ】Nekomata's 	1	16255	362635,360295,		SPD +3 Physical Defense +1
+413	9013	7313	soul	@【ＩＣ】Alluring Claw 	1	64	30096,362678,		- Shoes - / Counter damage +100% / MAX HP +30
+414	9014	7314	tarot	【ＩＣ】Yomotsu-Shikome's 	1	16255	360166,360315,		MAG +3 Magic Defense +1
+414	9014	7314	soul	@【ＩＣ】Manhunting 	1	16	30004,362613,		- Arm - / Shot damage +10% / ※includes destruction magic / MAX MP +15
+415	9015	7315	tarot	【ＩＣ】Pisaca's 	1	16255	360166,360295,		MAG +3 Physical Defense +1
+415	9015	7315	soul	@【ＩＣ】Death-devouring 	1	2048	30001,362613,		- Back - / Attack damage +10% / MAX MP +15
+416	9016	7316	tarot	【ＩＣ】Cu Chulainn's 	1	16255	360264,360296,		CRT +10 Physical Defense +2
+416	9016	7316	soul	 of Geis【ＩＣ】	1	16	60360,110001,		- Arm - / Lv*0.1% Chance to Null all Physical / HP Cost -10%
+417	9017	7317	tarot	【ＩＣ】Decarabia's 	1	16255	360264,360316,		CRT +10 Magic Defense +2
+417	9017	7317	soul	@【ＩＣ】Rhythmic 	1	1	60361,120001,		- Head - / Lv*0.1% Chance to Null all Magical / MP Cost -10%
+418	9018	7318	tarot	【ＩＣ】Lakshmi's 	1	16255	360269,280073,		CRT +15 / All Skill Incantation -2%
+418	9018	7318	soul	 of Shuri【ＩＣ】	1	2	362786,362823,		- Face - / Limit Break Chance +5% / Limit Break Power +10%
+501	0	7501	tarot	The Fool's 	1	16255	360106,		MAX HP +3, MAX MP -1
+501	0	7501	soul		1	0			
+502	0	7502	tarot	The Magician's 	1	16255	360107,		MAG +1, STR -2, VIT -2
+502	0	7502	soul		1	0			
+503	0	7503	tarot	The Priestess' 	1	16255	290084,362564,		MAG +2 LUC -5 / Magic cool-down time -3%
+503	0	7503	soul		1	0			
+504	0	7504	tarot	The Empress' 	1	16255	360119,		Expertise level-up +5%
+504	0	7504	soul		1	0			
+505	0	7505	tarot	The Emperor's 	1	16255	30015,362565,		SPD +2 LUC -5 / Shot +3%
+505	0	7505	soul		1	0			
+506	0	7506	tarot	The Hierophant's 	1	16255	360123,		MAG +1 INT +2
+506	0	7506	soul		1	0			
+507	0	7507	tarot	The Lovers' 	1	16255	140766,360116,		Partner's XP earned +5% / XP earned -5%
+507	0	7507	soul		1	0			
+508	0	7508	tarot	The Chariot's 	1	16255	360124,		VIT +2
+508	0	7508	soul		1	0			
+509	0	7509	tarot	Strength's 	1	16255	360108,		STR +1 MAG -2 LUC -2
+509	0	7509	soul		1	0			
+510	0	7510	tarot	The Hermit's 	1	16255	360109,		SPD +1 STR -2 LUC -2
+510	0	7510	soul		1	0			
+511	0	7511	tarot	Fortune's 	1	16255	362608,362609,		+5 Luck / Acquire Expertise: +2% / -1 Strength, -1 Magic, -1 Speed
+511	0	7511	soul		1	0			
+512	0	7512	tarot	Justice's 	1	16255	360028,		STR +2 MAG -1 SPD -1
+512	0	7512	soul		1	0			
+513	0	7513	tarot	The Hanged Man's 	1	16255	30018,362566,		STR +2 LUC -5 / Rush +3%
+513	0	7513	soul		1	0			
+514	0	7514	tarot	Death's 	1	16255	360125,		STR +1 VIT +1
+514	0	7514	soul		1	0			
+515	0	7515	tarot	Temperance's 	1	16255	360101,		INT +1 VIT +1 LUC +1
+515	0	7515	soul		1	0			
+516	0	7516	tarot	The Devil's 	1	16255	360029,		MAG +2 STR -1 SPD -1
+516	0	7516	soul		1	0			
+517	0	7517	tarot	The Tower's 	1	16255	360118,		Phys/Mag Def -3 XP earned +3%
+517	0	7517	soul		1	0			
+518	0	7518	tarot	The Star's 	1	16255	360117,		XP +2%
+518	0	7518	soul		1	0			
+519	0	7519	tarot	The Moon's 	1	16255	360152,		MAG +2 INT +3
+519	0	7519	soul		1	0			
+520	0	7520	tarot	The Sun's 	1	16255	360153,		SPD +2 LUC +3
+520	0	7520	soul		1	0			
+521	0	7521	tarot	Judgment's 	1	16255	360030,		SPD +2 STR -1 MAG -1
+521	0	7521	soul		1	0			
+522	0	7522	tarot	The World's 	1	16255	200004,210004,		Null suspension of incantation when damaged +5% / Null incapacity when damaged +5%
+522	0	7522	soul		1	0			
+523	0	7523	tarot	Spades' 	1	16255	360022,		+1 STR
+523	0	7523	soul		0	0			
+524	0	7524	tarot	Spades' 	5	16255	360091,		+2 STR
+524	0	7524	soul		0	0			
+525	0	7525	tarot	Spades' 	10	16255	362633,		+3 STR
+525	0	7525	soul		0	0			
+526	0	7526	tarot	Spades' 	15	16255	362634,		+4 STR
+526	0	7526	soul		0	0			
+527	0	7527	tarot	Spades' 	20	16255	360165,		+5 STR
+527	0	7527	soul		0	0			
+528	0	7528	tarot	Spades' 	25	16255	360022,362639,		+1 STR / +1% Close-range damage
+528	0	7528	soul		0	0			
+529	0	7529	tarot	Spades' 	30	16255	362633,362640,		+3 STR / +2% Close-range damage
+529	0	7529	soul		0	0			
+530	0	7530	tarot	Spades' 	35	16255	360165,362641,		+5 STR / +3% Close-range damage
+530	0	7530	soul		0	0			
+531	0	7531	tarot	Spades' 	40	16255	360165,360027,	1:1,0,>362642,;	+5 STR / +1 LUCK / +4% Close-range damage
+531	0	7531	soul		0	0			
+532	0	7532	tarot	Spades' 	45	16255	360165,362572,	1:1,0,>362642,;	+5 STR / +3 Luck / +4% Close-range damage
+532	0	7532	soul		0	0			
+533	0	7533	tarot	Spades' 	50	16255	360165,362574,	1:1,0,>362643,;	+5 STR / +5 Luck / +5% Close-range damage
+533	0	7533	soul		0	0			
+534	0	7534	tarot	Spades' 	55	16255	362873,362575,	1:1,0,>362694,;	+6 STR / +6 Luck / +6% Close-range damage
+534	0	7534	soul		0	0			
+535	0	7535	tarot	Spades' 	60	16255	362875,362577,	1:1,0,>362696,;	+8 STR / +8 Luck / +8% Close-range damage
+535	0	7535	soul		0	0			
+536	0	7536	tarot	Spades' 	65	16255	362743,362579,	1:1,0,>362630,;	+10 STR / +10 Luck / +10% Close-range damage
+536	0	7536	soul		0	0			
+537	0	7537	tarot	Hearts' 	1	16255	360025,		+1 Speed
+537	0	7537	soul		0	0			
+538	0	7538	tarot	Hearts' 	5	16255	360093,		+2 Speed
+538	0	7538	soul		0	0			
+539	0	7539	tarot	Hearts' 	10	16255	362635,		+3 Speed
+539	0	7539	soul		0	0			
+540	0	7540	tarot	Hearts' 	15	16255	362636,		+4 Speed
+540	0	7540	soul		0	0			
+541	0	7541	tarot	Hearts' 	20	16255	362637,		+5 Speed
+541	0	7541	soul		0	0			
+542	0	7542	tarot	Hearts' 	25	16255	360025,362644,		+1 Speed / +1% Long-range damage
+542	0	7542	soul		0	0			
+543	0	7543	tarot	Hearts' 	30	16255	362635,362645,		+3 Speed / +2% Long-range damage
+543	0	7543	soul		0	0			
+544	0	7544	tarot	Hearts' 	35	16255	362637,362646,		+5 Speed / +3% Long-range damage
+544	0	7544	soul		0	0			
+545	0	7545	tarot	Hearts' 	40	16255	362637,360027,	1:1,0,>362647,;	+5 Speed / +1 Luck / +4% Long-range damage
+545	0	7545	soul		0	0			
+546	0	7546	tarot	Hearts' 	45	16255	362637,362572,	1:1,0,>362647,;	+5 Speed / +3 Luck / +4% Long-range damage
+546	0	7546	soul		0	0			
+547	0	7547	tarot	Hearts' 	50	16255	362637,362574,	1:1,0,>362648,;	+5 Speed / +5 Luck / +5% Long-range damage
+547	0	7547	soul		0	0			
+548	0	7548	tarot	Hearts' 	55	16255	362904,362575,	1:1,0,>362704,;	+6 Speed / +6 Luck / +6% Long-range damage
+548	0	7548	soul		0	0			
+549	0	7549	tarot	Hearts' 	60	16255	362906,362577,	1:1,0,>362706,;	+8 Speed / +8 Luck / +8% Long-range damage
+549	0	7549	soul		0	0			
+550	0	7550	tarot	Hearts' 	65	16255	362745,362579,	1:1,0,>362631,;	+10 Speed / +10 Luck / +10% Long-range damage
+550	0	7550	soul		0	0			
+551	0	7551	tarot	Clubs' 	1	16255	360023,		+1 Magic
+551	0	7551	soul		0	0			
+552	0	7552	tarot	Clubs' 	5	16255	360113,		+2 Magic
+552	0	7552	soul		0	0			
+553	0	7553	tarot	Clubs' 	10	16255	360166,		+3 Magic
+553	0	7553	soul		0	0			
+554	0	7554	tarot	Clubs' 	15	16255	362638,		+4 Magic
+554	0	7554	soul		0	0			
+555	0	7555	tarot	Clubs' 	20	16255	360169,		+5 Magic
+555	0	7555	soul		0	0			
+556	0	7556	tarot	Clubs' 	25	16255	360023,362602,		+1 Magic / +1% Magic damage
+556	0	7556	soul		0	0			
+557	0	7557	tarot	Clubs' 	30	16255	360166,362649,		+3 Magic / +2% Magic damage
+557	0	7557	soul		0	0			
+558	0	7558	tarot	Clubs' 	35	16255	360169,362650,		+5 Magic / +3% Magic damage
+558	0	7558	soul		0	0			
+559	0	7559	tarot	Clubs' 	40	16255	360169,360027,	1:1,0,>362651,;	+5 Magic / +1 Luck / +4% Magic damage
+559	0	7559	soul		0	0			
+560	0	7560	tarot	Clubs' 	45	16255	360169,362572,	1:1,0,>362651,;	+5 Magic / +3 Luck / +4% Magic damage
+560	0	7560	soul		0	0			
+561	0	7561	tarot	Clubs' 	50	16255	360169,362574,	1:1,0,>362652,;	+5 Magic / +5 Luck / +5% Magic damage
+561	0	7561	soul		0	0			
+562	0	7562	tarot	Clubs' 	55	16255	362881,362575,	1:1,0,>362714,;	+6 Magic / +6 Luck / +6% Magic damage
+562	0	7562	soul		0	0			
+563	0	7563	tarot	Clubs' 	60	16255	362883,362577,	1:1,0,>362716,;	+8 Magic / +8 Luck / +8% Magic damage
+563	0	7563	soul		0	0			
+564	0	7564	tarot	Clubs' 	65	16255	362744,362579,	1:1,0,>362629,;	+10 Magic / +10 Luck / +10% Magic damage
+564	0	7564	soul		0	0			
+565	0	7565	tarot	Diamonds' 	1	16255	360026,		+1 Intelligence
+565	0	7565	soul		0	0			
+566	0	7566	tarot	Diamonds' 	5	16255	360112,		+2 Intelligence
+566	0	7566	soul		0	0			
+567	0	7567	tarot	Diamonds' 	10	16255	362580,		+3 Intelligence
+567	0	7567	soul		0	0			
+568	0	7568	tarot	Diamonds' 	15	16255	362581,		+4 Intelligence
+568	0	7568	soul		0	0			
+569	0	7569	tarot	Diamonds' 	20	16255	362582,		+5 Intelligence
+569	0	7569	soul		0	0			
+570	0	7570	tarot	Diamonds' 	25	16255	360026,20091,		+1 Intelligence / +1% Curative-based skill
+570	0	7570	soul		0	0			
+571	0	7571	tarot	Diamonds' 	30	16255	362580,20090,		+3 Intelligence / +2% Curative-based skill
+571	0	7571	soul		0	0			
+572	0	7572	tarot	Diamonds' 	35	16255	362582,20089,		+5 Intelligence / +3% Curative-based skill
+572	0	7572	soul		0	0			
+573	0	7573	tarot	Diamonds' 	40	16255	362582,360027,	1:1,0,>20089,2100366,;	+5 Intelligence / +1 Luck / +3% Curative-based skill / +4% Support Damage
+573	0	7573	soul		0	0			
+574	0	7574	tarot	Diamonds' 	45	16255	362582,362572,	1:1,0,>20089,2100366,;	+5 Intelligence / +3 Luck / +3% Curative-based skill / +4% Support Damage
+574	0	7574	soul		0	0			
+575	0	7575	tarot	Diamonds' 	50	16255	362582,362574,	1:1,0,>20089,2100367,;	+5 Intelligence / +5 Luck / +3% Curative-based skill / +5% Support Damage
+575	0	7575	soul		0	0			
+576	0	7576	tarot	Diamonds' 	55	16255	362583,362575,	1:1,0,>20092,2100368,;	+6 Intelligence / +6 Luck / +4% Curative-based skill / +6% Support Damage
+576	0	7576	soul		0	0			
+577	0	7577	tarot	Diamonds' 	60	16255	362585,362577,	1:1,0,>20068,2100369,;	+8 Intelligence / +8 Luck / +5% Curative-based skill / +8% Support Damage
+577	0	7577	soul		0	0			
+578	0	7578	tarot	Diamonds' 	65	16255	362587,362579,	1:1,0,>20093,2100370,;	+10 Intelligence / +10 Luck / +6% Curative-based skill / +10% Support Damage
+578	0	7578	soul		0	0			
+579	0	7579	tarot	Folly 	60	16255	362852,140615,		MAX HP -12 / MAX HP +100 to your Partner
+579	0	7579	soul		0	0			
+580	0	7580	tarot	Willed 	60	16255	140504,360083,	2:7,0,>360151,;	LUC -5 / HP -10 / MAG +5 to your Partner
+580	0	7580	soul		0	0			
+581	0	7581	tarot	Mysterious 	60	16255			Nothing
+581	0	7581	soul		0	0			
+582	0	7582	tarot	Active 	60	16255			Nothing
+582	0	7582	soul		0	0			
+583	0	7583	tarot	Ruler's 	60	16255			Nothing
+583	0	7583	soul		0	0			
+584	0	7584	tarot	Faithful	60	16255	363116,750014,	1:97,0,>360274,;	Close-Range, Long-Range and Magic damage suffered +3% /  / If Level is 97 or above: CRT +20 /  / If Partner's Friendship is Linked by Fate: / Partner's CRT +20
+584	0	7584	soul		0	0			
+585	0	7585	tarot	Charming	60	16255	363116,750014,	1:97,0,>330114,;	Close-Range, Long-Range and Magic damage suffered +3% /  / If Level is 97 or above:  / Chance to inflict all Ailments +4%     /  / If Partner's Friendship is Linked by Fate: / Partner's CRT +20
+585	0	7585	soul		0	0			
+586	0	7586	tarot	Providential	60	16255	363116,750014,	1:97,0,>360178,;	Close-Range, Long-Range and Magic damage suffered +3% /  / If Level is 97 or above: Close-Range +4 /  / If Partner's Friendship is Linked by Fate: / Partner's CRT +20
+586	0	7586	soul		0	0			
+587	0	0	tarot	Equally 	60	16255			Nothing
+587	0	0	soul		0	0			
+588	0	7588	tarot	Deliberative	60	16255	362853,141051,		Long-range damage suffered +6% /  SPD +6 to your Partner
+588	0	7588	soul		0	0			
+589	0	7589	tarot	Lucky 	60	16255	140797,141036,	2:7,0,>362654,;	LUC -5 / CRT -20 / BLK CRT -15 / LUC +3 to your Partner / CRT +10 to your Partner
+589	0	7589	soul		0	0			
+590	0	7587	tarot	Honourable	60	16255	363116,750014,	1:97,0,>360218,;	Close-Range, Long-Range and Magic damage suffered +3% /  / If Level is 97 or above: Spell +4 /  / If Partner's Friendship is Linked by Fate: / Partner's CRT +20
+590	0	7587	soul		0	0			
+591	0	7591	tarot	Trialling 	60	16255			Nothing
+591	0	7591	soul		0	0			
+592	0	7592	tarot	Suspended 	60	16255			Nothing
+592	0	7592	soul		0	0			
+593	0	7593	tarot	Moderate 	60	16255	141052,362556,		STR -5, SPD -5, MAG -5 / VIT +3, INT +3, LUK +3 to your Partner
+593	0	7593	soul		0	0			
+594	0	7594	tarot	Violente 	60	16255	140713,362556,		STR -5, SPD -5, MAG -5 / MAX MP +40 to your Partner
+594	0	7594	soul		0	0			
+595	0	7595	tarot	Sorrow 	60	16255			Nothing
+595	0	7595	soul		0	0			
+596	0	7596	tarot	Meditative 	60	16255			Nothing
+596	0	7596	soul		0	0			
+597	0	7597	tarot	Imaginary 	60	16255			Nothing
+597	0	7597	soul		0	0			
+598	0	7598	tarot	Happy 	60	16255			Nothing
+598	0	7598	soul		0	0			
+599	0	7599	tarot	Resurrect	60	16255	363116,750014,	1:97,0,>360198,;	Close-Range, Long-Range and Magic damage suffered +3% /  / If Level is 97 or above: Long-Range +4 /  / If Partner's Friendship is Linked by Fate: / Partner's CRT +20
+599	0	7599	soul		0	0			
+600	0	7600	tarot	Successful 	60	16255			Nothing
+600	0	7600	soul		0	0			
+601	0	7601	tarot	Ambitious 	60	16255	140000,		Partner's Close-Range +1
+601	0	7601	soul		0	0			
+602	0	7602	tarot	Harmonious 	60	16255	140001,		Partner's Close-Range +2
+602	0	7602	soul		0	0			
+603	0	7603	tarot	Despairing 	60	16255	140002,		Partner's Close-Range +3
+603	0	7603	soul		0	0			
+604	0	7604	tarot	Suspended 	60	16255	140003,		Partner's Close-Range +4
+604	0	7604	soul		0	0			
+605	0	7605	tarot	Egoistic 	60	16255	140004,		Partner's Close-Range +5
+605	0	7605	soul		0	0			
+606	0	7606	tarot	Judging 	60	16255	140000,141105,		Partner's Close-Range +1 / Partner's Close-Range +1%
+606	0	7606	soul		0	0			
+607	0	7607	tarot	Escaping 	60	16255	140002,141106,		Partner's Close-Range +3 / Partner's Close-Range +2%
+607	0	7607	soul		0	0			
+608	0	7608	tarot	Restraining 	60	16255	140004,141107,		Partner's Close-Range +5 / Partner's Close-Range +3%
+608	0	7608	soul		0	0			
+609	0	7609	tarot	Disillusioned 	60	16255	141080,140004,	1:1,0,>141108,;	Partner's STR、MAG、VIT、INT、SPD、LUC +1 / Partner's Close-Range +5 / Partner's Close-Range +4%
+609	0	7609	soul		0	0			
+610	0	7610	tarot	Catastrophic 	60	16255	141435,140004,	1:1,0,>141108,;	Partner's STR、MAG、VIT、INT、SPD、LUC +3 / Partner's Close-Range +5 / Partner's Close-Range +4%
+610	0	7610	soul		0	0			
+611	0	7611	tarot	Defeated 	60	16255	141436,140004,	1:1,0,>141109,;	Partner's STR、MAG、VIT、INT、SPD、LUC +5 / Partner's Close-Range +5 / Partner's Close-Range +5%
+611	0	7611	soul		0	0			
+612	0	7612	tarot	Acquired 	60	16255	141437,140005,	1:1,0,>141440,;	Partner's STR、MAG、VIT、INT、SPD、LUC +6 / Partner's Close-Range +6 / Partner's Close-Range +6%
+612	0	7612	soul		0	0			
+613	0	7613	tarot	Critiqued 	60	16255	141438,140007,	1:1,0,>141441,;	Partner's STR、MAG、VIT、INT、SPD、LUC +8 / Partner's Close-Range +8 / Partner's Close-Range +8%
+613	0	7613	soul		0	0			
+614	0	7614	tarot	Honorable 	60	16255	141439,140009,	1:1,0,>140783,;	Partner's STR、MAG、VIT、INT、SPD、LUC +10 / Partner's Close-Range +10 / Partner's Close-Range +10%
+614	0	7614	soul		0	0			
+615	0	7615	tarot	Born 	60	16255	140200,		Partner's Spell +1
+615	0	7615	soul		0	0			
+616	0	7616	tarot	Fulfilled 	60	16255	140201,		Partner's Spell +2
+616	0	7616	soul		0	0			
+617	0	7617	tarot	Leaving 	60	16255	140202,		Partner's Spell +3
+617	0	7617	soul		0	0			
+618	0	7618	tarot	Restful 	60	16255	140203,		Partner's Spell +4
+618	0	7618	soul		0	0			
+619	0	7619	tarot	Conflicted 	60	16255	140204,		Partner's Spell +5
+619	0	7619	soul		0	0			
+620	0	7620	tarot	Ceramic 	60	16255	140200,141110,		Partner's Spell +1 / Partner's Spell +1%
+620	0	7620	soul		0	0			
+621	0	7621	tarot	Unraveled 	60	16255	140202,141111,		Partner's Spell +3 / Partner's Spell +2%
+621	0	7621	soul		0	0			
+622	0	7622	tarot	Upturned 	60	16255	140204,141112,		Partner's Spell +5 / Partner's Spell +3%
+622	0	7622	soul		0	0			
+623	0	7623	tarot	Obscure 	60	16255	141080,140204,	1:1,0,>141113,;	Partner's STR、MAG、VIT、INT、SPD、LUC +1 / Partner's Spell +5 / Partner's Spell +4%
+623	0	7623	soul		0	0			
+624	0	7624	tarot	Oppressed 	60	16255	141435,140204,	1:1,0,>141113,;	Partner's STR、MAG、VIT、INT、SPD、LUC +3 / Partner's Spell +5 / Partner's Spell +4%
+624	0	7624	soul		0	0			
+625	0	7625	tarot	Stable 	60	16255	141436,140204,	1:1,0,>141114,;	Partner's STR、MAG、VIT、INT、SPD、LUC +5 / Partner's Spell +5 / Partner's Spell +5%
+625	0	7625	soul		0	0			
+626	0	7626	tarot	Determinded 	60	16255	141437,140205,	1:1,0,>141442,;	Partner's STR、MAG、VIT、INT、SPD、LUC +6 / Partner's Spell +6 / Partner's Spell +6%
+626	0	7626	soul		0	0			
+627	0	7627	tarot	Well-meaning 	60	16255	141438,140207,	1:1,0,>141443,;	Partner's STR、MAG、VIT、INT、SPD、LUC +8 / Partner's Spell +8 / Partner's Spell +8%
+627	0	7627	soul		0	0			
+628	0	7628	tarot	Independent 	60	16255	141439,140209,	1:1,0,>140791,;	Partner's STR、MAG、VIT、INT、SPD、LUC +10 / Partner's Spell +10 / Partner's Spell +10%
+628	0	7628	soul		0	0			
+629	0	7629	tarot	Loving 	60	16255	140100,		Partner's Long-Range +1
+629	0	7629	soul		0	0			
+630	0	7630	tarot	Trusting 	60	16255	140101,		Partner's Long-Range +2
+630	0	7630	soul		0	0			
+631	0	7631	tarot	Solving 	60	16255	140102,		Partner's Long-Range +3
+631	0	7631	soul		0	0			
+632	0	7632	tarot	Lost 	60	16255	140103,		Partner's Long-Range +4
+632	0	7632	soul		0	0			
+633	0	7633	tarot	Missing 	60	16255	140104,		Partner's Long-Range +5
+633	0	7633	soul		0	0			
+634	0	7634	tarot	Nostalgic 	60	16255	140100,141115,		Partner's Long-Range +1 / Partner's Long-Range +1%
+634	0	7634	soul		0	0			
+635	0	7635	tarot	Fancy 	60	16255	140102,141116,		Partner's Long-Range +3 / Partner's Long-Range +2%
+635	0	7635	soul		0	0			
+636	0	7636	tarot	Declining 	60	16255	140104,141117,		Partner's Long-Range +5 / Partner's Long-Range +3%
+636	0	7636	soul		0	0			
+637	0	7637	tarot	Ideal 	60	16255	141080,140104,	1:1,0,>141118,;	Partner's STR、MAG、VIT、INT、SPD、LUC +1 / Partner's Long-Range +5 / Partner's Long-Range +4%
+637	0	7637	soul		0	0			
+638	0	7638	tarot	Satisfied	60	16255	141435,140104,	1:1,0,>141118,;	Partner's STR、MAG、VIT、INT、SPD、LUC +3 / Partner's Long-Range +5 / Partner's Long-Range +4%
+638	0	7638	soul		0	0			
+639	0	7639	tarot	Clear 	60	16255	141436,140104,	1:1,0,>141119,;	Partner's STR、MAG、VIT、INT、SPD、LUC +5 / Partner's Long-Range +5 / Partner's Long-Range +5%
+639	0	7639	soul		0	0			
+640	0	7640	tarot	Passionate 	60	16255	141437,140105,	1:1,0,>141444,;	Partner's STR、MAG、VIT、INT、SPD、LUC +6 / Partner's Long-Range +6 / Partner's Long-Range +6%
+640	0	7640	soul		0	0			
+641	0	7641	tarot	Dedicated 	60	16255	141438,140107,	1:1,0,>141445,;	Partner's STR、MAG、VIT、INT、SPD、LUC +8 / Partner's Long-Range +8 / Partner's Long-Range +8%
+641	0	7641	soul		0	0			
+642	0	7642	tarot	Obligated 	60	16255	141439,140109,	1:1,0,>140787,;	Partner's STR、MAG、VIT、INT、SPD、LUC +10 / Partner's Long-Range +10 / Partner's Long-Range +10%
+642	0	7642	soul		0	0			
+643	0	7643	tarot	Successful 	60	16255	140300,		Partner's Support +1
+643	0	7643	soul		0	0			
+644	0	7644	tarot	Confused 	60	16255	140301,		Partner's Support +2
+644	0	7644	soul		0	0			
+645	0	7645	tarot	Established 	60	16255	140302,		Partner's Support +3
+645	0	7645	soul		0	0			
+646	0	7646	tarot	Thoughtful 	60	16255	140303,		Partner's Support +4
+646	0	7646	soul		0	0			
+647	0	7647	tarot	Hopeless 	60	16255	140304,		Partner's Support +5
+647	0	7647	soul		0	0			
+648	0	7648	tarot	Foundational 	60	16255	140300,141120,		Partner's Support +1 / Partner's Curative-based skill effects +1%
+648	0	7648	soul		0	0			
+649	0	7649	tarot	Turning Point 	60	16255	140302,140863,		Partner's Support +3 / Partner's Curative-based skill effects +2%
+649	0	7649	soul		0	0			
+650	0	7650	tarot	Publicizing 	60	16255	140304,140864,		Partner's Support +5 / Partner's Curative-based skill effects +3%
+650	0	7650	soul		0	0			
+651	0	7651	tarot	Opportunistic 	60	16255	141080,140304,	1:1,0,>140864,141120,;	Partner's STR、MAG、VIT、INT、SPD、LUC +1 / Partner's Support +5 / Partner's Curative-based skill effects +3% / Partner's Support-based skill effects +1%
+651	0	7651	soul		0	0			
+652	0	7652	tarot	Progressing 	60	16255	141435,140304,	1:1,0,>140864,141120,;	Partner's STR、MAG、VIT、INT、SPD、LUC +3 / Partner's Support +5 / Partner's Curative-based skill effects +3% / Partner's Support-based skill effects +1%
+652	0	7652	soul		0	0			
+653	0	7653	tarot	Resulting 	60	16255	141436,140304,	1:1,0,>140864,141121,;	Partner's STR、MAG、VIT、INT、SPD、LUC +5 / Partner's Support +5 / Partner's Curative-based skill effects +3% / Partner's Support-based skill effects +2%
+653	0	7653	soul		0	0			
+654	0	7654	tarot	Abundant 	60	16255	141437,140305,	1:1,0,>140865,141121,;	Partner's STR、MAG、VIT、INT、SPD、LUC +6 / Partner's Support +6 / Partner's Curative-based skill effects +4% / Partner's Support-based skill effects +2%
+654	0	7654	soul		0	0			
+655	0	7655	tarot	Feeling 	60	16255	141438,140307,	1:1,0,>140866,141122,;	Partner's STR、MAG、VIT、INT、SPD、LUC +8 / Partner's Support +8 / Partner's Curative-based skill effects +5% / Partner's Support-based skill effects +3%
+655	0	7655	soul		0	0			
+656	0	7656	tarot	Coexisting 	60	16255	141439,140309,	1:1,0,>140867,141123,;	Partner's STR、MAG、VIT、INT、SPD、LUC +10 / Partner's Support +10 / Partner's Curative-based skill effects +6% / Partner's Support-based skill effects +4%
+656	0	7656	soul		0	0			
+657	0	7657	tarot	I of Knights' 	60	16255	141082,		Partner's  / Close-Range, Long-Range and Magic Damage +1%
+657	0	7657	soul		0	0			
+658	0	7658	tarot	II of Knights' 	60	16255	141056,		Partner's  / Close-Range, Long-Range and Magic Damage +2%
+658	0	7658	soul		0	0			
+659	0	7659	tarot	III of Knights' 	60	16255	141083,		Partner's  / Close-Range, Long-Range and Magic Damage +3%
+659	0	7659	soul		0	0			
+660	0	7660	tarot	I of Knights' 	60	16255	141082,		Partner's  / Close-Range, Long-Range and Magic Damage +1%
+660	0	7660	soul		0	0			
+661	0	7661	tarot	STR/D→	1	128	360165,		- COMP - / STR +5
+661	0	7661	soul		0	0			
+662	0	7662	tarot	MAG/D→	1	128	360169,		- COMP - / MAG +5
+662	0	7662	soul		0	0			
+663	0	7663	tarot	VIT/D→	1	128	362891,		- COMP - / VIT +5
+663	0	7663	soul		0	0			
+664	0	7664	tarot	INT/D→	1	128	362582,		- COMP - / INT +5
+664	0	7664	soul		0	0			
+665	0	7665	tarot	SPD/D→	1	128	362637,		- COMP - / SPD +5
+665	0	7665	soul		0	0			
+666	0	7666	tarot	LUC/D→	1	128	362574,		- COMP - / LUC +5
+666	0	7666	soul		0	0			
+667	0	7667	tarot	ATTACK -DMG/D→	1	128	30000,		- COMP - / Attack damage +5%
+667	0	7667	soul		0	0			
+668	0	7668	tarot	SPIN -DMG/D→	1	128	30012,		- COMP - / Spin damage +5%
+668	0	7668	soul		0	0			
+669	0	7669	tarot	RUSH -DMG/D→	1	128	30009,		- COMP - / Rush damage +5%
+669	0	7669	soul		0	0			
+670	0	7670	tarot	SHOT -DMG/D→	1	128	30003,		- COMP - / Shot damage +5% ※includes destruction magic
+670	0	7670	soul		0	0			
+671	0	7671	tarot	RAPID -DMG/D→	1	128	30006,		- COMP - / Rapid damage +5%
+671	0	7671	soul		0	0			
+672	0	7672	tarot	COUNTER -DMG/D→	1	128	30054,		- COMP - / Counter damage +25%
+672	0	7672	soul		0	0			
+673	0	7673	tarot	EDGE -DMG/D→	1	128	361519,		- COMP - / Slash-affinity damage +15%
+673	0	7673	soul		0	0			
+674	0	7674	tarot	LANCE -DMG/D→	1	128	361619,		- COMP - / Thrust-affinity damage +15%
+674	0	7674	soul		0	0			
+675	0	7675	tarot	KNUCKLE -DMG/D→	1	128	361569,		- COMP - / Blunt-affinity damage +15%
+675	0	7675	soul		0	0			
+676	0	7676	tarot	FLAME -DMG/D→	1	128	361819,		- COMP - / Fire-affinity damage +15%
+676	0	7676	soul		0	0			
+677	0	7677	tarot	FREEZE -DMG/D→	1	128	361869,		- COMP - / Ice-affinity damage +15%
+677	0	7677	soul		0	0			
+678	0	7678	tarot	THUNDER -DMG/D→	1	128	361919,		- COMP - / Electric-affinity damage +15%
+678	0	7678	soul		0	0			
+679	0	7679	tarot	AERO -DMG/D→	1	128	361969,		- COMP - / Force-affinity damage +15%
+679	0	7679	soul		0	0			
+680	0	7680	tarot	ALL -DMG/D→	1	128	362019,		- COMP - / Almighty-affinity damage +15%
+680	0	7680	soul		0	0			
+681	0	7681	tarot	HOLY -DMG/D→	1	128	362069,		- COMP - / Expel-affinity damage +15%
+681	0	7681	soul		0	0			
+682	0	7682	tarot	CURSE -DMG/D→	1	128	362119,		- COMP - / DEATH-affinity damage +15%
+682	0	7682	soul		0	0			
+683	0	7683	tarot	CURE -DMG/D→	1	128	20097,		- COMP - / Curative-based skill effects +15%
+683	0	7683	soul		0	0			
+684	0	7684	tarot	SUPPORT -DMG/D→	1	128	362219,		- COMP - / Support-affinity damage +15%
+684	0	7684	soul		0	0			
+685	0	7685	tarot	SPELL -DMG/D→	1	128	362269,		- COMP - / Mystic-affinity damage +15%
+685	0	7685	soul		0	0			
+686	0	7686	tarot	MIND -DMG/D→	1	128	362319,		- COMP - / Mind-affinity damage +15%
+686	0	7686	soul		0	0			
+687	0	7687	tarot	NERVE -DMG/D→	1	128	362369,		- COMP - / Nerve-affinity damage +15%
+687	0	7687	soul		0	0			
+688	0	7688	tarot	SHOOT -DMG/D→	1	128	361669,		- COMP - / Handgun-affinity damage +15%
+688	0	7688	soul		0	0			
+689	0	7689	tarot	SLUG -DMG/D→	1	128	361769,		- COMP - / Spread-affinity damage +15%
+689	0	7689	soul		0	0			
+690	0	7690	tarot	THROUGH -DMG/D→	1	128	361719,		- COMP - / Penetrate-affinity damage +15%
+690	0	7690	soul		0	0			
+691	0	8111	tarot	FIGHT/E→	1	128	363279,1040043,		- COMP - / Close-Range -30% / While Digitalized: Close-Range +60%
+691	0	8111	soul		0	0			
+692	0	8112	tarot	GUN/E→	1	128	363280,1040044,		- COMP - / Long-Range -30% / While Digitalized: Long-Range +60%
+692	0	8112	soul		0	0			
+693	0	8113	tarot	WIZAR/E→	1	128	363281,1040045,		- COMP - / Spell -30% / While Digitalized: Spell +60%
+693	0	8113	soul		0	0			
+694	0	8114	tarot	FIGHT/E・D→	1	128	141409,1050027,		- COMP - / Partner's Close-Range -30% / While Digitalized:  / Partner's Close-Range +60%
+694	0	8114	soul		0	0			
+695	0	8115	tarot	GUN/E・D→	1	128	141410,1050028,		- COMP - / Partner's Long-Range -30% / While Digitalized:  / Partner's Long-Range +60%
+695	0	8115	soul		0	0			
+696	0	8116	tarot	WIZAR/E・D→	1	128	141411,1050029,		- COMP - / Partner's Spell -30% / While Digitalized:  / Partner's Spell +60%
+696	0	8116	soul		0	0			
+697	0	8117	tarot	Dying Saint's 	75	16255	1040074,1040075,		While Digitalized:  / Almighty-affinity damage +2% / Close-Range Damage +2% / Long-Range Damage +2% / Magic Damage +2% / CRT +25 / Limit Break Chance +1% / Limit Break Power +3%
+697	0	8117	soul	 of Despair	85	8192	10100036,10100037,	0:1,0,>10100038,;	- Weapon - / On knockback, Destruction Ray, Arrow of Thunder / and Full Power have a chance of inflicting the Daze ailment.
+698	0	8118	tarot	Dying Hero's 	75	16255	1050036,1050037,		While Digitalized:  / Partner's  / Almighty-affinity damage +2% / Close-Range Damage +2% / Long-Range Damage +2% / Magic Damage +2% / CRT +25 / Limit Break Chance +1% / Limit Break Power +3%
+698	0	8118	soul	 of filfillent	85	8192	730099,		- Weapon - / Damage done by Destruction Ray, Arrow of Thunder / and Full Power +100%
+699	0	7691	tarot	PHYSICAL/D→	1	128			- COMP - / Nothing
+699	0	7691	soul		0	0			
+700	0	7692	tarot	MANA/D→	1	128			- COMP - / Nothing
+700	0	7692	soul		0	0			
+701	0	7693	tarot	WEAPON/D→	1	128	440245,		- COMP - / Weapon-based-affinity damage +3%
+701	0	7693	soul		0	0			
+702	0	7694	tarot	CRITICAL/D→	1	128	362780,		- COMP - / CRT +100
+702	0	7694	soul		0	0			
+703	0	7695	tarot	BREAKER/D→	1	128	362816,		- COMP - / Limit Break Power +3%
+703	0	7695	soul		0	0			
+704	0	7696	tarot	TECHNICAL/D→	1	128	870052,		- COMP - / Technical Attack Power +3%
+704	0	7696	soul		0	0			
+705	0	7697	tarot	APPROACHING/D→	1	128	362640,	1:97,0,>362641,;	- COMP - / Close-Range Damage +2% /  / If Level is 97 or above:  / Close-Range Damage +3%
+705	0	7697	soul		0	0			
+706	0	7698	tarot	SHOOTING/D→	1	128	362645,	1:97,0,>362646,;	- COMP - / Long-Range Damage +2% /  / If Level is 97 or above:  / Long-Range Damage +3%
+706	0	7698	soul		0	0			
+707	0	7699	tarot	CASTING/D→	1	128	362649,	1:97,0,>362650,;	- COMP - / Magic Damage +2% /  / If Level is 97 or above:  / Magic Damage +3%
+707	0	7699	soul		0	0			
+708	0	7702	tarot	AILMENT/D→	1	128	330126,		- COMP - / Chance to inflict all Ailments +20%
+708	0	7702	soul		0	0			
+801	0	7801	tarot		1	0			
+801	0	7801	soul	 of Aries	1	8	360150,		- Top - / Mystic Res +10 / Mystic-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+802	0	7802	tarot		1	0			
+802	0	7802	soul	 of Taurus	1	1	360141,		- Head - / Thrust Res +10 / Thrust-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+803	0	7803	tarot		1	0			
+803	0	7803	soul	 of Gemini	1	2048	360145,		- Back - / Mind Res +10 / Mind skill effect +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+804	0	7804	tarot		1	0			
+804	0	7804	soul	 of Cancer	1	4096	360146,		- Talisman - / Death res +10 / Death-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+805	0	7805	tarot		1	0			
+805	0	7805	soul	 of Leo	1	32	360121,		- Bottom - / ELC Res +10 / ELC-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+806	0	7806	tarot		1	0			
+806	0	7806	soul	 of Virgo	1	4	360147,		- Neck - / XPL Res +10 / Expel-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+807	0	7807	tarot		1	0			
+807	0	7807	soul	 of Libra	1	8192	360140,		- Weapon - / BLT Res +10 / Blunt-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+808	0	7808	tarot		1	0			
+808	0	7808	soul	 of Scorpio	1	512	360149,		- Earring - / PNT Res +10 / Penetrate skill effect +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+809	0	7809	tarot		1	0			
+809	0	7809	soul	 of Sagittarius	1	64	360148,		- Shoes - / Handgun Res +10 / Handgun skill effect +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+810	0	7810	tarot		1	0			
+810	0	7810	soul	 of Capricorn	1	16	360122,		- Arms - / SLA Res +10 / Slash-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+811	0	7811	tarot		1	0			
+811	0	7811	soul	 of Aquarius	1	1024	360120,		- Extra - / ICE Res +10 / Ice-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+812	0	7812	tarot		1	0			
+812	0	7812	soul	 of Pisces	1	2	360144,		- Face - / Nerve Res +10 / Nerve skill effect +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / All parameters +12 / XP, Expertise Points earned +12% / Null Blaze, Freeze, Electroshock,  / and Stun effects
+813	0	7813	tarot		1	0			
+813	0	7813	soul	 of Ophiuchus	1	256	360864,361974,		- Ring - / FRC Res +10 / Force-based skill effects +20% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of all 12 / zodiac signs are equipped at once: / With HP at 13% or below, weapon-based skill / effect +130%
+814	0	7814	tarot		1	0			
+814	0	7814	soul	 of Dubhe	1	16	360110,		- Arms - / STR +1, MAG +1, SPD +1, LUC -1
+815	0	7815	tarot		1	0			
+815	0	7815	soul	 of Merak	1	4	360110,		- Neck - / STR +1, MAG +1, SPD +1, LUC -1
+816	0	7816	tarot		1	0			
+816	0	7816	soul	 of Phecda	1	4096	360110,		- Talisman - / STR +1, MAG +1, SPD +1, LUC -1
+817	0	7817	tarot		1	0			
+817	0	7817	soul	 of Megrez	1	3	360110,		- Head, Face - / STR +1, MAG +1, SPD +1, LUC -1
+818	0	7818	tarot		1	0			
+818	0	7818	soul	 of Alioth	1	2048	360110,		- Back - / STR +1, MAG +1, SPD +1, LUC -1
+819	0	7819	tarot		1	0			
+819	0	7819	soul	 of Mitsar	1	8192	360110,		- Weapon - / STR +1, MAG +1, SPD +1, LUC -1
+820	0	7820	tarot		1	0			
+820	0	7820	soul	 of Alkaid	1	64	360110,		- Shoes - / STR +1, MAG +1, SPD +1, LUC -1
+821	0	7821	tarot		0	16255			
+821	0	7821	soul	@Light-Violating 	60	8192	362568,	1:60,0,>430884,;	- Weapon - / HP RGN -10 /  / If level is 60 or higher with / HP at 10% or below: / Almighty-based skill effects +30%
+822	0	7822	tarot		0	16255			
+822	0	7822	soul	@Light-Sealing　	60	8192	362568,	1:60,0,>430885,;	- Weapon - / HP RGN -10 /  / If level is 60 or higher with / HP at 10% or below: / Magic-based skill effects +30%
+823	0	7823	tarot		0	16255			
+823	0	7823	soul	@Light-Rending　	60	8192	362568,	1:60,0,>430886,;	- Weapon - / HP RGN -10 /  / If level is 60 or higher with / HP at 10% or below: / Blunt-based skill effects +30% / Slash-based skill effects +30% / Thrust-based skill effects +30%
+824	0	7824	tarot		0	16255			
+824	0	7824	soul	@Light-Launching　	60	8192	362568,	1:60,0,>430887,;	- Weapon - / HP RGN -10 /  / If level is 60 or higher with / HP at 10% or below: / Shot skill effect +30% / Spread skill effect +30% / Piercing skill effect +30%
+825	0	7825	tarot		0	16255			
+825	0	7825	soul		0	8192	362568,	1:0,0,>;	
+826	0	7826	tarot		0	16255			
+826	0	7826	soul		0	8192	362568,	1:0,0,>;	
+827	0	7827	tarot		0	16255			
+827	0	7827	soul	@Light-Damping　	40	8192	362568,	1:40,60,>430888,;	- Weapon - / HP RGN -10 /  / If level is between 40 and 60 with / HP at 30% or below: / Mind skill effect +30% / Nerve skill effect +30%
+828	0	7828	tarot		0	16255			
+828	0	7828	soul	@Light-Burning　	30	8192	362568,	1:30,50,>430889,;	- Weapon - / HP RGN -10 /  / If level is between 30 and 50 with / HP at 30% or below: / Fire-based skill effects +30%
+829	0	7829	tarot		0	16255			
+829	0	7829	soul	@Light-Piercing　	20	8192	362568,	1:20,30,>430890,;	- Weapon - / HP RGN -10 /  / If level is between 20 and 30 with / HP at 50% or below: / Blunt-based skill effects +30% / Slash-based skill effects +30% / Thrust-based skill effects +30%
+830	0	7830	tarot		0	16255			
+830	0	7830	soul	 	0	8192	362568,	1:0,0,>;	
+831	0	7865	tarot		1	0			
+831	0	7865	soul	@Fanatical　	1	8	362264,361174,		- Top - / +20% mystic affinity resists and / +10% mystic affinity boost.
+832	0	7866	tarot		1	0			
+832	0	7866	soul	 of the Liar	1	1	361614,360524,		- Head - / +10% Thrust damage. / +20% Thrust resistance.
+833	0	7867	tarot		1	0			
+833	0	7867	soul	 of the Criminal	1	2048	362314,361224,		- Back - / +10% mind-based damage. / +20% Mind resistance.
+834	0	7868	tarot		1	0			
+834	0	7868	soul	 of Vengeance	1	4096	362114,361024,		- Talisman - / +10% death-based damage. / +20% Death resistance.
+835	0	7869	tarot		1	0			
+835	0	7869	soul	 of Imitation	1	32	361914,360824,		- Bottom - / +10% electric-based damage. / +20% Electric resistance.
+836	0	7870	tarot		1	0			
+836	0	7870	soul	 of Disaster	1	4	362064,360974,		- Neck - / +10% expel-based damage. / +20% Expel resistance.
+837	0	7871	tarot		1	0			
+837	0	7871	soul	 of the Avenger	1	8192	361564,360474,		- Weapon - / +10% Blunt damage. / +20% Blunt resistance.
+838	0	7872	tarot		1	0			
+838	0	7872	soul	 of Surrender	1	512	361714,360624,		- Earring - / +10% Penetrate damage. / +20% Penetrate resistance.
+839	0	7873	tarot		1	0			
+839	0	7873	soul	 of Temptation	1	64	361664,360574,		- Shoes - / Handgun-based Skill Effects +10% / Handgun-based Resist +20%
+840	0	7874	tarot		1	0			
+840	0	7874	soul	 of Sin	1	16	361514,360424,		- Arms - / +10% Slash damage. / +20% Slash resistance.
+841	0	7875	tarot		1	0			
+841	0	7875	soul	 of Betrayal	1	1024	361864,360774,		- Extra - / +10% ice-based damage. / +20% Ice resistance.
+842	0	7876	tarot		1	0			
+842	0	7876	soul	 of the Faceless	1	2	362364,361274,		- Face - / +10% nerve-based damage. / +20% Nerve resistance.
+843	0	7877	tarot		1	0			
+843	0	7877	soul	 of the Apostate	1	256	361964,360874,		- Ring - / +10% force-based damage. / +20% Force resistance.
+844	0	7878	tarot		1	0			
+844	0	7878	soul	 of Sirius	30	2	362629,		- Face -  / Spell magic damage +10% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of  / the Great Winter Triangle are equipped: / XP earned +50% / Expertise Points earned +50%
+845	0	7879	tarot		1	0			
+845	0	7879	soul	 of Betelgeuse	30	8	362630,		- Top -  / Close-range damage +10% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of  / the Great Winter Triangle are equipped: / XP earned +50% / Expertise Points earned +50%
+846	0	7880	tarot		1	0			
+846	0	7880	soul	 of Procyon	30	32	362631,		- Bottom -  / Long-Range damage +10% /  / If all items obtained by using Soul / Stone Fusion on the Soul Stones of  / the Great Winter Triangle are equipped: / XP earned +50% / Expertise Points earned +50%
+847	0	7883	tarot		1	0			
+847	0	7883	soul	 of Pollux	30	1	362744,		- Head - / MAG +10 /   / All winter diamond except those  / of the Great Winter Triangle are equipped: Soul Stones / attached by Soul Stone Fusion are / equipped at the same time: / MAX HP +180 / MAX MP +180
+848	0	7884	tarot		1	0			
+848	0	7884	soul	 of Capella	30	64	362743,		- Shoes - / STR +10 /   / All winter diamond except those  / of the Great Winter Triangle are equipped: Soul Stones / attached by Soul Stone Fusion are / equipped at the same time: / MAX HP +180 / MAX MP +180
+849	0	7885	tarot		1	0			
+849	0	7885	soul	 of Aldebaran	30	2048	362778,		- Back - / VIT +10 /   / All winter diamond except those  / of the Great Winter Triangle are equipped: Soul Stones / attached by Soul Stone Fusion are / equipped at the same time: / MAX HP +180 / MAX MP +180
+850	0	7886	tarot		1	0			
+850	0	7886	soul	 of Rigel	30	16	362745,		- Arms - / SPD +10 /   / All winter diamond except those  / of the Great Winter Triangle are equipped: Soul Stones / attached by Soul Stone Fusion are / equipped at the same time: / MAX HP +180 / MAX MP +180
+851	0	7887	tarot		1	0			
+851	0	7887	soul	 of Deneb	30	8	362774,		- Top - / Status Ailment Resistance +30 /   / If items with each Soul Stones of the great triangle in summer / attached by Soul Stone Fusion are / equipped at the same time: / CLS-R damage LNG-R damage MAG damage +20%
+852	0	7888	tarot		1	0			
+852	0	7888	soul	 of Vega	30	256	360274,		- Ring -  / CRT +20 /   / If items with each Soul Stones of the great triangle in summer / attached by Soul Stone Fusion are / equipped at the same time: / CLS-R damage LNG-R damage MAG damage +20%
+853	0	7889	tarot		1	0			
+853	0	7889	soul	 of Altair	30	16	360354,		- Arms - / BLK CRT +20 /   / If items with each Soul Stones of the great triangle in summer / attached by Soul Stone Fusion are / equipped at the same time: / CLS-R damage LNG-R damage MAG damage +20%
+854	0	7890	tarot		1	0			
+854	0	7890	soul	 of Arcturus	30	1			- Head - / Effective only if worn items enchanted / by each of the spring diamond Soul Stones.   /   / When items with each Soul Stones of the spring diamond / attached by Soul Stone Fusion are / equipped at the same time: / Expertise Points earned +300%
+855	0	7891	tarot		1	0			
+855	0	7891	soul	 of Spica	30	256			- Ring -  / Effective only if worn items enchanted / by each of the spring diamond Soul Stones.   /   / When items with each Soul Stones of the spring diamond / attached by Soul Stone Fusion are / equipped at the same time: / Expertise Points earned +300%
+856	0	7892	tarot		1	0			
+856	0	7892	soul	 of Denebola	30	4			- Neck - / Effective only if worn items enchanted / by each of the spring diamond Soul Stones.   /   / When items with each Soul Stones of the spring diamond / attached by Soul Stone Fusion are / equipped at the same time: / Expertise Points earned +300%
+857	0	7893	tarot		1	0			
+857	0	7893	soul	 of Cor Caroli	30	512			- Earring -  / Effective only if worn items enchanted / by each of the spring diamond Soul Stones.   /   / When items with each Soul Stones of the spring diamond / attached by Soul Stone Fusion are / equipped at the same time: / Expertise Points earned +300%
+858	0	7894	tarot		1	0			
+858	0	7894	soul	 of Markab	30	4096	362731,		- Talisman - / XP +10% /   / When equipped alongside items Soul Fused with / all of the other members of the Great / Square of Pegasus, the following / effects are gained once: /   Party's XP Earned: +123%
+859	0	7895	tarot		1	0			
+859	0	7895	soul	 of Scheat	30	1024	362731,		- Extra - / XP +10% /   / When equipped alongside items Soul Fused with / all of the other members of the Great / Square of Pegasus, the following / effects are gained once: /   Party's XP Earned: +123%
+860	0	7896	tarot		1	0			
+860	0	7896	soul	 of Algenib	30	256	362731,		- Ring -  / XP +10% /   / When equipped alongside items Soul Fused with / all of the other members of the Great / Square of Pegasus, the following / effects are gained once: /   Party's XP Earned: +123%
+861	0	7897	tarot		1	0			
+861	0	7897	soul	 of Alpheratz	30	512	362731,		- Earring -  / XP +10% /   / When equipped alongside items Soul Fused with / all of the other members of the Great / Square of Pegasus, the following / effects are gained once: /   Party's XP Earned: +123%
+862	0	7898	tarot		1	0			
+862	0	7898	soul	 of Mercury	35	1024	141060,362928,		- Extra - / Partner's Ice Boost: +20% / Ice Resistance: -40% /   / When equipped alongside items Soul Fused with / Venus and Earth, the following effects are / gained once: /   Partner's Vitality: +15 /   Partner's Maximum HP: +300 /   Partner's HP Regeneration: +20
+863	0	7899	tarot		1	0			
+863	0	7899	soul	 of Venus	35	32	141061,362929,		- Bottom - / Partner's Electric Boost: +20% / Electric Resistance: -40% /  / When equipped alongside items Soul Fused with / Venus and Earth, the following effects are / gained once: /   Partner's Vitality: +15 /   Partner's Maximum HP: +300 /   Partner's HP Regeneration: +20
+864	0	7900	tarot		1	0			
+864	0	7900	soul	 of Earth	35	8192	141062,362930,		- Weapon - / Partner's Blunt Boost: +20% / Blunt Resistance: -40% /  / When equipped alongside items Soul Fused with / Venus and Earth, the following effects are / gained once: /   Partner's Vitality: +15 /   Partner's Maximum HP: +300 /   Partner's HP Regeneration: +20 /  / When equipped alongside an item Soul Fused with / the Moon, the following effects are gained / once: /   Partner's Melee/Ranged/Spell: +20
+865	0	7901	tarot		1	0			
+865	0	7901	soul	 of Moon	35	16	141063,362931,		- Arms - / Partner's Slash Boost: +20% / Slash Resistance: -40% /  / When equipped alongside an item Soul Fused with / Earth, the following effects are gained once: /   Partner's Melee/Ranged/Spell: +20
+866	0	7902	tarot		1	0			
+866	0	7902	soul	 of Mars	35	2	141064,362932,		- Face - / Partner's Fire Boost: +20% / Fire Resistance: -40% /  / When equipped alongside items Soul Fused with / both Jupiter and Saturn, the following / effects are gained once: /   Partner's Magic/Speed: +10 /   Partner's Vitality/Intelligence/Luck: +10
+867	0	7903	tarot		1	0			
+867	0	7903	soul	 of Jupiter	35	2048	141065,362933,		- Back - / Partner's Force Boost: +20% / Force Resistance: -40% /  / When equipped alongside items Soul Fused with / both Mars and Saturn, the following / effects are gained once: /   Partner's Magic/Speed: +10 /   Partner's Vitality/Intelligence/Luck: +10
+868	0	7904	tarot		1	0			
+868	0	7904	soul	 of Saturn	35	1	141066,362934,		- Head - / Partner's Thrust Boost: +20% / Thrust Resistance: -40% /  / When equipped alongside items Soul Fused with / both Mars and Jupiter, the following / effects are gained once: /   Partner's Magic/Speed: +10 /   Partner's Vitality/Intelligence/Luck: +10
+869	0	7905	tarot		1	0			
+869	0	7905	soul	 of Uranus	35	4	141067,362935,		- Neck - / Partner's Expel Boost: +20% / Expel Resistance: -40% /  / When equipped alongside items Soul Fused with / both Neptune and Pluto, the following / effects are gained once: /   Partner's Intelligence: +15 /   Partner's Maximum MP: +50 /   Partner's MP Regeneration +20
+870	0	7906	tarot		1	0			
+870	0	7906	soul	 of Neptune	35	8	141068,362936,		- Top - / Partner's Mystic Boost: +20% / Mystic Resistance: -40% /  / When equipped alongside items Soul Fused with / both Uranus and Pluto, the following / effects are gained once: /   Partner's Intelligence: +15 /   Partner's Maximum MP: +50 /   Partner's MP Regeneration +20
+871	0	7907	tarot		1	0			
+871	0	7907	soul	 of Pluto	35	4096	141069,362937,		- Talisman - / Partner's Death Boost: +20% / Death Resistance: -40% /  / When equipped alongside items Soul Fused with / both Uranus and Pluto, the following / effects are gained once: /   Partner's Intelligence: +15 /   Partner's Maximum MP: +50 /   Partner's MP Regeneration +20
+872	0	7908	tarot		1	0			
+872	0	7908	soul	 of Regulus	35	512	141102,141103,		- Earring -  / Partner's Almighty Boost: +20% / Partner's Close-Range, Long-Range, and Magic / Damage Taken: +200% /  / When equipped alongside items Soul Fused with / both Antares and Fomalhaut, the following / effects are gained once: /   XP Earned: -50% /   Partner's XP Earned: +50%
+873	0	7909	tarot		1	0			
+873	0	7909	soul	　of Formalhaut	35	4	141129,141103,		- Neck - / Partner's Almighty Boost: +10% / Partner's Close-Range, Long-Range, and Magic / Damage Taken: +200% /  / When equipped alongside items Soul Fused with / both Regulus and Antares, the following / effects are gained once: /   XP Earned: -50% /   Partner's XP Earned: +50%
+874	0	7910	tarot		1	0			
+874	0	7910	soul	 of Zeta Andromedae	40	16	30023,362970,		- Arm - / Spin Boost: +15% / Close-Range, Long-Range and Magic Damage Taken: +20%
+875	0	7911	tarot		1	0			
+875	0	7911	soul	 of Sheratan	40	2	30021,362970,		- Face - / Rapid Boost: +15% / Close-Range, Long-Range and Magic Damage Taken: +20%
+876	0	7912	tarot		1	0			
+876	0	7912	soul	 of 35 Arietis	40	2048	30022,362970,		- Back - / Rush Boost: +15% / Close-Range, Long-Range and Magic Damage Taken: +20%
+877	0	7913	tarot		1	0			
+877	0	7913	soul	 of Electra	40	4	30024,362970,		- Neck - / Shot Boost: +15% ※Includes Destruction Magic / Close-Range, Long-Range and Magic Damage Taken: +20%
+878	0	7914	tarot		1	0			
+878	0	7914	soul	 of Ain	40	64	30020,362970,		- Shoes - / Attack Boost: +10% / Close-Range, Long-Range and Magic Damage Taken: +20%
+879	0	7915	tarot		1	0			
+879	0	7915	soul	 of Meissa	40	512	20097,362970,		- Earring - / Curative Boost: +15% / Close-Range, Long-Range and Magic Damage Taken: +20%
+880	0	7916	tarot		1	0			
+880	0	7916	soul	 of Mintaka	40	256	30052,362970,		- Ring - / Counter Boost: +15% / Close-Range, Long-Range and Magic Damage Taken: +20%
+881	0	7957	tarot		1	0			
+881	0	7957	soul	 of Glad Star	1	1024	363073,141191,		- Extra - / Ice Resistance: -10% / Partner's Ice Resistance: +20% /  / When equipped alongside items Soul Fused with / both Angry Star and Sad Star, the following / effects are gained once: /   Partner's Maximum HP: +150 /   Partner's Maximum MP: +25 /   Partner's Ailment Resistance: +10
+882	0	7958	tarot		1	0			
+882	0	7958	soul	 of Angry Star	1	32	363074,141192,		- Bottom - / Electric Resistance: -10% / Partner's Electric Resistance: +20% /  / When equipped alongside items Soul Fused with / both Glad Star and Sad Star, the following / effects are gained once: /   Partner's Maximum HP: +150 /   Partner's Maximum MP: +25 /   Partner's Ailment Resistance: +10
+883	0	7959	tarot		1	0			
+883	0	7959	soul	 of Sad Star	1	64	363075,141193,		- Shoes - / Almighty Resistance: -10% / Partner's Almighty Resistance: +5% /  / When equipped alongside items Soul Fused with / both Glad Star and Angry Star, the following / effects are gained once: /   Partner's Maximum HP: +150 /   Partner's Maximum MP: +25 /   Partner's Ailment Resistance: +10
+884	0	7960	tarot		1	0			
+884	0	7960	soul	 of Happy Star	1	2	363076,141189,		- Face - / Fire Resistance: -10% / Partner's Fire Resistance: +20% /  / When equipped alongside items Soul Fused with / both Love Star and Hate Star, the following / effects are gained once: /   Partner's Physical/Magic Defense: +5 /   Partner's Critical Defense: +30 /   Partner's Ailment Resistance: +10
+885	0	7961	tarot		1	0			
+885	0	7961	soul	 of Love Star	1	2048	363077,141190,		- Back - / Force Resistance: -10% / Partner's Force Resistance: +20% /  / When equipped alongside items Soul Fused with / both Happy Star and Hate Star, the following / effects are gained once: /   Partner's Physical/Magic Defense: +5 /   Partner's Critical Defense: +30 /   Partner's Ailment Resistance: +10]
+886	0	7962	tarot		1	0			
+886	0	7962	soul	 of Hate Star	1	1	363078,141194,		- Head - / Thrust Resistance: -10% / Partner's Thrust Resistance: +20% /  / When equipped alongside items Soul Fused with / both Happy Star and Hate Star, the following / effects are gained once: /   Partner's Physical/Magic Defense: +5 /   Partner's Critical Defense: +30 /   Partner's Ailment Resistance: +10
+887	0	7967	tarot		0	0			
+887	0	7967	soul	 of Krios	65	1	362743,141220,		- Head - / STR +10 / Partner's VIT +5 /  / With Confidence and Adventure: / Lv*0.25% Chance to Fire Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Fire Absorb /  / If Partner's Friendship is Linked by Fate: / Fire-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Fire-affinity damage +20%
+888	0	7968	tarot		0	0			
+888	0	7968	soul	 of Leon	65	2048	362745,140807,		- Back - / SPD +10 / Partner's LUC +5 /  / With Roughness and Adventure: / Lv*0.25% Chance to Fire Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Fire Absorb /  / If Partner's Friendship is Linked by Fate: / Fire-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Fire-affinity damage +20%
+889	0	7969	tarot		0	0			
+889	0	7969	soul	 of Toxotes	65	4096	362744,140824,		- Talisman - / MAG +10 / Partner's INT +5 /  / With Roughness and Confidence: / Lv*0.25% Chance to Fire Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Fire Absorb /  / If Partner's Friendship is Linked by Fate: / Fire-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Fire-affinity damage +20%
+890	0	7970	tarot		0	0			
+890	0	7970	soul	 of Taurus	65	2	362579,141221,		- Face - / LUC +10 / Partner's SPD +5 /  / With Analysis and Ego: / Lv*0.25% Chance to Electric Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Electric Absorb /  / If Partner's Friendship is Linked by Fate: / Electric-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Electric-affinity damage +20%
+891	0	7971	tarot		0	0			
+891	0	7971	soul	 of Parthenos	65	8	362587,141222,		- Top - / INT +10 / Partner's MAG +5 /  / With Maintenance and Ego: / Lv*0.25% Chance to Electric Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Electric Absorb /  / If Partner's Friendship is Linked by Fate: / Electric-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Electric-affinity damage +20%
+892	0	7972	tarot		0	0			
+892	0	7972	soul	 of Aigokeros	65	512	362778,141223,		- Earring - / VIT +10 / Partner's STR +5 /  / With Maintenance and Analysis: / Lv*0.25% Chance to Electric Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Electric Absorb /  / If Partner's Friendship is Linked by Fate: / Electric-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Electric-affinity damage +20%
+893	0	7973	tarot		0	0			
+893	0	7973	soul	 of Didymoi	65	16	360169,140829,		- Arm - / MAG +5 / Partner's INT +10 /  / With Cleverness and Creativity: / Lv*0.25% Chance to Force Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Force Absorb /  / If Partner's Friendship is Linked by Fate: / Force-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Force-affinity damage +20%
+894	0	7974	tarot		0	0			
+894	0	7974	soul	 of Zygos	65	32	362637,140812,		- Bottom - / SPD +5 / Partner's LUC +10 /  / With Sensitivity and Creativity: / Lv*0.25% Chance to Force Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Force Absorb /  / If Partner's Friendship is Linked by Fate: / Force-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Force-affinity damage +20%
+895	0	7975	tarot		0	0			
+895	0	7975	soul	 of Ydrohoos	65	256	360165,141224,		- Ring - / STR +5 / Partner's VIT +10 /  / With Sensitivity and Cleverness: / Lv*0.25% Chance to Force Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Force Absorb /  / If Partner's Friendship is Linked by Fate: / Force-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Force-affinity damage +20%
+896	0	7976	tarot		0	0			
+896	0	7976	soul	 of Karkinos	65	4	362582,141225,		- Neck - / INT +5 / Partner's MAG +10 /  / With Passion and Sympathy: / Lv*0.25% Chance to Ice Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Ice Absorb /  / If Partner's Friendship is Linked by Fate: / Ice-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Ice-affinity damage +20%
+897	0	7977	tarot		0	0			
+897	0	7977	soul	 of Skorpios	65	1024	362891,141226,		- Extra - / VIT +5 / Partner's STR +10 /  / With Inner Peace and Sympathy: / Lv*0.25% Chance to Ice Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Ice Absorb /  / If Partner's Friendship is Linked by Fate: / Ice-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Ice-affinity damage +20%
+898	0	7978	tarot		0	0			
+898	0	7978	soul	 of Ihtheis	65	64	362574,141227,		- Shoes - / LUC +5 / Partner's SPD +10 /  / With Inner Peace and Passion: / Lv*0.25% Chance to Ice Absorb /  / Partner's Lv*0.25% Chance to 、 / Partner's Ice Absorb /  / If Partner's Friendship is Linked by Fate: / Ice-affinity damage +20% /  / If Partner's Friendship is Linked by Fate: / Partner's Ice-affinity damage +20%
+900	0	7831	tarot	Sublime 	1	16255			Resonate with one's equipment and handle it / with ease.
+900	0	7831	soul	@Sublime 	1	16255			- Overall - / Resonate with and merge into one's / equipment.
+901	0	7855	tarot		1	0			
+901	0	7855	soul	@Inconspicuous 	1	8192			- Weapon - / You are attempting to alter the appearance of your / weapon, but you seem to be lacking something.
+902	0	7929	tarot		1	0			
+902	0	7929	soul	 of Egoist	10	16	300195,		- Arm - / Player gains Gene Elimination Skill
+903	0	7930	tarot		1	0			
+903	0	7930	soul	 of Egoist	20	16	300195,730012,		- Arm - / Player gains Gene Elimination Skill / 『Gene Elimination』 damage +10%
+904	0	7931	tarot		1	0			
+904	0	7931	soul	 オブ エゴイスト	30	16	300195,730013,	1:1,0,>360259,;	- Arm - / Player gains Gene Elimination Skill / 『Gene Elimination』 damage +25% / CRT +5
+905	0	7932	tarot		1	0			
+905	0	7932	soul	 オブ エゴイスト	40	16	300195,730014,	1:1,0,>360264,;	- Arm - / Player gains Gene Elimination Skill / 『Gene Elimination』 damage +50% / CRT +10
+906	0	7983	tarot		1	0			
+906	0	7983	soul	@Water-Coalescing 	95	512		10:99,0,>360184,;	- Earring - / If Strength > 98: Close-Range +10 /  / When equipped alongside items Soul Fused with / both Black Earth and Blue Wood: / Close-Range Damage +5% / Critical +20 / Limit Break Power +5%
+907	0	7986	tarot		1	0			
+907	0	7986	soul	@Wind-Coalescing 	95	512		14:99,0,>360204,;	- Earring - / If Speed > 98: Long-Range +10 /  / When equipped alongside items Soul Fused with / both Yellow Earth and White Metal: / Long-Range +5% / Critical +20 / Limit Break Power +5%
+908	0	7989	tarot		1	0			
+908	0	7989	soul	@Speech-Coalescing 	95	512		11:99,0,>360224,;	- Earring - / If Magic > 98: Spell +10 /  / When equipped alongside items Soul Fused with / both White Earth and Purple Fire: / Spell Damage +5% / Critical +20 / Limit Break Power +5%
+909	0	7984	tarot		1	0			
+909	0	7984	soul	@Earth-Coalescing 	95	4096	362743,362778,		- Talisman - / Strength +10 Vitality +10 /  / When equipped alongside items Soul Fused with / both White Water and Blue Wood: / Close-Range Damage +5% / Critical +20 / Limit Break Power +5%
+910	0	7987	tarot		1	0			
+910	0	7987	soul	@Center-Coalescing 	95	4096	362745,362579,		- Talisman - / Speed +10 Luck +10 /  / When equipped alongside items Soul Fused with / both Green Wood and White Metal: / Long-Range Damage +5% / Critical +20 / Limit Break Power +5%
+911	0	7990	tarot		1	0			
+911	0	7990	soul	@Mountain-Coalescing 	95	4096	362744,362587,		- Talisman - / Magic +10 Intelligence +10 /  / When equipped alongside items Soul Fused with / both Red Metal and Purple Fire: / Spell Damage +5% / Critical +20 / Limit Break Power +5%
+912	0	7985	tarot		1	0			
+912	0	7985	soul	@Thunder-Coalescing 	95	1024	362562,361514,	1:1,0,>361564,361614,;	- Extra - / Slash、Thrust、Blunt Damage +10% / Max HP -100 /  / When equipped alongside items Soul Fused with / both White Water and Black Earth: / Close-Range Damage +5% / Critical +20 / Limit Break Power +5%
+913	0	7988	tarot		1	0			
+913	0	7988	soul	@Heaven-Coalescing 	95	1024	362562,361664,	1:1,0,>361714,361764,;	- Extra - / Handgun、Penetrate、Spread Damage +10% / Max HP -100 /  / When equipped alongside items Soul Fused with / both Green Wood and Yellow Earth: / Long-Range Damage +5% / Critical +20 / Limit Break Power +5%
+914	0	7991	tarot		1	0			
+914	0	7991	soul	@Fire-Coalescing 	95	1024	362562,363136,		- Extra - / Fire、Ice、Electric、Force Damage +10% / Max HP -100 /  / When equipped alongside items Soul Fused with / both Red Metal and White Earth: / Spell Damage +5% / Critical +20 / Limit Break Power +5%
+915	0	8104	tarot		1	0			
+915	0	8104	soul	@Wandering 	80	1	560070,560071,		- Head - / Attack damage +Lv*0.05% / Spin damage +Lv*0.05% / Rapid damage +Lv*0.05% / Shot damage +Lv*0.05% / ※includes destruction magic
+916	0	8103	tarot		1	0			
+916	0	8103	soul	@Wandering 	80	2	360314,360334,		- Face - / Physical Defense +20 / Magic Defense +20
+917	0	8102	tarot		1	0			
+917	0	8102	soul	@Wandering 	80	4	140615,		- Neck - / Partner's MAX HP +100
+918	0	8101	tarot		1	0			
+918	0	8101	soul	@Wandering 	80	8	362965,		- Top - / Close-Range, Long-Range and Magic damage -10%
+919	0	8100	tarot		1	0			
+919	0	8100	soul	@Wandering 	80	16	141289,750041,		- Arm - / Partner's CLS-R, LNG-R, SPELL +8 / If Partner's Friendship is Linked by Fate: /  Partner's Close-Range, Long-Range, Magic damage +12%
+920	0	7999	tarot		1	0			
+920	0	7999	soul	@Wandering 	80	64	141311,		- Shoes - / Partner's  /  Final Critical Rate +3%
+921	0	7998	tarot		1	0			
+921	0	7998	soul	@Wandering 	80	2048	140715,		- Back - / Partner's MAX MP +100
+922	0	7997	tarot		1	0			
+922	0	7997	soul	@Wandering 	80	512	141311,		- Earring - / Partner's  /  Final Critical Rate +3%
+923	0	7996	tarot		1	0			
+923	0	7996	soul	@Wandering 	80	4096	140843,		- Talisman - / Partner's Experience earned +50%
+924	0	7995	tarot		1	0			
+924	0	7995	soul	@Wandering 	80	8192	141289,750041,		- Weapon - / Partner's CLS-R, LNG-R, SPELL +8 / If Partner's Friendship is Linked by Fate: /  Partner's Close-Range, Long-Range, Magic damage +12%
+925	0	8109	tarot		1	0			
+925	0	8109	soul	 of Sacrifice	40	4	1030008,140779,	1:1,0,>363049,;	- Neck - / Digitalize Points earned +15% / Close-Range, Long-Range, Magic damage +5% / Partner's Close-Range, Long-Range, Magic damage +5%
+951	0	7917	tarot		1	0			
+951	0	7917	soul	@紫微垣之零	1	8	360175,150141,		- Top - / Close-Range +1 / Party Member's Close-Range +3 / ※Must be in the same area /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+952	0	7918	tarot		1	0			
+952	0	7918	soul	@太微垣之零	1	8	360195,150151,		- Top - / Long-Range +1 / Party Member's Long-Range +3 / ※Must be in the same area /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+953	0	7919	tarot		1	0			
+953	0	7919	soul	@天市垣之零	1	8	362996,150236,		- Top - / Spell +1 Support +1 / Party Member's  / Spell +3 Support +3 / ※Must be in the same area /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+954	0	7920	tarot		1	0			
+954	0	7920	soul	@紫微垣之壱	1	32	360175,150237,		- Bottom - / Close-Range +1 / Party Member's Close-Range +3% / ※Must be in the same area /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+955	0	7921	tarot		1	0			
+955	0	7921	soul	@太微垣之壱	1	32	360195,150238,		- Bottom - / Long-Range +1 / Party Member's Long-Range +3% / ※Must be in the same area /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+956	0	7922	tarot		1	0			
+956	0	7922	soul	@天市垣之壱	1	32	362996,150239,		- Bottom - / Spell +1 Support +1 / Party Member's  / Spell +3% / ※Must be in the same area /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+957	0	7923	tarot		1	0			
+957	0	7923	soul	@紫微垣之弐	1	64	360022,150272,		- Shoes - / STR +1 / Party Member's CRT +10 / ※Must be in the same area /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+958	0	7924	tarot		1	0			
+958	0	7924	soul	@太微垣之弐	1	64	360025,150272,		- Shoes - / SPD +1 / Party Member's CRT +10 / ※Must be in the same area /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+959	0	7925	tarot		1	0			
+959	0	7925	soul	@天市垣之弐	1	64	360100,150272,		- Shoes - / MAG +1 INT +1 / Party Member's CRT +10 / ※Must be in the same area /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+960	0	7926	tarot		1	0			
+960	0	7926	soul	@紫微垣之参	1	1	360022,560000,		- Head - / STR +1 / Attack damage +Lv*0.1% /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+961	0	7927	tarot		1	0			
+961	0	7927	soul	@太微垣之参	1	1	360025,560027,		- Head - / SPD +1 / Shot damage +Lv*0.1% / ※includes destruction magic /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+962	0	7928	tarot		1	0			
+962	0	7928	soul	@天市垣之参	1	1	360100,560027,		- Head - / MAG +1 INT +1 / Shot damage +Lv*0.1% / ※includes destruction magic /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+963	0	7933	tarot		1	0			
+963	0	7933	soul	@紫微垣之肆	1	16	360022,560009,		- Arm - / STR +1 / Rush damage +Lv*0.1% /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+964	0	7934	tarot		1	0			
+964	0	7934	soul	@太微垣之肆	1	16	360025,560036,		- Arm - / SPD +1 / Rapid damage +Lv*0.1% /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+965	0	7935	tarot		1	0			
+965	0	7935	soul	@天市垣之肆	1	16	360100,570207,		- Arm - / MAG +1 INT +1 / Curative-based skill effects +Lv*0.1% /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+966	0	7936	tarot		1	0			
+966	0	7936	soul	@紫微垣之伍	1	2048	360022,150020,		- Back - / STR +1 / Party Member's STR +3 / ※Must be in the same area /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+967	0	7937	tarot		1	0			
+967	0	7937	soul	@太微垣之伍	1	2048	360025,150024,		- Back - / SPD +1 / Party Member's SPD +3 / ※Must be in the same area /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+968	0	7938	tarot		1	0			
+968	0	7938	soul	@天市垣之伍	1	2048	360100,150274,		- Back - / MAG +1 INT +1 / Party Member's MAG +3 INT +3 / ※Must be in the same area /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+969	0	7939	tarot		1	0			
+969	0	7939	soul	@紫微垣之陸	1	2	360022,560018,		- Face - / STR +1 / Spin damage +Lv*0.1% /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+970	0	7940	tarot		1	0			
+970	0	7940	soul	@太微垣之陸	1	2	360025,630009,		- Face - / SPD +1 / Chance to inflict all Ailments +Lv*0.1% /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+971	0	7941	tarot		1	0			
+971	0	7941	soul	@天市垣之陸	1	2	360100,630009,		- Face - / MAG +1 INT +1 / Chance to inflict all Ailments +Lv*0.1% /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+972	0	7942	tarot		1	0			
+972	0	7942	soul	@紫微垣之漆	1	4	360022,150025,		- Neck - / STR +1 / Party Member's LUC +3 / ※Must be in the same area /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+973	0	7943	tarot		1	0			
+973	0	7943	soul	@太微垣之漆	1	4	360025,150025,		- Neck - / SPD +1 / Party Member's LUC +3 / ※Must be in the same area /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+974	0	7944	tarot		1	0			
+974	0	7944	soul	@天市垣之漆	1	4	360100,150025,		- Neck - / MAG +1 INT +1 / Party Member's LUC +3 / ※Must be in the same area /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+975	0	7945	tarot		1	0			
+975	0	7945	soul	@紫微垣之捌	1	4096	360022,440245,		- Talisman - / STR +1 / Weapon-based-affinity damage +3% /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+976	0	7946	tarot		1	0			
+976	0	7946	soul	@太微垣之捌	1	4096	360025,440245,		- Talisman - / SPD +1 / Weapon-based-affinity damage +3% /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+977	0	7947	tarot		1	0			
+977	0	7947	soul	@天市垣之捌	1	4096	360100,362007,		- Talisman - / MAG +1 INT +1 / Almighty-affinity damage +3% /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+978	0	7948	tarot		1	0			
+978	0	7948	soul	@紫微垣之玖	1	256	360022,150277,		- Ring - / STR +1 / Party Member's  / Fire-affinity・Ice-affinity damage +4% / ※Must be in the same area /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+979	0	7949	tarot		1	0			
+979	0	7949	soul	@太微垣之玖	1	256	360025,150277,		- Ring - / SPD +1 / Party Member's  / Fire-affinity・Ice-affinity damage +4% / ※Must be in the same area /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+980	0	7950	tarot		1	0			
+980	0	7950	soul	@天市垣之玖	1	256	360100,150277,		- Ring - / MAG +1 INT +1 / Party Member's  / Fire-affinity・Ice-affinity damage +4% / ※Must be in the same area /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+981	0	7951	tarot		1	0			
+981	0	7951	soul	@紫微垣之拾	1	512	360022,150278,		- Earring - / STR +1 / Party Member's  / Electric-affinity・Force-affinity damage +4% / ※Must be in the same area /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+982	0	7952	tarot		1	0			
+982	0	7952	soul	@太微垣之拾	1	512	360025,150278,		- Earring - / SPD +1 / Party Member's  / Electric-affinity・Force-affinity damage +4% / ※Must be in the same area /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+983	0	7953	tarot		1	0			
+983	0	7953	soul	@天市垣之拾	1	512	360100,150278,		- Earring - / MAG +1 INT +1 / Party Member's  / Electric-affinity・Force-affinity damage +4% / ※Must be in the same area /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+984	0	7954	tarot		1	0			
+984	0	7954	soul	@紫微垣之結	1	1024	360022,362818,	0:0,0,>140983,;	- Extra - / STR +1 / Limit Break Power +5% / Partner's Limit Break Power +5% /  / 紫微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Close-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+985	0	7955	tarot		1	0			
+985	0	7955	soul	@太微垣之結	1	1024	360025,362818,	0:0,0,>140983,;	- Extra - / SPD +1 / Limit Break Power +5% / Partner's Limit Break Power +5% /  / 太微垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Long-Range +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+986	0	7956	tarot		1	0			
+986	0	7956	soul	@天市垣之結	1	1024	360100,362818,	0:0,0,>140983,;	- Extra - / MAG +1 INT +1 / Limit Break Power +5% / Partner's Limit Break Power +5% /  / 天市垣それぞれの魂合石が / 魂合術によって施されたアイテムを / 全て同時に装備すると、 / Limit Break Chance +20% / Spell +30% / All Skill Stack +1 / Partner's  / Limit Break Chance +20%
+987	0	7965	tarot		1	0			
+987	0	7965	soul	 of Bella	40	1024	361814,360724,		- Extra - / Fire-affinity damage +10% / Fire resistance +20%
+988	0	7966	tarot		1	0			
+988	0	7966	soul	 of Corvus	40	1024	361824,360714,		- Extra - / Fire-affinity damage +20% / Fire resistance +10%
+989	0	7964	tarot		1	0			
+989	0	7964	soul	 of Antares	35	4096	141102,141216,		- Talisman - / Partner's Almighty-affinity damage +20% /  / Partner's Close-Range, Long-Range and / Magic damage taken +100% /  / 軒轅十四、北落師門の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると / Experience earned -50% / Partner's Experience earned +50%
+990	0	7979	tarot		0	0			
+990	0	7979	soul	@Star Mansion's 	1	512	140007,360182,		- Earring - / Close-Range +8 / Partner's Close-Range +8 /  / 天相、軒轅、内平の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると / STR・MAG・VIT・INT・SPD・LUC +15 / Partner's  / STR・MAG・VIT・INT・SPD・LUC +15
+991	0	7980	tarot		0	0			
+991	0	7980	soul	@天相の	1	256	140107,360202,		- Ring - / Long-Range +8 / Partner's Long-Range +8 /  / 星宿、軒轅、内平の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると / STR・MAG・VIT・INT・SPD・LUC +15 / Partner's  / STR・MAG・VIT・INT・SPD・LUC +15
+992	0	7981	tarot		0	0			
+992	0	7981	soul	@軒轅の	1	4	140207,360222,		- Neck - / Spell +8 / Partner's Spell +8 /  / 星宿、天相、内平の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると / STR・MAG・VIT・INT・SPD・LUC +15 / Partner's  / STR・MAG・VIT・INT・SPD・LUC +15
+993	0	7982	tarot		0	0			
+993	0	7982	soul	@内平の	1	4096	140307,360242,		- Talisman - / Support +8 / Partner's Support +8 /  / 星宿、天相、軒轅の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると / STR・MAG・VIT・INT・SPD・LUC +15 / Partner's  / STR・MAG・VIT・INT・SPD・LUC +15
+994	0	8105	tarot		0	0			
+994	0	8105	soul	 of Sunshine	30	128	363121,	135:80,0,>880029,;	- COMP - / Close-Range, Long-Range, Magic damage +10% / if Pursuit is Class 8 or above:  / Pursuit Power +10% / ※Pursuit Power Cap is 100%
+995	0	8106	tarot		0	0			
+995	0	8106	soul	 of Moonlight	30	128	140780,	118:60,0,>940001,;	- COMP - / Partner's  / Close-Range, Long-Range, Magic damage +10% /  / If Demonology is Class 6 or above:  / Partner's Experience earned +50%
+996	0	8000	tarot		0	0			
+996	0	8000	soul	 of Clear Sky	1	128	870045,970043,		- COMP - / Technical Attack Chance +3% / Technical Attack Power +5% /  / Partner's Technical Attack Chance +3% / Partner's Technical Attack Power +5%
+997	0	8110	tarot		0	0			
+997	0	8110	soul	 of Hazy Moon	85	16383	1040088,1120002,		- All (except bullets) - / Limit Break Cap +300 / While Digitalized: Limit Break Chance +5%
+1000	0	7832	tarot		0	16255			
+1000	0	7832	soul	@Transfiguring 	1	8192			- Weapon - / "Steelslicer" gains a new power, / but it cannot be used on its own.
+1001	0	7833	tarot		0	16255			
+1001	0	7833	soul	@Transfiguring 	1	8192			- Weapon - / "Benediction" gains a new power, / but it cannot be used on its own.
+1002	0	7834	tarot		0	16255			
+1002	0	7834	soul	@Transfiguring 	1	8192			- Weapon - / "Spear of Mangus" gains a new / power, but it cannot be used on its / own.
+1003	0	7835	tarot		0	16255			
+1003	0	7835	soul	@Transfiguring 	1	8192			- Weapon - / "Jiabo" gains a new power, / but it cannot be used on its own.
+1004	0	7836	tarot		0	16255			
+1004	0	7836	soul	@Transfiguring 	1	8192			- Weapon - / "Hitentaisei" gains a new power, / but it cannot be used on its own.
+1005	0	7837	tarot		0	16255			
+1005	0	7837	soul	@Transfiguring 	1	8192			- Weapon - / "Kamudonotsurugi" gains a new power, / but it cannot be used on its own.
+1006	0	7838	tarot		0	16255			
+1006	0	7838	soul	@Transfiguring 	1	8192			- Weapon - / "Sei Ichijo" gains a new power, but / it cannot be used on its own.
+1007	0	7839	tarot		0	16255			
+1007	0	7839	soul	@Transfiguring 	1	8192			- Weapon - / "Reaper's Colt" gains a new power, / but it cannot be used on its own.
+1008	0	7840	tarot		0	16255			
+1008	0	7840	soul	@Transfiguring 	1	8192			- Weapon - / "Crystal Sword" gains a new power, / but it cannot be used on its own.
+1009	0	7841	tarot		0	16255			
+1009	0	7841	soul	@Transfiguring 	1	8192			- Weapon - / "Emperor Sword" gains a new / power, but it cannot be used on its / own.
+1010	0	7842	tarot		0	16255			
+1010	0	7842	soul	@Transfiguring 	1	8192			- Weapon - / "Sol Blade" gains a new power, but / it cannot be used on its own.
+1011	0	7843	tarot		0	16255			
+1011	0	7843	soul	@Transfiguring 	1	8192			- Weapon - / "Lunar Blade" gains a new power, but / it cannot be used on its own.
+1012	0	7844	tarot		0	16255			
+1012	0	7844	soul	@Transfiguring 	1	8192			- Weapon - / "Fan of Exorcism" gains a new power, / but it cannot be used on its own.
+1013	0	7845	tarot		0	16255			
+1013	0	7845	soul	@Transfiguring 	1	8192			- Weapon - / "Valhalla Sword" gains a new power, / but it cannot be used on its own. / * Independent of the type of /   Valhalla Sword
+1014	0	7846	tarot		0	16255			
+1014	0	7846	soul	@Transfiguring 	1	8192			- Weapon - / "Hyoshito" gains a new power, but / it cannot be used on its own.
+1015	0	7847	tarot		0	16255			
+1015	0	7847	soul	@Transfiguring 	1	8192			- Weapon - / "Headhunter Spoon" gains a new / power, but it cannot be used on its / own.
+1016	0	7848	tarot		0	16255			
+1016	0	7848	soul	@Transfiguring 	1	8192			- Weapon - / "Axe of Pluto" gains a new power, / but it cannot be used on its own.
+1017	0	7849	tarot		0	16255			
+1017	0	7849	soul	@Transfiguring 	1	8192			- Weapon - / "Ka-Osho" gains a new power, but it / cannot be used on its own.
+1018	0	7850	tarot		0	16255			
+1018	0	7850	soul	@Transfiguring 	1	8192			- Weapon - / "Ogre Thunder" gains a new power, but it / cannot be used on its own.
+1019	0	7851	tarot		0	16255			
+1019	0	7851	soul	@Transfiguring 	1	8192			- Weapon - / "Crimson Dust of Death" and / "Scarlet Electric Lancer" gain a / new power, but it cannot be used on / its own.
+1020	0	7852	tarot		0	16255			
+1020	0	7852	soul	@Transfiguring 	1	8192			- Weapon - / "Kongo Sword", "Three-Bladed Vajra", "Five-Bladed Vajra", and / "Vajra" gain a new / power, but it cannot be used on its / own.
+1021	0	7853	tarot		0	16255			
+1021	0	7853	soul	@Transfiguring 	1	8192			- Weapon - / "Cursebringer" gains a new power, / but it cannot be used on its own.
+1022	0	7854	tarot		0	16255			
+1022	0	7854	soul	@Transfiguring 	1	8192			- Weapon - / "Gram" gains a new power, but it / cannot be used on its own. / * Independent of the type of Gram
+1023	0	7881	tarot		0	16255			
+1023	0	7881	soul	@Transfiguring 	1	8192			- Weapon - /  Although it gives new power to the Sword of Incarceration /   it is useless on its own.
+1024	0	7882	tarot		0	16255			
+1024	0	7882	soul	@Transfiguring 	1	8192			- Weapon - /  Although it gives new power to the Titanomachia  /   it is useless on its own.
+1025	0	7963	tarot		0	16255			
+1025	0	7963	soul	@Transfiguring 	1	8192			- Weapon - / 『Stone Slave』 and / 『Stone Gazer』 gain new powers, / but it cannot be used on its own.
+2000	0	7856	tarot		0	16255			
+2000	0	7856	soul	@Dye	1	8192			- Weapon - / Crimson fires burn within this weapon, / but this item on its own has no use.
+2001	0	7857	tarot		0	16255			
+2001	0	7857	soul	@Dyed	1	8192			- Weapon - / An icy air blows within this weapon, / but this item on its own has no use.
+2002	0	7859	tarot		0	16255			
+2002	0	7859	soul	@Dye	1	8192			- Weapon - / Electricity surges through this weapon, / but this item on its own has no use.
+2003	0	7858	tarot		0	16255			
+2003	0	7858	soul	@Dye	1	8192			- Weapon - / A violent force rages inside this weapon, / but this item on its own has no use.
+2004	0	7860	tarot		0	16255			
+2004	0	7860	soul	@Dye	1	8192			- Weapon - / The power to ward off evil resides in this weapon, / but this item on its own has no use.
+2005	0	7861	tarot		0	16255			
+2005	0	7861	soul	@Dye	1	8192			- Weapon - / A bottomless malice resides in this weapon, / but this item on its own has no use.
+2006	0	7862	tarot		0	16255			
+2006	0	7862	soul	@Dye	1	8192			- Weapon - / A mysterious power resides in this weapon, / but this item on its own has no use.
+2007	0	7863	tarot		0	16255			
+2007	0	7863	soul	@Dye	1	8192			- Weapon - / The power to invade living souls resides in this / weapon, but this item on its own has no use.
+2008	0	7864	tarot		0	16255			
+2008	0	7864	soul	@Dye	1	8192			- Weapon - / The power to damage living flesh resides in this / weapon, but this item on its own has no use.
+3001	0	40138	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3001	0	40138	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3002	0	40139	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3002	0	40139	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3003	0	40140	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3003	0	40140	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3004	0	40141	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3004	0	40141	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3005	0	40142	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3005	0	40142	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3006	0	40143	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3006	0	40143	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3007	0	40144	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3007	0	40144	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3008	0	40145	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3008	0	40145	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3009	0	40146	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3009	0	40146	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3010	0	40147	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3010	0	40147	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3011	0	40148	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3011	0	40148	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3012	0	40149	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3012	0	40149	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3013	0	40150	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3013	0	40150	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3014	0	40151	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3014	0	40151	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3015	0	40152	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3015	0	40152	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3016	0	40153	tarot	Sacred Relics' 	1	16255			This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3016	0	40153	soul	 of Artifact	1	16255			- Overall - / This item is given by demons that have reached  / "Open Hearts" level. / This item adds benefits to other, compatible items.
+3068	0	40158	tarot		0	16255			
+3068	0	40158	soul	@Dressed in dark 	1	16255			- All - /  It exhibits true value when performing Soul Stone Fusion with certain item but it is useless on its own.
+3069	0	7992	tarot	Seraphim's 	75	16255	362956,362960,		HP Regeneration +10 MP Regeneration +5
+3069	0	7992	soul	 of Prelude	85	8192	290202,290203,	1:1,0,>290204,270048,;	- Weapon - / Almighty-affinity Skill Stack +1 / Glorious Death's Cooldown -30% / Aria of the Void's Cooldown -30% / Overture's Cooldown -30%
+3070	0	7993	tarot	Fallen Angel's 	75	16255	360179,360199,	1:1,0,>360219,;	Close-Range +5 / Long-Range +5 / Spell +5
+3070	0	7993	soul	 of Menuet	85	8192	730029,362791,		- Weapon - / Glorious Death damage +100% / Aria of the Void damage +100% / Overture damage +100% / Limit Break Chance +10%
+3071	0	7994	tarot	Seven Hill's 	75	16255	141306,140711,		Partner's Almighty-affinity damage +3% / Partner's MAX MP +20
+3071	0	7994	soul	@Scarlet's 	85	1	141036,970016,		- Head - / Partner's CRT +10 / Partner's Technical Attack Chance +5% / Partner's Technical Attack Power +5%
+3072	1052	8123	tarot	Utai-Gaikotsu's 	35	16255	141457,363391,		Partner's Suicide-affinity damage +3% / INT -2
+3072	1052	8123	soul	 of the Singing Corpse	50	2	141456,363392,	2:1,0,>420390,;	- Face - / Partner's Suicide-affinity damage +50% /  / If Player is CHAOS: /   Null Fire +25% /  / INT -9
+3073	1169	8124	tarot	Fafnir's 	55	16255	363395,363394,	2:1,0,>240001,;	Received Close-Range and Long-Range Damage -2%  / LUC -3  /  / If Player is CHAOS: /  +1% Clench chance while HP is 2 or greater
+3073	1169	8124	soul	 of the Iron Worm	50	256	363393,141458,	2:1,0,>60389,;	- Ring - / Macca gain +30% /  / If Player is CHAOS: /  Lv*0.08% Chance to All Physical Reflect /  / LUC -15 / Partner's LUC -15
+3074	0	8043	tarot		0	0			
+3074	0	8043	soul	 of New Moon	40	2	980205,	2:1,0,>362034,;	- Face - / Almighty-affinity damage Cap +20% /  / If Player is CHAOS: /  Almighty-affinity damage +30% /  / With Crescent Moon and Full Moon: / Player gains Eclipse Skill / ※Skill does not have weapon restrictions
+3075	0	8044	tarot		0	0			
+3075	0	8044	soul	 of Full Moon	40	2048	980205,	2:4,0,>362034,;	- Back - / Almighty-affinity damage Cap +20% /  / If Player is LAW: /  Almighty-affinity damage +30% /  / With New Moon and Crescent Moon: / Player gains Eclipse Skill / ※Skill does not have weapon restrictions
+3076	0	8045	tarot		0	0			
+3076	0	8045	soul	 of Crescent Moon	40	64	980205,	2:2,0,>362034,;	- Shoes - / Almighty-affinity damage Cap +20% /  / If Player is NEUTRAL: /  Almighty-affinity damage +30% /  / With New Moon and Full Moon: / Player gains Eclipse Skill / ※Skill does not have weapon restrictions
+3077	1149	7348	tarot	Diana's 	50	16255		118:50,0,>363404,;	If Demonology is Class 5 or above:  / Handgun、Penetrate、Spread-affinity damage +6%
+3077	1149	7348	soul	 of of Witchwood	70	1024		2:4,0,>360234,;2:1,0,>360214,;	- Extra - /  / If Player is LAW: / Spell +20 /  / If Player is CHAOS: / Long-Range +20
+3078	47	7349	tarot	Black Maria's 	60	16255	370342,370343,		Almighty damage + 4% to demons  /  of the Entity and Earth Mother races
+3078	47	7349	soul	@Mother Earth's 	80	4096	1030004,363409,		- Talisman - / Digitalize Points earned +30% / Close-Range, Long-range, Magic Damage  / Dealt -50%
+3079	0	8125	tarot		0	0			
+3079	0	8125	soul	 of Shooting Star	85	16383	1130007,970062,		- All (except bullets) - / Partner's  / Limit Break Cap +500 /  / While Digitalized:  / Partner's  / Technical Attack Chance +5% / Technical Attack Power +5%
+3080	0	8126	tarot		0	0			
+3080	0	8126	soul	@天道に導かれし	40	4	363118,363198,		- Neck - / Close-Range +10 / Long-Range +10 / Spell +10 / Close-Range Damage +8% / Long-Range Damage +8% / Magic Damage +8% /  / 地道、人道の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると、 / Limit Break Cap +1500 / Final Critical Rate +10%
+3081	0	8127	tarot		0	0			
+3081	0	8127	soul	@地道に導かれし	40	32	1120004,110002,	1:1,0,>120002,;	- Bottom - / Limit Break Cap +500 / HP/MP Cost -15% /  / 天道、人道の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると、 / Limit Break Cap +1500 / Final Critical Rate +10%
+3082	0	8128	tarot		0	0			
+3082	0	8128	soul	@人道に導かれし	40	8	362682,362925,	1:1,0,>60392,60391,;	- Top - / MAX HP +50 / MAX MP +30 / Ｌｖ*0.15% Chance to All Physical Absorb / Ｌｖ*0.15% Chance to All Magical Absorb /  / 天道、地道の魂合石の魂合術が / 施されたアイテムを全て同時に装備すると、 / Limit Break Cap +1500 / Final Critical Rate +10%
+3083	0	8046	tarot		0	0			
+3083	0	8046	soul	@Stained 	1	8192	1150079,		- Weapon - / Fire-affinity Skills: / Final Critical Rate +50%
+3084	0	8047	tarot		0	0			
+3084	0	8047	soul	@Stained 	1	8192	1150080,		- Weapon - / Ice-affinity Skills: / Final Critical Rate +50%
+3085	0	8048	tarot		0	0			
+3085	0	8048	soul	@Stained 	1	8192	1150081,		- Weapon - / Electric-affinity Skills: / Final Critical Rate +50%
+3086	0	8049	tarot		0	0			
+3086	0	8049	soul	@Stained 	1	8192	1150082,		- Weapon - / Force-affinity Skills: / Final Critical Rate +50%
+3087	0	8129	tarot		0	0			
+3087	0	8129	soul	@暁星煌めく	40	16383	1060003,1040080,	1:1,0,>870110,880122,;	- All (except bullets) - / Digitalize duration +10% /  / While Digitalized:  / Limit Break Power +10% / Technical Attack Power +10% / Pursuit Power +10% / ※Pursuit Power Cap is 100%
+3088	0	8130	tarot		0	0			
+3088	0	8130	soul	@睦月の	40	1024	980025,1140025,		- Extra - / Ice-affinity damage Cap +50% / Partner's  / Ice-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3089	0	8131	tarot		0	0			
+3089	0	8131	soul	@如月の	40	4096	980020,1140026,		- Talisman - / Blunt-affinity damage Cap +50% / Partner's  / Blunt-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3090	0	8132	tarot		0	0			
+3090	0	8132	soul	@弥生の	40	64	980021,1140027,		- Shoes - / Handgun-affinity damage Cap +50% / Partner's  / Handgun-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3091	0	8133	tarot		0	0			
+3091	0	8133	soul	@卯月の	40	256	980027,1140028,		- Ring - / Force-affinity damage Cap +50% / Partner's  / Force-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3092	0	8134	tarot		0	0			
+3092	0	8134	soul	@皐月の	40	2048	980034,1140029,		- Back - / Mind-affinity damage Cap +50% / Partner's  / Mind-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3093	0	8135	tarot		0	0			
+3093	0	8135	soul	@水無月の	40	1	980019,1140030,		- Head - / Thrust-affinity damage Cap +50% / Partner's  / Thrust-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3094	0	8136	tarot		0	0			
+3094	0	8136	soul	@文月の	40	8	980024,1140031,		- Top - / Fire-affinity damage Cap +50% / Partner's  / Fire-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3095	0	8137	tarot		0	0			
+3095	0	8137	soul	@葉月の	40	4	980023,1140032,		- Neck - / Spread-affinity damage Cap +50% / Partner's  / Spread-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3096	0	8138	tarot		0	0			
+3096	0	8138	soul	@長月の	40	16	980018,1140033,		- Arm - / Slash-affinity damage Cap +50% / Partner's  / Slash-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3097	0	8139	tarot		0	0			
+3097	0	8139	soul	@神無月の	40	32	980026,1140034,		- Bottom - / Electric-affinity damage Cap +50% / Partner's  / Electric-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3098	0	8140	tarot		0	0			
+3098	0	8140	soul	@霜月の	40	2	980033,1140035,		- Face - / Nerve-affinity damage Cap +50% / Partner's  / Nerve-affinity damage Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3099	0	8141	tarot		0	0			
+3099	0	8141	soul	@師走の	40	512	980022,1140036,		- Earring - / Penetrate-affinity Cap +50% / Partner's  / Penetrate-affinity Cap +50% /  / With all 12 Lunar Calendar Soul Stone: / Player/Demon's: / Final Critical Rate +40% / Limit Break Chance +40% / Technical Attack Chance +40% / Technical Attack Power +40% / Pursuit Chance +40% / Pursuit Power +40% / ※Pursuit Power Cap is 100%
+3100	757	130102	tarot	Koropokkuru's 	35	16255	199983,		Physical Defense +3 to all Party members
+3100	757	130102	soul	 of Kindness 	35	64	199982,		- Shoes - / Partner's Move Speed +15%
+3101	1092	130125	tarot	Arioch's 	40	16255	1999713,		If Player has Weapon Knowledge Class 9:  / Digitalize Duration +2% / Limit Break Cap +25 / MAX HP +25
+3101	1092	130125	soul	 of the Fierce Lion	85	512	1999712,1999710,		- Earring - / If Player is CHAOS, Magic and Close Range damage suffered -50%. / Against LAW Enemies, Close Range, Long Range and / Magic damage done +30%.
+3102	0	130222	tarot	Leyding's 	75	16255	1999634,1999633,		When using Spin skills: / +3% Damage, +3% Pursuit Power / To Partner, /     When using Spin skills: /     +3% Damage, +3% Pursuit Power
+3102	0	130222	soul	 of the Vanargand	70	8192	1999632,	2:4,0,>1999631,1999630,;	 / - Weapon - / "Three Step Crescent Moon" no longer causes knockback. / If Player is LAW,  /     When using "Three Step Crescent Moon", +2 Skill Stacks. /     When using Spin skills, +10.000 Smirk Damage Cap.
+3103	0	130223	tarot	Dromi's 	75	16255	1999629,		Partner's Spin Damage +5% / Partner's Spin Limit Break Power +5% / Partner's Spin MP Cost -15%
+3103	0	130223	soul	 of the Hroovitnir	70	8192	1999628,1999627,		 / - Weapon - / When your Partner uses "Shockwave", "Electrical Discharge" or their "Trembling" variants: /     Limit Break Chance +20% /     Limit Break Cap +1000 /     Smirk Damage Cap +10000
+3104	132	123465	tarot	Athena Promachos' 	40	16255	2000118,		If Player has Gun Knowledge Class 9:  / Digitalize Duration +2% / Limit Break Cap +25 / MAX HP +25
+3104	132	123465	soul	 of the Holy Crusade	85	512	2000119,2000120,		- Earring - / If Player is LAW, Magic and Close Range damage  / suffered -50%. / Against CHAOS Enemies, Close Range, Long Range / and Magic damage done +30%.
+3105	1944	54015	tarot	Ogami's 	40	16255	2000191,		If Player has Pursuit Class 9:  / Digitalize Duration +2% / Limit Break Cap +25 / MAX HP +25
+3105	1944	54015	soul	 of the Warmonger	85	8192	2000192,2000193,	0:1,0,>2000194,;	- Weapon - / While Digitalized, Player/Demon's Final Critical rate correction +5%, / Limit Break chance +5%, Limit Break power +5% /  / Player's Damage to Neutral enemies +20%.
+3106	1127	7369	tarot	Ichimokuren's 	30	16255	360040,360098,		Force resistance + 2% / Force damage + 2% / Electric resistance - 1%
+3106	1127	7369	soul	@Moment of Tempest 	50	8192	350003,980027,	1:1,0,>1150015,2000199,;	- Weapon - / Weapon gains Force-affinity / Force affinity cap + 50% / When using Force-affinity skills, +10% Final critical correction / While Digitalized: +100% Force damage
+3107	5815	7370	tarot	Belphegor's 	30	16255	2000202,	2:1,0,>2000203,;	Demon Support damage + 2% / If Player is CHAOS, Death resistance +3%
+3107	5815	7370	soul	@Apathetic 	80	4	60204,		- Neck - / (Level * 0.5)% Null Mind / 
+3108	619	7372	tarot	Malukala's 	50	16255	363484,		STR +6 / Blunt-based Skill effects +1%
+3108	619	7372	soul	@Executioner 	75	32	363485,2100150,		- Bottom - / STR +7, Blunt-based Skill effects +10%, / For all Death-based skills,  /  Death Boost +10% and  /  Limit Break Cap + (STR x 1) / 
+3109	1301	7373	tarot	Fly's 	30	16255	2100176,		Demon Partner's Support +3 / Demon Partner's Support Damage +3%
+3109	1301	7373	soul	@Moment of Pestilence 	50	8192	350008,980033,	1:1,0,>2100177,2100178,;	- Weapon - / Weapon gains Nerve-affinity / Nerve affinity cap + 50% / When using Nerve-affinity skills, +10% Final critical correction / While Digitalized: +100% Nerve damage
+3110	48	7374	tarot	Pan-gu's 	50	16255	2100216,30034,		SPD +7 / Shot Boost +3%
+3110	48	7374	soul	 of the Creator	85	32	362631,	155:84,0,>2100217,2100218,;	- Bottom - / Long-Range damage +15% /  / If Player has Sharpshooter Class 8 Rank 4, / . Deadeye's [Hollow Point] proc chance is  / further increased by 50%. / . Exploit Weakness bonus LB Cap no longer / requires the target's weakness. / 
+3111	758	7375	tarot	Mezuki's 	65	16255	2100393,		STR +5, VIT +3
+3111	758	7375	soul	 of The Torturer 	75	64	2100394,2100395,		- Shoes - / Move Speed +5% / Against a target enemy, if their HP is / lower than 25%:  / . All Rush skills' LB Cap Damage / is increased by +500
+3112	759	7376	tarot	Gozuki's 	65	16255	2100396,		STR +3, VIT +5
+3112	759	7376	soul	 of The Hell Guardian 	75	8	362965,30091,	1:1,0,>2100397,2100398,;	- Top - / Close-range, Long-range, Spell damage suffered -10% / Counter Damage +50% / All Counter skills' LB Cap Damage / is increased by +500 / If Bulwark is active and Riposte is learnt, / chance to auto-counter +5%
+3113	0	55503	tarot	Afterworld's 	65	16255	362846,		STR +5, VIT +5
+3113	0	55503	soul	 of The Afterworld 	85	8192	2100384,2100387,	1:1,0,>2100465,;	- Weapon - / All Rush skills have 15% chance / to apply [Condemned] status to the target. /  / All Attack skills have / 5% chance to apply [Condemned] / status to the target. /  / [Condemned] increases their damage / taken by 30% and  / nullifies their Expel and Death  / Resistance and NRA for 15 seconds.  /  / When attacking a [Condemned] target,  / all base damage  / is increased by 2%.

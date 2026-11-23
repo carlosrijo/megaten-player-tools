@@ -1,0 +1,20 @@
+#id	questCount	effects (CorrectTbl index:boost:fixed; fixed 0 = value is floor(count/boost))	description (server QuestBonusData)
+1	10	6:2:0	HP +
+2	20	0:8:0,4:8:0,1:8:0	Strength/Magic/Speed +
+3	30	17:15:1	Summoning speed + 15
+4	40	21:4:0	Critical Defense +
+5	50	15:8:0	Support +
+6	60	8:6:1	HP regeneration + 6
+7	70	7:4:0	MP +
+8	80	2:8:0,3:8:0,5:8:0	Vitality/Intelligence/Luck +
+9	100	79:-20:1	Ailment Defense + 20
+10	120	16:4:0	Critical +
+11	140	12:8:0,13:8:0,14:8:0	Close-Range/Long-Range/Spell +
+12	160	9:3:1	MP Regeneration + 3
+13	180	19:12:0,20:12:0	Physical/Magical Defense +
+14	200	117:10:1,118:10:1	Limit Break chance/power + 10%
+15	220	96:15:0,97:15:0,98:15:0	Slash/Blunt/Charge boost +
+16	240	99:15:0,100:15:0,101:15:0	Handgun/Penetrate/Spread boost +
+17	260	102:15:0,103:15:0	Fire/Ice boost +
+18	280	104:15:0,106:15:0	Electric/Force boost +
+19	300	107:50:1,108:50:1,105:10:1	Expel/Death boost + 50% / Almighty boost + 10%
