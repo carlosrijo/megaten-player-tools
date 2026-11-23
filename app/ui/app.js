@@ -1272,7 +1272,7 @@
     Promise.all([get('dcm-sources.json'), get('dcm-notes.json')]).then(([d, n]) => {
       S.dcm.data = d; S.dcm.notes = (n && n.notes) || {};
       S.dcm.state = d ? 'ready' : 'failed';
-      if (d) d.items.forEach((it) => { it.lines = dcmLines(it); it.kinds = new Set(it.lines.map((l) => l.group)); it.hay = [it.demon, ...it.lines.map((l) => l.text + ' ' + (l.sub || ''))].join(' ').toLowerCase(); });
+      if (d) d.items.forEach((it) => { it.lines = dcmLines(it); it.kinds = new Set(it.lines.map((l) => l.group)); it.hay = [it.demon, ...it.lines.map((l) => [l.text, l.sub || '', ...(l.tags || [])].join(' '))].join(' ').toLowerCase(); });
       if (S.page === 'dcm') render();
     });
   }
@@ -1282,20 +1282,27 @@
     const zones = (list) => { const z = [...new Set(list.map((s) => s.zone).filter(Boolean))]; return z.length > 6 ? z.slice(0, 6).join(', ') + ` and ${z.length - 6} more` : z.join(', '); };
     const grouped = (list, key) => { const m = new Map(); list.forEach((s) => { const k = key(s); if (!m.has(k)) m.set(k, []); m.get(k).push(s); }); return [...m.values()]; };
     (S.dcm.notes[it.id] || []).forEach((t) => lines.push({ group: 'note', kind: 'NewMoon note', text: String(t), rank: 0 }));
+    // A shop's moon mask: bit n = moon phase n (0 new, 8 full), the phases it is sold in.
+    const moon = (mask) => 'Moon: ' + [...Array(16).keys()].filter((i) => mask & (1 << i)).map((i) => (i === 0 ? 'new' : i === 8 ? 'full' : i < 8 ? `${i}/8 waxing` : `${16 - i}/8 waning`)).join(', ');
+    // "201010_halloween" (the server's folder of a seasonal event) -> "Halloween 2010 event"
+    const season = (v) => { const m = /^(\d{4})\d{2}_(.+)$/.exec(v); return m ? `${m[2].charAt(0).toUpperCase() + m[2].slice(1).replace(/_/g, ' ')} ${m[1]} event` : v; };
+    const tagsOf = (s) => (s.season ? [season(s.season)] : []);
+    const NOPLACE = 'The data does not say where';
     grouped(by('shop'), (s) => s.shopId + '|' + s.price).forEach((g) => lines.push({ group: 'shop', kind: 'Shop', text: g[0].shop, sub: g[0].tab, value: `${fmt(g[0].price)} ${g[0].currency}`,
-      tags: g[0].moon ? ['some moon phases only'] : [], rank: 1 }));
-    grouped(by('drop'), (s) => s.enemy + '|' + s.rate + '|' + !!s.seasonal).sort((a, b) => b[0].rate - a[0].rate).forEach((g) => lines.push({ group: 'drop', kind: 'Enemy drop', text: g[0].enemy, sub: zones(g), value: pct(g[0].rate),
-      tags: g[0].seasonal ? ['seasonal event'] : [], rank: 2 }));
-    const script = (s) => (s.file ? 'Dungeon script ' + s.file.replace(/^.*\/|\.xml$/g, '') : '');   // a chest no zone file leads to
-    grouped(by('loot').concat(by('chest')), (s) => (s.ref || s.dropSetId) + '|' + s.rate + '|' + (s.via || '')).sort((a, b) => b[0].rate - a[0].rate).forEach((g) => lines.push({ group: 'chest', kind: g[0].via === 'ItemDrop' ? 'Zone loot' : 'Chest',
-      text: zones(g) || g[0].desc || script(g[0]) || `Drop set ${g[0].dropSetId}`, value: pct(g[0].rate), tags: g[0].seasonal ? ['seasonal event'] : [], rank: 3 }));
-    grouped(by('plasma'), (s) => s.zone + '|' + s.rate).forEach((g) => lines.push({ group: 'chest', kind: 'Plasma', text: g[0].zone, value: pct(g[0].rate), rank: 3 }));
-    grouped(by('event'), (s) => s.zone || s.file).forEach((g) => lines.push({ group: 'event', kind: 'Event or NPC', text: g[0].zone || 'Shared NPC event', sub: g.map((s) => s.event).filter(Boolean).slice(0, 4).join(', ') + (g.length > 4 ? ` and ${g.length - 4} more` : ''), rank: 4 }));
+      tags: g[0].moon ? [moon(g[0].moon)] : [], rank: 1 }));
+    grouped(by('drop'), (s) => s.enemy + '|' + s.rate + '|' + (s.season || '')).sort((a, b) => b[0].rate - a[0].rate).forEach((g) => lines.push({ group: 'drop', kind: 'Enemy drop', text: g[0].enemy, sub: zones(g) || NOPLACE, value: pct(g[0].rate),
+      tags: tagsOf(g[0]), rank: 2 }));
+    grouped(by('loot').concat(by('chest')), (s) => (s.ref || s.dropSetId) + '|' + s.rate).sort((a, b) => b[0].rate - a[0].rate).forEach((g) => lines.push({ group: 'chest', kind: 'Chest',
+      text: zones(g) || g[0].desc || NOPLACE, value: pct(g[0].rate), tags: tagsOf(g[0]), rank: 3 }));
+    grouped(by('plasma'), (s) => s.zone + '|' + s.rate).forEach((g) => lines.push({ group: 'chest', kind: 'Plasma', text: g[0].zone || NOPLACE, value: pct(g[0].rate), tags: tagsOf(g[0]), rank: 3 }));
+    grouped(by('event'), (s) => s.zone + '|' + (s.season || '')).forEach((g) => { const who = [...new Set(g.map((s) => s.npc).filter(Boolean))];
+      lines.push({ group: 'event', kind: 'Event or NPC', text: g[0].zone || NOPLACE, sub: who.length ? 'Talk to ' + who.join(', ') : '', tags: tagsOf(g[0]), rank: 4 }); });
     by('box').forEach((s) => lines.push({ group: 'chest', kind: 'Random box', text: s.desc || `Box ${s.dropSetId}`, value: pct(s.rate), rank: 5 }));
     by('destiny').concat(by('demonquest'), by('dropset')).forEach((s) => lines.push({ group: 'drop', kind: s.kind === 'destiny' ? 'Destiny box' : s.kind === 'demonquest' ? 'Demon quest' : 'Drop table',
-      text: s.desc || `Drop set ${s.dropSetId}`, sub: s.kind === 'dropset' ? `Drop set ${s.dropSetId}: the data does not say which enemy uses it` : '', value: pct(s.rate), rank: 6 }));
+      text: s.desc || `Drop set ${s.dropSetId}`, sub: s.kind === 'dropset' ? 'The data does not say which enemy uses this table' : '', value: pct(s.rate), rank: 6 }));
     by('present').forEach((s) => lines.push({ group: 'present', kind: 'Present', text: `From ${s.demon} as your partner`, sub: `${s.tier} present`, rank: 7 }));
-    return lines.sort((a, b) => a.rank - b.rank);
+    const shown = new Set();   // two chests of one place at one rate read the same: say it once
+    return lines.sort((a, b) => a.rank - b.rank).filter((l) => { const k = [l.kind, l.text, l.sub, l.value, (l.tags || []).join()].join('|'); return !shown.has(k) && shown.add(k); });
   }
   function pageDcm() {
     const D = S.dcm, page = h('div', { class: 'page page-dcm' });
@@ -1320,7 +1327,7 @@
     const draw = () => {
       body.replaceChildren();
       const q = D.q.trim().toLowerCase();
-      const rows = items.filter((it) => inKind(it, D.kind) && (!q || it.hay.includes(q)));
+      const rows = items.filter((it) => inKind(it, D.kind) && (!q || it.hay.includes(q))).sort((x, y) => !x.lines.length - !y.lines.length);
       rows.forEach((it) => {
         const open = D.open.has(it.id), best = it.lines[0];
         const toggle = () => { if (D.open.has(it.id)) D.open.delete(it.id); else D.open.add(it.id); draw(); };
@@ -1328,7 +1335,7 @@
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')), h('span', null, it.demon, h('span', { class: 'src-count', text: it.lines.length === 1 ? '1 source' : `${it.lines.length} sources` })))),
           best ? h('td', null, h('div', { class: 'dcm-best' }, h('span', { class: 'dcm-kind', text: best.kind }),
-            h('span', null, best.text, best.sub && best.group !== 'event' ? h('span', { class: 'src-count', text: best.sub }) : null)))
+            h('span', null, best.text, best.sub ? h('span', { class: 'src-count', text: best.sub }) : null)))
             : h('td', { class: 'zero', text: 'No source in the game data' }),
           h('td', { class: 'num' + (best && best.value ? '' : ' zero'), text: best && best.value ? best.value : '—' })));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 },
