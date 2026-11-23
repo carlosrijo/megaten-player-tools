@@ -1307,7 +1307,9 @@
   /** The demon's own icon (made by tools\\dcmexport from the client); an empty box when there is none. */
   function dcmIcon(it) {
     const box = h('span', { class: 'dcm-icon', 'aria-hidden': 'true' });
-    const src = it.icon || (S.dcm.data && S.dcm.data.noIcon);   // no picture in the client: its own skull icon
+    // No picture in the client: its own skull icon. Satan has none either, and (the user's joke) wears the player's face.
+    const joke = !it.icon && it.demon === 'Satan' && S.meta.picture;
+    const src = it.icon || joke || (S.dcm.data && S.dcm.data.noIcon);
     if (src) box.append(h('img', { src, alt: '', width: 28, height: 28, loading: 'lazy', onerror: (ev) => ev.target.remove() }));
     return box;
   }
