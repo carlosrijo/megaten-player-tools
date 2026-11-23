@@ -1495,7 +1495,7 @@
     const season = (v) => { const m = /^(\d{4})\d{2}_(.+)$/.exec(v); return m ? `${m[2].charAt(0).toUpperCase() + m[2].slice(1).replace(/_/g, ' ')} ${m[1]} event` : v; };
     const tagsOf = (s) => (s.season ? [season(s.season)] : []);
     const NOPLACE = 'The data does not say where';
-    grouped(by('shop'), (s) => s.shopId + '|' + s.price).forEach((g) => lines.push({ group: 'shop', kind: 'Shop', text: g[0].shop, sub: g[0].tab, value: `${fmt(g[0].price)} ${g[0].currency}`,
+    grouped(by('shop'), (s) => s.shopId + '|' + s.price).forEach((g) => lines.push({ group: 'shop', kind: 'Shop', text: g[0].shop + (g[0].zone ? ' in ' + g[0].zone : ''), sub: [g[0].npc ? 'talk to ' + g[0].npc : '', g[0].tab ? 'tab: ' + g[0].tab : ''].filter(Boolean).join(' · '), value: `${fmt(g[0].price)} ${g[0].currency}`,
       tags: g[0].moon ? [moon(g[0].moon)] : [], rank: 1 }));
     grouped(by('drop'), (s) => s.enemy + '|' + s.rate + '|' + (s.season || '')).sort((a, b) => b[0].rate - a[0].rate).forEach((g) => lines.push({ group: 'drop', kind: 'Enemy drop', text: g[0].enemy, sub: zones(g) || NOPLACE, value: pct(g[0].rate),
       tags: tagsOf(g[0]), rank: 2 }));
