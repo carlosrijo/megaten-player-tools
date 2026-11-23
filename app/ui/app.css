@@ -249,40 +249,39 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .notice b { font-weight: 600; }
 
 /* ---------- overview: the stat sheet ---------- */
-/* One line per key stat: name, a bar only where the stat has a cap (how close to it), the total. A click opens where
-   the total comes from, under the line. The changes card sits beside the sheet. */
+/* One heading over one row ("Key stats and affinities"): the stat sheet and, beside it, the affinity radar. Both boxes
+   start and end on the same lines. Sheet: one line per key stat: name, a bar only where the stat has a cap (how close
+   to it), the total. A click opens where the total comes from, under the line. */
 .stat-label { color: var(--text-2); font-size: 12px; }
-.over-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
-.over-main, .over-side { display: grid; gap: 18px; min-width: 0; }
-/* Overview: expertise points against the cap, then the unlocked chain expertises with their skills' icons */
-.exp-points { display: flex; align-items: center; gap: 10px; margin: 2px 0 12px; }
-.exp-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
-.exp-bar i { display: block; height: 100%; border-radius: 4px; background: var(--exp); }
-.exp-free { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.exp-points { max-width: 560px; }   /* the card spans the page: the bar keeps a readable length */
-/* the chains side by side, as many columns as fit (three at the app's width, two in a narrower window, then one) */
-.chain-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 6px 22px; }
-.chain { display: grid; gap: 6px; align-content: start; width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: 8px 6px; cursor: pointer; border-radius: 6px; }
-.chain:hover { background: var(--hover); }
-/* Overview: what you wear, one line under the demon's. Each worn piece is its game icon in a slot-like tile, then the
-   complete sets. Names and numbers are the Gear page's: a tile's tooltip is the game's, a click opens the piece there. */
-.gear-band { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 14px; padding: 10px 14px; }   /* title | the tiles, wrapping | View more */
-.gear-band-title { margin: 0 2px 0 0; font: 600 17px/1.2 var(--font-display); letter-spacing: -.01em; }
-.gear-pcs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.over-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: stretch; }
+/* Overview: the one-line bands under your stats (expertise, the demon's own card, gear). Expertise and gear share this
+   shape: title | what it holds, wrapping in a narrow window | View more. */
+.band { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 14px; padding: 10px 14px; }
+.band-head { display: grid; gap: 4px; }
+.band-title { margin: 0; font: 600 17px/1.2 var(--font-display); letter-spacing: -.01em; }
+.band-items { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+/* expertise: under the title, points / cap over a thin bar; then one chip per unlocked chain, its name and class-rank
+   (its skills are in the chip's tooltip, a click opens it on the Expertise page) */
+.exp-points { display: grid; gap: 3px; }
+.exp-pts { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.exp-bar { display: block; height: 4px; border-radius: 2px; background: var(--grid); overflow: hidden; }
+.exp-bar i { display: block; height: 100%; border-radius: 2px; background: var(--exp); }
+.exp-band .band-items { gap: 6px; }
+.exp-chip { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border-strong); font-size: 12px; white-space: nowrap; cursor: pointer; }
+.exp-chip:hover { background: var(--hover); }
+.exp-chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.exp-chip b { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; }
+.tt-skill { display: flex; align-items: center; gap: 8px; padding: 1px 0; }   /* a chain's skills, in its chip's tooltip */
+.tt-skill .skill-ico { width: 20px; height: 20px; }
+.tt-skill small { margin-left: auto; padding-left: 12px; color: var(--text-2); font-size: 11px; white-space: nowrap; }
+.tt-skill.off { opacity: .5; }
+/* gear: each worn piece is its game icon in a slot-like tile, then the complete sets. Names and numbers are the Gear
+   page's: a tile's tooltip is the game's, a click opens the piece there. */
 .gear-sets { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; }
 .gear-sets .stat-label { margin-right: 4px; }
 .gear-pc { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; }
 .gear-pc:hover { border-color: var(--border-strong); background: var(--hover); }
 .gear-pc:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
-.chain-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.chain-name { font-weight: 600; min-width: 0; }
-.chain-rank { color: var(--exp); font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
-.chain-icons { display: flex; flex-wrap: wrap; gap: 4px; }
-.chain-none { color: var(--text-3); font-size: 12px; }
-.chain-kind { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; }
-.chain-kind-label { color: var(--text-2); font-size: 12px; line-height: 24px; }
-.chain-icons .skill-ico.off { opacity: .35; }
-.chain-more { margin-top: 10px; justify-self: start; }
 .sheet { padding: 12px 16px 6px; }
 .sheet-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px 32px; align-items: start; }   /* two columns when both fit with their labels in full, else one */
 .sheet-col { display: grid; gap: 14px; align-content: start; }
