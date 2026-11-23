@@ -211,7 +211,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -252,6 +252,7 @@
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
     dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle' },
+    gdb: { q: '', slot: 'all', known: true, open: new Set(), shown: 150, data: null, state: 'idle' },
     exp: { q: '', closed: new Set() },
     dg: { q: '', closed: new Set() },
     extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
@@ -1673,7 +1674,99 @@
     drawChips(); draw();
     return page;
   }
-  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests };
+  // ---------- Tools: Gear Database ----------
+  // gear-db.json is made by "newmoon-reader geardb": what each piece gives is read from the NewMoon client's current
+  // tables; where it comes from is what the community spreadsheets say. It sits beside this file.
+  const GDB_SLOTS = ['Weapon', 'Head', 'Face', 'Neck', 'Top', 'Arms', 'Bottom', 'Feet', 'Ring', 'Earring', 'Extra', 'Back', 'Talisman', 'COMP', 'Bullets'];
+  function loadGearDb() {
+    if (S.gdb.state !== 'idle') return;
+    S.gdb.state = 'loading';
+    fetch('gear-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.gdb.data = d; S.gdb.state = d ? 'ready' : 'failed';
+      if (d) {
+        d.items.forEach((it, i) => {
+          it.key = it.id || 'sheet' + i;
+          // the game's own effect text packs several lines into one, with a written-out line break between them
+          const lines = (list) => (list || []).flatMap((x) => String(x).split(/\s*\\n\s*/)).map((x) => x.trim()).filter(Boolean);
+          it.stats = lines(it.stats); it.effects = lines(it.effects); it.appearance = lines(it.appearance);
+          (it.sets || []).forEach((s) => { s.effects = lines(s.effects); });
+          it.all = [...(it.stats || []), ...(it.effects || []), ...(it.appearance || []), ...(it.sets || []).flatMap((s) => s.effects)];
+          it.hay = [it.name, it.slot, ...it.all, ...(it.sets || []).flatMap((s) => s.with), ...it.sources.flatMap((s) => [s.tab, s.how])].join(' ').toLowerCase();
+        });
+        d.items.sort((a, b) => a.name.localeCompare(b.name));
+      }
+      if (S.page === 'geardb') render();
+    });
+  }
+  function gearDbDetail(it) {
+    const box = h('div', { class: 'q-detail' });
+    const block = (label, list) => (list && list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('ul', { class: 'gdb-list' }, list.map((x) => h('li', { text: x })))) : null);
+    const facts = [it.slot, it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : '', it.weapon || '', it.affinity ? it.affinity + ' affinity' : '',
+      it.mods ? `${it.mods} mod slot${it.mods === 1 ? '' : 's'}` : ''].filter(Boolean);
+    box.append(h('div', { class: 'detail-meta' }, facts.map((x) => h('span', { class: 'tag', text: x }))));
+    if (it.sheetOnly) box.append(h('p', { class: 'note', text: 'This row is from the spreadsheet only: its name matched no item in the game data, so the effects below are the sheet\'s own text.' }));
+    [block('Stats', it.stats), block('Effects', it.effects), block('Appearance bonus', it.appearance)].filter(Boolean).forEach((b) => box.append(b));
+    // s.any: the bonus needs one of the listed pieces; otherwise it needs all of them
+    (it.sets || []).forEach((s) => { const many = s.with.length > 1;
+      const b = block(!many ? 'Set with ' + s.with[0] : s.any ? 'Set with any one of' : 'Set with all of', s.effects); if (!b) return;
+      if (many) b.lastChild.prepend(h('li', { class: 'gdb-with', text: s.with.join(', ') }));
+      box.append(b); });
+    if (!it.all.length && !it.sheetOnly) box.append(h('p', { class: 'note', text: 'This piece gives no stats or effects in the game data.' }));
+    if (it.sources.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Where it comes from' }),
+      h('ul', { class: 'gdb-list' }, it.sources.map((s) => h('li', null, h('b', { text: s.tab }), s.how ? ' · ' + s.how : '', h('span', { class: 'src-count', text: s.sheet }))))));
+    else box.append(h('p', { class: 'note', text: 'The spreadsheets do not list this piece, so its source is not known here.' }));
+    if (it.id) box.append(h('p', { class: 'note', text: `Item ${it.id}` }));
+    return box;
+  }
+  function pageGearDb() {
+    const D = S.gdb, page = h('div', { class: 'page page-dcm' });
+    loadGearDb();
+    page.append(pageHead('Every piece of gear: what it gives and where it comes from. Click a row for the details.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The gear list could not be loaded (gear-db.json is missing beside the page).' : 'Loading the gear list…' }));
+      return page;
+    }
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Two sources. ' }),
+      'Stats, effects and sets are read from the NewMoon client\'s current item tables. Where a piece comes from is taken from the community spreadsheets (SnowSheet\'s gear reference and Midori\'s Post Wipe Re:FC), matched by item id or name; that part can be out of date or imprecise.')));
+    const items = D.data.items;
+    const pass = (it, slot) => (!D.known || it.sources.length > 0) && (slot === 'all' || it.slot === slot);
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by slot' });
+    const body = h('tbody'), more = h('div', { class: 'gdb-more' });
+    const drawChips = () => chips.replaceChildren(...[['all', 'All']].concat(GDB_SLOTS.map((s) => [s, s])).map(([id, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.slot === id), onclick: () => { D.slot = id; D.shown = 150; drawChips(); draw(); } },
+        label, h('span', { class: 'count', text: items.filter((it) => pass(it, id)).length }))));
+    const draw = () => {
+      body.replaceChildren();
+      const words = D.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const rows = items.filter((it) => pass(it, D.slot) && words.every((w) => it.hay.includes(w)));
+      rows.slice(0, D.shown).forEach((it) => {
+        const open = D.open.has(it.key);
+        const toggle = () => { if (D.open.has(it.key)) D.open.delete(it.key); else D.open.add(it.key); draw(); };
+        const gives = it.all.slice(0, 3).join(' · ') + (it.all.length > 3 ? ` · and ${it.all.length - 3} more` : '');
+        const src = it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') + (new Set(it.sources.map((s) => s.tab)).size > 2 ? ' and more' : '') : '';
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+          h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+            h('span', { class: 'chev' }, icon('chevron')), h('span', null, it.name, it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null))),
+          h('td', null, it.slot || h('span', { class: 'zero', text: '—' })),
+          h('td', { class: gives ? 'gdb-gives' : 'zero', text: gives || '—' }),
+          h('td', { class: src ? '' : 'zero', text: src || 'Not in the sheets' })));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, gearDbDetail(it))));
+      });
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 4, class: 'empty-row', text: words.length ? `Nothing matches “${D.q.trim()}”.` : 'No gear in this group.' })));
+      more.replaceChildren(...[h('span', { class: 'note', text: `Showing ${Math.min(D.shown, rows.length)} of ${rows.length}.` }),
+        rows.length > D.shown ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.shown += 300; draw(); } }, 'Show more') : null].filter(Boolean));
+    };
+    const known = h('label', { class: 'gdb-check' }, h('input', { type: 'checkbox', checked: D.known ? true : null, onchange: (ev) => { D.known = ev.target.checked; D.shown = 150; drawChips(); draw(); } }), 'Only gear with a known source');
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a name, effect or place (e.g. limit break celu)', (v) => { D.q = v; D.shown = 150; draw(); }), known));
+    page.append(chips);
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Gear' }), h('th', { scope: 'col', text: 'Slot' }), h('th', { scope: 'col', text: 'Gives' }), h('th', { scope: 'col', text: 'From' }))), body)));
+    page.append(more);
+    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data, ${items.filter((x) => x.id && x.sources.length).length} of them listed in the spreadsheets; ${items.filter((x) => x.sheetOnly).length} spreadsheet rows matched no game item. Data made on ${D.data.generatedAt}. Spreadsheets by SnowSheet and Midori.` }));
+    drawChips(); draw();
+    return page;
+  }
+  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
