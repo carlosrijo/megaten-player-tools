@@ -169,9 +169,11 @@
           const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
             ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
-            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, icon: null, loaded: name !== 'Pixie', seenAt: name === 'Seraph' ? null : '2026-11-23T15:40:23',
+            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, summoned: name === 'Specter' && Q.get('summoned') !== '0', icon: null, loaded: name !== 'Pixie', seenAt: name === 'Seraph' ? null : '2026-11-23T15:40:23',
               // stand-ins for the three states of the unlock tag
-              unlock: name === 'Alilat' ? { listed: false, level: 0, raceLevel: 1, race, reached: false } : { listed: true, level: name === 'Seraph' ? 8 : 5, raceLevel: name === 'Seraph' ? 5 : 10, race, reached: name !== 'Seraph' } }));
+              unlock: name === 'Alilat' ? { listed: false, level: 0, raceLevel: 1, race, reached: false } : { listed: true, level: name === 'Seraph' ? 8 : 5, raceLevel: name === 'Seraph' ? 5 : 10, race, reached: name !== 'Seraph' },
+              // the saved demon's own numbers as its offer, so its card looks as in the app (the others have none here)
+              offer: name === cur && S.data && S.data.digitalize ? (({ rate, alignment, stats, skills }) => ({ rate, alignment, stats, skills, combat: {} }))(S.data.digitalize) : null }));
         }
         // The browser preview has no game and no files to change: say so instead of pretending (the desktop app switches)
         if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Pick the demon in the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
@@ -530,6 +532,17 @@
   const alignClass = (a) => (/^(LAW|NEUTRAL|CHAOS)$/i.test(String(a || '')) ? 'align-' + String(a).toLowerCase() : '');
   const alignName = (a) => (a ? String(a).charAt(0) + String(a).slice(1).toLowerCase() : '');
 
+  /**
+   * The game's mark for a Mitama demon on the top left corner of its picture, as in the COMP bar (the game's own
+   * image, icons.json "mitama"; white there, tinted here as the game tints it). Nothing when the demon isn't one or
+   * the image was never read from the client.
+   */
+  function mitamaMark(pic, mitama) {
+    const src = mitama && S.data.icons && S.data.icons.mitama;
+    if (src) pic.append(h('i', { class: 'mitama-mark', style: `--mark:url("${src}")` }));
+    return pic;
+  }
+
   /** The demon the Digitalized view adds: who, how much of its stats, which assists. */
   function demonCard() {
     const DG = S.data.digitalize;
@@ -553,6 +566,7 @@
       img.onerror = () => img.remove();
       pic.append(img);
     }
+    mitamaMark(pic, DG.mitama);
     const chips = [`Lv ${fmt(DG.level)}`, DG.race, DG.mitama ? `${DG.mitama} Mitama` : null].filter(Boolean)
       .map((t) => h('span', { class: 'tag', text: t }));
     if (DG.alignment) chips.splice(2, 0, h('span', { class: 'tag tag-align ' + alignClass(DG.alignment), text: alignName(DG.alignment) }));
@@ -744,6 +758,26 @@
   }
 
 
+  /**
+   * The demon summoned when the game was last read (a snapshot, or "Load demons from the game"), to the right of your
+   * stats: the picker's card without its bonus list. The list of demons comes from the host's cache, asked for once;
+   * nothing is drawn until it is there, or when no demon was summoned.
+   */
+  let demonsAsked = false;
+  function summonedCard() {
+    if (!S.demons && !demonsAsked) {
+      demonsAsked = true;
+      loadDemons(false).then(() => { demonsAsked = false; if (S.demons) refreshSummoned(); });
+    }
+    const d = (S.demons || []).find((x) => x.summoned);
+    if (!d) return h('div', { class: 'summoned none' });
+    const tag = h('span', { class: 'tag tag-demon', tabindex: 0, text: 'Summoned',
+      'data-tip': 'Your summoned demon' + (d.seenAt ? ` when the game was last read (${when(d.seenAt)})` : '') + '. A snapshot, or "Load demons from the game" in the demon list, reads it again.' });
+    return h('div', { class: 'summoned' }, demonTile(d, false, null, true, tag));
+  }
+  /** After the list of demons changed (loaded, or read from the game): only that card, so an open demon list stays put. */
+  function refreshSummoned() { const el = $('.page-head .summoned'); if (el) el.replaceWith(summonedCard()); }
+
   function pageOverview() {
     const L = S.v.latest;
     const DG = S.data.digitalize;
@@ -781,7 +815,7 @@
       h('div', { class: 'who-line' },
         h('p', { class: 'page-who' }, h('b', { class: 'who-big', text: S.meta.character || '' }), [`Level ${fmt(L.level)}`, align].filter(Boolean).map((t) => ` · ${t}`).join('')),
         legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : []))),
-      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow)))));
+      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow))), summonedCard()));
     page.append(demonCard());   // always there: a demon, or "No demon"
 
     const missing = String(L.gear_missing || '').trim();
@@ -1437,11 +1471,6 @@
   }
 
   /**
-   * One COMP demon as a card, for the demon dropdown: who it is, the share of its stats you get, the skills in its
-   * slots and the key bonuses it would add ("offer", worked out by the reader with your learned boosts).
-   * `pick` runs on a click; `on` marks the demon in use.
-   */
-  /**
    * Where a COMP demon stands for digitalizing ("unlock", from the game's Digitalization Level table and your levels):
    * unlocked, locked until a level of its race, or not named by any level. Plus a mark when the saved digitalize demon
    * is no longer among the COMP demons read (seenAt empty: it was only kept because it is the saved one).
@@ -1459,24 +1488,33 @@
     return tags.length ? h('span', { class: 'dgt-tags' }, tags) : null;
   }
 
-  function demonTile(d, on, pick) {
+  /**
+   * One COMP demon as a card, for the demon dropdown: who it is, the share of its stats you get, the skills in its
+   * slots and the key bonuses it would add ("offer", worked out by the reader with your learned boosts).
+   * `pick` runs on a click; `on` marks the demon in use.
+   * `compact` (the Overview's summoned demon): no bonus list or unlock tags, not a button, and `tag` after the name.
+   */
+  function demonTile(d, on, pick, compact, tag) {
     const O = d.offer || null;
     const pic = h('span', { class: 'demon-pic ' + alignClass(O && O.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
     if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+    mitamaMark(pic, d.mitama);
     const slots = O ? (O.skills || []).filter((s) => s.kind !== 'Feature' && s.kind !== 'Equipment') : [];
     const icons = slots.map((s) => {
       const ic = skillIcon(s);
-      if (!isTrue(s.counted)) ic.classList.add('off');
+      // dimmed = you don't get it while digitalized (the race's boost isn't learned): no meaning for the summoned demon, which uses all its skills
+      if (!compact && !isTrue(s.counted)) ic.classList.add('off');
+      if (compact) { ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name); }
       return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip)));
     });
-    const adds = O ? COMBAT.filter(([k]) => n0(O.combat && O.combat[k])).map(([k, label, unit]) => h('span', { class: 'dgt-add' }, h('span', { text: label }), h('b', { text: fmt(O.combat[k], unit, true) }))) : [];
+    const adds = compact ? [] : O ? COMBAT.filter(([k]) => n0(O.combat && O.combat[k])).map(([k, label, unit]) => h('span', { class: 'dgt-add' }, h('span', { text: label }), h('b', { text: fmt(O.combat[k], unit, true) }))) : [];
     const hp = O && (O.stats || []).find((s) => s.stat === 'Max HP'), mp = O && (O.stats || []).find((s) => s.stat === 'Max MP');
-    return h('button', { type: 'button', class: 'dg-tile' + (on ? ' on' : ''), 'aria-current': on ? 'true' : null, onclick: pick },
+    return h(compact ? 'div' : 'button', compact ? { class: 'dg-tile static' } : { type: 'button', class: 'dg-tile' + (on ? ' on' : ''), 'aria-current': on ? 'true' : null, onclick: pick },
       h('span', { class: 'dgt-head' }, pic,
-        h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: d.name }),
+        h('span', { class: 'dgt-id' }, compact && tag ? h('span', { class: 'dgt-name-line' }, h('span', { class: 'dgt-name', text: d.name }), tag) : h('span', { class: 'dgt-name', text: d.name }),
           h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race, O && O.alignment ? alignName(O.alignment) : null, d.mitama ? `${d.mitama} Mitama` : null].filter(Boolean).join(' · ') })),
-        on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null),
-      demonUnlockTags(d),
+        compact ? null : (on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null)),
+      compact ? null : demonUnlockTags(d),
       O ? h('span', { class: 'dgt-line' }, `${fmt(O.rate)}% of its stats`, hp ? ` · HP ${fmt(hp.value, '', true)}` : '', mp ? ` · MP ${fmt(mp.value, '', true)}` : '')
         : d.forceStack || d.equipment ? h('span', { class: 'dgt-line', text: [d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }) : null,
       // listed by the game without its details (stats, skills, growth, Mitama): there is nothing to work out yet
@@ -2073,6 +2111,7 @@
       const demons = await host.call('compDemons', scan ? {} : { cached: true });
       if (look !== demonsLook) return;
       S.demons = demons;
+      if (scan) refreshSummoned();
       // The game keeps every COMP demon in memory only while the COMP (or Demon List) is open; otherwise just the summoned one.
       const live = demons.filter((d) => d.inGame).length;
       const unread = demons.filter((d) => d.inGame && d.loaded === false).length;   // listed by the game without their details

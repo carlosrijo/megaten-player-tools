@@ -504,10 +504,15 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .dg-tile.on { border-color: color-mix(in srgb, var(--demon) 70%, transparent); cursor: default; }
 .dg-tile.on:hover { background: var(--surface); }
 .dg-tile[disabled] { opacity: .6; cursor: progress; }
+.dg-tile.static, .dg-tile.static:hover { cursor: default; background: var(--surface); border-color: var(--border); }
+/* Overview: the summoned demon, to the right of the character's stats (the picker's card without its bonus list) */
+.summoned { flex: 0 1 auto; min-width: 0; max-width: 340px; }
+.summoned.none { display: none; }
 .dgt-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 .dgt-head .demon-pic { align-self: center; }
 .dgt-id { display: grid; gap: 1px; min-width: 0; }
 .dgt-name { font: 600 15px/1.3 var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dgt-name-line { display: flex; align-items: center; gap: 8px; min-width: 0; }   /* the name with its tag right after it */
 .dgt-line { color: var(--text-2); font-size: 12px; }
 .dgt-tags { display: flex; flex-wrap: wrap; gap: 4px 6px; }
 .dg-tile .dg-skill-icons { margin-left: 0; }
@@ -619,6 +624,10 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--demon) 12%, transparent), 0 0 12px color-mix(in srgb, var(--demon) 25%, transparent); }
 .demon-pic span { font: 600 18px/1 var(--font-display); color: var(--demon); }
 .demon-pic img { position: absolute; inset: 5px; width: 32px; height: 32px; image-rendering: pixelated; }
+/* a Mitama demon: the game's mark on the top left corner of the picture (its 14x14 image as a mask, in the game's cyan) */
+.demon-pic .mitama-mark { position: absolute; left: 5px; top: 5px; box-sizing: content-box; width: 10px; height: 10px; border: 1px solid #1a2b4c; background: #1a2b4c; }   /* dark blue, 2px around (asked for) and behind the mark, as the game's dark square */
+.demon-pic .mitama-mark::before { content: ''; position: absolute; inset: 0; background: #7dcfff; image-rendering: auto;
+  -webkit-mask: var(--mark) center / 100% 100% no-repeat; mask: var(--mark) center / 100% 100% no-repeat; }
 .demon-id { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
 .demon-id .stat-label { font-size: 11px; }
 .demon-name { margin: 0 4px 0 0; font: 600 17px/1.2 var(--font-display); letter-spacing: -.01em; }

@@ -130,7 +130,7 @@ again (the summoned demon is always read). What was read is kept (`data\cache\co
 `data\cache\demon-icons\`), so the picker also works without the game. In the app, picking never reads the game: it uses the demons and the learned
 assists last read (by a snapshot, or by "Load demons from the game" in the dropdown). Picking one saves it, recalculates the latest snapshot's
 demon columns with it (the CSV is copied to `<csv>.backup-before-demon-switch.csv` first) and rebuilds the page. Later
-snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
+snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The demon that was summoned when the game was last read (a snapshot, or "Load demons from the game") shows as a small card to the right of your stats on the Overview. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
 client's `Interface\tga` into `data\dash\demon.png` when the demon is saved; **Details** opens the stats it adds and its assists per level), a
 third part in each key stat's breakdown, and
 a demon column on Bonuses (rows only the demon gives appear in that view only). The CSV gets "Digitalize demon",
