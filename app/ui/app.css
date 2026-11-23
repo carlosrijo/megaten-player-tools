@@ -1028,8 +1028,9 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 /* ---------- Fusion Planner ---------- */
 .page-fusion { grid-template-columns: minmax(0, 1fr); }
 .fus-body { display: grid; gap: 14px; min-width: 0; }
-.fus-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.fus-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }   /* every card as tall as the tallest */
 .fus-slot { min-height: 132px; }
+.fus-slot .card-head { min-height: 28px; align-items: center; flex-wrap: nowrap; }   /* the third card's Remove button doesn't make its head taller */
 .fus-add { all: unset; box-sizing: border-box; min-height: 132px; border: 1px dashed var(--border-strong); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text-2); cursor: pointer; font-size: 12px; padding: 12px; text-align: center; }
 .fus-add:hover { color: var(--text); background: var(--hover); }
 .fus-add:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
