@@ -1,0 +1,60 @@
+# Release: build the portable NewMoonTracker.exe (one file, nothing to install; see tools/publish-portable.ps1).
+#
+#   Push a version tag   ->  builds the exe and publishes a GitHub release with it (notes made from the commits):
+#       git tag v1.2.0
+#       git push origin v1.2.0
+#     A tag with a dash (v1.2.0-beta.1) makes a pre-release.
+#   Run it by hand (Actions > Release > Run workflow)  ->  only builds the exe, kept as the run's artifact for testing.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to create the release
+
+jobs:
+  portable:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Version from the tag
+        id: ver
+        shell: pwsh
+        run: |
+          $v = if ('${{ github.ref_type }}' -eq 'tag') { '${{ github.ref_name }}'.TrimStart('v') } else { '0.0.0-dev' }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Build the portable exe
+        shell: pwsh
+        run: ./tools/publish-portable.ps1 -Version '${{ steps.ver.outputs.version }}'
+
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash dist/NewMoonTracker.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$h  NewMoonTracker.exe" | Out-File dist/NewMoonTracker.exe.sha256 -Encoding ascii
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: NewMoonTracker-${{ steps.ver.outputs.version }}
+          path: dist/*
+
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $flags = @('--title', "NewMoon Build Tracker $tag", '--generate-notes')
+          if ($tag -like '*-*') { $flags += '--prerelease' }
+          gh release create $tag dist/NewMoonTracker.exe dist/NewMoonTracker.exe.sha256 @flags
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

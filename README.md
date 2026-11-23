@@ -6,6 +6,30 @@ plus the data files for the "Rubito Build Tracker" page.
 It only ever opens the game process with read access (`PROCESS_QUERY_INFORMATION | PROCESS_VM_READ`):
 it never writes to the game or changes anything.
 
+## Download (portable, nothing to install)
+
+Get `NewMoonTracker.exe` from the [latest release](https://github.com/carlosrijo/megaten-player-tools/releases/latest),
+put it in a folder of its own and run it. It needs 64-bit Windows 10 or 11 with the Microsoft Edge WebView2 Runtime
+(already part of Windows 11). Your data goes in a `data` folder made beside the exe, so keep the exe somewhere you
+can write to (not Program Files); to move it to another PC, copy the exe together with that folder. Your stats CSV
+goes in `Documents\smt-stats` (change `statsFolder` in `data\config.json`).
+
+The release has no pictures from the game (demon, enemy and DCM icons): those are the game's own art, made locally
+from the client with the commands below, so those pages show names without icons.
+
+### Making a release
+
+Push a version tag; GitHub builds the exe and publishes the release (`.github\workflows\release.yml`):
+
+```
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+A tag with a dash (`v1.1.0-beta.1`) makes a pre-release. To try the build first, run the Release workflow by hand
+(Actions > Release > Run workflow) and download the exe from the run, or build it here:
+`pwsh -NoProfile -File tools\publish-portable.ps1` (gives `dist\NewMoonTracker.exe`).
+
 ## Desktop app
 
 ```

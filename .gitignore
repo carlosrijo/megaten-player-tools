@@ -14,3 +14,5 @@ data/characters/*/cache/models/
 app/ui/demon-db-icons/
 # your own data (stats, gear, characters, pictures, paths on this PC): kept on disk, never committed
 data/
+# the portable release, made by tools\publish-portable.ps1
+dist/
