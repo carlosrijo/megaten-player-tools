@@ -920,13 +920,18 @@
       const offIds = new Set(rows.filter((r) => r.toggle && !r.toggle_on).map((r) => r.skill_id));
       const all = Array.isArray(c.skills) ? c.skills.map((s) => ({ ...s, off: offIds.has(s.id) }))
         : rows.map((r) => ({ id: r.skill_id, name: r.skill || '—', icon: r.icon, rank: r.rank || '', active: false, off: r.toggle && !r.toggle_on }));
-      const part = (label, list) => (list.length ? [h('div', { class: 'tt-sec', text: label }), list.map((s) => h('div', { class: 'tt-skill' + (s.off ? ' off' : '') },
-        skillIcon(s), h('span', { text: s.name }), h('small', { text: [s.rank, s.off ? 'switched off' : ''].filter(Boolean).join(' · ') })))] : null);
-      return withTip(h('button', { type: 'button', class: 'exp-chip', 'aria-label': `${c.name}, class ${c.class} rank ${c.rank}`,
-        onclick: () => { S.exp.q = c.name; go('expertise'); } }, h('span', { text: c.name }), h('b', { text: `${c.class}-${c.rank}` })),
-      () => h('div', { class: 'tt' }, tipHead(null, c.name, `Chain expertise · Class ${c.class} Rank ${c.rank}`),
-        part('Passive', all.filter((s) => !s.active)), part('Active', all.filter((s) => s.active)),
-        all.length ? null : h('div', { class: 'tt-line', text: 'No skills from its ranks yet.' })));
+      // after the chip, the icons of its skills at 20px: the passives, a small gap, the actives (each names itself on hover)
+      const icons = (list, kind) => list.map((s, i) => {
+        const ic = skillIcon(s);
+        ic.dataset.tip = `${s.name} (${kind}, ${s.rank})` + (s.off ? ', toggle switched off' : '');
+        if (s.off) ic.classList.add('off');
+        if (kind === 'active' && i === 0) ic.classList.add('gap');
+        return ic;
+      });
+      return h('span', { class: 'exp-chain' },
+        h('button', { type: 'button', class: 'exp-chip', 'aria-label': `${c.name}, class ${c.class} rank ${c.rank}`, 'data-tip': `Open ${c.name} on the Expertise page`,
+          onclick: () => { S.exp.q = c.name; go('expertise'); } }, h('span', { text: c.name }), h('b', { text: `${c.class}-${c.rank}` })),
+        icons(all.filter((s) => !s.active), 'passive'), icons(all.filter((s) => s.active), 'active'));
     };
     const chains = ((R.ranks) || []).filter((r) => r.chain);
     return h('section', { class: 'card band exp-band', 'aria-label': 'Expertise' },

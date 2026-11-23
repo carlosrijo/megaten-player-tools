@@ -271,10 +271,13 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-chip:hover { background: var(--hover); }
 .exp-chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .exp-chip b { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; }
-.tt-skill { display: flex; align-items: center; gap: 8px; padding: 1px 0; }   /* a chain's skills, in its chip's tooltip */
-.tt-skill .skill-ico { width: 20px; height: 20px; }
-.tt-skill small { margin-left: auto; padding-left: 12px; color: var(--text-2); font-size: 11px; white-space: nowrap; }
-.tt-skill.off { opacity: .5; }
+/* a chain: its chip, then its skills' icons (passives, a gap, actives); the icons wrap under it in a narrow window */
+.exp-band .band-items { gap: 6px 16px; }
+.exp-chain { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; max-width: 100%; }
+.exp-chain .exp-chip { margin-right: 4px; }
+.exp-chain .skill-ico { width: 20px; height: 20px; border-radius: 3px; }
+.exp-chain .skill-ico.off { opacity: .35; }
+.exp-chain .skill-ico.gap { margin-left: 6px; }
 /* gear: each worn piece is its game icon in a slot-like tile, then the complete sets. Names and numbers are the Gear
    page's: a tile's tooltip is the game's, a click opens the piece there. */
 .gear-sets { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; }
