@@ -1160,5 +1160,4 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-drop-list .gdb-kind { margin-right: 2px; }
 .dun-tt-row { display: flex; justify-content: space-between; gap: 14px; }
 .tt-head .dun-item-pic { flex: none; }
-.dun-loot-global .dun-loot-item { border-style: dashed; }   /* not this place's own: the game-wide list */
 .dun-vanilla { margin: 0; }

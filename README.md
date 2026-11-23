@@ -138,9 +138,9 @@ enemy for its details:
 
 An opened place also shows **Drops here**: every item its enemies can drop, as the game's item pictures with the best
 chance under each. Hover one for the game's description and which enemies drop it there, at what rate ("Every enemy
-here" for the place's own drops). Below it: **Game-wide drops** (dashed: the 12 items any enemy anywhere can drop,
-such as the Jack/Queen/King/Ace boxes and the Invoke emblems), the **End chest** (what the boss chest at the end of a
-stage can hold, over every stage of the place) and **Other chests**. A place whose enemies drop nothing of their own
+here" for the place's own drops). Below it: the **End chest** (what the boss chest at the end of a stage can hold,
+over every stage of the place) and **Other chests**. The game-wide drops any enemy anywhere can give (the
+Jack/Queen/King/Ace boxes, the Invoke emblems) are left out. A place whose enemies drop nothing of their own
 (Dark Babel) says so: NewMoon sets those drops on its own server. All rates are the vanilla comp_hack server data's
 (your local server's), before luck and drop bonuses; the page says so too.
 
