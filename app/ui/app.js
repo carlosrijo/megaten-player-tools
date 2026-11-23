@@ -1464,7 +1464,8 @@
     const slots = O ? (O.skills || []).filter((s) => s.kind !== 'Feature' && s.kind !== 'Equipment') : [];
     const icons = slots.map((s) => {
       const ic = skillIcon(s);
-      if (!isTrue(s.counted)) ic.classList.add('off');
+      // dimmed = you don't get it while digitalized (the race's boost isn't learned): no meaning for the summoned demon, which uses all its skills
+      if (!compact && !isTrue(s.counted)) ic.classList.add('off');
       if (compact) { ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name); }
       return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip)));
     });
@@ -1472,9 +1473,9 @@
     const hp = O && (O.stats || []).find((s) => s.stat === 'Max HP'), mp = O && (O.stats || []).find((s) => s.stat === 'Max MP');
     return h(compact ? 'div' : 'button', compact ? { class: 'dg-tile static' } : { type: 'button', class: 'dg-tile' + (on ? ' on' : ''), 'aria-current': on ? 'true' : null, onclick: pick },
       h('span', { class: 'dgt-head' }, pic,
-        h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: d.name }),
+        h('span', { class: 'dgt-id' }, compact && tag ? h('span', { class: 'dgt-name-line' }, h('span', { class: 'dgt-name', text: d.name }), tag) : h('span', { class: 'dgt-name', text: d.name }),
           h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race, O && O.alignment ? alignName(O.alignment) : null, d.mitama ? `${d.mitama} Mitama` : null].filter(Boolean).join(' · ') })),
-        tag || (on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null)),
+        compact ? null : (on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null)),
       O ? h('span', { class: 'dgt-line' }, `${fmt(O.rate)}% of its stats`, hp ? ` · HP ${fmt(hp.value, '', true)}` : '', mp ? ` · MP ${fmt(mp.value, '', true)}` : '')
         : d.forceStack || d.equipment ? h('span', { class: 'dgt-line', text: [d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }) : null,
       icons.length ? h('span', { class: 'dg-skill-icons' }, icons) : null,
