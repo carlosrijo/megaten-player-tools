@@ -2190,6 +2190,8 @@
       h('ul', { class: 'gdb-list' }, e.drops.map((g) => h('li', null, h('span', { class: 'gdb-kind dun-rate', text: `${nf.format(g.rate)}%` }), g.item, g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null)))));
     return box;
   }
+  /** A cell of the enemy list with one tag per affinity (weaknesses, or null / reflect / absorb), so nobody has to open the enemy. */
+  const dunAffCell = (list, tag, none) => h('td', { class: 'dun-aff-cell' }, list.length ? h('span', { class: 'chips' }, list.map(tag)) : h('span', { class: 'zero', text: none }));
   function dunDetail(x, q, redraw) {
     const D = S.dun, box = h('div', { class: 'dun-detail' });
     const only = q && !x.hay.includes(q) ? x.mobs.filter((e) => e.hay.includes(q)) : x.mobs;   // a search for an enemy shows that enemy
@@ -2200,15 +2202,19 @@
       body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
         h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
           h('span', { class: 'chev' }, icon('chevron')), dunIcon(e.mob),
-          h('span', null, e.mob.name, e.boss ? h('span', { class: 'tag tag-boss', style: 'margin-left:8px', text: 'Boss' }) : null, e.where ? h('span', { class: 'src-count', text: e.where }) : null))),
-        h('td', { class: e.mob.race ? '' : 'zero', text: e.mob.race || '—' }),
+          h('span', null, e.mob.name, e.boss ? h('span', { class: 'tag tag-boss', style: 'margin-left:8px', text: 'Boss' }) : null,
+            h('span', { class: 'src-count', text: [e.mob.race, e.where].filter(Boolean).join(' · ') })))),
         h('td', { class: 'num', text: e.mob.level }),
-        h('td', { class: 'num', text: fmt(e.mob.hp) })));
-      if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, dunMobDetail(e))));
+        h('td', { class: 'num', text: fmt(e.mob.hp) }),
+        dunAffCell(e.mob.aff.filter((a) => a.res < 0), (a) => h('span', { class: 'tag dun-weak', 'data-tip': `Weak to ${a.el}: takes ${Math.abs(a.res)}% more damage`, text: `${a.el} ${Math.abs(a.res)}%` }), 'No weakness'),
+        dunAffCell(e.mob.aff.filter((a) => a.kind), (a) => h('span', { class: 'tag dun-nra', 'data-tip': `${a.kind === 'Null' ? 'Nulls' : a.kind === 'Reflect' ? 'Reflects' : 'Absorbs'} ${a.el}${a.pct >= 100 ? '' : `, ${a.pct}% of the time`}`,
+          text: `${a.kind} ${a.el}${a.pct >= 100 ? '' : ` ${a.pct}%`}` }), 'None')));
+      if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 5 }, dunMobDetail(e))));
     });
     if (x.shared) box.append(h('p', { class: 'note', text: 'Every enemy here can also drop: ' + x.shared.slice(0, 12).map((g) => `${g.item} (${nf.format(g.rate)}%)`).join(', ') + (x.shared.length > 12 ? ` and ${x.shared.length - 12} more` : '') }));
     box.append(h('table', { class: 'tbl dun-mobs' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', text: 'Race' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }))), body));
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }),
+        h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
     return box;
   }
   function pageDungeons() {

@@ -1126,3 +1126,5 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .ddb-desc { display: block; color: var(--text-2); font-size: 12px; white-space: pre-line; }
 .ddb-enemy { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px 14px; color: var(--text-2); }
 .ddb-form { margin-top: 2px; }
+.dun-mobs td.dun-aff-cell { white-space: normal; min-width: 120px; }
+.dun-mobs .dun-aff-cell .chips { gap: 4px; }

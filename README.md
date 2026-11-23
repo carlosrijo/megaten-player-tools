@@ -120,9 +120,10 @@ Demons, levels, races and special fusions are the NewMoon client's. The race cha
 rules are the comp_hack server's fusion code, which NewMoon may have changed: not yet checked against the game.
 ### Tools: Dungeon Explorer
 
-Under **Tools** in the left bar. Every dungeon (160), field and other place with enemies, and the enemies in it that
+Under **Tools** in the left bar. Every dungeon (175; each difficulty such as Bronze, Silver and Gold on its own), field and other place with enemies, and the enemies in it that
 can't be contracted (4,003 kinds): the ones you can't talk to at all, and the ones that talk but never join. Click a
-place for its enemies (picture, race, level, Max HP, boss mark, and the floor when the floors have names), and an
+place for its enemies (picture, race, level, Max HP, boss mark, the floor when the floors have names, and what each is
+weak to and nulls, reflects or absorbs, so you can read them without opening anything), and an
 enemy for its details:
 
 - **Stats**: Max HP and MP, STR to LUCK, and CLS-R, LNG-R, Spell, Support, P.Def, M.Def at that level.
