@@ -525,6 +525,17 @@
   const alignClass = (a) => (/^(LAW|NEUTRAL|CHAOS)$/i.test(String(a || '')) ? 'align-' + String(a).toLowerCase() : '');
   const alignName = (a) => (a ? String(a).charAt(0) + String(a).slice(1).toLowerCase() : '');
 
+  /**
+   * The game's mark for a Mitama demon on the top left corner of its picture, as in the COMP bar (the game's own
+   * image, icons.json "mitama"; white there, tinted here as the game tints it). Nothing when the demon isn't one or
+   * the image was never read from the client.
+   */
+  function mitamaMark(pic, mitama) {
+    const src = mitama && S.data.icons && S.data.icons.mitama;
+    if (src) pic.append(h('i', { class: 'mitama-mark', style: `--mark:url("${src}")` }));
+    return pic;
+  }
+
   /** The demon the Digitalized view adds: who, how much of its stats, which assists. */
   function demonCard() {
     const DG = S.data.digitalize;
@@ -548,6 +559,7 @@
       img.onerror = () => img.remove();
       pic.append(img);
     }
+    mitamaMark(pic, DG.mitama);
     const chips = [`Lv ${fmt(DG.level)}`, DG.race, DG.mitama ? `${DG.mitama} Mitama` : null].filter(Boolean)
       .map((t) => h('span', { class: 'tag', text: t }));
     if (DG.alignment) chips.splice(2, 0, h('span', { class: 'tag tag-align ' + alignClass(DG.alignment), text: alignName(DG.alignment) }));
@@ -1461,6 +1473,7 @@
     const O = d.offer || null;
     const pic = h('span', { class: 'demon-pic ' + alignClass(O && O.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
     if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+    mitamaMark(pic, d.mitama);
     const slots = O ? (O.skills || []).filter((s) => s.kind !== 'Feature' && s.kind !== 'Equipment') : [];
     const icons = slots.map((s) => {
       const ic = skillIcon(s);

@@ -623,6 +623,9 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--demon) 12%, transparent), 0 0 12px color-mix(in srgb, var(--demon) 25%, transparent); }
 .demon-pic span { font: 600 18px/1 var(--font-display); color: var(--demon); }
 .demon-pic img { position: absolute; inset: 5px; width: 32px; height: 32px; image-rendering: pixelated; }
+/* a Mitama demon: the game's mark on the top left corner of the picture (its 14x14 image as a mask, in the game's cyan) */
+.demon-pic .mitama-mark { position: absolute; left: 5px; top: 5px; width: 14px; height: 14px; background: #7dcfff; image-rendering: pixelated;
+  -webkit-mask: var(--mark) center / 100% 100% no-repeat; mask: var(--mark) center / 100% 100% no-repeat; filter: drop-shadow(0 0 1px #000); }
 .demon-id { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
 .demon-id .stat-label { font-size: 11px; }
 .demon-name { margin: 0 4px 0 0; font: 600 17px/1.2 var(--font-display); letter-spacing: -.01em; }
