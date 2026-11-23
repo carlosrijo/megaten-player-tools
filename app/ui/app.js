@@ -2149,9 +2149,10 @@
         Object.values(d.mobs).forEach((m) => { m.hay = [m.name, m.race || '', ...m.skills.map(sk), ...m.enemySkills.map(sk), ...m.traits.map(sk)].join(' ').toLowerCase(); });
         // a drop points at d.items[id] = [name, the game's description, picture]
         const item = (g) => { const [name, desc, icon] = d.items[g.i] || ['', '', null]; return Object.assign(g, { item: name, desc, icon }); };
+        (d.everywhere || []).forEach(item);   // the game-wide drops every enemy that inherits drops can give
         d.dungeons.forEach((x, i) => {
           x.key = i;
-          (x.shared || []).forEach(item);
+          (x.shared || []).forEach(item); (x.bossChest || []).forEach(item); (x.chests || []).forEach(item);
           x.mobs.forEach((e) => { e.mob = d.mobs[e.m]; (e.drops || []).forEach(item); e.hay = [e.mob.hay, e.where || '', ...(e.drops || []).map((g) => g.item)].join(' ').toLowerCase(); });
           x.hay = [x.name, x.from || '', ...(x.shared || []).map((g) => g.item)].join(' ').toLowerCase();
           x.bosses = x.mobs.filter((e) => e.boss).length;
@@ -2224,11 +2225,22 @@
       if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 5 }, dunMobDetail(e))));
     });
     const loot = dunLoot(x);
-    if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }),
-      h('div', { class: 'dun-loot' }, loot.map((l) => withTip(h('span', { class: 'dun-loot-item', tabindex: 0, role: 'img', 'aria-label': `${l.item}, up to ${nf.format(l.best)}%` },
-        dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => dunLootTip(l))))));
-    // Dark Babel and other NewMoon areas: the public server data gives their enemies nothing (NewMoon sets it on its own server)
-    else box.append(h('p', { class: 'note', text: 'No enemy drops: the public server data this page is built from gives the enemies here nothing. NewMoon sets these drops on its own server, so they can\'t be shown.' }));
+    const strip = (list, tip) => h('div', { class: 'dun-loot' }, list.map((l) => withTip(h('span', { class: 'dun-loot-item', tabindex: 0, role: 'img', 'aria-label': `${l.item}, up to ${nf.format(l.best)}%` },
+      dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => tip(l))));
+    if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }), strip(loot, dunLootTip)));
+    // Dark Babel and other NewMoon areas: the server data gives their enemies nothing of their own (NewMoon sets it on its own server)
+    else box.append(h('p', { class: 'note', text: 'No enemy drops of its own: the server data gives the enemies here only the game-wide drops. NewMoon sets its own enemy drops on its own server, which this page can\'t read.' }));
+    // what every enemy anywhere can drop (comp_hack's game-wide list), for the enemies here that take it (InheritDrops)
+    const everywhere = (S.dun.data.everywhere || []).map((g) => ({ i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who: 'all', rate: g.rate }] }));
+    if (everywhere.length && x.mobs.some((e) => !e.own)) box.append(h('div', { class: 'dun-loot-block dun-loot-global' },
+      h('span', { class: 'q-key', 'data-tip': 'The server\'s game-wide drop list: any enemy in any place can give these, on top of its own drops', text: `Game-wide drops · ${everywhere.length} items any enemy can drop` }),
+      strip(everywhere, dunLootTip)));
+    // the chests its events open: the boss chest at the end of a stage, and any others (a stage's events decide which)
+    const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
+    const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest');
+    if (boss.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'What the boss chest at the end of a stage can hold, over every stage of this place', text: `End chest · ${boss.length === 1 ? '1 item' : `${boss.length} items`}` }), strip(boss, dunLootTip)));
+    if (other.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'Other chests the events here open', text: `Other chests · ${other.length === 1 ? '1 item' : `${other.length} items`}` }), strip(other, dunLootTip)));
+    if (loot.length || everywhere.length || boss.length || other.length) box.append(h('p', { class: 'note dun-vanilla', text: 'Drop and chest rates are the vanilla comp_hack server data\'s (the same as your local server), before luck and server drop bonuses. NewMoon may have changed them. A chest\'s chance is per item, each rolled on its own.' }));
     box.append(h('table', { class: 'tbl dun-mobs' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }),
         h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
@@ -2255,10 +2267,11 @@
   function dunLootTip(l) {
     const rows = l.from.slice().sort((a, b) => b.rate - a.rate);
     const shown = rows.slice(0, 10), more = rows.length - shown.length;
-    return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% per kill${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
+    const inChest = rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest');
+    return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% ${inChest ? 'per chest' : 'per kill'}${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
       ...tipLines(l.desc),
-      h('div', { class: 'tt-sec', text: 'Dropped here by' }),
-      shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who ? `${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
+      h('div', { class: 'tt-sec', text: rows[0] && rows[0].who === 'all' ? 'Dropped by' : rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest') ? 'Found in' : 'Dropped here by' }),
+      shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who === 'all' ? 'Any enemy, in any place' : r.who === 'boss' ? 'The boss chest at the end of a stage' : r.who === 'chest' ? 'A chest the events here open' : r.who ?`${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
       more > 0 ? h('div', { class: 'tt-line', text: `and ${more} more` }) : null);
   }
   /**
