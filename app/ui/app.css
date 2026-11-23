@@ -1141,3 +1141,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-skill:focus-visible { outline: none; }
 .dun-skill-pic { display: block; width: 32px; height: 32px; border-radius: 6px; background: var(--hover); }
 .tt-head .dun-skill-pic { flex: none; }
+.dun-group-row > td { background: var(--surface-2); padding-top: 9px; padding-bottom: 9px; font-weight: 600; cursor: pointer; }
+.dun-group-row .src-count { font-weight: 400; }
+.dun-group-pre { font-weight: 400; color: var(--text-2); }
+.tbl tr.dun-in-group > td:first-child { padding-left: 34px; }

@@ -135,8 +135,11 @@ enemy for its details:
   description. Skills the game has no icon for (most enemy-only moves and all traits) show their name instead.
 - **Drops** with the chance per kill, and the XP it gives.
 
-Search a place, an enemy, a skill or a drop; the chips filter dungeons, fields and other places. Searching an enemy
-lists only the matching enemies inside each place.
+Places are grouped by where you enter them from (all of Dark Babel's floors under "Entered from Dark Babel", Celu
+Tower's Bronze, Silver and Gold under "Entered from Celu Tower"); click a group to open it. Fields, other places and
+the few dungeons whose entrance the data doesn't give come last. Untick "Group by entrance" for one flat list.
+Search a place, an enemy, a skill, a drop or an entrance; the chips filter dungeons, fields and other places. A search
+opens every group it finds something in, and searching an enemy lists only the matching enemies inside each place.
 
 Names, stats, skills and traits are the NewMoon client's. Which enemies are where, their levels, whether they talk and
 their drops come from the public server data, so NewMoon may have changed them. Stats are the server's formula for an

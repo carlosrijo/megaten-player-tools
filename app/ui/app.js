@@ -282,7 +282,8 @@
     gdb: { q: '', slot: 'all', known: true, open: new Set(), shown: 150, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
-    dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle' },   // Dungeon Explorer: opened places, opened enemies
+    dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
+      group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
     ddb: { q: '', kind: 'contract', race: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle' },
     // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
@@ -2240,26 +2241,51 @@
     const drawChips = () => chips.replaceChildren(...DUN_KINDS.map(([id, label]) =>
       h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
         label, h('span', { class: 'count', text: list.filter((x) => inKind(x, id)).length }))));
+    // Grouped: under the place you enter from (a town, a lobby: "Dark Babel", "Celu Tower" for its Bronze, Silver,
+    // Gold...). Places the data gives no entrance for close the list, by kind.
+    const NO_DOOR = { Dungeon: 'Other dungeons (entrance not in the data)', Field: 'Fields', other: 'Other places' };
+    const groupOf = (x) => x.from || NO_DOOR[x.kind === 'Dungeon' || x.kind === 'Field' ? x.kind : 'other'];
+    const isDoorless = (g) => Object.values(NO_DOOR).includes(g);
     const draw = () => {
       body.replaceChildren();
       const q = D.q.trim().toLowerCase();
       const rows = list.filter((x) => inKind(x, D.kind) && (!q || x.hay.includes(q) || x.mobs.some((e) => e.hay.includes(q))));
-      rows.forEach((x) => {
+      const placeRow = (x) => {
         const open = D.open.has(x.key);
         const toggle = () => { if (D.open.has(x.key)) D.open.delete(x.key); else D.open.add(x.key); draw(); };
         const hits = q && !x.hay.includes(q) ? x.mobs.filter((e) => e.hay.includes(q)).length : 0;
-        body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+        const door = !D.group && x.from && x.from !== x.name;   // in a group its entrance is the heading
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : '') + (D.group ? ' dun-in-group' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')),
-            h('span', null, x.name, x.from ? h('span', { class: 'src-count', text: `entered from ${x.from}` }) : null, hits ? h('span', { class: 'src-count', text: hits === 1 ? '1 matching enemy' : `${hits} matching enemies` }) : null))),
+            h('span', null, x.name, door ? h('span', { class: 'src-count', text: `entered from ${x.from}` }) : null, hits ? h('span', { class: 'src-count', text: hits === 1 ? '1 matching enemy' : `${hits} matching enemies` }) : null))),
           h('td', null, h('span', { class: 'tag', text: x.kind })),
           h('td', { class: 'num', text: x.levels }),
           h('td', { class: 'num' }, String(x.mobs.length), x.bosses ? h('span', { class: 'src-count', text: x.bosses === 1 ? '1 boss' : `${x.bosses} bosses` }) : null)));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, dunDetail(x, q, draw))));
-      });
+      };
+      if (!D.group) rows.forEach(placeRow);
+      else {
+        const groups = new Map();
+        rows.forEach((x) => { const g = groupOf(x); if (!groups.has(g)) groups.set(g, []); groups.get(g).push(x); });
+        [...groups.keys()].sort((a, b) => isDoorless(a) - isDoorless(b) || (isDoorless(a) ? Object.values(NO_DOOR).indexOf(a) - Object.values(NO_DOOR).indexOf(b) : !/^\w/.test(a) - !/^\w/.test(b) || a.localeCompare(b)))
+          .forEach((g) => {
+            const places = groups.get(g), shut = !q && !D.shown.has(g);   // a search opens every group it finds something in
+            const fold = () => { if (D.shown.has(g)) D.shown.delete(g); else D.shown.add(g); draw(); };
+            const lv = places.flatMap((x) => x.levels.split('–').map(Number)), lo = Math.min(...lv), hi = Math.max(...lv);
+            body.append(h('tr', { class: 'dun-group-row' + (shut ? '' : ' open'), onclick: (ev) => { if (!ev.target.closest('button')) fold(); } },
+              h('td', { colspan: 4 }, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(!shut), onclick: fold },
+                h('span', { class: 'chev' }, icon('chevron')),
+                h('span', null, isDoorless(g) ? g : h('span', null, h('span', { class: 'dun-group-pre', text: 'Entered from ' }), g),
+                  h('span', { class: 'src-count', text: `${places.length === 1 ? '1 place' : `${places.length} places`} · level ${lo === hi ? lo : `${lo}–${hi}`}` }))))));
+            if (!shut) places.forEach(placeRow);
+          });
+      }
       if (!rows.length) body.append(h('tr', null, h('td', { colspan: 4, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No place in this group.' })));
     };
-    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a dungeon, enemy, skill or drop', (v) => { D.q = v; draw(); }), chips));
+    const grouping = h('label', { class: 'gdb-check', 'data-tip': 'List each dungeon under the town or area you enter it from' },
+      h('input', { type: 'checkbox', checked: D.group ? true : null, onchange: (ev) => { D.group = ev.target.checked; store.set('dun-group', D.group ? '1' : '0'); draw(); } }), 'Group by entrance');
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a dungeon, enemy, skill, drop or entrance', (v) => { D.q = v; draw(); }), chips, grouping));
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Place' }), h('th', { scope: 'col', text: 'Kind' }), h('th', { scope: 'col', class: 'num', text: 'Levels' }), h('th', { scope: 'col', class: 'num', text: 'Enemies' }))), body)));
     page.append(h('p', { class: 'note', text: `${list.length} places, ${Object.keys(D.data.mobs).length} enemy kinds that can't be contracted. Data made on ${D.data.generatedAt}. An enemy can't be contracted when talking to it always fails, or when it talks but never joins. Drop rates are the chance per kill.` }));
