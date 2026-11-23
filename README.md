@@ -142,7 +142,7 @@ here" for the place's own drops). Below it: the **End chest** (what the boss che
 over every stage of the place) and **Other chests**. The game-wide drops any enemy anywhere can give (the
 Jack/Queen/King/Ace boxes, the Invoke emblems) are left out. A place whose enemies drop nothing of their own
 (Dark Babel) says so: NewMoon sets those drops on its own server. All rates are the vanilla comp_hack server data's
-(your local server's), before luck and drop bonuses; the page says so too.
+(your local server's), before luck and drop bonuses; one short warning banner above the drops says so.
 
 Places are grouped by where you enter them from (all of Dark Babel's floors under "Entered from Dark Babel", Celu
 Tower's Bronze, Silver and Gold under "Entered from Celu Tower"); click a group to open it. Fields, other places and

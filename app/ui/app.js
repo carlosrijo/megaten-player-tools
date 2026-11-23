@@ -2227,16 +2227,20 @@
     const loot = dunLoot(x);
     const strip = (list, tip) => h('div', { class: 'dun-loot' }, list.map((l) => withTip(h('span', { class: 'dun-loot-item', tabindex: 0, role: 'img', 'aria-label': `${l.item}, up to ${nf.format(l.best)}%` },
       dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => tip(l))));
-    if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }), strip(loot, dunLootTip)));
-    // Dark Babel and other NewMoon areas: the server data gives their enemies nothing of their own (NewMoon sets it on its own server)
-    // (the game-wide drops any enemy anywhere can give, d.everywhere, are left off the page: the user asked to ignore them)
-    else box.append(h('p', { class: 'note', text: 'No enemy drops of its own in the server data. NewMoon sets these drops on its own server, which this page can\'t read.' }));
     // the chests its events open: the boss chest at the end of a stage, and any others (a stage's events decide which)
     const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
     const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest');
+    // One short warning for all of it: the rates are the vanilla server data's, and a place whose enemies drop nothing
+    // there (Dark Babel: NewMoon sets those on its own server) says so. The game-wide drops any enemy anywhere can give
+    // (d.everywhere) are left off the page: the user asked to ignore them.
+    if (loot.length || boss.length || other.length) box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null,
+      h('b', { text: 'Vanilla rates, not NewMoon\'s. ' }),
+      loot.length ? '' : 'No enemy drops here in the server data (NewMoon keeps its own). ',
+      boss.length || other.length ? 'Each chest item rolls on its own.' : '')));
+    else box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null, h('b', { text: 'No drops here in the server data. ' }), 'NewMoon keeps its own.')));
+    if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }), strip(loot, dunLootTip)));
     if (boss.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'What the boss chest at the end of a stage can hold, over every stage of this place', text: `End chest · ${boss.length === 1 ? '1 item' : `${boss.length} items`}` }), strip(boss, dunLootTip)));
     if (other.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'Other chests the events here open', text: `Other chests · ${other.length === 1 ? '1 item' : `${other.length} items`}` }), strip(other, dunLootTip)));
-    if (loot.length || boss.length || other.length) box.append(h('p', { class: 'note dun-vanilla', text: 'Drop and chest rates are the vanilla comp_hack server data\'s (the same as your local server), before luck and server drop bonuses. NewMoon may have changed them. A chest\'s chance is per item, each rolled on its own.' }));
     box.append(h('table', { class: 'tbl dun-mobs' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }),
         h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
