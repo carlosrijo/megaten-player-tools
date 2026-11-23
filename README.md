@@ -123,9 +123,11 @@ skills in its slots and the key bonuses it would add, worked out with your learn
 
 **Digitalize demon on the page.** A snapshot taken while digitalized saves that demon as the character's digitalize
 demon (`data\cache\digitalize.json`). To pick one without digitalizing, click the demon's name on the Overview's demon line (in the
-app; a dropdown of "No demon" and the demons seen before, with "Load demons from the game" at the end to read the COMP again), or `demon "<name>" --use`. The picker lists the COMP demons the game has loaded (all of them while the COMP or Demon
-List is open, otherwise only the summoned one), plus every one seen before (`data\cache\comp-demons.json`, with icons in
-`data\cache\demon-icons\`), so it also works without the game. In the app, picking never reads the game: it uses the demons and the learned
+app; a dropdown of "No demon" and the demons seen before, with "Load demons from the game" at the end to read the COMP again), or `demon "<name>" --use`. The picker lists your COMP as the game has it
+(open the COMP in game, then "Load demons from the game"); each demon says whether your Digitalization Levels unlock it. The game only
+loads a demon's stats and skills when you look at it, so a demon shows "Not read yet" until you open its status window in game and load
+again (the summoned demon is always read). What was read is kept (`data\cache\comp-demons.json`, with icons in
+`data\cache\demon-icons\`), so the picker also works without the game. In the app, picking never reads the game: it uses the demons and the learned
 assists last read (by a snapshot, or by "Load demons from the game" in the dropdown). Picking one saves it, recalculates the latest snapshot's
 demon columns with it (the CSV is copied to `<csv>.backup-before-demon-switch.csv` first) and rebuilds the page. Later
 snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the

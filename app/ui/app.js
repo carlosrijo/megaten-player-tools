@@ -169,7 +169,9 @@
           const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
             ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
-            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, icon: null }));
+            ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, icon: null, loaded: name !== 'Pixie', seenAt: name === 'Seraph' ? null : '2026-11-23T15:40:23',
+              // stand-ins for the three states of the unlock tag
+              unlock: name === 'Alilat' ? { listed: false, level: 0, raceLevel: 1, race, reached: false } : { listed: true, level: name === 'Seraph' ? 8 : 5, raceLevel: name === 'Seraph' ? 5 : 10, race, reached: name !== 'Seraph' } }));
         }
         // The browser preview has no game and no files to change: say so instead of pretending (the desktop app switches)
         if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Pick the demon in the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
@@ -347,6 +349,10 @@
     const rich = text instanceof Node;
     if (!rich) tipEl.textContent = text; else if (tipEl.firstChild !== text || tipEl.childNodes.length !== 1) tipEl.replaceChildren(text);
     tipEl.classList.toggle('tip-rich', rich); tipEl.hidden = false;
+    // The tip is a popover so it sits in the top layer, above the demon dropdown and the dialogs (which are there too;
+    // a plain z-index can't get above them). The top layer stacks in the order things were opened: it is opened here,
+    // after whatever is open, and closed in hideTip.
+    try { if (!tipEl.matches(':popover-open')) tipEl.showPopover(); } catch (e) { /* no popover support: it shows as before */ }
     const w = tipEl.offsetWidth, hgt = tipEl.offsetHeight;
     tipEl.style.left = Math.max(8, Math.min(left, window.innerWidth - w - 8)) + 'px';
     tipEl.style.top = Math.max(8, below + hgt > window.innerHeight ? Math.min(above - hgt, window.innerHeight - hgt - 8) : below) + 'px';
@@ -370,6 +376,7 @@
   const showTip = (text, x, y) => placeTip(text, x + 14, y + 18, y - 10);   // beside the pointer
   let tipFor = null;   // the element a keyboard-focus tip describes
   const hideTip = () => {
+    try { if (tipEl.matches(':popover-open')) tipEl.hidePopover(); } catch (e) { /* as above */ }
     tipEl.hidden = true;
     if (tipFor) { tipFor.removeAttribute('aria-describedby'); tipFor = null; }
   };
@@ -1434,6 +1441,24 @@
    * slots and the key bonuses it would add ("offer", worked out by the reader with your learned boosts).
    * `pick` runs on a click; `on` marks the demon in use.
    */
+  /**
+   * Where a COMP demon stands for digitalizing ("unlock", from the game's Digitalization Level table and your levels):
+   * unlocked, locked until a level of its race, or not named by any level. Plus a mark when the saved digitalize demon
+   * is no longer among the COMP demons read (seenAt empty: it was only kept because it is the saved one).
+   */
+  function demonUnlockTags(d) {
+    const U = d.unlock, tags = [];
+    if (U && isTrue(U.listed) && U.raceLevel !== null && U.raceLevel !== undefined) {
+      tags.push(isTrue(U.reached)
+        ? h('span', { class: 'tag', 'data-tip': `${U.race} Digitalization Level ${U.level} unlocks it; you are at level ${U.raceLevel}.`, text: `Unlocked · ${U.race} DLv ${U.level}` })
+        : h('span', { class: 'tag tag-off', 'data-tip': n0(U.raceLevel) ? `Your ${U.race} Digitalization Level is ${U.raceLevel}.` : `You have no ${U.race} Digitalization Level yet.`, text: `Locked · needs ${U.race} DLv ${U.level}` }));
+    } else if (U && !isTrue(U.listed)) {
+      tags.push(h('span', { class: 'tag tag-off', 'data-tip': `No ${U.race} Digitalization Level names this demon in the game data, so it may not be usable for digitalizing. The data does not say more.`, text: 'Not on any Digitalization Level' }));
+    }
+    if (!d.seenAt && !d.inGame) tags.push(h('span', { class: 'tag tag-off', 'data-tip': 'It was not among the COMP demons last read from the game. It is still here because it is your saved digitalize demon.', text: 'Not in your COMP' }));
+    return tags.length ? h('span', { class: 'dgt-tags' }, tags) : null;
+  }
+
   function demonTile(d, on, pick) {
     const O = d.offer || null;
     const pic = h('span', { class: 'demon-pic ' + alignClass(O && O.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
@@ -1451,8 +1476,11 @@
         h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: d.name }),
           h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race, O && O.alignment ? alignName(O.alignment) : null, d.mitama ? `${d.mitama} Mitama` : null].filter(Boolean).join(' · ') })),
         on ? h('span', { class: 'tag tag-demon', text: 'In use' }) : null),
+      demonUnlockTags(d),
       O ? h('span', { class: 'dgt-line' }, `${fmt(O.rate)}% of its stats`, hp ? ` · HP ${fmt(hp.value, '', true)}` : '', mp ? ` · MP ${fmt(mp.value, '', true)}` : '')
         : d.forceStack || d.equipment ? h('span', { class: 'dgt-line', text: [d.forceStack ? `force stack ${d.forceStack}` : null, d.equipment ? 'equipment' : null].filter(Boolean).join(' · ') }) : null,
+      // listed by the game without its details (stats, skills, growth, Mitama): there is nothing to work out yet
+      d.loaded === false ? h('span', { class: 'dgt-line', text: 'Not read yet. Open its status window in game (from the COMP), then load the demons again to see what it gives.' }) : null,
       icons.length ? h('span', { class: 'dg-skill-icons' }, icons) : null,
       adds.length ? h('span', { class: 'dgt-adds' }, adds) : null);
   }
@@ -2026,7 +2054,9 @@
       h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: 'No demon' }), h('span', { class: 'char-line', text: 'Not digitalized' })));
     // each demon as a card: what digitalizing with it would give (demonTile)
     const row = (d) => { const on = digi() && d.current; return demonTile(d, on,
-      () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render()) : useDemon(d))); };
+      () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render())
+        : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Open its status window in game (from the COMP), then press Load demons from the game.', 12000)
+          : useDemon(d))); };
     list.replaceChildren(none, ...demons.map(row));
     const load = $('#demons-load');
     load.disabled = !!loading;
@@ -2045,10 +2075,11 @@
       S.demons = demons;
       // The game keeps every COMP demon in memory only while the COMP (or Demon List) is open; otherwise just the summoned one.
       const live = demons.filter((d) => d.inGame).length;
+      const unread = demons.filter((d) => d.inGame && d.loaded === false).length;   // listed by the game without their details
       drawDemons(!scan ? null : !host.native ? 'Browser preview: stand-in demons.'
         : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.'
         : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.'
-        : `${live} demons read from the game.`);
+        : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: open a demon’s status window in game, then load again.` : ''));
     } catch (e) { if (look === demonsLook) drawDemons(String(e && e.message || e)); }
   }
   demonsMenu.addEventListener('toggle', (ev) => {
