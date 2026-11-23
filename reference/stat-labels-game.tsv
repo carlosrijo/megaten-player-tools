@@ -1,0 +1,166 @@
+#stat id	game label (most used wording)	tokusei texts with it	example tokusei	other wordings (count)
+BETHEL_RATE	Bethel Gain	7	950000	
+BOOST_ALMIGHTY	Almighty Affinity	62	20064	
+BOOST_CURSE	Death Affinity	70	20044	
+BOOST_ELEC	Electric Affinity	95	20032	
+BOOST_EXPEL	Expel Affinity	71	20040	
+BOOST_FIRE	Fire Affinity	121	20024	
+BOOST_FORCE	Force Affinity	85	20036	
+BOOST_HEAL	Curative Affinity	72	20068	
+BOOST_ICE	Ice Affinity	97	20028	
+BOOST_LNGR	Handgun Affinity	68	20012	
+BOOST_MAGICFORCE	Mystic Affinity	79	20048	
+BOOST_MIND	Mind Affinity	73	20056	
+BOOST_NERVE	Nerve Affinity	73	20052	
+BOOST_PIERCE	Penetrate Affinity	60	360054	Pierce Affinity (8)
+BOOST_SLASH	Slash Affinity	69	20000	
+BOOST_SPECIAL	Special Affinity	50	362455	
+BOOST_SPREAD	Spread Affinity	63	20020	
+BOOST_STRIKE	Blunt Affinity	70	20008	
+BOOST_SUICIDE	Suicide Affinity	58	20060	
+BOOST_SUPPORT	Support Affinity	51	20132	
+BOOST_THRUST	Thrust Affinity	71	20004	
+BOOST_WEAPON	Weapon based Affinity	84	361455	
+BOOST_WORD	Words of Power Affinity	50	362405	
+CAST_INTERRUPT_NULL	Chance of nulling skill interruption when receiving damage	34	200000	Chance of nulling incapacitation when receiving damage (19)
+CHANT_TIME	Incantation	134	280006	Cooldown (1)
+CLENCH_CHANCE	Chance of surviving a lethal blow	18	240000	
+CLSR	Close-Range	64	360175	Close-range (4)
+COOLDOWN_TIME	Cooldown	126	290002	
+CRITICAL	Critical	123	360014	
+CRIT_DEF	Critical Defense	42	360114	
+DIGITALIZE_LENGTH	Digitalize Duration	9	1060001	
+DIGITALIZE_POINT_RATE	Digitalize Points	12	1030001	
+FAMILIARITY_UP_RATE	Friendship gain	34	10000000	
+FINAL_CRIT_CHANCE	Final Crit	31	363084	
+HITSTUN_NULL	Chance of nulling incapacitation when receiving damage	15	210000	
+HP_COST_ADJUST	HP cost of all skills	48	110000	
+HP_MAX	Max HP	71	360012	Max MP (1)
+HP_REGEN	HP Regen	26	10011	
+INT	Intelligence	88	360026	Vitality (1)
+KNOCKBACK_NULL	Chance to Null Knockback	15	220000	
+KNOCKBACK_RESIST	Knockback resistance	15	250000	
+LB_CHANCE	Limit Break Chance	69	362782	
+LB_DAMAGE	Limit Break Power	78	362814	
+LIMIT_BREAK_MAX	Limit Break Cap	17	1120000	
+LNGR	Long-Range	62	360195	
+LUCK	Luck	92	360027	
+MAGIC	Magic	128	360006	
+MDEF	Magic Defense	59	360105	
+MOVE2	Movement Speed	4	362601	
+MP_COST_ADJUST	All skills MP cost	52	120000	MP cost (1)
+MP_MAX	Max MP	50	360013	Max HP (1)
+MP_REGEN	MP Regen	22	10011	
+NRA_ALMIGHTY:3	Chance to Null Almighty	21	420567	
+NRA_ALMIGHTY:4	Chance to Reflect Almighty	21	420588	
+NRA_ALMIGHTY:5	Chance to Drain Almighty	21	420609	
+NRA_CURSE:3	Chance to Null Death	23	420756	
+NRA_CURSE:4	Chance to Reflect Death	23	420777	
+NRA_CURSE:5	Chance to Drain Death	23	420798	
+NRA_ELEC:3	Chance to Null Electric	24	420504	
+NRA_ELEC:4	Chance to Reflect Electric	23	420525	
+NRA_ELEC:5	Chance to Drain Electric	23	420546	
+NRA_EXPEL:3	Chance to Null Expel	23	420693	
+NRA_EXPEL:4	Chance to Reflect Expel	23	420714	
+NRA_EXPEL:5	Chance to Drain Expel	23	420735	
+NRA_FIRE:3	Chance to Null Fire	24	420378	
+NRA_FIRE:4	Chance to Reflect Fire	23	420399	
+NRA_FIRE:5	Chance to Drain Fire	23	420420	
+NRA_FORCE:3	Chance to Null Force	24	420630	
+NRA_FORCE:4	Chance to Reflect Force	23	420651	
+NRA_FORCE:5	Chance to Drain Force	23	420672	
+NRA_HEAL:3	Chance to Null Curative	22	420819	
+NRA_HEAL:4	Chance to Reflect Curative	21	420840	
+NRA_HEAL:5	Chance to Drain Curative	21	420861	
+NRA_ICE:3	Chance to Null Ice	24	420441	
+NRA_ICE:4	Chance to Reflect Ice	23	420462	
+NRA_ICE:5	Chance to Drain Ice	23	420483	
+NRA_LNGR:3	Chance to Null Handgun	24	420189	
+NRA_LNGR:4	Chance to Reflect Handgun	23	420210	
+NRA_LNGR:5	Chance to Drain Handgun	23	420231	
+NRA_MAGIC:3	Chance to Null All Magic	23	421459	
+NRA_MAGIC:4	Chance to Reflect All Magic	23	421482	
+NRA_MAGIC:5	Chance to Drain All Magic	6	421507	
+NRA_MAGICFORCE:3	Chance to Null Mystic	23	420945	
+NRA_MAGICFORCE:4	Chance to Reflect Mystic	23	420966	
+NRA_MAGICFORCE:5	Chance to Drain Mystic	23	420987	
+NRA_MIND:3	Chance to Null Mind	23	421071	
+NRA_MIND:4	Chance to Reflect Mind	23	421092	
+NRA_MIND:5	Chance to Drain Mind	23	421113	
+NRA_NERVE:3	Chance to Null Nerve	23	421008	
+NRA_NERVE:4	Chance to Reflect Nerve	23	421029	
+NRA_NERVE:5	Chance to Drain Nerve	23	421050	
+NRA_PHYS:3	Chance to Null All Physical	23	421413	
+NRA_PHYS:4	Chance to Reflect All Physical	23	421436	
+NRA_PHYS:5	Chance to Drain All Physical	5	421506	
+NRA_PIERCE:3	Chance to Null Penetrate	24	420252	
+NRA_PIERCE:4	Chance to Reflect Penetrate	23	420273	
+NRA_PIERCE:5	Chance to Drain Penetrate	23	420294	
+NRA_SLASH:3	Chance to Null Slash	24	420000	
+NRA_SLASH:4	Chance to Reflect Slash	23	420021	
+NRA_SLASH:5	Chance to Drain Slash	23	420042	
+NRA_SPECIAL:3	Chance to Null Special	21	421197	
+NRA_SPECIAL:4	Chance to Reflect Special	21	421218	
+NRA_SPECIAL:5	Chance to Drain Special	21	421239	
+NRA_SPREAD:3	Chance to Null Spread	24	420315	
+NRA_SPREAD:4	Chance to Reflect Spread	23	420336	
+NRA_SPREAD:5	Chance to Drain Spread	23	420357	
+NRA_STRIKE:3	Chance to Null Blunt	24	420126	
+NRA_STRIKE:4	Chance to Reflect Blunt	23	420147	
+NRA_STRIKE:5	Chance to Drain Blunt	23	420168	
+NRA_SUICIDE:3	Chance to Null Suicide	21	421260	
+NRA_SUICIDE:4	Chance to Reflect Suicide	21	421281	
+NRA_SUICIDE:5	Chance to Drain Suicide	21	421302	
+NRA_SUPPORT:3	Chance to Null Support	21	420882	
+NRA_SUPPORT:4	Chance to Reflect Support	21	420903	
+NRA_SUPPORT:5	Chance to Drain Support	21	420924	
+NRA_THRUST:3	Chance to Null Thrust	24	420063	
+NRA_THRUST:4	Chance to Reflect Thrust	23	420084	
+NRA_THRUST:5	Chance to Drain Thrust	23	420105	
+NRA_WORD:3	Chance to Null Words of Power	21	421134	
+NRA_WORD:4	Chance to Reflect Words of Power	21	421155	
+NRA_WORD:5	Chance to Drain Words of Power	21	421176	
+PDEF	Physical Defense	62	360105	
+PURSUIT_POWER	Pursuit Power	46	880018	
+PURSUIT_RATE	Pursuit Chance	52	880059	
+RATE_CLSR	Close-Range Damage	132	360127	Close-range Damage (63)
+RATE_CLSR_TAKEN	Close-range Damage Taken	5	363152	Close-range Damage (14); Close-range Damage suffered (1)
+RATE_EXPERTISE	Expertise Earned	12	360119	
+RATE_LNGR	Long-range Damage	185	362631	
+RATE_LNGR_TAKEN	Long-range Damage Taken	5	363152	Long-range Damage (12); Long-range Damage suffered (1)
+RATE_MACCA	Macca Gain	11	362603	
+RATE_MAG	Magnetite Gain	9	362857	
+RATE_SPELL	Magic Damage	196	362602	
+RATE_SPELL_TAKEN	Magic Damage Taken	5	363152	Magic Damage (11); Spell Damage suffered (1)
+RATE_SUPPORT	Support Magic damage	87	363273	
+RATE_XP	EXP Earned	42	360116	
+RES_ALMIGHTY	Almighty Resist	51	360905	
+RES_CURSE	Death Resist	63	360000	
+RES_ELEC	Electric Resist	74	360004	
+RES_EXPEL	Expel Resist	62	360000	
+RES_FIRE	Fire Resist	88	360002	
+RES_FORCE	Force Resist	70	360004	
+RES_HEAL	Curative Resist	51	361055	
+RES_ICE	Ice Resist	82	360002	
+RES_LNGR	Handgun Resist	53	360102	
+RES_MAGICFORCE	Mystic Resist	57	360133	
+RES_MIND	Mind Resist	53	360086	
+RES_NERVE	Nerve Resist	56	360087	
+RES_PIERCE	Penetrate Resist	54	360102	
+RES_SLASH	Slash Resist	59	360015	
+RES_SPECIAL	Special Resist	50	361355	
+RES_SPREAD	Spread Resist	52	360102	
+RES_STRIKE	Blunt Resist	64	360016	
+RES_SUICIDE	Suicide Resist	51	361405	
+RES_SUPPORT	Support Resist	50	361105	
+RES_THRUST	Thrust Resist	62	360015	Thrust Affinity (1)
+RES_WORD	Words of Power Resist	50	361305	
+SKILL_STACK_ADJUST	All Skill Stack	5	270079	
+SOUL_POINT_RATE	Soul Points Earned	31	680000	
+SPEED	Speed	90	360007	
+SPELL	Spell	64	360215	
+STR	Strength	129	360006	
+SUPPORT	Support	53	360235	
+TECH_ATTACK_POWER	TA Power	70	870000	TA Chance (1)
+TECH_ATTACK_RATE	TA Chance	76	870000	
+VIT	Vitality	74	360024	

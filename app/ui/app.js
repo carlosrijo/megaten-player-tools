@@ -217,7 +217,7 @@
   ];
   const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon' };
   const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon'];
-  const lowIsGood = (name) => /taken|cooldown|cast time/i.test(name);
+  const lowIsGood = (name) => /taken|cooldown|cast time|incantation/i.test(name);
 
   // Stats that give nothing past a ceiling (from the user, 2026-11-23). The ceiling applies to the whole value
   // (gear + expertise, in the shown mode). To add one: its key from COMBAT above and its ceiling.
@@ -616,15 +616,18 @@
    * The Bonuses list has two rows for some of them ("Fire Boost" from gear, in %, and "Fire boost" from expertise, as a
    * plain number): both are the server's BOOST_<element> value (RES_<element> for resistances), so they are added here.
    */
-  const AFF_ORDER = ['Slash', 'Thrust', 'Blunt', 'Strike', 'Gun', 'Pierce', 'Spread', 'Fire', 'Ice', 'Electric', 'Force', 'Expel', 'Death', 'Mystic', 'Nerve', 'Mind', 'Word', 'Almighty', 'Heal', 'Support'];
+  // the game's names and order (CorrectTbl affinity order; the reader names them from the client's text)
+  const AFF_ORDER = ['Slash', 'Thrust', 'Blunt', 'Handgun', 'Penetrate', 'Spread', 'Fire', 'Ice', 'Electric', 'Almighty', 'Force', 'Expel', 'Death', 'Curative', 'Support', 'Mystic', 'Nerve', 'Mind', 'Words of Power', 'Special', 'Suicide'];
   function affinity() {
     const by = { boost: new Map(), resistance: new Map(), cap: new Map() };
     (S.data.bonuses || []).forEach((r) => {
       if ((r.group !== 'Affinity' && r.group !== 'Other') || !isTrue(r.counted)) return;   // yours, and always on
       // each element's boost stops at 100% unless something raises that element's cap ("Ice affinity cap")
-      const m = /^(.+?) (boost|resistance|affinity cap)$/i.exec(String(r.bonus || ''));
-      if (!m) return;
-      const name = m[1].charAt(0).toUpperCase() + m[1].slice(1), map = by[m[2].toLowerCase() === 'affinity cap' ? 'cap' : m[2].toLowerCase()];
+      // rows are "<element> affinity", "<element> affinity cap" and "<element> resist" (Bonuses.Canonical)
+      const m = /^(.+?) (affinity cap|affinity|resist)$/i.exec(String(r.bonus || ''));
+      // an element's affinity and cap are in the Affinity group ("Weapon based Affinity" is not an element: Other)
+      if (!m || (m[2].toLowerCase() !== 'resist' && r.group !== 'Affinity')) return;
+      const k = m[2].toLowerCase(), name = m[1].charAt(0).toUpperCase() + m[1].slice(1), map = by[k === 'affinity cap' ? 'cap' : k === 'resist' ? 'resistance' : 'boost'];
       const e = map.get(name) || { name, gear: 0, exp: 0, demon: 0 };
       e.gear = round2(e.gear + n0(digi() && r.gear_digi !== null && r.gear_digi !== undefined ? r.gear_digi : r.gear));
       e.exp = round2(e.exp + n0(r.expertise));
@@ -1076,10 +1079,10 @@
     [/critical/gi, 'Crit'],
     [/damage dealt/gi, 'Dmg'], [/damage taken/gi, 'Taken'], [/\bdamage\b/gi, 'Dmg'],
     [/ skill boost/gi, ''], [/movement speed/gi, 'Move'], [/cooldown/gi, 'CD'], [/cast time/gi, 'Cast'],
-    [/regeneration/gi, 'Regen'], [/\baffinity\b/gi, 'Aff'], [/\bresist(?:ance)?\b/gi, 'Res'], [/\bdefense\b/gi, 'Def'],
+    [/regeneration/gi, 'Regen'], [/incantation/gi, 'Cast'], [/\baffinity\b/gi, 'Aff'], [/\bresist(?:ance)?\b/gi, 'Res'], [/\bdefense\b/gi, 'Def'],
     [/\bsupport\b/gi, 'SUPP'], [/\bspell\b/gi, 'SPELL'],
     [/P\.Def/g, 'PDEF'], [/M\.Def/g, 'MDEF'], [/Max (HP|MP)/g, 'Max$1'],
-    [/XP earned/gi, 'XP'], [/COMP Stocks/gi, 'COMP'],
+    [/E?XP earned/gi, 'XP'], [/COMP Stocks/gi, 'COMP'],
     [/[- ]based skills? skill stack/gi, ' Stack'], [/[- ]based skill effects?/gi, ' Skill'], [/ based /gi, ' '],
     [/\(only with certain partners\)/gi, '(some partners)'], [/\((?:against|vs) (\w+) enemies\)/gi, '(vs $1)'],
     [/\(when Partner's Friendship is at ("[^"]+") or higher\)/gi, '($1+)'], [/\(when Partner's Friendship is at ("[^"]+")\)/gi, '($1)'],

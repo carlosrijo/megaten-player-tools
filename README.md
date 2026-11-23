@@ -68,6 +68,7 @@ bin\Release\net10.0\newmoon-reader.exe demon Specter --use   # make it the digit
 bin\Release\net10.0\newmoon-reader.exe digilevels      # Digitalization Level and % per race, assists, level-unlock skills
 bin\Release\net10.0\newmoon-reader.exe expertise       # re-read expertise ranks and Digitalization Levels, rebuild (no CSV row)
 bin\Release\net10.0\newmoon-reader.exe toggles         # which toggle skills are on, read from the game ("Name, ..." overrides when it isn't running)
+bin\Release\net10.0\newmoon-reader.exe labels          # regenerate reference\stat-labels-game.tsv: the game's own name for each stat (from the client's effect text)
 et10.0
 ewmoon-reader.exe toggles         # which toggle skills are on, read from the game (a "Name, ..." list overrides when it isn't running)
 ```
