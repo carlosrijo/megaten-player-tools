@@ -265,8 +265,15 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-stat-v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--exp); }
 .exp-stat-l { color: var(--text-2); font-size: 12px; }
 .exp-sum-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 0 24px; }
-.exp-sum-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px 90px 44px 78px; align-items: center; gap: 10px; width: 100%; text-align: left;
-  font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 6px 6px; cursor: pointer; border-radius: 6px; }
+.exp-sum { gap: 4px; padding-top: 12px; padding-bottom: 10px; }
+.exp-sum .exp-points { margin: 0; }
+.exp-sum .list-head { margin: 0; padding: 8px 6px 0; }
+.exp-sum .exp-stats { margin: 2px 0 0; }
+.exp-sum-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px 90px 44px 78px; align-items: center; align-content: start; gap: 4px 10px; width: 100%; text-align: left;
+  font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 5px 6px; cursor: pointer; border-radius: 6px; }
+.exp-sum-icons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 3px; }
+.exp-sum-icons .skill-ico { width: 20px; height: 20px; border-radius: 3px; }
+.exp-sum-icons .skill-ico.off { opacity: .35; }
 .exp-sum-row:hover { background: var(--hover); }
 .exp-sum-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .exp-sum-rank { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
