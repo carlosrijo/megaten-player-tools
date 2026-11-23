@@ -654,3 +654,22 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .dcm-icon { flex: none; width: 28px; height: 28px; border-radius: 6px; background: var(--surface-2); overflow: hidden; display: inline-grid; margin: -4px 0; }
 .dcm-icon img { width: 28px; height: 28px; display: block; object-fit: cover; object-position: 50% 20%; }
 .page-dcm .row-btn { align-items: center; }
+
+/* Quest Guide */
+.q-detail { display: grid; gap: 10px; max-width: 860px; }
+.q-needs { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 12px; }
+.q-key { color: var(--text-2); font-size: 12px; }
+.q-steps { margin: 0; padding: 0; list-style: none; counter-reset: qstep; display: grid; gap: 0; }
+.q-steps > li { counter-increment: qstep; position: relative; padding: 10px 0 10px 34px; border-top: 1px solid var(--border); display: grid; gap: 6px; }
+.q-steps > li::before { content: counter(qstep); position: absolute; left: 0; top: 10px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--selected); color: var(--text); }
+.q-step-title { font-weight: 600; }
+.q-objective { margin: 0; max-width: 80ch; }
+.q-goals { margin: 0; padding-left: 18px; font-weight: 600; }
+.q-way { display: grid; gap: 3px; padding: 6px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+.q-do { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.q-place { color: var(--text-2); font-size: 12px; }
+.q-or { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+.q-line { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; font-size: 12px; align-items: baseline; }
+.q-pick { padding: 1px 6px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); white-space: nowrap; }
+.q-arrow { color: var(--text-3); }
+.q-get > span:last-child { font-weight: 600; }
