@@ -211,7 +211,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator (beta)', 'search'], ['quests', 'Quest Guide (beta)', 'book'], ['geardb', 'Gear Database (beta)', 'shield']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -446,7 +446,7 @@
   const nav = $('#nav');
   PAGES.forEach(([id, label, ic], i) => nav.append(h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': `${label} (Ctrl+${i + 1})`, onclick: () => go(id) },
     icon(ic), h('span', { class: 'nav-label', text: label }))));
-  nav.append(h('div', { class: 'nav-head', text: 'Tools' }));
+  nav.append(h('div', { class: 'nav-head', text: 'Tools (beta)' }));
   TOOLS.forEach(([id, label, ic]) => nav.append(h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => go(id) },
     icon(ic), h('span', { class: 'nav-label', text: label }))));
   function go(page) {
