@@ -25,8 +25,8 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   Digitalized view, what the digitalize demon adds). Under them, three one-line bands:
   - **Expertise:** your expertise points against the cap, as the game's Expertise window shows them (e.g.
     52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its
-    class-rank and the icons of the skills its ranks gave you, passives then actives (a switched-off toggle is dimmed);
-    click it to open it on the Expertise page, or "View more" for the whole page.
+    class-rank as a short list (two columns when there is room). Beside it, the icons of every skill those ranks gave you, in one run (hover one for its name and chain; a switched-off toggle is dimmed);
+    click a chain to open it on the Expertise page, or "View more" for the whole page.
   - **The digitalize demon:** its name is a dropdown to pick another one, or no demon.
   - **Gear:** every piece you wear as its icon from the game, then your complete sets. Hover an icon for the game's
     tooltip, click it to open that piece on the Gear page.

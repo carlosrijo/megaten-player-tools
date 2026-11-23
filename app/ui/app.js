@@ -912,33 +912,34 @@
         h('span', { class: 'exp-pts', text: `${pt(P.total)} / ${pt(P.cap)}` }),
         h('span', { class: 'exp-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })));
     } else if (P) points = h('div', { class: 'exp-points' }, h('span', { class: 'exp-pts', text: `${pt(P.total)}, no cap` }));
-    // One chip per chain. Its skills come from the ranks file ("skills": every skill of the reached ranks, actives
-    // too); a passive's row in expertise.json says whether a toggle is switched off. Older data without "skills"
-    // lists the passives from expertise.json only.
-    const chip = (c) => {
+    // Two parts (the user's layout). Left: the title with the points, the bar, and under them the unlocked chains as a
+    // list of name and class-rank, in two columns when the window has room. Right: every skill those ranks give as one
+    // run of icons, chain after chain (passives then actives), with no names between them: an icon's tooltip says
+    // which skill and which chain. Skills come from the ranks file ("skills": every skill of the reached ranks,
+    // actives too); a passive's row in expertise.json says whether a toggle is switched off. Older data without
+    // "skills" lists the passives from expertise.json only.
+    const chains = ((R.ranks) || []).filter((r) => r.chain);
+    const rank = (c) => h('button', { type: 'button', class: 'exp-rank', 'data-tip': `Open ${c.name} on the Expertise page`, 'aria-label': `${c.name}, class ${c.class} rank ${c.rank}`,
+      onclick: () => { S.exp.q = c.name; go('expertise'); } }, h('span', { text: c.name }), h('b', { text: `${c.class}-${c.rank}` }));
+    const icons = (c) => {
       const rows = S.data.expertise.filter((r) => r.expertise === c.name && !isExtra(r));
       const offIds = new Set(rows.filter((r) => r.toggle && !r.toggle_on).map((r) => r.skill_id));
       const all = Array.isArray(c.skills) ? c.skills.map((s) => ({ ...s, off: offIds.has(s.id) }))
         : rows.map((r) => ({ id: r.skill_id, name: r.skill || '—', icon: r.icon, rank: r.rank || '', active: false, off: r.toggle && !r.toggle_on }));
-      // after the chip, the icons of its skills at 20px: the passives, a small gap, the actives (each names itself on hover)
-      const icons = (list, kind) => list.map((s, i) => {
+      return all.filter((s) => !s.active).concat(all.filter((s) => s.active)).map((s, i) => {
         const ic = skillIcon(s);
-        ic.dataset.tip = `${s.name} (${kind}, ${s.rank})` + (s.off ? ', toggle switched off' : '');
+        ic.dataset.tip = `${s.name} · ${c.name}, ${s.active ? 'active' : 'passive'} (${s.rank})` + (s.off ? ', toggle switched off' : '');
         if (s.off) ic.classList.add('off');
-        if (kind === 'active' && i === 0) ic.classList.add('gap');
+        if (i === 0) ic.classList.add('first');   // a little air before each chain's icons
         return ic;
       });
-      return h('span', { class: 'exp-chain' },
-        h('button', { type: 'button', class: 'exp-chip', 'aria-label': `${c.name}, class ${c.class} rank ${c.rank}`, 'data-tip': `Open ${c.name} on the Expertise page`,
-          onclick: () => { S.exp.q = c.name; go('expertise'); } }, h('span', { text: c.name }), h('b', { text: `${c.class}-${c.rank}` })),
-        icons(all.filter((s) => !s.active), 'passive'), icons(all.filter((s) => s.active), 'active'));
     };
-    const chains = ((R.ranks) || []).filter((r) => r.chain);
     return h('section', { class: 'card band exp-band', 'aria-label': 'Expertise' },
-      h('div', { class: 'band-head' }, h('h3', { class: 'band-title', text: 'Expertise' }), points),
-      h('div', { class: 'band-items' },
+      h('div', { class: 'band-head' },
+        h('div', { class: 'exp-top' }, h('h3', { class: 'band-title', text: 'Expertise' }), points),
         P ? null : h('span', { class: 'note', text: 'Take a snapshot to read your expertise points and cap.' }),
-        chains.length ? chains.map(chip) : h('span', { class: 'note', text: 'No chain expertise unlocked yet.' })),
+        chains.length ? h('div', { class: 'exp-ranks', style: `--rows:${Math.ceil(chains.length / 2)}` }, chains.map(rank)) : h('span', { class: 'note', text: 'No chain expertise unlocked yet.' })),
+      h('div', { class: 'band-items exp-icons-run' }, chains.map(icons)),
       h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every expertise and what it adds, on the Expertise page', onclick: () => { S.exp.q = ''; go('expertise'); } }, 'View more'));
   }
 

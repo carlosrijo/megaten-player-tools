@@ -262,22 +262,24 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .band-items { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
 /* expertise: under the title, points / cap over a thin bar; then one chip per unlocked chain, its name and class-rank
    (its skills are in the chip's tooltip, a click opens it on the Expertise page) */
-.exp-points { display: grid; gap: 3px; }
-.exp-pts { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.exp-bar { display: block; height: 4px; border-radius: 2px; background: var(--grid); overflow: hidden; }
+.exp-band { align-items: start; }
+.exp-band > .btn { align-self: center; }
+.exp-top { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 12px; }   /* title, points at its right; the bar under both */
+.exp-points { display: contents; }
+.exp-pts { justify-self: end; color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.exp-bar { grid-column: 1 / -1; display: block; height: 4px; border-radius: 2px; background: var(--grid); overflow: hidden; }
 .exp-bar i { display: block; height: 100%; border-radius: 2px; background: var(--exp); }
-.exp-band .band-items { gap: 6px; }
-.exp-chip { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border-strong); font-size: 12px; white-space: nowrap; cursor: pointer; }
-.exp-chip:hover { background: var(--hover); }
-.exp-chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
-.exp-chip b { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; }
-/* a chain: its chip, then its skills' icons (passives, a gap, actives); the icons wrap under it in a narrow window */
-.exp-band .band-items { gap: 6px 16px; }
-.exp-chain { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; max-width: 100%; }
-.exp-chain .exp-chip { margin-right: 4px; }
-.exp-chain .skill-ico { width: 20px; height: 20px; border-radius: 3px; }
-.exp-chain .skill-ico.off { opacity: .35; }
-.exp-chain .skill-ico.gap { margin-left: 6px; }
+/* the chains: name and class-rank, two columns (filled downwards) when the window has room */
+.exp-ranks { display: grid; grid-template-rows: repeat(var(--rows, 3), auto); grid-auto-flow: column; grid-auto-columns: auto; gap: 0 18px; margin: 2px -6px 0; }
+.exp-rank { all: unset; box-sizing: border-box; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; height: 22px; padding: 0 6px; border-radius: 5px; font-size: 12px; white-space: nowrap; cursor: pointer; }
+.exp-rank:hover { background: var(--hover); }
+.exp-rank:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px; }
+.exp-rank b { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* the rest of the band: the skills' icons in one run */
+.exp-icons-run { gap: 3px; align-content: start; }
+.exp-icons-run .skill-ico.off { opacity: .35; }
+.exp-icons-run .skill-ico.first:not(:first-child) { margin-left: 8px; }
+@media (max-width: 1100px) { .exp-ranks { grid-template-rows: none; grid-auto-flow: row; } }   /* one column of chains, more room for icons */
 /* gear: each worn piece is its game icon in a slot-like tile, then the complete sets. Names and numbers are the Gear
    page's: a tile's tooltip is the game's, a click opens the piece there. */
 .gear-sets { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; }
