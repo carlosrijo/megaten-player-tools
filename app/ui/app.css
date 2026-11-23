@@ -301,7 +301,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-sum { gap: 2px; padding: 10px 14px; }
 .exp-sum > .exp-top { margin-bottom: 4px; }
 .exp-sum-counts { color: var(--text-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.exp-sum .list-head { margin: 0; padding: 8px 6px 2px; }
+.exp-sum .list-head { margin: 0; padding: 16px 0 4px; }   /* flush with the names and the counts (the rows carry their own 6px inset) */
 .exp-sum-list { display: grid; margin: 0 -6px; }
 .exp-sum-row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 260px 56px 44px 76px minmax(0, 1fr); align-items: center; gap: 0 12px;
   min-height: 30px; padding: 3px 6px; border-radius: 5px; cursor: pointer; }
