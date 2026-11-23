@@ -25,6 +25,10 @@
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     book: '<path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/>',
+    flask: '<path d="M9 3.5h6M10 3.5v5.2L5.2 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.8-2.9L14 8.7V3.5"/><path d="M7.6 14.5h8.8"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
+    trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 10.5v6M14 10.5v6"/>',
   };
   function icon(name) {
     const s = document.createElementNS(SVG, 'svg');
@@ -120,7 +124,10 @@
     return {
       native: false,
       async call(cmd, args) {
-        if (cmd === 'state') return fakeState();
+        if (cmd === 'state') {
+          (Q.get('chars') || '').split(',').filter(Boolean).forEach((n) => { if (!fake.characters.some((c) => c.name === n)) fake.characters.push({ name: n, hasData: true, inGame: false, folder: '', level: 0 }); });
+          return fakeState();
+        }
         if (cmd === 'clients') {
           await wait(900);
           fake.clients = Q.get('clients') === '1' ? fakeClients.slice(1) : fakeClients.slice(0, Number(Q.get('clients') || 0));
@@ -184,6 +191,17 @@
           fake.align = fake.align || {}; fake.align[fake.active] = args.alignment;
           return { changed: true, rows: fake.active === 'Rubito' ? 5 : 0, changedRows: fake.active === 'Rubito' ? 3 : 0, backup: 'rubito-stats.backup-before-alignment-20261122-233212.csv' };
         }
+        // The Simulator's numbers and saved builds are the reader's own: the browser preview has them when it is
+        // served by "newmoon-reader serve" (src\Build\PreviewServer.cs), which answers these like the app does.
+        if (cmd.startsWith('sim')) {
+          const r = await fetch('/host/' + cmd, { method: 'POST', body: JSON.stringify(args || {}) }).catch(() => null);
+          if (!r || !r.ok) throw Object.assign(new Error('This browser preview has no reader behind it, so it can’t work out a build. Open it through “newmoon-reader serve”, or use the desktop app.'), { kind: 'user' });
+          const m = await r.json();
+          if (!m.ok) throw Object.assign(new Error(m.error), { kind: m.kind });
+          return m.result;
+        }
+        // the assistant's model: the file the reader made (newmoon-reader.exe model); ?assistant=none stands in for "game never seen"
+        if (cmd === 'assistant') return Q.get('assistant') === 'none' ? null : get('../../data/cache/models/D2_11_003a.json', null);
         if (cmd === 'getSettings' || cmd === 'pickCsv') return { ...settings };
         if (cmd === 'saveSettings') { Object.assign(settings, args); return { ...settings }; }
         return true;
@@ -217,7 +235,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -259,6 +277,16 @@
     dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle' },
     gdb: { q: '', slot: 'all', known: true, open: new Set(), shown: 150, data: null, state: 'idle' },
+    // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
+    sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
+      // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
+      // (id null = the unsaved one), the cards' results, and whether the list under "Simulator" in the left bar is open
+      view: 'home', id: null, name: '', builds: [], cards: new Map(), jobs: Promise.resolve(), who: null,
+      // the base of the build in the editor: a saved character's name, or '' for none (then level and align count);
+      // inits / bases: what the reader said about each base, asked once per reading (the promise, and the answer)
+      char: '', level: 0, align: 'NEUTRAL', inits: new Map(), bases: new Map(), useSeq: 0,
+      demon: '',   // the build's digitalize demon: one of its base's COMP demons ("type:name"), or '' = not digitalized
+      saveState: '', storeTimer: null, naming: false, confirmDel: false, navOpen: store.get('sim-nav') !== '0' },
     exp: { q: '', closed: new Set() },
     dg: { q: '', closed: new Set() },
     extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
@@ -458,8 +486,15 @@
   PAGES.forEach(([id, label, ic], i) => nav.append(h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': `${label} (Ctrl+${i + 1})`, onclick: () => go(id) },
     icon(ic), h('span', { class: 'nav-label', text: label }))));
   nav.append(h('div', { class: 'nav-head', text: 'Tools (beta)' }));
-  TOOLS.forEach(([id, label, ic]) => nav.append(h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => go(id) },
-    icon(ic), h('span', { class: 'nav-label', text: label }))));
+  // The Simulator's saved builds hang under its entry (drawSimNav); the small arrow on the entry folds them away.
+  const simNavBox = h('div', { class: 'nav-sub', hidden: true });
+  const simNavToggle = h('button', { type: 'button', class: 'nav-fold', hidden: true, 'aria-label': 'Show or hide your saved builds',
+    onclick: () => { S.sim.navOpen = !S.sim.navOpen; store.set('sim-nav', S.sim.navOpen ? '1' : '0'); drawSimNav(); } }, icon('chevron'));
+  TOOLS.forEach(([id, label, ic]) => {
+    const btn = h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => (id === 'sim' ? simGoHome() : go(id)) },
+      icon(ic), h('span', { class: 'nav-label', text: label }));
+    if (id === 'sim') nav.append(h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox); else nav.append(btn);
+  });
   function go(page) {
     if (S.page === page) return;
     S.page = page; store.set('page', page);
@@ -480,6 +515,7 @@
     $('#who-sub').textContent = L ? [`Level ${fmt(L.level)}`, al].filter(Boolean).join(' · ') : (who ? 'No snapshot yet' : 'Log in to the game');
     $('#page-title').textContent = (PAGES.concat(TOOLS).find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
     document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.page === S.page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    drawSimNav();
     const foot = $('#side-foot');
     foot.replaceChildren();
     if (L) {
@@ -907,11 +943,11 @@
     let points = null;
     if (P && P.cap) {
       const free = n0(P.cap) - n0(P.total);
-      points = h('div', { class: 'exp-points', tabindex: 0, 'data-tip': (free > 0 ? `${pt(free)} free. ` : 'At the cap. ')
+      points = h('div', { class: 'band-points', tabindex: 0, 'data-tip': (free > 0 ? `${pt(free)} free. ` : 'At the cap. ')
           + `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})` + (P.level === 99 ? ' + 1000.00pt at 99' : '') + ` + ${P.extension} expansions × 1000.00pt` },
-        h('span', { class: 'exp-pts', text: `${pt(P.total)} / ${pt(P.cap)}` }),
-        h('span', { class: 'exp-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })));
-    } else if (P) points = h('div', { class: 'exp-points' }, h('span', { class: 'exp-pts', text: `${pt(P.total)}, no cap` }));
+        h('span', { class: 'band-pts', text: `${pt(P.total)} / ${pt(P.cap)}` }),
+        h('span', { class: 'band-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })));
+    } else if (P) points = h('div', { class: 'band-points' }, h('span', { class: 'band-pts', text: `${pt(P.total)}, no cap` }));
     // Two parts (the user's layout). Left: the title with the points, the bar, and under them the unlocked chains as a
     // list of name and class-rank, in two columns when the window has room. Right: every skill those ranks give as one
     // run of icons, chain after chain (passives then actives), with no names between them: an icon's tooltip says
@@ -1405,10 +1441,10 @@
       : h('p', { class: 'note', text: none }),
     note ? h('p', { class: 'note', text: note }) : null);
   /** A skill's own icon from the game (32x32, shown smaller); an empty box of the same size when there is none, so names stay in line. */
-  const skillIcon = (r) => {
+  const skillIcon = (r, folder) => {   // folder: another character's skill icons (the Simulator's imported base); else the shown character's
     const box = h('span', { class: 'skill-ico', 'aria-hidden': 'true' });
-    if (r.icon && S.meta.skillIcons) {
-      const img = h('img', { src: S.meta.skillIcons + r.icon + '.png', alt: '', loading: 'lazy' });
+    if (r.icon && (folder || S.meta.skillIcons)) {
+      const img = h('img', { src: (folder || S.meta.skillIcons) + r.icon + '.png', alt: '', loading: 'lazy' });
       img.onerror = () => img.remove();
       box.append(img);
     }
@@ -1452,7 +1488,7 @@
       });
       if (!shown) listHost.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty-row', text: q ? `Nothing matches “${st.q.trim()}”.` : o.empty })));
     };
-    page.append(h('div', { class: 'sect' }, h('div', { class: 'toolbar' },
+    page.append(h('div', { class: 'sect', id: o.id || null }, h('div', { class: 'toolbar' },
       h('h2', { class: 'section-title', text: o.heading }), h('span', { class: 'toolbar-spacer' }),
       o.search ? searchBox(st.q, o.search, (v) => { st.q = v; draw(); }) : null,
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { st.closed.clear(); draw(); } }, 'Expand all'),
@@ -1460,15 +1496,70 @@
     draw();
   }
 
+  /**
+   * The Expertise page's opening summary: points spent against the cap (points / 100, "pt", as the game's Expertise
+   * window), how many expertises are raised, maxed and chained, then every raised expertise with its class-rank and a bar
+   * to its highest class (max_class from the client's ExpertClassData; Class <max> Rank 0 is maxed). Regular ones by
+   * points, then the chains. A row filters the passive list below to that expertise.
+   */
+  function expSummary(rows) {
+    const R = S.data.ranks || {}, P = R.points || null, all = (R.ranks || []).filter((r) => n0(r.points) > 0);
+    const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
+    const card = h('section', { class: 'card exp-sum' });
+    const wrap = sect('Summary', P ? (P.cap ? `${pt(P.total)} of ${pt(P.cap)} spent` : `${pt(P.total)} spent, no cap`) : null, null, card);
+    if (!all.length) { card.append(h('p', { class: 'note', text: 'No expertise read yet. Take a snapshot.' })); return wrap; }
+    if (P && P.cap) {
+      const free = n0(P.cap) - n0(P.total);
+      card.append(h('div', { class: 'exp-points', 'data-tip': `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})`
+          + (P.level === 99 ? ' + 1000.00pt at 99' : '') + ` + ${P.extension} expansions × 1000.00pt` },
+        h('span', { class: 'exp-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })),
+        h('span', { class: 'exp-free', text: free > 0 ? `${pt(free)} free` : 'At the cap' })));
+    }
+    const maxed = (r) => r.max_class > 0 && n0(r.class) * 10 + n0(r.rank) >= r.max_class * 10;
+    const regular = all.filter((r) => !r.chain).sort((a, b) => n0(b.points) - n0(a.points) || String(a.name).localeCompare(b.name));
+    const chains = all.filter((r) => r.chain).sort((a, b) => n0(b.points) - n0(a.points) || String(a.name).localeCompare(b.name));
+    const counted = rows.filter((r) => isTrue(r.counted)).length;
+    const stat = (v, label) => h('div', { class: 'exp-stat' }, h('span', { class: 'exp-stat-v', text: String(v) }), h('span', { class: 'exp-stat-l', text: label }));
+    card.append(h('div', { class: 'exp-stats' }, stat(regular.length, regular.length === 1 ? 'expertise raised' : 'expertises raised'),
+      stat(all.filter(maxed).length, 'at their highest class'), stat(chains.length, chains.length === 1 ? 'chain expertise' : 'chain expertises'),
+      stat(counted, counted === 1 ? 'passive counted' : 'passives counted')));
+    const line = (r) => {
+      const top = r.max_class > 0 ? r.max_class * 100000 : 0, done = maxed(r);
+      // the skills its reached ranks give (expertise-ranks.json "skills", actives too); older data: its passives from expertise.json
+      const mine = S.data.expertise.filter((x) => x.expertise === r.name && !isExtra(x));
+      const offIds = new Set(mine.filter((x) => x.toggle && !x.toggle_on).map((x) => x.skill_id));
+      const skills = Array.isArray(r.skills) ? r.skills.map((s) => ({ ...s, off: offIds.has(s.id) }))
+        : mine.map((x) => ({ id: x.skill_id, name: x.skill || '—', icon: x.icon, rank: x.rank || '', active: false, off: x.toggle && !x.toggle_on }));
+      const icons = skills.filter((s) => s.icon).map((s) => {
+        const ic = skillIcon(s);
+        ic.dataset.tip = `${s.name} (${s.rank})` + (s.active ? ', active' : '') + (s.off ? ', toggle switched off' : '');
+        if (s.off) ic.classList.add('off');
+        return ic;
+      });
+      return h('button', { type: 'button', class: 'exp-sum-row', 'data-tip': `Show ${r.name}’s passives below` + (r.chain ? ' (chain: worked out from the expertises it is made of; costs no points)' : ''),
+        onclick: () => { S.exp.q = r.name; render(); const el = document.getElementById('exp-list'); if (el) el.scrollIntoView({ block: 'start' }); } },
+        h('span', { class: 'exp-sum-name', text: r.name }),
+        h('span', { class: 'exp-sum-rank', text: `${r.class}-${r.rank}` }),
+        h('span', { class: 'exp-bar', 'aria-hidden': 'true' }, top ? h('i', { style: `width:${Math.min(100, (n0(r.points) / top) * 100)}%` }) : null),
+        h('span', { class: 'exp-sum-max' + (done ? ' done' : ''), text: done ? 'Max' : top ? `of ${r.max_class}-0` : '' }),
+        h('span', { class: 'exp-sum-pt', text: r.chain ? '' : pt(r.points) }),
+        icons.length ? h('span', { class: 'exp-sum-icons' }, icons) : null);
+    };
+    const block = (title, list) => (list.length ? [h('h4', { class: 'list-head', text: title }), h('div', { class: 'exp-sum-list' }, list.map(line))] : null);
+    card.append(...[block('Expertise', regular), block('Chain expertise', chains)].flat().filter(Boolean));
+    return wrap;
+  }
+
   function pageExpertise() {
     const rows = S.data.expertise.filter((r) => !isDlevel(r) && !isExtra(r));
     const page = h('div', { class: 'page' });
     page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and your other learned passives. Digitalization Levels are on the Digitalize page; the quest bonus and Demonic Compendium are on Bonuses.'));
+    page.append(expSummary(rows));
     // the expertise share of each bonus, without what the Digitalization Levels, quest bonus and compendium put into it
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, round2(n0(r.expertise) - shareOf(r, ['dlevel', 'quest', 'compendium']))]).filter(([, v]) => v);
     page.append(sect('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, null,
       totalsCard(null, null, totals, 'No expertise bonuses counted yet.')));
-    passiveList(page, rows, S.exp, { heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
+    passiveList(page, rows, S.exp, { id: 'exp-list', heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
     return page;
   }
 
@@ -1533,18 +1624,18 @@
    * `pick` runs on a click; `on` marks the demon in use.
    * `compact` (the Overview's summoned demon): no bonus list or unlock tags, not a button, and `tag` after the name.
    */
-  function demonTile(d, on, pick, compact, tag) {
+  function demonTile(d, on, pick, compact, tag, iconFolder) {   // iconFolder: another character's skill icons (the Simulator's imported base)
     const O = d.offer || null;
     const pic = h('span', { class: 'demon-pic ' + alignClass(O && O.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
     if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
     mitamaMark(pic, d.mitama);
     const slots = O ? (O.skills || []).filter((s) => s.kind !== 'Feature' && s.kind !== 'Equipment') : [];
     const icons = slots.map((s) => {
-      const ic = skillIcon(s);
+      const ic = skillIcon(s, iconFolder);
       // dimmed = you don't get it while digitalized (the race's boost isn't learned): no meaning for the summoned demon, which uses all its skills
       if (!compact && !isTrue(s.counted)) ic.classList.add('off');
       if (compact) { ic.removeAttribute('aria-hidden'); ic.tabIndex = 0; ic.setAttribute('role', 'img'); ic.setAttribute('aria-label', s.name); }
-      return withTip(ic, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
+      return withTip(ic, () => h('div', null, tipHead(skillIcon(s, iconFolder), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
     });
     const adds = compact ? [] : O ? COMBAT.filter(([k]) => n0(O.combat && O.combat[k])).map(([k, label, unit]) => h('span', { class: 'dgt-add' }, h('span', { text: label }), h('b', { text: fmt(O.combat[k], unit, true) }))) : [];
     const hp = O && (O.stats || []).find((s) => s.stat === 'Max HP'), mp = O && (O.stats || []).find((s) => s.stat === 'Max MP');
@@ -2032,7 +2123,1067 @@
     drawChips(); draw();
     return page;
   }
-  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb };
+  // ---------- Simulator (Tools): other gear and expertise ranks, and what they would give ----------
+  // The numbers come from the reader (host "simInit" / "simulate" / "simCatalog": src\Build\Simulator.cs), so they are
+  // worked out by the same code as the rest of the app. The page only keeps the build being tried, asks for its result
+  // after every change and shows it against the character as last read. Nothing is saved but the build being tried
+  // (in the page's own storage, so it is still there next time).
+  const SIM_SUB = 'Try other gear and expertise ranks and watch your stats change. Nothing here touches the game or your saved data.';
+  // A worn piece's parts, numbered as the game's fusion window numbers them.
+  const SIM_PARTS = {
+    whole: ['Replace the whole piece', 'Another piece, with its own basic features and characteristics. Tarot, soul fusion, fusion bonus and mods stay as they are.'],
+    id: ['Slot 1 · Set bonus and appearance', 'The piece this one counts as: it decides the appearance bonus and the sets.'],
+    basic: ['Slot 2 · Basic features', 'The piece whose basic features (its stats) this one carries.'],
+    special: ['Slot 3 · Characteristics', 'The piece whose characteristics (its special effects) this one carries.'],
+    tarot: ['Tarot fusion', 'The crystal fused in as a tarot.'],
+    soul: ['Soul fusion', 'The crystal fused in as a soul.'],
+  };
+  const simClone = (v) => JSON.parse(JSON.stringify(v));
+  /** Puts these (and only these) inside el: nothing for null or false, lists are unpacked. */
+  const simFill = (el, ...kids) => { el.replaceChildren(...kids.flat(3).filter((x) => x !== null && x !== undefined && x !== false)); return el; };
+  const simSame = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const simKey = () => 'sim-draft';   // the unsaved build (not one per character: builds are independent of the character shown)
+  const simPt = (v) => (n0(v) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'pt';   // as the game's Expertise window writes points
+  const simRank = (r) => `Class ${Math.floor(r / 10)} · Rank ${r % 10}`;
+  const simPlain = (name) => String(name || '').replace(/[♂♀]/g, '').trim();
+
+  // --- the base of a build: a saved character as last read, or none ("No base": nothing worn, no expertise, and the
+  //     numbers are only what the build gives; a level and an alignment are then the build's own). The base only
+  //     serves as the start and as what the build is compared with: nothing of that character is changed. ---
+  const simActive = () => S.meta.character || '';
+  const simLevel0 = () => n0(S.v && S.v.latest && S.v.latest.level) || 99;
+  const simArgs = (who, level, align) => (who ? { base: who } : { base: '', level: level || simLevel0(), alignment: align || 'NEUTRAL' });
+  const simNow = () => simArgs(S.sim.char, S.sim.level, S.sim.align);
+  const simBaseKey = (who, level, align) => (who ? 'c:' + who : `none:${level || simLevel0()}:${align || 'NEUTRAL'}`);
+  /** The base a saved build (or the kept unsaved one) names. One saved before bases existed: the character shown. */
+  const simBaseOf = (b) => ({ who: b.base === undefined || b.base === null ? simActive() : String(b.base), level: n0(b.level) || simLevel0(), align: b.alignment || b.align || 'NEUTRAL' });
+  /** What the reader says about a base (its build as read, the expertise list, its result): asked once per reading. */
+  function simBase(who, level, align) {
+    const M = S.sim, key = simBaseKey(who, level, align);
+    if (!M.inits.has(key)) M.inits.set(key, host.call('simInit', simArgs(who, level, align))
+      .then((init) => { const entry = { init, catalog: {} }; M.bases.set(key, entry); return entry; })
+      .catch((e) => { M.inits.delete(key); throw e; }));
+    return M.inits.get(key);
+  }
+  /** Makes this the base of the build in the editor. Throws when it can't be read (a character without a snapshot). */
+  async function simSetBase(who, level, align) {
+    const M = S.sim, entry = await simBase(who, level, align);
+    Object.assign(M, { char: who, level: who ? M.level : (level || simLevel0()), align: who ? M.align : (align || 'NEUTRAL'), init: entry.init, base: entry.init.result, catalog: entry.catalog });
+  }
+  // --- a build's digitalize demon: one of its base's COMP demons as last seen, or none. It is the build's own: picking
+  //     one changes nothing for the character. A build that never chose (a new one, an older one) takes the
+  //     character's saved demon when the app is showing digitalized numbers, else none. ---
+  const simDemonDefault = (init) => (digi() && init && init.meta.demon_key ? init.meta.demon_key : '');
+  const simDemonOf = (b, init) => (typeof b.demon === 'string' ? b.demon : simDemonDefault(init));
+  const simDemonName = (key) => String(key || '').replace(/^\d+:/, '').replace(/:\d+$/, '');   // "type:name:level" (older: "type:name")
+  /** The demons of the editor's base (what that character's demon picker lists; asked once per reading). */
+  function simDemonList() {
+    const M = S.sim, entry = M.bases.get(simBaseKey(M.char, M.level, M.align));
+    if (!entry || !M.char) return Promise.resolve([]);
+    if (!entry.demonsAsk) entry.demonsAsk = host.call('simDemons', { base: M.char })
+      .then((r) => { entry.demons = (r && r.demons) || []; entry.skillIcons = (r && r.skillIcons) || null; return entry.demons; })
+      .catch(() => { entry.demons = []; return entry.demons; });
+    return entry.demonsAsk;
+  }
+  /** What differs from the base: the slots and the expertises. Of the build in the editor, or of the one given against its own base. */
+  function simChanges(build, init) {
+    const M = S.sim, B = build || M.build, I = init || M.init, slots = [], ranks = [];
+    if (!I || !B) return { slots, ranks, total: 0 };
+    I.build.slots.forEach((s0, k) => { if (!simSame((B.slots || [])[k] || null, s0)) slots.push(k); });
+    const p0 = I.build.points, p = B.points || {};
+    new Set([...Object.keys(p0), ...Object.keys(p)]).forEach((id) => { if (n0(p0[id]) !== n0(p[id])) ranks.push(id); });
+    return { slots, ranks, total: slots.length + ranks.length };
+  }
+  /** Keeps what is in the editor: the unsaved build in the page's storage (only what differs from the character as
+   *  read), a saved build in its file, a moment after the last change. */
+  function simSave() {
+    const M = S.sim;
+    if (M.id) { simStore(); return; }
+    const c = simChanges();
+    store.set(simKey(), JSON.stringify({ base: M.char, level: M.level, align: M.align, demon: M.demon,
+      slots: Object.fromEntries(c.slots.map((k) => [k, M.build.slots[k]])), points: Object.fromEntries(c.ranks.map((id) => [id, n0(M.build.points[id])])),
+      cap: M.cap === undefined ? null : M.cap }));   // the expertise point cap set by hand (null: the game's)
+  }
+  /** The unsaved build as kept: { base, level, align, slots: {slot: piece}, points: {expertise: points}, cap } (slots and points: what differs from its base). */
+  function simDraft() {
+    try { const v = JSON.parse(store.get(simKey()) || 'null'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; }
+  }
+  const simDraftCount = () => { const d = simDraft(); return Object.keys(d.slots || {}).length + Object.keys(d.points || {}).length; };
+
+  // --- saved builds: sim-builds.json in the character's folder, through the host (simBuilds / simSaveBuild /
+  //     simDeleteBuild). A saved build is whole (15 pieces + every expertise's points + the cap), not "what differs". ---
+  const simCardKey = (b) => { const at = simBaseOf(b); return JSON.stringify([simBaseKey(at.who, at.level, at.align), typeof b.demon === 'string' ? b.demon : 'saved:' + digi(), b.slots, b.points]); };
+  /** The build in the editor, as a saved build is written. */
+  const simWhole = () => { const M = S.sim; return { ...simNow(), demon: M.demon, slots: M.build.slots, points: M.build.points, cap: M.cap === undefined ? null : M.cap }; };
+  const simStatus = () => { const el = S.sim.statusEl; if (el) el.textContent = { saving: 'Saving…', saved: 'Saved', failed: 'Not saved' }[S.sim.saveState] || ''; };
+  /** A saved build changed: it goes to its file half a second after the last change. */
+  function simStore() {
+    const M = S.sim;
+    clearTimeout(M.storeTimer);
+    M.saveState = 'saving'; simStatus();
+    M.storeTimer = setTimeout(simStoreNow, 500);
+  }
+  async function simStoreNow() {
+    const M = S.sim, id = M.id;
+    clearTimeout(M.storeTimer); M.storeTimer = null;
+    if (!id) return;
+    const what = { id, name: M.name, ...simWhole() };
+    try {
+      const r = await host.call('simSaveBuild', what);
+      M.builds = r.builds || [];
+      if (M.id === id && !M.storeTimer) M.saveState = 'saved';
+    } catch (e) {
+      if (M.id === id) M.saveState = 'failed';
+      toast('err', 'The build could not be saved', String((e && e.message) || e));
+    }
+    simStatus(); drawSimNav();
+  }
+  /** Before leaving a build: a save that was still waiting goes out now. */
+  const simFlush = () => (S.sim.storeTimer ? simStoreNow() : Promise.resolve());
+  async function simLoadBuilds() {
+    const M = S.sim;
+    try { const list = await host.call('simBuilds'); if (Array.isArray(list)) M.builds = list; } catch (e) { /* no reader behind the page: no saved builds */ }
+    drawSimNav();
+    if (S.page === 'sim' && M.view !== 'edit' && M.state === 'ready') render();
+  }
+  /**
+   * Puts a build in the editor, on its base: a saved one by id, or (no id) the unsaved one. Resolves when its result
+   * is in; throws when its base can't be read. The unsaved one falls back to the character shown.
+   */
+  async function simUse(id) {
+    const M = S.sim, b = id ? (M.builds || []).find((x) => x.id === id) : null;
+    // the unsaved build has the base that was imported into it; none until then (an empty build)
+    let kept = b ? null : simDraft();
+    const at = b ? simBaseOf(b) : { who: typeof kept.base === 'string' ? kept.base : '', level: n0(kept.level), align: kept.align || '' }, mine = ++M.useSeq;
+    try { await simSetBase(at.who, at.level, at.align); }
+    catch (e) { if (b || !at.who) throw e; kept = {}; await simSetBase('', 0, ''); }   // an unsaved build whose base can't be read any more: start empty
+    if (mine !== M.useSeq) return true;   // another build was asked for meanwhile
+    M.id = b ? b.id : null; M.name = b ? b.name : '';
+    if (b) {
+      M.build = { slots: simClone(b.slots), points: simClone(b.points) };
+      M.cap = typeof b.cap === 'number' ? b.cap : null;
+      M.demon = simDemonOf(b, M.init);
+    } else {
+      M.demon = typeof kept.demon === 'string' ? kept.demon : simDemonDefault(M.init);
+      // what was being tried last time, put back on top of its base as read now
+      M.build = simClone(M.init.build);
+      Object.entries(kept.slots || {}).forEach(([k, v]) => { if (Number(k) >= 0 && Number(k) < 15) M.build.slots[k] = v; });
+      Object.entries(kept.points || {}).forEach(([pid, v]) => { M.build.points[pid] = n0(v); });
+      M.cap = typeof kept.cap === 'number' ? kept.cap : null;
+    }
+    Object.assign(M, { before: null, open: null, allDiff: false, saveState: b ? 'saved' : '', naming: false, confirmDel: false });
+    const hit = b ? M.cards.get(b.id) : null;
+    M.cur = hit && hit.res && hit.key === simCardKey(b) ? hit.res : M.base;   // the card's result, until the fresh one is in
+    ++M.seq; M.working = false;
+    return simRun(false);   // always: even an unchanged build can have another demon than the base's saved one
+  }
+  const simShow = () => { if (S.page !== 'sim') go('sim'); else { render(); $('#main').scrollTop = 0; } };
+  /** Opens a build in the editor (no id: the unsaved one). */
+  async function simOpen(id) {
+    const M = S.sim;
+    if (M.state !== 'ready') { M.view = 'edit'; M.id = id || null; simShow(); return; }   // simLoad puts it in the editor once the character is read
+    simFlush();
+    try { await simUse(id || null); M.view = 'edit'; }
+    catch (e) { toast('err', 'That build can’t be opened', String((e && e.message) || e)); }
+    simShow();
+  }
+
+  /**
+   * "Import base": the build starts again from that character as last read (its gear and expertise ranks; nothing
+   * for "No base"), and its numbers are that character's from then on. Nothing of the character is changed. What was
+   * in the build can be brought back until the next change ("Undo import").
+   */
+  async function simRebase(who) {
+    const M = S.sim;
+    if (who === M.char) return;
+    const had = { build: M.build, cap: M.cap, demon: M.demon, char: M.char, level: M.level, align: M.align };
+    try { await simSetBase(who, M.level, M.align); }
+    catch (e) { toast('err', `${who || 'No base'} can’t be imported`, String((e && e.message) || e)); return; }
+    Object.assign(M, { build: simClone(M.init.build), cap: null, demon: simDemonDefault(M.init), open: null, cur: M.base, working: false, allDiff: false });
+    simRun();   // (keeps the build, and asks for its result: the demon may not be the saved one)
+    M.before = had;
+    render();
+  }
+  /** "No base": its level and alignment (level-scaled effects, and lines for one alignment). The build stays. */
+  async function simBlankSet(level, align) {
+    const M = S.sim;
+    try { await simSetBase('', Math.max(1, Math.min(99, level)), align); } catch (e) { toast('err', 'That could not be worked out', String((e && e.message) || e)); return; }
+    await simRun();
+    render();
+  }
+  /** The page of builds. The build that was open keeps its result for its card. */
+  function simGoHome() {
+    const M = S.sim;
+    if (M.view === 'edit' && M.id && M.cur && !M.working && M.state === 'ready') M.cards.set(M.id, { key: simCardKey({ base: M.char, level: M.level, alignment: M.align, demon: M.demon, slots: M.build.slots, points: M.build.points }), res: M.cur });
+    simFlush();
+    M.view = 'home';
+    simShow();
+  }
+  const simNewName = (base) => {
+    const names = new Set((S.sim.builds || []).map((b) => b.name));
+    if (base) {
+      // "<name> copy", then "copy 2"...: the name is shortened to make room for the ending. (Cutting the whole thing to
+      // 60 letters cut the ending off a name that was already 60 long, so no free name was ever found: the page hung.)
+      const fit = (ending) => String(base).slice(0, 60 - ending.length).trimEnd() + ending;
+      let n = fit(' copy'), i = 2;
+      while (names.has(n)) n = fit(` copy ${i++}`);
+      return n;
+    }
+    let i = names.size + 1; while (names.has(`Build ${i}`)) i++;
+    return `Build ${i}`;
+  };
+  /** The unsaved build becomes a saved one with this name; "New build" then starts from what you wear again. */
+  async function simSaveDraft(name) {
+    const M = S.sim;
+    const r = await host.call('simSaveBuild', { name, ...simWhole() });
+    M.builds = r.builds || [];
+    M.id = r.id; M.name = (M.builds.find((b) => b.id === r.id) || {}).name || name;
+    M.saveState = 'saved'; M.naming = false;
+    store.set(simKey(), '{}');
+    drawSimNav();
+  }
+  async function simDuplicate(b, open) {
+    const M = S.sim;
+    try {
+      const at = simBaseOf(b);
+      const r = await host.call('simSaveBuild', { name: simNewName(b.name), ...simArgs(at.who, at.level, at.align), demon: typeof b.demon === 'string' ? b.demon : undefined,
+        slots: b.slots, points: b.points, cap: typeof b.cap === 'number' ? b.cap : null });
+      M.builds = r.builds || [];
+      drawSimNav();
+      if (open) simOpen(r.id); else render();
+    } catch (e) { toast('err', 'The build could not be copied', String((e && e.message) || e)); }
+  }
+  async function simDelete(id) {
+    const M = S.sim;
+    clearTimeout(M.storeTimer); M.storeTimer = null;
+    try {
+      const r = await host.call('simDeleteBuild', { id });
+      M.builds = r.builds || [];
+      M.cards.delete(id);
+      if (M.id === id) { M.view = 'home'; M.id = null; if (M.state === 'ready') await simUse(null).catch(() => {}); }
+      drawSimNav(); render();
+    } catch (e) { toast('err', 'The build could not be deleted', String((e && e.message) || e)); }
+  }
+  /** The saved builds under "Simulator" in the left bar; the one in the editor is marked instead of the entry itself. */
+  function drawSimNav() {
+    const M = S.sim, list = M.builds || [], open = M.navOpen && list.length > 0;
+    const editing = S.page === 'sim' && M.view === 'edit' && M.id ? M.id : null;
+    simNavToggle.hidden = !list.length;
+    simNavToggle.setAttribute('aria-expanded', String(open));
+    simNavToggle.dataset.tip = open ? 'Hide your saved builds' : `Show your ${list.length} saved build${list.length === 1 ? '' : 's'}`;
+    simNavBox.hidden = !open;
+    simFill(simNavBox, list.map((b) => h('button', { type: 'button', class: 'nav-subitem', 'aria-current': b.id === editing ? 'page' : null, 'data-tip': b.name, onclick: () => simOpen(b.id) }, b.name)));
+    const entry = nav.querySelector('.nav-item[data-page="sim"]');
+    if (entry && editing && open) entry.removeAttribute('aria-current');
+  }
+  /** One saved build as a card: its name, its base, how far it is from that base, and the biggest differences it makes. */
+  function simCard(b) {
+    const M = S.sim, key = simCardKey(b), hit = M.cards.get(b.id), known = hit && hit.key === key ? hit : null, res = known ? known.res : null;
+    const at = simBaseOf(b), entry = M.bases.get(simBaseKey(at.who, at.level, at.align)) || null;
+    const c = entry ? simChanges(b, entry.init) : { slots: [], ranks: [], total: 0 }, n = c.total;
+    // "Rubito · 2 changes", or without a base what was put in: "No base · 9 pieces, 3 expertises"
+    const count = !entry ? '' : at.who ? (n ? `${n} change${n === 1 ? '' : 's'}` : 'No changes')
+      : [c.slots.length ? `${c.slots.length} piece${c.slots.length === 1 ? '' : 's'}` : '', c.ranks.length ? `${c.ranks.length} expertise${c.ranks.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(', ') || 'Empty';
+    const el = h('div', { class: 'dg-tile sim-build', onclick: (ev) => { if (!ev.target.closest('.sim-build-acts')) simOpen(b.id); } });
+    const acts = h('span', { class: 'sim-build-acts' });
+    const drawActs = (asking) => simFill(acts, asking
+      ? [h('span', { class: 'dgt-line', text: 'Delete it?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => simDelete(b.id) }, 'Delete'),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => drawActs(false) }, 'Keep')]
+      : [h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Duplicate ${b.name}`, 'data-tip': 'Duplicate', onclick: () => simDuplicate(b, false) }, icon('copy')),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Delete ${b.name}`, 'data-tip': 'Delete', onclick: () => drawActs(true) }, icon('trash'))]);
+    drawActs(false);
+    const icons = res ? c.slots.map((k) => res.slots[k] && res.slots[k].icon).filter(Boolean) : [];
+    // what it changes: your stats first, then combat, then the rest; within each, the biggest first
+    const rank = { Stats: 0, Combat: 1, Affinity: 2, Other: 3 };
+    const diffs = res && entry ? simDiff(entry.init.result, res).filter((x) => rank[x.group] !== undefined).sort((x, y) => rank[x.group] - rank[y.group] || y.size - x.size) : [];
+    simFill(el,
+      h('span', { class: 'sim-build-head' },
+        h('span', { class: 'dgt-id' }, h('button', { type: 'button', class: 'sim-build-name', 'data-tip': `Open ${b.name}`, text: b.name }),
+          h('span', { class: 'dgt-line', text: [at.who || 'No base', count, b.saved_at ? `saved ${when(b.saved_at)}` : ''].filter(Boolean).join(' · ') })),
+        acts),
+      icons.length ? h('span', { class: 'sim-build-icons' }, icons.slice(0, 8).map((src) => h('img', { src, alt: '' })), icons.length > 8 ? h('span', { class: 'dgt-line', text: `+${icons.length - 8}` }) : null) : null,
+      !known ? h('span', { class: 'dgt-line', text: 'Working it out…' })
+        : !res ? h('span', { class: 'dgt-line', text: known.why || 'This build can’t be worked out with the game data as it is now.' })
+        : diffs.length ? h('span', { class: 'dgt-adds' }, diffs.slice(0, 4).map((x) => h('span', { class: 'dgt-add' }, h('span', { text: x.label }), h('b', { class: x.good ? 'good' : 'bad', text: fmt(x.d, x.unit, true) }))),
+          diffs.length > 4 ? h('span', { class: 'dgt-line', text: `and ${diffs.length - 4} more` }) : null)
+        : n ? h('span', { class: 'dgt-line', text: 'Moves none of your numbers.' }) : null);
+    // its result, one card after the other; the card is drawn again when it is in
+    if (!known) M.jobs = M.jobs.then(async () => {
+      const now = M.cards.get(b.id);
+      if (!(now && now.key === key)) {
+        let r = null, why = '';
+        let its = null;
+        try { its = await simBase(at.who, at.level, at.align); }
+        catch (e) { why = at.who ? `Its base, ${at.who}, can’t be read: ${String((e && e.message) || e)}` : String((e && e.message) || e); }
+        if (!why) try { r = await host.call('simulate', { ...simArgs(at.who, at.level, at.align), demon: simDemonOf(b, its.init), slots: b.slots, points: b.points }); } catch (e) { r = null; }
+        M.cards.set(b.id, { key, res: r, why });
+      }
+      if (el.isConnected) el.replaceWith(simCard(b));
+    });
+    return el;
+  }
+
+  // "Import base": the saved characters, as the rows of the Characters window, in a dropdown under the button in the
+  // editor. Picking one starts the build again from that character's gear and expertise as last read, and the build's
+  // numbers are then that character's. "No base" goes back to an empty build.
+  const simBasesMenu = $('#sim-bases');
+  let simBasesFor = null;   // the button it hangs from
+  function drawSimBases() {
+    const M = S.sim, me = simActive();
+    let chars = (S.state.characters || []).filter((c) => c.hasData || c.name === me);
+    if (me && !chars.some((c) => c.name === me)) chars = [{ name: me }, ...chars];
+    const row = (who, name, line, pic) => h('button', { type: 'button', class: 'char', 'aria-current': who === M.char ? 'true' : null, onclick: () => { simBasesMenu.hidePopover(); simRebase(who); } },
+      pic ? h('img', { class: 'char-pic', src: pic, alt: '' }) : who ? h('span', { class: 'char-dot' }) : h('span', { class: 'dm-icon dm-none dm-off', text: '–' }),
+      h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: name }), h('span', { class: 'char-line', text: line })),
+      who === M.char ? h('span', { class: 'tag', text: 'Base now' }) : null);
+    simFill($('#sim-bases-list'),
+      chars.map((c) => row(c.name, c.name, 'Gear, expertise and stats as last read', (c.name === me ? S.meta.picture : null) || c.picture || null)),
+      row('', 'No base', 'An empty build: only what it gives by itself', null));
+  }
+  simBasesMenu.addEventListener('toggle', (ev) => {
+    if (ev.newState !== 'open') return;
+    drawSimBases();
+    if (!simBasesFor || !simBasesFor.isConnected) return;
+    const r = simBasesFor.getBoundingClientRect(), w = simBasesMenu.offsetWidth, hgt = simBasesMenu.offsetHeight;
+    simBasesMenu.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + 'px';   // under the button, right edges together
+    simBasesMenu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
+    const b = $('#sim-bases-list [aria-current="true"]') || $('#sim-bases-list button');
+    if (b && simBasesFor.matches(':focus-visible')) b.focus();   // opened from the keyboard: go into the list
+  });
+  $('#main').addEventListener('scroll', () => { if (simBasesMenu.matches(':popover-open')) simBasesMenu.hidePopover(); });   // its button moves away
+  // The build's demon picker: "No demon" and the base's COMP demons as the cards of the other pages' picker (demonTile),
+  // in a dropdown under the name in the demon band. The pick is the build's own: nothing is saved for the character.
+  const simDemonsMenu = $('#sim-demons');
+  let simDemonsFor = null;   // the button it hangs from
+  async function drawSimDemons() {
+    const M = S.sim, box = $('#sim-demons-list');
+    const pick = (key) => { simDemonsMenu.hidePopover(); if (key === M.demon) return; M.demon = key; simRun(); render(); };
+    const none = h('button', { type: 'button', class: 'char', 'aria-current': M.demon ? null : 'true', onclick: () => pick('') },
+      h('span', { class: 'dm-icon dm-none dm-off', text: '–' }),
+      h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: 'No demon' }), h('span', { class: 'char-line', text: 'Not digitalized' })));
+    const entry = M.bases.get(simBaseKey(M.char, M.level, M.align)) || {};
+    if (!entry.demons) simFill(box, none, h('p', { class: 'note', style: 'padding:8px', text: `Reading ${M.char}’s demons…` }));
+    const list = await simDemonList();
+    simFill(box, none, list.map((d) => demonTile(d, d.key === M.demon, () => pick(d.key), false, null, entry.skillIcons)),
+      list.length ? null : h('p', { class: 'note', style: 'padding:8px', text: `No demons seen for ${M.char} yet. Open the COMP in game as ${M.char}, then load the demons on the Digitalize page.` }));
+    $('#sim-demons-note').textContent = `${M.char}’s COMP demons as last seen. The pick is this build’s: ${M.char}’s own digitalize demon is not changed.`;
+    simPlace(simDemonsMenu, simDemonsFor);
+  }
+  /** Puts a dropdown under its button (above it when there is no room below). */
+  function simPlace(menu, btn) {
+    if (!btn || !btn.isConnected || !menu.matches(':popover-open')) return;
+    const r = btn.getBoundingClientRect(), w = menu.offsetWidth, hgt = menu.offsetHeight;
+    menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+    menu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
+  }
+  simDemonsMenu.addEventListener('toggle', (ev) => { if (ev.newState === 'open') { simPlace(simDemonsMenu, simDemonsFor); drawSimDemons(); } });
+  $('#main').addEventListener('scroll', () => { if (simDemonsMenu.matches(':popover-open')) simDemonsMenu.hidePopover(); });   // its button moves away
+  /** The Simulator's first page: "New build", then every saved build as a card. */
+  function simHome(page) {
+    const M = S.sim, builds = M.builds || [], n = simDraftCount();
+    page.append(pageHead('Your builds. Open one to keep working on it, or start a new one. Nothing here touches the game or your saved snapshots.'));   // (no demon picker here: it is the editor's, and the cards follow what was picked there)
+    page.append(h('div', { class: 'sim-builds' },
+      h('button', { type: 'button', class: 'dg-tile sim-build sim-new', onclick: () => simOpen(null) },
+        h('span', { class: 'sim-new-plus', 'aria-hidden': 'true' }, icon('plus')),
+        h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: 'New build' }),
+          h('span', { class: 'dgt-line', text: n ? `Continue where you left off: ${n} change${n === 1 ? '' : 's'} not saved yet`
+            : simDraft().base ? `Continue where you left off: ${simDraft().base} as imported, not saved yet` : 'Start empty, or import a character as its base' }))),
+      builds.map(simCard)));
+    page.append(h('p', { class: 'note', text: builds.length
+      ? 'Each card compares the build with its base as last read (digitalized when the build has a demon); one with no base shows what it gives by itself. A saved build keeps every change you make to it.'
+      : 'No saved builds yet. Start a new one and press “Save build”: it then shows up here and under Simulator in the left bar.' }));
+    return page;
+  }
+  // What was picked before, per slot and part ("0:special" -> [{id, name}], newest first): shown as chips under each
+  // dropdown, so a few candidates can be swapped back and forth with one click. Kept in the page's storage.
+  const simHistKey = () => 'sim-hist';
+  function simHist() {
+    try { const v = JSON.parse(store.get(simHistKey()) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; }
+  }
+  function simHistAdd(k, part, id, name) {
+    if (!id) return;
+    const all = simHist(), key = `${k}:${part}`;
+    if ((all[key] || []).some((x) => x.id === id)) return;   // already a chip: it stays where it is
+    all[key] = [{ id, name }, ...(all[key] || [])].slice(0, 8);
+    store.set(simHistKey(), JSON.stringify(all));
+  }
+  function simHistDrop(k, part, id) {
+    const all = simHist(), key = `${k}:${part}`;
+    all[key] = (all[key] || []).filter((x) => x.id !== id);
+    if (!all[key].length) delete all[key];
+    store.set(simHistKey(), JSON.stringify(all));
+  }
+  /** Asks the reader for the build's result. Only the answer to the latest change is used. */
+  async function simRun(keep) {
+    const M = S.sim, seq = ++M.seq;
+    clearTimeout(M.timer);
+    if (keep !== false) simSave();   // false: a build that was only opened, nothing to write back
+    M.working = true;
+    try {
+      const res = await host.call('simulate', { ...simNow(), demon: M.demon, slots: M.build.slots, points: M.build.points });
+      if (seq !== M.seq) return true;
+      M.cur = res; M.working = false;
+      if (M.redraw) M.redraw();
+      return true;
+    } catch (e) {
+      if (seq !== M.seq) return true;
+      M.working = false;
+      if (M.redraw) M.redraw();
+      toast('err', 'That build could not be worked out', String((e && e.message) || e));
+      return false;
+    }
+  }
+  /** The same, a moment later: while a slider is being dragged, one request per pause instead of one per step. */
+  const simRunSoon = () => { const M = S.sim; clearTimeout(M.timer); M.working = true; M.timer = setTimeout(() => simRun(), 90); };
+
+  async function simLoad() {
+    const M = S.sim;
+    if (M.state !== 'idle') return;
+    M.state = 'loading';
+    try {
+      Object.assign(M, { inits: new Map(), bases: new Map(), cards: new Map() });   // everything known was against the last reading
+      const builds = await host.call('simBuilds').catch(() => null);
+      if (Array.isArray(builds)) M.builds = builds;
+      // the build that was open (a saved one, or the unsaved one), on top of its base as read now
+      let ok;
+      try { ok = await simUse(M.view === 'edit' ? M.id : null); }
+      catch (e) { if (!M.id || M.view !== 'edit') throw e; M.view = 'home'; toast('err', 'That build can’t be opened', String((e && e.message) || e)); ok = await simUse(null); }
+      if (!ok && !M.id) { M.build = simClone(M.init.build); M.cap = null; M.cur = M.base; simSave(); }   // an unsaved build the data no longer has: start over
+      M.state = 'ready';
+    } catch (e) { M.state = 'failed'; M.error = String((e && e.message) || e); }
+    drawSimNav();
+    if (S.page === 'sim') render();
+  }
+
+  // --- reading a result ---
+  /** Digitalized numbers are a result's own: it has them when its build has a demon (the base as read: the saved one). */
+  const simDigi = (...results) => results.every((r) => r && r.digi);
+  const simStatsOf = (res, d) => ((d === undefined ? simDigi(res) : d) ? res.digi : res.stats);
+  /** A bonus row's value in the shown mode. Rows that are not added up (only in some fights) show their largest part. */
+  const simRowVal = (r, d) => {
+    if (!r) return 0;
+    if (r.total === null || r.total === undefined) return round2(n0(d ? r.gear_digi : r.gear) + n0(r.expertise) + (d ? n0(r.demon) : 0));
+    return n0(d ? r.total_digi : r.total);
+  };
+  const simCombatRow = (res, k) => {
+    const c = COMBAT.find((x) => x[0] === k);
+    return c ? res.bonuses.find((r) => r.group === 'Combat' && r.bonus === (BONUS_NAME[k] || c[1]) && (r.unit || '') === (c[2] || '')) : null;
+  };
+  /** Everything that differs between two results, in the shown mode: the 12 stats and HP/MP, then every bonus. */
+  function simDiff(a, b) {
+    // b digitalized: against a digitalized too where it has a demon (what another demon, or other gear, changes),
+    // else against a as it is (what digitalizing adds)
+    const d = !!b.digi, da = d && !!a.digi, out = [], sa = simStatsOf(a, da), sb = simStatsOf(b, d);
+    [['max_hp', 'Max HP'], ['max_mp', 'Max MP'], ...STATS].forEach(([k, label]) => {
+      if (sa[k] === undefined || sb[k] === undefined || sa[k] === sb[k]) return;
+      out.push({ group: 'Stats', key: k, label, unit: '', from: sa[k], to: sb[k] });
+    });
+    const key = (r) => r.row + '|' + (r.unit || '');
+    const ma = new Map(a.bonuses.map((r) => [key(r), r])), mb = new Map(b.bonuses.map((r) => [key(r), r]));
+    [...new Set([...mb.keys(), ...ma.keys()])].forEach((id) => {
+      const ra = ma.get(id), rb = mb.get(id), r = rb || ra;
+      if (r.group === 'Stats') return;   // the stat tiles show where these end up
+      const from = simRowVal(ra, da), to = simRowVal(rb, d);
+      if (from === to) return;
+      out.push({ group: r.group, label: r.bonus, unit: r.unit || '', from, to, gone: !rb, fresh: !ra });
+    });
+    out.forEach((x) => { x.d = round2(x.to - x.from); x.good = lowIsGood(x.label) ? x.d < 0 : x.d > 0; x.size = Math.abs(x.d) / Math.max(Math.abs(x.from), Math.abs(x.to), 1); });
+    return out;
+  }
+  const simDelta = (x, cls) => h('span', { class: (cls || 'delta') + ' ' + (x.good ? 'good' : 'bad'), text: (x.d > 0 ? '▲ ' : '▼ ') + fmt(x.d, x.unit, true) });
+
+  // --- showing what something gives ---
+  /** One effect line of the reader: its text, and in a quieter voice when it applies or why it is not counted. */
+  function simLine(l) {
+    const why = l.c === 'digitalized' ? 'while digitalized' : l.c === 'situational' ? 'only in some fights' : l.c === 'inactive' ? 'not active' : l.c === 'unknown' ? 'not counted: the game data has no numbers for it' : '';
+    const note = [why, l.n].filter(Boolean).join(', ');
+    return h('li', { class: 'sim-line' + (l.c ? ' is-' + l.c : '') }, l.t, note ? h('small', { text: ` (${note})` }) : null);
+  }
+  const simLines = (list, none) => (list && list.length ? h('ul', { class: 'sim-lines' }, list.map(simLine)) : (none ? h('p', { class: 'sim-none', text: none }) : null));
+  const simLineText = (l) => l.t + (l.c === 'digitalized' ? ' (digitalized)' : l.c === 'inactive' ? ' (not active)' : '');
+
+  function simApply(build, k, part, id) {
+    const s = build.slots[k];
+    if (part === 'whole' || !s) {
+      build.slots[k] = id ? { id, basic: id, special: id, tarot: s ? s.tarot : 0, soul: s ? s.soul : 0, fuse: s ? s.fuse : [0, 0, 0], mods: s ? s.mods : [0, 0, 0, 0, 0] } : null;
+      return;
+    }
+    s[part] = id;
+  }
+
+  // --- the picker: what goes in one part of a piece ---
+  const simDlg = $('#sim-pick');
+  let simPickDone = null;   // tidies up after the open picker
+  $('#sim-pick-close').addEventListener('click', () => simDlg.close());
+  simDlg.addEventListener('click', (ev) => { if (ev.target === simDlg) simDlg.close(); });   // a click on the dimmed page around it
+  simDlg.addEventListener('close', () => { if (simPickDone) simPickDone(); simPickDone = null; });
+
+  async function simPick(k, part, after) {
+    const M = S.sim, slotName = M.init.meta.slots[k];
+    const list = $('#sim-pick-list'), tools = $('#sim-pick-tools'), preview = $('#sim-pick-preview');
+    $('#sim-pick-title').textContent = `${slotName} · ${SIM_PARTS[part][0]}`;
+    $('#sim-pick-sub').textContent = SIM_PARTS[part][1];
+    tools.replaceChildren(); preview.replaceChildren();
+    list.replaceChildren(h('p', { class: 'note', style: 'padding:12px', text: 'Loading what fits this slot…' }));
+    if (!simDlg.open) simDlg.showModal();
+    let alive = true, timer = null, look = 0;
+    simPickDone = () => { alive = false; clearTimeout(timer); };
+
+    let cat = M.catalog[k];
+    if (!cat) {
+      try { cat = M.catalog[k] = await host.call('simCatalog', { ...simNow(), slot: k }); }
+      catch (e) { if (alive) list.replaceChildren(h('p', { class: 'note', style: 'padding:12px', text: String((e && e.message) || e) })); return; }
+    }
+    if (!alive) return;
+
+    const spec = M.build.slots[k], was = M.init.build.slots[k];
+    const crystal = part === 'tarot' || part === 'soul';
+    const inUse = part === 'whole' ? (spec && spec.basic === spec.id && spec.special === spec.id ? spec.id : -1) : spec ? spec[part] : -1;
+    const asRead = was ? (part === 'whole' ? -1 : was[part]) : -1;
+    const linesOf = (it) => (part === 'basic' ? it.basic : part === 'special' ? it.special : part === 'id' ? it.look : [...it.basic, ...it.special, ...it.look]);
+    let opts = crystal
+      ? cat[part].map((c) => ({ id: c.id, name: c.name, lines: c.lines, sets: c.sets }))
+      : cat.items.map((it) => ({ id: it.id, name: it.name, tag: it.tag, sex: it.sex, lines: linesOf(it), sets: part === 'id' || part === 'whole' ? it.sets : [], own: (part === 'basic' || part === 'special') && spec && it.id === spec.id }));
+    // a piece made for the other sex can't be worn: it is left out where the piece itself is picked (as a donor of features it is fine)
+    const mySex = M.init.meta.sex, worn = part === 'id' || part === 'whole';
+    if (mySex && worn) opts = opts.filter((o) => !o.sex || o.sex === mySex || o.id === (spec && spec.id));
+    if (crystal) opts.unshift({ id: 0, name: part === 'tarot' ? 'No tarot' : 'No soul fusion', lines: [], sets: [], first: true });
+    if (part === 'whole') opts.unshift({ id: 0, name: 'Nothing: leave this slot empty', lines: [], sets: [], first: true });
+    opts.forEach((o) => {
+      o.gives = o.lines.length + o.sets.length > 0;
+      o.hay = [o.name, o.tag || '', ...o.lines.map((l) => l.t), ...o.sets.flatMap((s) => [...s.with, ...s.lines.map((l) => l.t)])].join(' ').toLowerCase();
+      o.rank = o.id === inUse ? 0 : o.first ? 1 : o.own ? 2 : o.id === asRead ? 3 : 4;
+    });
+    opts.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+
+    const st = { q: '', kind: 'all', empty: false, shown: 60, active: 0, rows: [] };
+    const kinds = [...new Set(opts.map((o) => o.tag).filter(Boolean))];
+    const pass = (o) => o.rank < 4 || ((st.empty || o.gives) && (st.kind === 'all' || o.tag === st.kind));
+
+    const choose = (o) => {
+      simApply(M.build, k, part, o.id);
+      simHistAdd(k, part, o.id, o.name);
+      simDlg.close();
+      M.open = k;
+      simRun();
+      if (after) after();
+    };
+    // What picking the highlighted row would do, before picking it: the build with that choice, against the build now.
+    const showPreview = (o) => {
+      clearTimeout(timer);
+      if (!o) { preview.replaceChildren(); return; }
+      if (o.id === inUse) { preview.replaceChildren(h('span', { class: 'sim-preview-label', text: 'In use now.' })); return; }
+      preview.replaceChildren(h('span', { class: 'sim-preview-label', text: `With ${o.first ? 'that' : o.name}:` }), h('span', { class: 'note', text: 'working it out…' }));
+      const mine = ++look;
+      timer = setTimeout(async () => {
+        const cand = simClone(M.build);
+        simApply(cand, k, part, o.id);
+        let res;
+        try { res = await host.call('simulate', { ...simNow(), demon: M.demon, slots: cand.slots, points: cand.points }); } catch (e) { res = null; }
+        if (!alive || mine !== look) return;
+        const head = h('span', { class: 'sim-preview-label', text: `With ${o.first ? 'that' : o.name}:` });
+        if (!res) { preview.replaceChildren(head, h('span', { class: 'note', text: 'could not be worked out.' })); return; }
+        const d = simDiff(M.cur, res).filter((x) => x.group !== 'Only in some fights' && x.group !== 'Partner');
+        if (!d.length) { preview.replaceChildren(head, h('span', { class: 'note', text: 'no change to your numbers.' })); return; }
+        const top = d.slice(0, 9);
+        simFill(preview, head, top.map((x) => h('span', { class: 'sim-chip ' + (x.good ? 'good' : 'bad'), 'data-tip': `${x.label}: ${fmt(x.from, x.unit)} → ${fmt(x.to, x.unit)}` },
+          h('span', { text: x.label }), h('b', { text: fmt(x.d, x.unit, true) }))), d.length > top.length ? h('span', { class: 'note', text: `and ${d.length - top.length} more` }) : null);
+      }, 160);
+    };
+    const setActive = (i, scroll) => {
+      if (i === st.active && !scroll) return;
+      st.active = Math.max(0, Math.min(st.rows.length - 1, i));
+      list.querySelectorAll('.sim-opt').forEach((el) => { const on = Number(el.dataset.i) === st.active; el.setAttribute('aria-selected', String(on)); if (on && scroll) el.scrollIntoView({ block: 'nearest' }); });
+      showPreview(st.rows[st.active]);
+    };
+    // Searching an effect ("rapid", "limit break power") puts the pieces that give the most of it first: the number on
+    // the line that has every searched word (the lowest first where less is better: damage taken, cooldown).
+    const amount = (o, words) => {
+      let best = null;
+      [...o.lines, ...o.sets.flatMap((s) => s.lines)].forEach((l) => {
+        if (l.c === 'inactive' || l.c === 'unknown') return;
+        const t = l.t.toLowerCase();
+        if (!words.every((w) => t.includes(w))) return;
+        const m = /([+−-])\s?(\d+(?:\.\d+)?)/.exec(l.t);
+        if (!m) return;
+        const v = Number(m[2]) * (m[1] === '+' ? 1 : -1) * (lowIsGood(l.t) ? -1 : 1);
+        if (best === null || v > best) best = v;
+      });
+      return best;
+    };
+    const draw = () => {
+      const words = st.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      st.rows = opts.filter((o) => pass(o) && words.every((w) => o.hay.includes(w)));
+      st.byAmount = false;
+      if (words.length) {
+        const score = new Map(st.rows.map((o) => [o, amount(o, words)]));
+        if ([...score.values()].some((v) => v !== null)) {
+          st.byAmount = true;
+          st.rows.sort((a, b) => (a.rank < 4 ? a.rank : 4) - (b.rank < 4 ? b.rank : 4) || (score.get(a) === null) - (score.get(b) === null) || n0(score.get(b)) - n0(score.get(a)) || a.name.localeCompare(b.name));
+        }
+      }
+      sortNote.textContent = st.byAmount ? 'Most of the searched effect first' : '';
+      st.active = Math.min(st.active, Math.max(0, st.rows.length - 1));
+      const row = (o, i) => h('div', { class: 'sim-opt', role: 'option', 'aria-selected': String(i === st.active), 'data-i': i, onclick: () => choose(o), onpointermove: () => setActive(i) },
+        h('div', { class: 'sim-opt-head' }, h('b', { text: o.name }),
+          o.tag ? h('span', { class: 'tag', text: o.tag }) : null,
+          o.sex ? h('span', { class: 'tag', text: `${o.sex} only` }) : null,
+          o.id === inUse ? h('span', { class: 'tag sim-tag-use', text: 'In use' }) : null,
+          o.own ? h('span', { class: 'tag', text: 'This piece’s own' }) : null,
+          o.id === asRead && o.id !== inUse ? h('span', { class: 'tag', text: 'As last read' }) : null),
+        o.lines.length ? h('div', { class: 'sim-opt-lines' }, o.lines.map((l, j) => [j ? ' · ' : null, h('span', { class: l.c ? 'is-' + l.c : null, text: simLineText(l) })])) : null,
+        o.sets.map((s) => h('div', { class: 'sim-opt-lines sim-opt-set' }, h('span', { class: 'q-key', text: `${crystal ? 'Fusion set' : 'Set'} with ${s.with.join(', ')}: ` }), s.lines.map((l) => simLineText(l)).join(' · ') || 'nothing the game data has numbers for')),
+        o.gives || o.first ? null : h('div', { class: 'sim-opt-lines zero', text: 'Gives nothing here' }));
+      list.replaceChildren(...st.rows.slice(0, st.shown).map(row));
+      if (!st.rows.length) list.append(h('p', { class: 'empty-row', text: words.length ? `Nothing matches “${st.q.trim()}”.` : 'Nothing fits here.' }));
+      if (st.rows.length > st.shown) list.append(h('button', { type: 'button', class: 'btn btn-sm sim-more', onclick: () => { st.shown += 120; draw(); } }, `Show more (${st.rows.length - st.shown} left)`));
+      showPreview(st.rows[st.active]);
+    };
+    const input = h('input', { class: 'input', type: 'search', spellcheck: 'false', 'aria-label': 'Search', placeholder: crystal ? 'Search a crystal or an effect (e.g. rapid)' : 'Search a name or an effect (e.g. limit break)',
+      oninput: () => { st.q = input.value; st.shown = 60; st.active = 0; draw(); list.scrollTop = 0; } });
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        const next = st.active + (ev.key === 'ArrowDown' ? 1 : -1);
+        if (next >= st.shown && st.rows.length > st.shown) { st.shown += 120; st.active = next; draw(); }
+        setActive(next, true);
+      } else if (ev.key === 'Enter') { ev.preventDefault(); if (st.rows[st.active]) choose(st.rows[st.active]); }
+    });
+    const sortNote = h('span', { class: 'note', role: 'status' });
+    const hidden = opts.filter((o) => o.rank === 4 && !o.gives).length;
+    simFill(tools, h('div', { class: 'search' }, icon('search'), input),
+      kinds.length > 1 ? h('div', { class: 'seg', role: 'group', 'aria-label': 'Kind' }, [['all', 'All'], ...kinds.map((x) => [x, x])].map(([id, label]) =>
+        h('button', { type: 'button', 'aria-pressed': String(st.kind === id), onclick: (ev) => { st.kind = id; st.shown = 60; st.active = 0; ev.currentTarget.parentNode.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === ev.currentTarget))); draw(); } }, label))) : null,
+      hidden ? h('label', { class: 'gdb-check' }, h('input', { type: 'checkbox', onchange: (ev) => { st.empty = ev.target.checked; st.shown = 60; draw(); } }), `Also show the ${hidden} that give nothing here`) : null,
+      sortNote);
+    draw();
+    input.focus();
+  }
+
+  function pageSim() {
+    const M = S.sim;
+    const page = h('div', { class: 'page page-sim' });   // (no snapshot of the shown character needed: a build can stand on any character, or on none)
+    simLoad();
+    if (M.state !== 'ready') {
+      page.append(pageHead(SIM_SUB));
+      page.append(M.state === 'failed'
+        ? h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'The simulator can’t start. ' }), M.error, ' ',
+          h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:8px', onclick: () => { M.state = 'idle'; render(); } }, 'Try again')))
+        : h('p', { class: 'note', text: 'Reading your build…' }));
+      return page;
+    }
+    if (M.view !== 'edit') return simHome(page);
+    const meta = M.init.meta;
+    const blank = !!meta.blank, mine = !!M.char && M.char === simActive();   // no base; the base is the character the app is showing
+    // Under the title: the digitalize demon picker, in the Overview's format (it is the Overview's own band). There is
+    // no character picker here: the build is the character's chosen at the top left of the app. A build with no base
+    // (no character behind it) has its level and alignment there instead: it has no demon.
+    function blankBand() {
+      const lv = h('input', { class: 'input sim-cap-in sim-lv-in', type: 'number', min: 1, max: 99, step: 1, value: M.level, 'aria-label': 'Level', 'data-tip': 'The level that level-scaled effects are worked out for' });
+      lv.addEventListener('change', () => simBlankSet(n0(lv.value) || M.level, M.align));
+      return h('section', { class: 'card demon-card closed sim-band' }, h('div', { class: 'demon-pic none', 'aria-hidden': 'true' }, h('span', { text: '–' })),
+        h('div', { class: 'demon-main' }, h('div', { class: 'demon-id' }, h('h3', { class: 'demon-name', text: 'No base' }),
+          h('span', { class: 'card-sub', text: 'Level' }), lv,
+          h('div', { class: 'seg', role: 'group', 'aria-label': 'Alignment' }, ['LAW', 'NEUTRAL', 'CHAOS'].map((a) => h('button', { type: 'button', 'aria-pressed': String(M.align === a),
+            'data-tip': `Count the effects that need you to be ${alignName(a)}`, onclick: () => { if (M.align !== a) simBlankSet(M.level, a); } }, alignName(a)))),
+          h('span', { class: 'tag tag-off', tabindex: 0, 'data-tip': 'No character behind the build: the numbers are only what its pieces and expertise ranks give', text: 'Only what the build gives' }))));
+    }
+    // The build's digitalize demon, in the format of the Overview's demon band (picture framed in its alignment, the
+    // name as the dropdown, who it is, its skills). The dropdown lists the BASE's demons (the imported character's COMP
+    // demons as last seen), whoever the app is showing, and the pick is the build's own.
+    const bandBox = h('div', { class: 'sim-bands' });
+    function demonBand() {
+      if (blank) return blankBand();
+      const entry = M.bases.get(simBaseKey(M.char, M.level, M.align)) || {}, list = entry.demons || null;
+      if (!list) simDemonList().then(() => { if (bandBox.isConnected) simFill(bandBox, demonBand()); });
+      const d = M.demon && list ? list.find((x) => x.key === M.demon) : null, O = d ? d.offer : null;
+      const shown = M.demon ? (d ? d.name : simDemonName(M.demon)) : 'No demon';
+      const pic = h('div', { class: 'demon-pic ' + (M.demon ? alignClass(O && O.alignment) : 'none'), 'aria-hidden': 'true' }, h('span', { text: M.demon ? shown.charAt(0) : '–' }));
+      if (d && d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+      const name = h('button', { type: 'button', class: 'name-btn', popovertarget: 'sim-demons', 'aria-haspopup': 'menu',
+        'data-tip': M.demon ? `This build is digitalized with ${shown}. Pick another of ${M.char}’s demons, or no demon` : `Pick one of ${M.char}’s demons to see this build digitalized with it`,
+        onclick: (ev) => { simDemonsFor = ev.currentTarget; } }, shown, h('span', { class: 'chev down' }, icon('chevron')));
+      const chips = !M.demon ? [h('span', { class: 'tag tag-off', text: 'Not digitalized' })]
+        : !d ? [h('span', { class: 'tag tag-off', text: list ? `Not among ${M.char}’s demons as last seen: not counted` : 'Reading the demons…' })]
+        : [h('span', { class: 'tag', text: `Lv ${fmt(d.level)}` }), d.race ? h('span', { class: 'tag', text: d.race }) : null,
+          O && O.alignment ? h('span', { class: 'tag tag-align ' + alignClass(O.alignment), text: alignName(O.alignment) }) : null,
+          d.mitama ? h('span', { class: 'tag', text: `${d.mitama} Mitama` }) : null,
+          O ? h('span', { class: 'tag tag-demon', tabindex: 0, 'data-tip': `${M.char} gets ${fmt(O.rate)}% of its stats (at most ${fmt(O.maxRate)}%).`, text: `${fmt(O.rate)}% stats` }) : null];
+      const skills = O ? (O.skills || []).filter((s) => s.kind !== 'Feature' && s.kind !== 'Equipment') : [];
+      const icons = skills.length ? h('span', { class: 'dg-skill-icons' }, skills.map((s) => {
+        const ic = skillIcon(s, entry.skillIcons);
+        if (!isTrue(s.counted)) ic.classList.add('off');
+        return withTip(ic, () => h('div', null, tipHead(skillIcon(s, entry.skillIcons), s.name, s.kind), ...tipLines(s.tip), skillWhy(s)));
+      })) : null;
+      return h('section', { class: 'card demon-card closed sim-band' }, pic, h('div', { class: 'demon-main' }, h('div', { class: 'demon-id' }, h('h3', { class: 'demon-name' }, name), chips, icons)));
+    }
+    const headLeft = h('div', { class: 'sim-title' }), headRight = h('div', { class: 'toolbar' }), editor = h('div', { class: 'sim-edit' }), out = h('aside', { class: 'sim-out' });
+    // the editor's own top line: the tabs on the left, the reset on the right; under it the gear list or the expertise
+    const tabsBox = h('div', { class: 'seg sim-tabs', role: 'group', 'aria-label': 'What to change' }), resetBox = h('div', { class: 'toolbar' }), bodyBox = h('div', { class: 'sim-edit-body' });
+    editor.append(h('div', { class: 'sim-edit-top' }, tabsBox, resetBox), bodyBox);
+    page.append(h('div', { class: 'page-head sim-head' }, headLeft, headRight), simFill(bandBox, demonBand()), h('div', { class: 'sim-layout' }, editor, out));
+
+    // The build's name and what can be done with it. Drawn only when that changes (never by a result coming in), so
+    // a name being typed is left alone.
+    function drawTitle() {
+      const back = h('button', { type: 'button', class: 'btn btn-ghost sim-back', 'data-tip': 'All your builds', onclick: simGoHome }, h('span', { class: 'chev' }, icon('chevron')), 'Builds');
+      if (!M.id && !M.naming) {
+        simFill(headLeft, back, h('b', { class: 'sim-name-text', text: 'New build' }), h('span', { class: 'card-sub', text: 'not saved' }),
+          h('button', { type: 'button', class: 'btn btn-primary', 'data-tip': 'Keep this build: it gets a name, a card and a line under Simulator', onclick: () => { M.naming = true; drawTitle(); } }, 'Save build…'));
+        return;
+      }
+      if (!M.id) {
+        const input = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: simNewName(), 'aria-label': 'Name of the build', spellcheck: 'false' });
+        const save = async () => {
+          const name = input.value.replace(/\s+/g, ' ').trim();
+          if (!name) { input.focus(); return; }
+          try { await simSaveDraft(name); } catch (e) { toast('err', 'The build could not be saved', String((e && e.message) || e)); return; }
+          drawTitle(); drawHead();
+          toast('ok', `Saved “${M.name}”`, 'It keeps every change you make to it from now on.', 4000);
+        };
+        input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') save(); else if (ev.key === 'Escape') { ev.stopPropagation(); M.naming = false; drawTitle(); } });
+        simFill(headLeft, back, input, h('button', { type: 'button', class: 'btn btn-primary', onclick: save }, 'Save'),
+          h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => { M.naming = false; drawTitle(); } }, 'Cancel'));
+        input.focus(); input.select();
+        return;
+      }
+      const name = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: M.name, 'aria-label': 'Name of the build', 'data-tip': 'Click to rename', spellcheck: 'false' });
+      name.addEventListener('input', () => {
+        const v = name.value.replace(/\s+/g, ' ').trim();
+        if (!v) return;
+        M.name = v;
+        const b = M.builds.find((x) => x.id === M.id);
+        if (b) b.name = v;
+        simStore(); drawSimNav();
+      });
+      name.addEventListener('change', () => { if (!name.value.trim()) name.value = M.name; });
+      name.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') name.blur(); });
+      M.statusEl = h('span', { class: 'card-sub', id: 'sim-status', role: 'status', 'data-tip': 'A saved build keeps every change as you make it' });
+      simFill(headLeft, back, name, M.statusEl,
+        M.confirmDel
+          ? [h('span', { class: 'card-sub', text: 'Delete this build?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => simDelete(M.id) }, 'Delete'),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { M.confirmDel = false; drawTitle(); } }, 'Keep')]
+          : [h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Duplicate this build', 'data-tip': 'Duplicate: a copy to change freely',
+              onclick: async () => { await simFlush(); simDuplicate({ name: M.name, slots: M.build.slots, points: M.build.points, cap: M.cap }, true); } }, icon('copy')),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Delete this build', 'data-tip': 'Delete this build', onclick: () => { M.confirmDel = true; drawTitle(); } }, icon('trash'))]);
+      simStatus();
+    }
+
+    const change = () => { drawEditor(); drawHead(); simRun(); };
+    // Reset to default: the character as last read (gear, expertise ranks and the point cap). What was there is kept
+    // until the next change, so a reset by mistake can be taken back. The "picked before" chips stay.
+    const resetAll = () => {
+      const had = { build: M.build, cap: M.cap, demon: M.demon };
+      Object.assign(M, { build: simClone(M.init.build), cap: null, demon: simDemonDefault(M.init), open: null });
+      change(); M.before = had; drawHead(); simFill(bandBox, demonBand());
+    };
+    const unReset = async () => {
+      const had = M.before;
+      M.before = null;
+      if (had.char !== undefined) {   // a base was imported: back to the base it had, with the build it had
+        try { await simSetBase(had.char, had.level, had.align); } catch (e) { toast('err', 'That base can’t be read any more', String((e && e.message) || e)); return; }
+        M.build = had.build; M.cap = had.cap; M.demon = had.demon;
+        simRun(); render();
+        return;
+      }
+      M.build = had.build; M.cap = had.cap; M.demon = had.demon; change(); simFill(bandBox, demonBand());
+    };
+
+    function drawHead() {
+      const c = simChanges(), dirty = c.total > 0 || (M.cap !== null && M.cap !== undefined) || (!blank && M.demon !== simDemonDefault(M.init));
+      if (dirty) M.before = null;   // something new was tried: the build from before the last reset is let go
+      // the reset sits at the top right of the gear list (the user's place for it), beside the Gear / Expertise tabs
+      // top right: what the build stands on, and the button that imports a character as its base
+      simFill(headRight,
+        h('span', { class: 'card-sub', text: blank ? 'No base' : `Base: ${M.char}` }),
+        h('button', { type: 'button', class: 'btn sim-import', popovertarget: 'sim-bases', 'aria-haspopup': 'menu', 'data-fk': 'import',
+          'data-tip': 'Start this build from one of your characters: its gear and expertise as last read. Nothing of the character is changed',
+          onclick: (ev) => { simBasesFor = ev.currentTarget; } }, 'Import base', h('span', { class: 'chev down' }, icon('chevron'))));
+      const imported = M.before && M.before.char !== undefined;
+      simFill(resetBox,
+        M.before && !dirty ? h('button', { type: 'button', class: 'btn btn-ghost', 'data-fk': 'unreset', 'data-tip': imported ? 'Back to the build you had before importing' : 'Put back what you had before the reset', onclick: unReset },
+          imported ? 'Undo import' : 'Undo reset') : null,
+        h('button', { type: 'button', class: 'btn', 'data-fk': 'reset', disabled: dirty ? null : true,
+          'data-tip': blank ? 'Back to an empty build' : `Back to ${M.char} as last read: gear, expertise ranks, point cap and demon`, onclick: resetAll }, 'Reset to default'));
+    }
+
+    // --- gear ---
+    function slotCard(k) {
+      const spec = M.build.slots[k], was = M.init.build.slots[k], res = M.cur.slots[k] || {}, slotName = meta.slots[k];
+      const fresh = spec && res.id === spec.id;   // the result on screen is of this build (a moment after a change it is not yet)
+      const changed = !simSame(spec, was), open = M.open === k;
+      const name = spec ? (fresh ? res.name : '…') : 'Empty';
+      const bits = !spec || !fresh ? [] : [res.basic ? `features of ${res.basic}` : '', res.special ? `characteristics of ${res.special}` : '', res.tarot ? `tarot ${res.tarot}` : '', res.soul ? `soul ${res.soul}` : ''].filter(Boolean);
+      const card = h('div', { class: 'sim-slot' + (open ? ' open' : '') + (changed ? ' changed' : '') });
+      card.append(h('button', { type: 'button', class: 'sim-slot-head', 'aria-expanded': String(open), 'data-fk': 'slot' + k, onclick: () => { M.open = open ? null : k; drawEditor(); } },
+        spec && fresh && res.icon ? h('img', { class: 'slot-icon', src: res.icon, alt: '' }) : h('span', { class: 'slot-icon sim-noicon' }),
+        h('span', { class: 'sim-slot-text' },
+          h('span', { class: 'sim-slot-top' }, h('span', { class: 'slot-name', text: slotName }), h('b', { class: 'sim-slot-item', text: name }),
+            fresh && res.limit ? h('span', { class: 'tag sim-tag-limit', 'data-tip': 'Fusion bonus at MAX', text: 'LIMIT' }) : null,
+            changed && !blank ? h('span', { class: 'tag sim-tag-changed', text: 'Changed' }) : null),
+          bits.length ? h('span', { class: 'sim-slot-sub', text: bits.join(' · ') }) : null),
+        h('span', { class: 'chev' }, icon('chevron'))));
+      if (!open) return card;
+
+      const body = h('div', { class: 'sim-slot-body' });
+      card.append(body);
+      // The chips of one part: what was picked for it before. A click uses that one again (Undo still goes back to
+      // what you wear); the x takes the chip off the list. The one in use is marked.
+      const hist = simHist();
+      const histChips = (part) => {
+        const list = hist[`${k}:${part}`] || [];
+        if (!list.length) return null;
+        const cur = !spec ? -1 : part === 'whole' ? (spec.basic === spec.id && spec.special === spec.id ? spec.id : -1) : spec[part];
+        return h('div', { class: 'sim-hist', role: 'group', 'aria-label': 'Picked before' }, h('span', { class: 'sim-hist-label', text: 'Picked before' }),
+          list.map((x) => h('span', { class: 'sim-hchip' + (x.id === cur ? ' on' : '') },
+            h('button', { type: 'button', class: 'sim-hchip-use', 'aria-pressed': String(x.id === cur), 'data-fk': `h${k}${part}${x.id}`, 'data-tip': x.id === cur ? `${x.name}: in use` : `Use ${x.name}`,
+              onclick: () => { if (x.id === cur) return; simApply(M.build, k, part, x.id); change(); } }, h('span', { text: x.name })),
+            h('button', { type: 'button', class: 'sim-hchip-x', 'aria-label': `Remove ${x.name} from this list`, 'data-tip': 'Remove from this list',
+              onclick: () => { simHistDrop(k, part, x.id); drawEditor(); } }, icon('x')))));
+      };
+      const pickBtn = (part, text, fk) => h('button', { type: 'button', class: 'sim-pickbtn', 'data-fk': fk || `p${k}${part}`, onclick: () => simPick(k, part, () => { drawEditor(); drawHead(); }) },
+        h('span', { text }), h('span', { class: 'chev' }, icon('chevron')));
+      if (!spec) {
+        body.append(h('p', { class: 'note', text: was ? 'Taken off in this build.' : 'Nothing is worn here.' }),
+          h('div', { class: 'sim-slot-foot' }, h('button', { type: 'button', class: 'btn btn-sm btn-primary', 'data-fk': `w${k}`, onclick: () => simPick(k, 'whole', () => { drawEditor(); drawHead(); }) }, 'Put a piece here…'),
+            was ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { M.build.slots[k] = simClone(was); change(); } }, 'Put it back') : null),
+          histChips('whole'));
+        return card;
+      }
+      const L = fresh ? res.lines : {};
+      const undo = (part) => (was && spec[part] !== was[part]
+        ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', 'data-tip': 'Back to what you wear', onclick: () => { spec[part] = was[part]; change(); } }, 'Undo') : null);
+      const partRow = (part, value, lines, none, extra) => h('div', { class: 'sim-part' + (was && spec[part] !== was[part] ? ' changed' : '') },
+        h('div', { class: 'sim-part-key' }, h('span', { text: SIM_PARTS[part][0].split(' · ')[0] }), SIM_PARTS[part][0].includes(' · ') ? h('small', { text: SIM_PARTS[part][0].split(' · ')[1] }) : null),
+        h('div', { class: 'sim-part-val' }, h('div', { class: 'sim-part-pick' }, pickBtn(part, value), undo(part)), histChips(part), fresh ? simLines(lines, none) : null, extra || null));
+      // the sets this piece is in (by name, as the set list has them)
+      const mySets = fresh ? M.cur.sets.filter((s) => s.kind === 'set' && s.name.split(', ').includes(simPlain(res.name))) : [];
+      const setBox = mySets.length ? h('div', { class: 'sim-sets' }, mySets.map((s) => h('div', { class: 'sim-set' + (s.active ? '' : ' off') },
+        h('span', { class: 'q-key', text: `Set ${s.worn} worn${s.active ? '' : ' (not complete)'}: ${s.name}` }), simLines(s.lines)))) : null;
+      body.append(
+        partRow('id', fresh ? res.name : '…', L.appearance, mySets.length ? null : 'No appearance bonus and no set.', setBox),
+        partRow('basic', fresh ? (res.basic || `${res.name} (its own)`) : '…', (L.item || []).filter((l) => l.n !== 'fusion great success'), 'No basic features.'),
+        partRow('special', fresh ? (res.special || `${res.name} (its own)`) : '…', L.characteristic, 'No characteristics.'));
+      if (meta.tarot[k]) body.append(partRow('tarot', fresh ? (res.tarot || 'None') : '…', L.tarot, spec.tarot ? 'Nothing the game data has numbers for.' : null));
+      if (meta.soul[k]) body.append(partRow('soul', fresh ? (res.soul || 'None') : '…', L.soul, spec.soul ? 'Nothing the game data has numbers for.' : null));
+      // Fusion bonus: LIMIT is every bonus of this kind of piece at the top of its table ("MAX" in the game)
+      if (fresh && res.fuse_max && res.fuse_max.length) {
+        const max = res.fuse_max.map((f) => `${f.stat} +${f.bonus}`).join(' · ');
+        const now = (res.fuse || []).map((f) => `${f.stat} +${f.bonus}`).join(' · ');
+        const sw = h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: res.limit ? true : null, 'data-fk': `f${k}`, 'aria-label': 'LIMIT: fusion bonus at MAX',
+          onchange: () => { spec.fuse = sw.checked ? [50, 50, 50] : [0, 0, 0]; change(); } });
+        body.append(h('div', { class: 'sim-part' + (was && !simSame(spec.fuse, was.fuse) ? ' changed' : '') },
+          h('div', { class: 'sim-part-key' }, h('span', { text: 'Fusion bonus' }), h('small', { text: 'LIMIT' })),
+          h('div', { class: 'sim-part-val' }, h('label', { class: 'sim-limit' }, sw, h('span', null, h('b', { text: res.limit ? 'LIMIT (MAX)' : 'Not at MAX' }),
+            h('small', { text: res.limit ? ` ${max}` : now ? ` now ${now}; LIMIT gives ${max}` : ` LIMIT gives ${max}` })),
+            was && !simSame(spec.fuse, was.fuse) ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', onclick: (ev) => { ev.preventDefault(); spec.fuse = simClone(was.fuse); change(); } }, 'Undo') : null))));
+      }
+      if (fresh && L.mod && L.mod.length) body.append(h('div', { class: 'sim-part' },
+        h('div', { class: 'sim-part-key' }, h('span', { text: 'Mods' }), h('small', { text: 'kept as they are' })), h('div', { class: 'sim-part-val' }, simLines(L.mod))));
+      body.append(h('div', { class: 'sim-slot-foot' },
+        h('button', { type: 'button', class: 'btn btn-sm', 'data-fk': `w${k}`, 'data-tip': SIM_PARTS.whole[1], onclick: () => simPick(k, 'whole', () => { drawEditor(); drawHead(); }) }, 'Replace the whole piece…'),
+        h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { M.build.slots[k] = null; change(); } }, 'Take it off'),
+        changed ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { M.build.slots[k] = simClone(was); change(); } }, 'Undo this slot') : null));
+      const whole = histChips('whole');
+      if (whole) body.append(whole);
+      return card;
+    }
+
+    // --- expertise ---
+    let expLive = null;   // refreshes the parts of the expertise tab a result changes (the sliders are left alone)
+    function expertiseTab() {
+      const defs = M.init.expertise, P = M.build.points, P0 = M.init.build.points;
+      const baseRank = (id) => Math.floor(n0(P0[id]) / 10000), rankOf = (id) => Math.floor(n0(P[id]) / 10000);
+      const box = h('div', { class: 'sim-exp' });
+      // Points spent against the cap. The cap can be set by hand, to plan for more expansions or a higher level: it
+      // only changes what counts as free or over here, never a stat. The line is built once and only its texts are
+      // refreshed, so the box being typed in is never replaced under the cursor.
+      const cap0 = M.base.expertise.cap, RP = (mine && S.data.ranks && S.data.ranks.points) || {};
+      const capNow = () => (M.cap === null || M.cap === undefined ? cap0 : M.cap);
+      const spent = h('span', { class: 'card-sub' }), freeTag = h('span', { class: 'tag' }), meter = h('span', { class: 'exp-bar' }, h('i')), capNote = h('p', { class: 'note' });
+      const capIn = h('input', { class: 'input sim-cap-in', type: 'number', min: 0, step: 1000, inputmode: 'numeric', placeholder: 'no cap', 'aria-label': 'Expertise point cap, in pt' });
+      const setCap = (v, typing) => {
+        M.cap = v === null || v === cap0 ? null : Math.max(0, Math.round(v));
+        simSave(); drawBar(typing); drawHead();
+      };
+      const capUndo = h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', 'data-tip': cap0 ? `Back to your cap in game, ${simPt(cap0)}` : 'Back to no cap, as in game', onclick: () => setCap(null) }, 'Undo');
+      const capStep = (by, text, tip) => h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': tip, 'data-tip': tip, onclick: () => setCap(n0(capNow()) + by) }, text);
+      capIn.addEventListener('input', () => { if (capIn.value !== '') setCap(Number(capIn.value) * 100, true); });
+      capIn.addEventListener('change', () => { if (capIn.value === '') setCap(null); else drawBar(); });   // an emptied box: back to the game's
+      const capTip = (cap0 ? `Your cap in game is ${simPt(cap0)}` : 'The game has no cap on your points')
+        + (cap0 && RP.level !== undefined && RP.extension !== undefined ? ` = 17,000.00pt + 1,000.00pt per 10 levels (level ${RP.level})${RP.level === 99 ? ' + 1,000.00pt at 99' : ''} + ${RP.extension} expansions × 1,000.00pt` : '')
+        + '. Set another one to plan ahead: each expansion adds 1,000.00pt.';
+      const bar = h('div', { class: 'sim-points' },
+        h('div', { class: 'sim-points-top' }, h('b', { text: 'Expertise points' }), spent,
+          h('span', { class: 'sim-cap' }, h('span', { class: 'card-sub', 'data-tip': capTip, text: 'of a cap of' }), capStep(-100000, '−', 'Cap 1,000.00pt lower'), capIn, h('span', { class: 'card-sub', text: 'pt' }),
+            capStep(100000, '+', 'Cap 1,000.00pt higher (one more expansion)'), capUndo),
+          freeTag),
+        meter, capNote);
+      const drawBar = (typing) => {
+        const total = defs.filter((d) => d.counts).reduce((a, d) => a + n0(P[d.id]), 0), cap = capNow();
+        const free = cap ? cap - total : 0, moved = cap0 && cap ? cap - cap0 : 0;
+        spent.textContent = simPt(total);
+        if (!typing) capIn.value = cap ? String(cap / 100) : '';
+        capUndo.hidden = cap === cap0;
+        freeTag.hidden = !cap; freeTag.className = 'tag ' + (free < 0 ? 'tag-over' : '');
+        freeTag.textContent = free < 0 ? `${simPt(-free)} over the cap` : `${simPt(free)} free`;
+        meter.hidden = !cap; meter.className = 'exp-bar' + (free < 0 ? ' over' : '');
+        meter.firstChild.style.width = `${cap ? Math.max(0, Math.min(100, (total / cap) * 100)) : 0}%`;
+        capNote.textContent = [
+          moved ? `A cap you set: ${simPt(Math.abs(moved))} ${moved > 0 ? 'above' : 'below'} yours in game (${simPt(cap0)})${moved > 0 && moved % 100000 === 0 ? `, which is ${moved / 100000} more expansion${moved === 100000 ? '' : 's'}` : ''}.` : (!cap0 && cap ? 'A cap you set: the game has none on your points.' : ''),
+          free < 0 ? 'The ranks above need more points than this cap allows: lower an expertise or raise the cap.' : ''].filter(Boolean).join(' ');
+        capNote.hidden = !capNote.textContent;
+      };
+      const unlockList = (d, rank) => h('ul', { class: 'sim-unlocks' }, d.unlocks.length ? d.unlocks.map((u) => h('li', { class: u.rank <= rank ? 'on' : '' },
+        h('span', { class: 'sim-unlock-rank', text: simRank(u.rank) }),
+        h('span', null, u.skills.map((s, i) => [i ? ', ' : null, h('span', { class: s.passive ? '' : 'sim-active', 'data-tip': s.passive ? null : 'An active skill: it adds no stats by itself', text: s.name })])))) : h('li', { text: 'The game data lists no skills for its ranks.' }));
+      const row = (d) => {
+        const base = baseRank(d.id), open = M.expOpen.has(d.id);
+        const label = h('span', { class: 'sim-exp-rank' }), was = h('span', { class: 'sim-exp-was' });
+        const slider = h('input', { type: 'range', class: 'sim-range', min: 0, max: d.max, step: 1, value: rankOf(d.id), 'aria-label': `${d.name}: rank` });
+        const undo = h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', onclick: () => set(base) }, 'Undo');
+        const detail = h('div', { class: 'sim-exp-detail' });
+        const el = h('div', { class: 'sim-exp-row' });
+        const paint = () => {
+          const v = rankOf(d.id);
+          label.textContent = simRank(v);
+          slider.value = v; slider.style.setProperty('--fill', `${d.max ? (v / d.max) * 100 : 0}%`);
+          el.classList.toggle('changed', v !== base);
+          was.textContent = v !== base ? `was ${Math.floor(base / 10)}-${base % 10}` : '';
+          undo.hidden = v === base;
+          if (M.expOpen.has(d.id)) detail.replaceChildren(unlockList(d, v)); else detail.replaceChildren();
+          drawBar();
+        };
+        const set = (v) => {
+          v = Math.max(0, Math.min(d.max, v));
+          P[d.id] = v === base ? n0(P0[d.id]) : v * 10000;   // untouched: the exact points as read (part of a rank counts toward chains)
+          paint(); drawHead(); simRunSoon();
+        };
+        slider.addEventListener('input', () => set(Number(slider.value)));
+        const step = (by, text, tip) => h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': tip, 'data-tip': tip, onclick: () => set(rankOf(d.id) + by) }, text);
+        el.append(h('button', { type: 'button', class: 'sim-exp-name', 'aria-expanded': String(open), 'data-tip': 'What its ranks unlock',
+            onclick: (ev) => { if (M.expOpen.has(d.id)) M.expOpen.delete(d.id); else M.expOpen.add(d.id); ev.currentTarget.setAttribute('aria-expanded', String(M.expOpen.has(d.id))); paint(); } },
+            h('span', { class: 'chev' }, icon('chevron')), h('span', { text: d.name })),
+          h('span', { class: 'sim-exp-val' }, label, was),
+          h('span', { class: 'sim-exp-ctl' }, step(-10, '«', 'One class down'), step(-1, '−', 'One rank down'), slider, step(1, '+', 'One rank up'), step(10, '»', 'One class up')),
+          undo, detail);
+        paint();
+        return el;
+      };
+      const regular = defs.filter((d) => !d.chain), chains = defs.filter((d) => d.chain);
+      const trained = regular.filter((d) => baseRank(d.id) > 0), rest = regular.filter((d) => baseRank(d.id) === 0);
+      const chainBox = h('div', { class: 'sim-chains' });
+      const drawChains = () => {
+        const now = M.cur.expertise.ranks, before = M.base.expertise.ranks;
+        chainBox.replaceChildren(...chains.map((d) => {
+          const a = n0(before[d.id]), b = n0(now[d.id]);
+          if (!a && !b && !M.expOpen.has('chains')) return null;
+          const needs = d.needs.map((x) => `${Math.round(x.share * 100)}% of ${x.name}${x.rank ? ` (needs ${simRank(x.rank)})` : ''}`).join(' + ');
+          return h('div', { class: 'sim-chain' + (a !== b ? ' changed' : '') + (b ? '' : ' off'), 'data-tip': needs ? `${d.name} = ${needs}` : null },
+            h('span', { text: d.name }), h('span', { class: 'sim-exp-val' }, h('span', { class: 'sim-exp-rank', text: b ? simRank(b) : 'Not reached' }), a !== b ? h('span', { class: 'sim-exp-was', text: a ? `was ${Math.floor(a / 10)}-${a % 10}` : 'new' }) : null));
+        }).filter(Boolean));
+        if (!chainBox.childNodes.length) chainBox.append(h('p', { class: 'note', text: 'No chain expertise reached.' }));
+      };
+      expLive = () => { drawBar(); drawChains(); };
+      const allChains = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { if (M.expOpen.has('chains')) M.expOpen.delete('chains'); else M.expOpen.add('chains'); allChains.textContent = M.expOpen.has('chains') ? 'Only the ones reached' : 'Show every chain'; drawChains(); } },
+        M.expOpen.has('chains') ? 'Only the ones reached' : 'Show every chain');
+      simFill(box, bar,
+        trained.length ? [h('h3', { class: 'list-head', text: 'Your expertise' }), trained.map(row)] : null,
+        h('h3', { class: 'list-head sim-list-head' }, 'Chain expertise', h('small', { text: 'worked out from the ones above' }), allChains), chainBox,
+        rest.length ? [h('h3', { class: 'list-head', text: 'Not trained yet' }), rest.map(row)] : null);
+      drawChains();
+      return box;
+    }
+
+    function drawEditor() {
+      const keep = document.activeElement && editor.contains(document.activeElement) ? document.activeElement.dataset.fk : null;
+      const c = simChanges();
+      const tab = (id, label, n) => h('button', { type: 'button', 'aria-pressed': String(M.tab === id), onclick: () => { M.tab = id; drawEditor(); } }, label, n ? h('span', { class: 'sim-count', text: n }) : null);
+      expLive = null;
+      simFill(tabsBox, tab('gear', 'Gear', c.slots.length), tab('expertise', 'Expertise', c.ranks.length));
+      simFill(bodyBox, M.tab === 'gear' ? h('div', { class: 'sim-slots' }, M.build.slots.map((_, k) => slotCard(k))) : expertiseTab());
+      if (keep) { const el = editor.querySelector(`[data-fk="${keep}"]`); if (el) el.focus({ preventScroll: true }); }
+    }
+
+    // --- results ---
+    function drawResults() {
+      const base = M.base, cur = M.cur, diff = simDiff(base, cur), c = simChanges();
+      const D = !!cur.digi, Db = D && !!base.digi, st = simStatsOf(cur, D);   // digitalized: the build has a demon; the base's side too when it has one saved
+      const byKey = new Map(diff.filter((x) => x.group === 'Stats').map((x) => [x.key, x]));
+      const tile = ([k, label]) => {
+        if (st[k] === undefined) return null;
+        const x = byKey.get(k);
+        // without a base a tile is what the build adds to that stat, tinted by its sign
+        if (blank) return h('div', { class: 'sim-stat' + (st[k] ? ' changed ' + (st[k] > 0 ? 'up' : 'down') : ''), 'data-tip': `${label}: what the build adds` },
+          h('span', { class: 'sim-stat-label', text: label }), h('b', { class: 'sim-stat-value', text: fmt(st[k], '', true) }));
+        return h('div', { class: 'sim-stat' + (x ? ' changed ' + (x.good ? 'up' : 'down') : ''), 'data-tip': x ? `${label}: ${fmt(x.from)} → ${fmt(x.to)}` : `${label} ${fmt(st[k])}: as you are now` },
+          h('span', { class: 'sim-stat-label', text: label }), h('b', { class: 'sim-stat-value', text: fmt(st[k]) }), x ? simDelta(x, 'sim-stat-delta') : h('span', { class: 'sim-stat-delta same', text: '—' }));
+      };
+
+      const keyRow = ([k, label]) => {
+        const cdef = COMBAT.find((x) => x[0] === k), unit = cdef[2];
+
+        const to = simRowVal(simCombatRow(cur, k), D), from = simRowVal(simCombatRow(base, k), Db), d = round2(to - from);
+        const x = { d, unit, good: lowIsGood(cdef[1]) ? d < 0 : d > 0 };
+        return h('div', { class: 'sim-key' + (d ? ' changed' : ''), 'data-tip': d ? `${cdef[1]}: ${fmt(from, unit)} → ${fmt(to, unit)}` : null },
+          h('span', { class: 'sheet-label', text: label }), capTag(to, CAPS[k] === undefined ? null : CAPS[k], unit),
+          h('b', { class: 'sheet-value' + (to < 0 && !lowIsGood(cdef[1]) ? ' bad' : ''), text: fmt(to, unit) }), d ? simDelta(x) : h('span', { class: 'delta same' }));
+      };
+      const sheet = SHEET.flat().map(([title, rows]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), rows.map(keyRow)));
+      // every difference, in one list at the top: your stats, then the bonuses group by group
+      const groups = [['Stats', blank ? 'Stats' : mine ? 'Your stats' : `${M.char}’s stats`], ['Combat', 'Combat'], ['Affinity', 'Affinity'], ['Other', 'Other'], ['Partner', blank ? 'A partner' : 'Your partner'], ['Only in some fights', 'Only in some fights']];
+      const allRows = groups.flatMap(([g]) => diff.filter((x) => x.group === g));
+      const few = M.allDiff || allRows.length <= 12;
+      const diffList = h('div', { class: 'sim-others' });
+      groups.forEach(([g, title]) => {
+        const rows = (few ? allRows : allRows.slice(0, 10)).filter((x) => x.group === g);
+        if (!rows.length) return;
+        // without a base there is no "before": a line is what the build gives
+        diffList.append(h('div', { class: 'chg-group', text: title }), ...rows.map((x) => (blank
+          ? h('div', { class: 'chg' }, h('span', { text: x.label }), h('span'), h('span', { class: 'delta ' + (x.good ? 'good' : 'bad'), text: fmt(x.to, x.unit, true) }))
+          : h('div', { class: 'chg' }, h('span', { text: x.label }),
+            h('span', { class: 'chg-vals' }, x.fresh ? 'new: ' : fmt(x.from, x.unit) + ' → ', h('b', { text: x.gone ? 'gone' : fmt(x.to, x.unit) })), simDelta(x)))));
+      });
+      if (allRows.length > 12) diffList.append(h('button', { type: 'button', class: 'btn btn-sm chg-more', style: 'margin-top:8px', 'aria-expanded': String(few),
+        onclick: () => { M.allDiff = !M.allDiff; drawResults(); } }, few ? 'Show fewer' : `Show all ${allRows.length} differences`));
+      // sets won and lost
+      const setsOf = (res) => new Map(res.sets.filter((s) => s.active).map((s) => [s.kind + '|' + s.name, s]));
+      const sa = setsOf(base), sb = setsOf(cur);
+      const setNote = (s, text, cls) => h('div', { class: 'sim-setnote ' + cls }, h('b', { text }), `${s.kind === 'fusion' ? 'fusion set ' : 'set '}${s.name}`);
+      const setNotes = [...[...sa.keys()].filter((key) => !sb.has(key)).map((key) => setNote(sa.get(key), 'Lost: ', 'bad')), ...[...sb.keys()].filter((key) => !sa.has(key)).map((key) => setNote(sb.get(key), 'Gained: ', 'good'))];
+      // effects of changed pieces the data has no numbers for
+      const blind = c.slots.filter((k) => cur.slots[k] && cur.slots[k].lines && Object.values(cur.slots[k].lines).some((list) => list.some((l) => l.c === 'unknown'))).map((k) => cur.slots[k].name);
+      // (with no gear or expertise change, another demon than the saved one is still a difference: the title says which)
+      const otherDemon = !blank && M.demon !== simDemonDefault(M.init);   // not the one a build starts with
+      const title = blank ? 'What this build gives' : c.total ? `With your ${c.total} change${c.total === 1 ? '' : 's'}`
+        : otherDemon ? (M.demon ? `Digitalized with ${cur.demon || simDemonName(M.demon)}` : 'Not digitalized') : `As ${mine ? 'you are' : M.char + ' is'} now`;
+      simFill(out,
+        h('section', { class: 'card sim-card' },
+          h('div', { class: 'card-head' }, h('h2', { class: 'section-title', text: title }), h('span', { class: 'card-sub', role: 'status', text: M.working ? 'working it out…' : blank ? 'no base' : D ? `digitalized with ${cur.demon || simDemonName(M.demon)}` : 'not digitalized' })),
+          !c.total && !diff.length ? h('p', { class: 'note', text: blank ? 'Put pieces in the slots and raise expertise ranks on the left: what they give together is listed here. Or press “Import base” at the top right to start from one of your characters.'
+            : `Change a piece or an expertise rank on the left: what it does to ${mine ? 'your' : M.char + '’s'} numbers is listed here.` }) : null,
+          c.total && !diff.length && !M.working ? h('p', { class: 'note', text: 'These changes move none of your numbers.' }) : null,
+          setNotes.length ? h('div', { class: 'sim-setnotes' }, setNotes) : null,
+          allRows.length ? diffList : null),
+        h('section', { class: 'card sim-card' }, h('div', { class: 'sim-stats' + (st.max_hp === undefined ? ' no-hp' : '') }, [['max_hp', 'Max HP'], ['max_mp', 'Max MP'], ...STATS].map(tile))),
+        h('section', { class: 'card sim-card sheet' }, sheet),
+        blind.length ? h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'Not everything is counted. ' }), `The game data has no numbers for some effects of ${blind.join(', ')}. They are listed on the piece, and left out of the totals.`)) : null,
+        h('p', { class: 'note', text: blank
+          ? `No base: these are the bonuses of the pieces and expertise ranks alone, for level ${meta.level} and ${alignName(meta.alignment)}. There is no character behind them, so no base stats, no Max HP or MP, no learned skills and no demon.`
+          : `Stats start from the game’s own numbers for ${M.char} (read ${when(meta.stats_at)}, level ${meta.level}) and move by what the change adds. As everywhere in the app: no buffs and nothing from the partner demon.` }));
+    }
+
+    M.redraw = () => {
+      if (S.page !== 'sim' || !page.isConnected) return;
+      drawHead();
+      if (M.tab === 'gear') drawEditor(); else if (expLive) expLive();
+      drawResults();
+    };
+    drawTitle(); drawHead(); drawEditor(); drawResults();
+    return page;
+  }
+
+  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
@@ -2049,6 +3200,9 @@
     S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [], summoned: d.summoned || null };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
+    S.sim.state = 'idle';   // the Simulator starts again from what was just loaded (the build being tried is kept)
+
+    simLoadBuilds();
     derive();
     render();
   }
@@ -2340,17 +3494,91 @@
     return ['The snapshot didn\u2019t work', message];
   }
 
+  // ---------- the assistant: Black Frost in the corner (assistant.js draws it) ----------
+  // The host makes its model out of the game's own files the first time (so it must have seen the game once, to know
+  // where it is installed). On or off is a preference of this window; ?assistant=0 leaves it out for one run and
+  // ?assistant=1 puts it in (the app's --capture runs leave it out unless asked).
+  const A = { el: $('#assistant'), view: null, state: 'off' };   // state: off | loading | on | missing | failed
+  const assistantWanted = () => Q.get('assistant') !== '0' && (Q.get('assistant') === '1' || store.get('assistant') !== 'off');
+  function fillAssistant() {
+    const on = store.get('assistant') !== 'off';
+    $('#set-assistant').checked = on;
+    $('#assistant-help').textContent = !on ? 'Off. Its model and animations come from your game’s own files.'
+      : A.state === 'loading' ? 'Getting its model from the game’s files…'
+      : A.state === 'missing' ? 'Its model comes from the game’s own files, and the app doesn’t know yet where the game is installed. Start NewMoon and it will show up.'
+      : A.state === 'failed' ? 'It couldn’t be drawn here: this window has no 3D graphics (WebGL).'
+      : 'Its model and animations come from your game’s own files. Click it for a trick; it also reacts when you take a snapshot.';
+  }
+  // Clicks go to the box it stands in (its canvas is bigger, for the animations, and lets clicks through).
+  A.el.addEventListener('click', () => { if (A.view) A.view.poke(); });
+  // Holding the right button and dragging sideways turns it around (left and right only); the way it is left facing is kept.
+  let turning = null;
+  A.el.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  A.el.addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 2 || !A.view) return;
+    turning = { id: ev.pointerId, x: ev.clientX };
+    A.el.setPointerCapture(ev.pointerId); A.el.classList.add('turning'); ev.preventDefault();
+  });
+  A.el.addEventListener('pointermove', (ev) => {
+    if (!turning || ev.pointerId !== turning.id || !A.view) return;
+    A.view.turn((turning.x - ev.clientX) * 0.8);   // its near side follows the pointer
+    turning.x = ev.clientX;
+  });
+  const endTurn = (ev) => {
+    if (!turning || ev.pointerId !== turning.id) return;
+    turning = null; A.el.classList.remove('turning');
+    if (A.view) store.set('assistant-yaw', String(Math.round(A.view.yaw)));
+  };
+  A.el.addEventListener('pointerup', endTurn);
+  A.el.addEventListener('pointercancel', endTurn);
+  // it sits on top of the page: the wheel over it still scrolls the page
+  A.el.addEventListener('wheel', (ev) => { $('#main').scrollBy({ top: ev.deltaY }); }, { passive: true });
+  async function startAssistant() {
+    if (A.view || A.state === 'loading' || !window.NMAssistant) return;
+    A.state = 'loading'; fillAssistant();
+    let model = null;
+    try { model = await host.call('assistant'); } catch (e) { model = null; }
+    if (!assistantWanted()) { A.state = 'off'; fillAssistant(); return; }   // switched off while it loaded
+    if (!model) { A.state = 'missing'; fillAssistant(); return; }
+    A.el.hidden = false;
+    const yaw = parseFloat(store.get('assistant-yaw'));   // the way it was left facing
+    try { A.view = window.NMAssistant.mount($('#assistant-view'), model, Number.isFinite(yaw) ? { yaw } : {}); } catch (e) { A.view = null; }
+    if (!A.view) { A.el.hidden = true; A.state = 'failed'; fillAssistant(); return; }
+    // Far enough from the window's edges that its widest and lowest animation fits the way it faces now. (Turned
+    // another way an animation can reach further: its canvas has the room, and only the window's own edge can cut it.)
+    document.body.style.setProperty('--assistant-right', Math.max(18, A.view.home.r + 4) + 'px');
+    document.body.style.setProperty('--assistant-bottom', Math.max(2, A.view.home.b) + 'px');
+    A.state = 'on'; document.body.classList.add('has-assistant'); fillAssistant();
+  }
+  function stopAssistant() {
+    if (A.view) A.view.dispose();
+    A.view = null; A.state = 'off'; A.el.hidden = true; document.body.classList.remove('has-assistant');
+    // its canvas gave up its 3D context for good: the next start gets a new one
+    const old = $('#assistant-view'), fresh = old.cloneNode(false);
+    fresh.removeAttribute('style'); old.replaceWith(fresh);
+    fillAssistant();
+  }
+  const assistantReact = (what) => { if (A.view) A.view.react(what); };
+
+  $('#set-assistant').addEventListener('change', (ev) => {
+    store.set('assistant', ev.target.checked ? 'on' : 'off');
+    if (ev.target.checked) startAssistant(); else stopAssistant();
+  });
+
   async function takeSnapshot() {
     if (S.busy) return;
     S.busy = true; renderChrome();
+    assistantReact('work');
     try {
       const r = await host.call('snapshot');
       S.demons = null;   // a snapshot can change the saved demon: ask the host for the list again next time
       await reload();
+      assistantReact('ok');
       if (r.missing) toast('warn', 'Snapshot saved, with gaps', `No saved bonuses for ${r.missing}. Open the Information window in game and take another snapshot.`, 0);
       else if (r.source === 'window' || r.source === 'status') toast('ok', 'Snapshot saved', 'Stats, gear and expertise were all read live.' + (r.picture ? ' The picture was updated from the Information window.' : ''));
       else toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP are the saved ones, because you were digitalized (the game then counts the demon in them). Snapshot again when not digitalized to refresh them.', 12000);
     } catch (e) {
+      assistantReact('fail');
       const [title, text] = explain(String(e && e.message || e));
       toast('err', title, text, 0);
       if (/No running client has|No character is selected/i.test(String(e && e.message))) scanClients();   // who IS in game?
@@ -2366,6 +3594,7 @@
     $('#set-character').textContent = S.settings.character || 'None yet';
     $('#set-csv').textContent = S.settings.csv || '—';
     $('#set-data').textContent = S.settings.dataDir || '—';
+    fillAssistant();
     document.querySelectorAll('[data-theme-choice]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === S.settings.theme)));
     // Alignment: nothing is pressed until it has been set for this character (until then the reader assumes Neutral).
     const set = S.meta.alignmentKnown !== false ? S.meta.alignment : null;
@@ -2429,6 +3658,7 @@
     if (S.scanning || S.busy) return;
     try {
       const st = await host.call('status');
+      if (st.gameRunning && A.state === 'missing' && assistantWanted()) startAssistant();   // the game is up now: its files can be found
       const waiting = S.state.clients.some((c) => !c.character) && Date.now() - (S.lastScan || 0) > 30000;
       if (st.clientsChanged || waiting) { await scanClients(); await settle(false); }
     } catch (e) { /* next round */ }
@@ -2443,9 +3673,14 @@
     catch (e) {
       $('#main').replaceChildren(h('div', { class: 'page' }, h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'Couldn\u2019t load the saved data. ' }), String(e && e.message || e)))));
     }
-    window.__nm = { S, takeSnapshot };   // for checking the page from DevTools
+    window.__nm = { S, takeSnapshot, assistant: A };   // for checking the page from DevTools
     // The saved data is on screen; now see who is in game. One character: show it. Several: ask.
     if (host.native || Q.has('clients')) { await scanClients(); await settle(true); }
+    if (assistantWanted()) {
+      const going = startAssistant();
+      // asked for by name (a picture is about to be taken): wait until it stands there
+      if (Q.get('assistant') === '1') await Promise.race([going.then(() => new Promise((r) => setTimeout(r, 400))), new Promise((r) => setTimeout(r, 5000))]);
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => host.call('ready').catch(() => {})));
     if (host.native) setInterval(pollStatus, 5000);
   })();

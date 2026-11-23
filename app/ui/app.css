@@ -23,6 +23,8 @@
   --neutral: #4d8a1c;       /* Neutral: green, as the game shows it (Tokyo Night Day's green, a step more vivid) */
   --chaos: #f52a65;
   --fuse: #33635c;          /* fusion bonus on a piece's stats ("(82 + 45) MAX"): Tokyo Night teal (the user's choice) */
+  --up: #3d7a12;            /* Simulator: a number that got better / worse. Tokyo Night Day's green and red, a step deeper so small text holds up on the light surface */
+  --down: #c4264f;
   --base: #b5b3aa;          /* de-emphasised: a stat's own base */
   --accent: #4c1d95;        /* the app's own colour: deep purple, as in the logo (blue stays the "gear" data colour) */
   --accent-hover: #5b21b6;
@@ -69,6 +71,8 @@
   --neutral: #9ece6a;       /* Neutral: Tokyo Night green, as the game shows it (the comment-lavender #a9b1d6 looked white around a picture) */
   --chaos: #f7768e;
   --fuse: #73daca;
+  --up: #9ece6a;            /* Tokyo Night green and red */
+  --down: #f7768e;
   --base: #5e5d58;
   --accent: #4c1d95;
   --accent-hover: #5b21b6;
@@ -265,10 +269,10 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-band { align-items: start; }
 .exp-band > .btn { align-self: center; }
 .exp-top { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 4px 12px; }   /* title, points at its right; the bar under both */
-.exp-points { display: contents; }
-.exp-pts { justify-self: end; color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.exp-bar { grid-column: 1 / -1; display: block; height: 4px; border-radius: 2px; background: var(--grid); overflow: hidden; }
-.exp-bar i { display: block; height: 100%; border-radius: 2px; background: var(--exp); }
+.band-points { display: contents; }
+.band-pts { justify-self: end; color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.band-bar { grid-column: 1 / -1; display: block; height: 4px; border-radius: 2px; background: var(--grid); overflow: hidden; }
+.band-bar i { display: block; height: 100%; border-radius: 2px; background: var(--exp); }
 /* the chains: name and class-rank, two columns (filled downwards) when the window has room */
 .exp-ranks { display: grid; grid-template-rows: repeat(var(--rows, 3), auto); grid-auto-flow: column; grid-auto-columns: auto; gap: 0 18px; margin: 2px -6px 0; }
 .exp-rank { all: unset; box-sizing: border-box; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; height: 22px; padding: 0 6px; border-radius: 5px; font-size: 12px; white-space: nowrap; cursor: pointer; }
@@ -287,6 +291,33 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .gear-pc { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; }
 .gear-pc:hover { border-color: var(--border-strong); background: var(--hover); }
 .gear-pc:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+/* Overview: expertise points against the cap, then the unlocked chain expertises with their skills' icons */
+.exp-points { display: flex; align-items: center; gap: 10px; margin: 2px 0 12px; }
+.exp-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
+.exp-bar i { display: block; height: 100%; border-radius: 4px; background: var(--exp); }
+.exp-free { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Expertise page summary */
+.exp-stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0 0 6px; }
+.exp-stat { display: flex; align-items: baseline; gap: 6px; }
+.exp-stat-v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--exp); }
+.exp-stat-l { color: var(--text-2); font-size: 12px; }
+.exp-sum-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 0 24px; }
+.exp-sum { gap: 4px; padding-top: 12px; padding-bottom: 10px; }
+.exp-sum .exp-points { margin: 0; }
+.exp-sum .list-head { margin: 0; padding: 8px 6px 0; }
+.exp-sum .exp-stats { margin: 2px 0 0; }
+.exp-sum-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px 90px 44px 78px; align-items: center; align-content: start; gap: 4px 10px; width: 100%; text-align: left;
+  font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 5px 6px; cursor: pointer; border-radius: 6px; }
+.exp-sum-icons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 3px; }
+.exp-sum-icons .skill-ico { width: 20px; height: 20px; border-radius: 3px; }
+.exp-sum-icons .skill-ico.off { opacity: .35; }
+.exp-sum-row:hover { background: var(--hover); }
+.exp-sum-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-sum-rank { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.exp-sum-row .exp-bar { height: 6px; }
+.exp-sum-max { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.exp-sum-max.done { color: var(--exp); font-weight: 600; }
+.exp-sum-pt { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .sheet { padding: 12px 16px 6px; }
 .sheet-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px 32px; align-items: start; }   /* two columns when both fit with their labels in full, else one */
 .sheet-col { display: grid; gap: 14px; align-content: start; }
@@ -582,6 +613,22 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 
 .tip { position: fixed; inset: auto; margin: 0; overflow: visible; z-index: 50; pointer-events: none; max-width: 320px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: var(--shadow); border-radius: 8px; padding: 6px 9px; font-size: 12px; font-variant-numeric: tabular-nums; }
 
+/* ---------- the assistant (Black Frost in the corner) ---------- */
+.assistant { position: fixed; right: var(--assistant-right, 18px); bottom: var(--assistant-bottom, 2px); z-index: 30; width: 136px; height: 150px; cursor: pointer; animation: rise .3s ease-out; }
+.assistant[hidden] { display: none; }
+/* the floor under its feet, so it stands on the window instead of floating */
+.assistant::before { content: ""; position: absolute; left: 14%; right: 14%; bottom: 3px; height: 16px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .28), rgba(0, 0, 0, 0)); }
+:root[data-theme="dark"] .assistant::before { background: radial-gradient(closest-side, rgba(0, 0, 0, .6), rgba(0, 0, 0, 0)); }
+/* the canvas is bigger than this box (assistant.js sizes it): room for arms, jumps and falls. Clicks go to the box. */
+.assistant canvas { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
+/* room at the end of every page, so its last lines can be scrolled out from behind the assistant */
+body.has-assistant .main::after { content: ""; display: block; height: 96px; }
+.assistant.turning { cursor: ew-resize; }
+/* messages are what it says: speech bubbles above its head, the newest one with the tail pointing down at it */
+body.has-assistant .toasts { right: 16px; bottom: calc(var(--assistant-bottom, 2px) + 162px); width: min(380px, calc(100vw - 32px)); }
+body.has-assistant .toast { position: relative; border-radius: 14px; }
+body.has-assistant .toast:last-child::after { content: ""; position: absolute; right: calc(var(--assistant-right, 18px) + 46px); bottom: -7px; width: 12px; height: 12px; background: var(--surface); border-right: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); transform: rotate(45deg); border-bottom-right-radius: 3px; }
+
 /* ---------- toasts ---------- */
 .toasts { position: fixed; right: 16px; bottom: 16px; z-index: 40; display: grid; gap: 8px; width: min(400px, calc(100vw - 32px)); }
 .toast { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 11px 10px 11px 12px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border-strong); box-shadow: var(--shadow); animation: rise .18s ease-out; }
@@ -728,6 +775,18 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .demon-extra .tag-off { opacity: .7; }
 
 /* Tools section of the sidebar, and the DCM Locator */
+.nav-group { position: relative; display: grid; }
+.nav-fold { all: unset; box-sizing: border-box; position: absolute; right: 4px; top: 6px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--text-3); cursor: pointer; }
+.nav-fold:hover { background: var(--hover); color: var(--text); }
+.nav-fold:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.nav-fold svg.icon { width: 14px; height: 14px; transition: transform .12s ease; }
+.nav-fold[aria-expanded="true"] svg.icon { transform: rotate(90deg); }
+.nav-sub { display: grid; gap: 1px; margin: 0 0 4px 19px; padding-left: 8px; border-left: 1px solid var(--border); max-height: 32vh; overflow-y: auto; }
+.nav-subitem { all: unset; box-sizing: border-box; display: block; height: 28px; line-height: 28px; padding: 0 8px; border-radius: 6px; color: var(--text-2); font-size: 12px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-subitem:hover { background: var(--hover); color: var(--text); }
+.nav-subitem[aria-current="page"] { background: var(--selected); color: var(--text); font-weight: 600; }
+.nav-subitem:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+@media (max-width: 900px) { .nav-fold, .nav-sub { display: none; } }
 .nav-head { margin: 14px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
 @media (max-width: 900px) { .nav-head { margin: 10px 8px 4px; height: 1px; overflow: hidden; background: var(--border); color: transparent; } }
 .page-dcm { grid-template-columns: minmax(0, 1fr); }
@@ -779,3 +838,192 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .gdb-kind { display: inline-block; min-width: 96px; margin-right: 8px; color: var(--text-2); font-size: 12px; }
 .gdb-rate { margin-left: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .gdb-sub { padding-left: 22px; }
+
+/* ---------- Simulator (Tools): the build on the left, what it gives on the right ---------- */
+.page-sim { max-width: 1320px; }
+.page-sim, .sim-pick { --good: var(--up); --bad: var(--down); }   /* every "better / worse" in the Simulator in the same two colours */
+.sim-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
+.sim-edit { display: grid; gap: 12px; min-width: 0; }
+/* The result scrolls by itself when it is taller than the window. Its scrollbar gets a fixed 10px that hangs out into
+   the page's margin, so the cards keep the column's full width and line up with the buttons above them. */
+.sim-out { display: grid; gap: 12px; position: sticky; top: 16px; max-height: calc(100vh - 96px); overflow-y: auto; scrollbar-gutter: stable; margin-right: -10px; }
+.sim-out::-webkit-scrollbar { width: 10px; }
+.sim-out::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 5px; background: var(--border-strong); background-clip: content-box; }
+@media (max-width: 1040px) {
+  .sim-layout { grid-template-columns: minmax(0, 1fr); }
+  .sim-out { position: static; max-height: none; order: -1; margin-right: 0; }
+}
+/* the builds: "New build" and one card per saved build, as compact as the digitalize demons' cards (.dg-tile) */
+.sim-builds { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; align-items: stretch; }   /* every card in a row as tall as the tallest, "New build" too */
+.sim-build-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.sim-build-name { all: unset; box-sizing: border-box; display: block; max-width: 100%; font: 600 15px/1.3 var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; border-radius: 4px; }
+.sim-build-name:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sim-build-acts { display: inline-flex; align-items: center; gap: 2px; margin: -4px -6px 0 0; }
+.sim-build-acts .btn-square { width: 26px; height: 26px; padding: 0; }   /* (.btn-sm's side padding would squeeze the icon to a dot) */
+.sim-build-acts .btn-square svg.icon { width: 15px; height: 15px; }
+.sim-build-icons { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.sim-build-icons img { width: 26px; height: 26px; image-rendering: pixelated; }
+.sim-build .dgt-add b.good { color: var(--good); } .sim-build .dgt-add b.bad { color: var(--bad); }
+.sim-new { align-content: center; justify-items: center; text-align: center; gap: 10px; min-height: 150px; border-style: dashed; border-color: var(--border-strong); background: transparent; }
+.sim-new-plus { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--selected); color: var(--text); }
+/* one build in the editor: back to the builds, its name, save / duplicate / delete */
+.sim-head { align-items: center; }
+.sim-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.sim-back { gap: 4px; padding: 0 10px 0 6px; }
+.sim-back .chev { margin: 0; transform: rotate(180deg); }
+.sim-name { width: min(260px, 44vw); font-weight: 600; }
+.sim-name-text { font: 600 15px/1.3 var(--font-display); }
+/* under the title: the digitalize demon picker, the Overview's own band (for a build with no base: its level and alignment) */
+.sim-bands { display: grid; min-width: 0; }
+.sim-lv-in { width: 54px; }
+.sim-import { gap: 6px; padding: 0 8px 0 12px; }
+.sim-import .chev.down { margin: 0; transform: rotate(90deg); color: var(--text-3); }
+.sim-import .chev svg.icon { width: 14px; height: 14px; }
+.sim-band .seg button { height: 22px; }
+.sim-tabs { justify-self: start; }
+.sim-edit-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.sim-edit-body { display: grid; min-width: 0; }
+.sim-count { margin-left: 6px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-size: 10px; font-weight: 600; display: inline-grid; place-items: center; }
+
+/* the 15 slots: one line each, the open one shows its parts */
+.sim-slots { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; display: grid; gap: 1px; }
+.sim-slot { border-radius: 8px; }
+.sim-slot.open { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border); margin: 4px 0; }
+.sim-slot-head { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 32px minmax(0, 1fr) 14px; gap: 10px; align-items: center; min-height: 44px; padding: 5px 10px 5px 8px; border-radius: 8px; cursor: pointer; }
+.sim-slot-head:hover { background: var(--hover); }
+.sim-slot-head:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.sim-slot-head .chev { margin: 0; }
+.sim-slot-head[aria-expanded="true"] .chev, .sim-exp-name[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.sim-slot-text { display: grid; min-width: 0; gap: 1px; }
+.sim-slot-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sim-slot-top .slot-name { flex: none; width: 62px; }
+.sim-slot-item { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-slot-sub { color: var(--text-3); font-size: 12px; padding-left: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-noicon { box-sizing: border-box; border-radius: 6px; border: 1px dashed var(--border-strong); }
+.sim-tag-changed, .sim-tag-use { border-color: transparent; background: var(--selected); color: var(--text); }
+.sim-tag-limit { border-color: var(--fuse); color: var(--fuse); font-size: 10px; font-weight: 700; letter-spacing: .05em; }
+.sim-slot-body { display: grid; padding: 0 12px 12px 50px; }
+.sim-part { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); }
+.sim-part-key { display: grid; align-content: start; gap: 1px; padding-top: 7px; font-size: 12px; font-weight: 600; }
+.sim-part-key small { color: var(--text-2); font-weight: 400; font-size: 12px; }
+.sim-part.changed .sim-part-key > span::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--focus); vertical-align: middle; }
+.sim-part-val { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.sim-part-pick { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sim-pickbtn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; flex: 0 1 400px; min-width: 0; height: 32px; padding: 0 8px 0 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; }
+.sim-pickbtn > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-pickbtn:hover { border-color: var(--text-3); }
+.sim-pickbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.sim-pickbtn .chev { margin: 0; transform: rotate(90deg); }
+.sim-lines { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 12px; color: var(--text-2); }
+.sim-line { overflow-wrap: anywhere; }
+.sim-line small { color: var(--text-3); font-size: 12px; }
+.sim-line.is-inactive, .sim-line.is-situational, .sim-line.is-unknown { color: var(--text-3); }
+.sim-none { color: var(--text-3); font-size: 12px; }
+.sim-sets { display: grid; gap: 6px; }
+.sim-set { display: grid; gap: 2px; }
+.sim-set.off { opacity: .7; }
+.sim-limit { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 32px; cursor: pointer; }
+.sim-limit small { color: var(--text-2); font-size: 12px; }
+.sim-slot-foot { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+.sim-undo { color: var(--text-2); }
+/* what was picked before for a part: a chip to use it again, with an x to take it off the list */
+.sim-hist { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.sim-hist-label { color: var(--text-3); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.sim-slot-foot + .sim-hist { padding-top: 8px; }
+.sim-hchip { display: inline-flex; align-items: stretch; height: 24px; max-width: 100%; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); overflow: hidden; }
+.sim-hchip.on { background: var(--selected); border-color: transparent; }
+.sim-hchip-use { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; min-width: 0; padding: 0 4px 0 10px; font-size: 12px; cursor: pointer; }
+.sim-hchip-use span { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-hchip.on .sim-hchip-use { font-weight: 600; cursor: default; }
+.sim-hchip-x { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 22px; color: var(--text-3); cursor: pointer; }
+.sim-hchip-x svg.icon { width: 11px; height: 11px; }
+.sim-hchip:not(.on) .sim-hchip-use:hover, .sim-hchip-x:hover { background: var(--hover); color: var(--text); }
+.sim-hchip-use:focus-visible, .sim-hchip-x:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 999px; }
+
+/* expertise: one slider per expertise, the chains worked out under them */
+.sim-exp { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 1px; }
+.sim-exp .list-head { padding-left: 0; }
+.sim-points { display: grid; gap: 8px; padding-bottom: 4px; }
+.sim-points-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.sim-points .exp-bar { flex: none; display: block; }
+.sim-cap { display: inline-flex; align-items: center; gap: 4px; }
+.sim-cap .btn { flex: none; width: 24px; height: 24px; font-size: 13px; }
+.sim-cap-in { width: 84px; height: 28px; padding: 0 8px; text-align: right; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.sim-cap-in::-webkit-inner-spin-button, .sim-cap-in::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }   /* the − and + beside it do this */
+.exp-bar.over i { background: var(--warn-mark); }
+.sim-exp-row { display: grid; grid-template-columns: minmax(140px, 1fr) 150px minmax(210px, 1.3fr) 50px; gap: 10px; align-items: center; min-height: 34px; padding: 0 6px; margin: 0 -6px; border-radius: 6px; }
+.sim-exp-row:hover { background: var(--hover); }
+.sim-exp-name { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; min-width: 0; cursor: pointer; border-radius: 4px; }
+.sim-exp-name:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sim-exp-name .chev { margin: 0; }
+.sim-exp-val { display: inline-flex; align-items: baseline; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sim-exp-rank { color: var(--text-2); }
+.sim-exp-row.changed .sim-exp-rank, .sim-chain.changed .sim-exp-rank { color: var(--text); font-weight: 600; }
+.sim-exp-row.changed .sim-exp-name { font-weight: 600; }
+.sim-exp-was { color: var(--text-3); font-size: 12px; }
+.sim-exp-ctl { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.sim-exp-ctl .btn { flex: none; width: 24px; height: 24px; font-size: 13px; }
+.sim-range { flex: 1; min-width: 60px; height: 20px; margin: 0 4px; accent-color: var(--exp); cursor: pointer; }
+.sim-exp-detail { grid-column: 1 / -1; }
+.sim-exp-detail:empty { display: none; }
+.sim-unlocks { margin: 2px 0 10px 20px; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 12px; color: var(--text-3); }
+.sim-unlocks li { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 10px; }
+.sim-unlocks li.on { color: var(--text); }
+.sim-unlocks li.on .sim-unlock-rank::after { content: " ✓"; color: var(--good); }
+.sim-active { font-style: italic; opacity: .8; }
+.sim-list-head { display: flex; align-items: center; gap: 10px; }
+.sim-list-head small { flex: 1; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; }
+.sim-chains { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0 28px; }
+.sim-chain { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 28px; }
+.sim-chain.off { color: var(--text-3); }
+
+/* the result */
+.sim-card { gap: 10px; }
+.sim-card.sheet { padding: 12px 16px; gap: 12px; }
+.sim-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.sim-stat { display: grid; gap: 1px; min-width: 0; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); }
+.sim-stat:nth-child(-n+2) { grid-column: span 2; }
+.sim-stats.no-hp .sim-stat { grid-column: auto; }   /* no Max HP / MP tiles (a build without a base): the first two are STR and MAG, as wide as the rest */
+/* a stat that moved: tinted by which way (the user: "differentiate with green and red, fitting the Tokyo Night theme") */
+.sim-stat.changed { background: var(--selected); }
+.sim-stat.up { background: color-mix(in srgb, var(--up) 15%, var(--surface-2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--up) 50%, transparent); }
+.sim-stat.down { background: color-mix(in srgb, var(--down) 15%, var(--surface-2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--down) 50%, transparent); }
+.sim-stat-label { color: var(--text-2); font-size: 11px; }
+.sim-stat-value { font: 600 16px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.sim-stat-delta { font-size: 11px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sim-stat-delta.good { color: var(--good); } .sim-stat-delta.bad { color: var(--bad); }
+.sim-stat-delta.same { color: var(--text-3); font-weight: 400; }
+.sim-key { display: flex; align-items: center; gap: 8px; min-height: 28px; border-top: 1px solid var(--border); }
+.sim-key .sheet-label { flex: 1; }
+.sim-key.changed .sheet-label { color: var(--text); font-weight: 600; }
+.sim-key .delta { min-width: 5.4em; font-size: 12px; }
+.sim-others .chg { font-size: 12px; padding: 5px 0; }
+.sim-others .delta { min-width: 5.4em; }
+.sim-setnotes { display: grid; gap: 4px; font-size: 12px; }
+.sim-setnote.bad b { color: var(--bad); } .sim-setnote.good b { color: var(--good); }
+
+/* the picker */
+.sim-pick .dlg-body { gap: 12px; }
+.sim-pick .dlg-head { align-items: flex-start; gap: 12px; }
+.sim-pick .field-help { margin-top: 3px; }
+.sim-pick .search { flex: 1 1 280px; max-width: none; }
+.sim-options { height: min(50vh, 440px); overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 4px; display: grid; gap: 1px; align-content: start; }
+.sim-opt { display: grid; gap: 2px; padding: 7px 10px; border-radius: 7px; cursor: pointer; }
+.sim-opt[aria-selected="true"] { background: var(--selected); }
+.sim-opt-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.sim-opt-lines { color: var(--text-2); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+.sim-opt-lines .is-inactive, .sim-opt-lines .is-situational, .sim-opt-lines .is-unknown { color: var(--text-3); }
+.sim-opt-set .q-key { font-size: 12px; }
+.sim-more { justify-self: center; margin: 8px 0; }
+.sim-preview { display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start; gap: 6px; min-height: 52px; font-size: 12px; }
+.sim-preview-label { font-weight: 600; }
+.sim-chip { display: inline-flex; align-items: baseline; gap: 6px; height: 22px; line-height: 20px; padding: 0 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); white-space: nowrap; }
+.sim-chip b { font-variant-numeric: tabular-nums; }
+.sim-chip.good b { color: var(--good); } .sim-chip.bad b { color: var(--bad); }
+/* narrow window: what changed first, then the build, then the full stat sheet */
+@media (max-width: 1040px) {
+  .sim-out { display: contents; }
+  .sim-out > * { order: 2; }
+  .sim-out > :first-child { order: 0; }
+  .sim-edit { order: 1; }
+}
