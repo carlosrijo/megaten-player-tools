@@ -668,8 +668,10 @@
       map.set(name, e);
     });
     const rank = (n) => { const i = AFF_ORDER.indexOf(n); return i < 0 ? AFF_ORDER.length : i; };
-    // the series share their spokes: every element with a boost, a resistance or a raised cap, in the game's order
-    const names = [...new Set([...by.boost.values(), ...by.resistance.values(), ...by.cap.values()].filter((e) => round2(e.gear + e.exp + e.demon)).map((e) => e.name))]
+    // the series share their spokes: every element of the game, always, in the game's order (an element with nothing
+    // stays at 0 boost, 100% cap and 0 resistance), so the shape means the same for every character and snapshot;
+    // a name the list doesn't know yet still gets its spoke, after the others
+    const names = [...new Set([...AFF_ORDER, ...[...by.boost.values(), ...by.resistance.values(), ...by.cap.values()].filter((e) => round2(e.gear + e.exp + e.demon)).map((e) => e.name)])]
       .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
     const list = (map) => names.map((name) => { const e = map.get(name) || { name, gear: 0, exp: 0, demon: 0 }; return { ...e, total: round2(e.gear + e.exp + e.demon) }; });
     // the cap on each spoke: 100 plus what raises it (the raise keeps its gear / expertise / demon split)
@@ -687,10 +689,6 @@
     const DG = S.data.digitalize, aff = affinity(), n = aff.boost.length;
     const card = h('section', { class: 'card' });
     const wrap = sect('Affinity', digi() && DG ? `While digitalized with ${DG.demon}` : 'Not digitalized', null, card);
-    if (n < 3) {   // a radar needs three spokes
-      card.append(h('p', { class: 'note', text: n ? aff.boost.concat(aff.resistance).filter((e) => e.total).map((e) => `${e.name} ${fmt(e.total, '%')}`).join(' · ') : 'No affinity boosts or resistances yet.' }));
-      return wrap;
-    }
     const focus = AFF_SERIES.some(([k]) => k === S.over.aff) ? S.over.aff : null;
     const val = { boost: aff.boost.map((e) => e.total), cap: aff.cap.map((e) => e.total), res: aff.resistance.map((e) => e.total) };
     // the scale: from the deepest weakness (or 0) to the cap, or past it when something is over the cap; steps of 50
