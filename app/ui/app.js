@@ -3589,7 +3589,10 @@
       const o = opts || {}, usePlugins = o.plugins !== false, log = o.log !== false;
       const how = [], say = (t) => { if (log) how.push(t); };
       const out = (id, extra) => Object.assign({ id: id || 0, how }, extra || {});
-      if (xs.length === 3 && xs.some((x) => x.d.mitamaFused || x.d.race === MITAMA_RACE || mitamaIdx.has(x.d.base)))
+      // seen in game (2026-11-23): the fusion window won't take a demon with a Mitama fused into it
+      const fused = xs.find((x) => x.d.mitamaFused);
+      if (fused) { say(`${fused.d.name} has a Mitama fused into it, and the game won’t fuse such a demon.`); return out(0); }
+      if (xs.length === 3 && xs.some((x) => x.d.race === MITAMA_RACE || mitamaIdx.has(x.d.base)))
         { say('A Mitama, or a demon with a Mitama fused into it, can’t take part in a tri-fusion.'); return out(0); }
       const sp = special(xs, usePlugins);
       if (sp) { say('This is a special fusion: these demons always make this one, whatever their levels.'); return out(sp.result, { special: sp }); }
