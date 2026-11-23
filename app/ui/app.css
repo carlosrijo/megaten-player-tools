@@ -176,14 +176,6 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 /* as many columns as fit, each wide enough for its label, bar and number (never squeezed into each other) */
 .dg-bars.who-stats { grid-template-rows: none; grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 2px 18px; }
 .who-stats .dg-row { grid-template-columns: 38px minmax(20px, 1fr) 40px; }
-/* to the right of the stats: the expected damage per shot (from the gear analysis) */
-.page-head.with-portrait .page-head-text { flex: 1 1 300px; }   /* the damage card stays beside the stats until the window is really narrow */
-.who-damage { flex: none; display: grid; gap: 2px; align-content: center; justify-items: end; min-width: 168px; margin-left: auto; padding: 10px 16px; align-self: stretch; text-align: right;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }   /* a card of its own, so it is found at a glance */
-.who-damage-value { font: 600 26px/1.1 var(--font-display); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
-.who-damage-sub { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
-.who-damage.stale .who-damage-value { color: var(--text-3); }   /* from before the latest change, while the new one is worked out */
-.who-damage:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
 /* ---------- controls ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; white-space: nowrap; }

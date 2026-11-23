@@ -28,12 +28,6 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   snapshot ("Show all" lists the rest); beside it, one radar chart per element with your affinity boost,
   the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers. The digitalize demon's name is a dropdown to pick another one.
   Under the radars, an **Expertise** card: your expertise points against the cap, as the game's Expertise window shows them (e.g. 52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its class-rank and the icons of the skills its ranks gave you, passive and active on separate lines (a switched-off toggle is dimmed). Click one to open it on the Expertise page, or "View more" for the whole page.
-- **Damage per shot** (to the right of the stats): the expected damage of the character's main skill against the
-  enemy its build is planned for, worked out by the gear analysis (`smt-gear-analysis`, the folder next to this repo
-  or `gearAnalysis` in `data\config.json`) from this reader's data, by `tools\damage.ps1`. It is recalculated after a
-  snapshot or a demon switch (about 5 s; the old number stays, dimmed, meanwhile). Only for characters the gear
-  analysis has a folder for (`characters\<name>\flags.ps1`); hover the number for what it assumes.
-
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
   click the name in the header to switch.

@@ -137,11 +137,8 @@
           const [snapshots, gear, expertise, bonuses, ranks, digitalize, icons] = empty ? [[], [], [], [], null, null, {}] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {})]);
-          const damage = empty ? null : await get('../../data/dash/damage.json', null);
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, damage, damageModel: !empty, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
         }
-        // stand-in: the saved result again after a moment, stamped as the one asked for (the app runs the gear analysis)
-        if (cmd === 'damage') { await wait(1500); const d = await get('../../data/dash/damage.json', null); return d ? { ...d, for: args.for, at: new Date().toISOString().slice(0, 19) } : null; }
         if (cmd === 'snapshot') {
           await wait(1400);
           if (Q.get('snap') === 'fail') throw Object.assign(new Error('ImagineClient is not running.'), { kind: 'user' });
@@ -249,7 +246,6 @@
     state: { active: null, scanned: false, clients: [], characters: [] },   // who is in game, whose data is shown
     compare: null,
     over: { open: null, demon: store.get('demon-open') === '1', allChanges: false, switching: null, aff: store.get('aff') || null },   // (aff: the affinity series brought forward)   // Overview: the opened stat, demon details shown, every change listed, the demon being switched to
-    damage: { busy: null, failed: null, error: '' },   // the damage calculation in flight (what it is for), the one that failed
     demons: null,   // the COMP demons as last listed (the picker shows these at once, then looks at the game again)
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
@@ -774,8 +770,7 @@
       h('div', { class: 'who-line' },
         h('p', { class: 'page-who' }, h('b', { class: 'who-big', text: S.meta.character || '' }), [`Level ${fmt(L.level)}`, align].filter(Boolean).map((t) => ` · ${t}`).join('')),
         legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : []))),
-      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow))),
-      damageBlock()));
+      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow)))));
     page.append(demonCard());   // always there: a demon, or "No demon"
 
     const missing = String(L.gear_missing || '').trim();
@@ -1585,64 +1580,11 @@
   // ---------- actions ----------
   async function reload() {
     const d = await host.call('load');
-    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null,
-      damage: d.damage || null, damageModel: !!d.damageModel, icons: d.icons || {} };
+    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {} };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
     derive();
     render();
-    ensureDamage();
-  }
-
-  // ---------- damage per shot ----------
-  // Worked out by the gear analysis from this reader's data (the host runs it: about five seconds), for the latest
-  // snapshot and the saved demon. The last result is shown at once; when the snapshot or the demon has changed since,
-  // a new one is asked for and takes its place when it is back.
-  /** What a damage result belongs to: the latest snapshot and the saved digitalize demon. */
-  function damageKey() {
-    const L = S.v && S.v.latest, DG = S.data && S.data.digitalize;
-    return L ? `${L.taken_at}|${DG ? `${DG.demon}@${DG.taken_at || ''}` : ''}` : '';
-  }
-  async function ensureDamage() {
-    const key = damageKey();
-    if (!key || !S.data.damageModel || S.damage.busy || S.damage.failed === key) return;
-    if (S.data.damage && S.data.damage.for === key) return;
-    S.damage.busy = key; S.damage.error = '';
-    if (S.page === 'overview') render();
-    try {
-      const r = await host.call('damage', { for: key });
-      if (r && S.data) S.data.damage = r;
-      if (!r) S.data.damageModel = false;
-      else if (r.for !== key) S.damage.failed = key;   // the host could only give the saved one (a capture run): don't ask again
-    } catch (e) { S.damage.failed = key; S.damage.error = String(e && e.message || e); }
-    S.damage.busy = null;
-    if (S.page === 'overview') render();
-    ensureDamage();   // the snapshot or the demon may have changed meanwhile
-  }
-  /** The block to the right of the player's stats: expected damage per shot, and what it is made of. */
-  function damageBlock() {
-    if (!S.data.damageModel && !S.data.damage) return null;
-    const D = S.data.damage, r = D && (digi() ? D.digi || D.normal : D.normal || D.digi);
-    const stale = !D || D.for !== damageKey();
-    const box = h('div', { class: 'who-damage' + (stale ? ' stale' : '') }, h('span', { class: 'stat-label', text: 'Damage per shot' }));
-    if (!r) {
-      box.append(S.damage.busy ? h('span', { class: 'demon-switching', role: 'status' }, h('span', { class: 'spin ink' }), 'Calculating…')
-        : h('span', { class: 'note', text: S.damage.error ? 'Couldn’t be calculated' : 'Not calculated yet' }));
-      if (S.damage.error) box.dataset.tip = S.damage.error;
-      return box;
-    }
-    const capped = r.lb_hit >= r.lb_cap;
-    box.tabIndex = 0;
-    box.dataset.tip = `Expected damage of one ${D.skill || 'shot'} against ${D.enemy || 'the target'}, from the gear analysis, ${digi() && D.digi ? `digitalized with ${(S.data.digitalize || {}).demon || 'the demon'}` : 'not digitalized'}. `
-      + `Limit break hit ${fmt(r.lb_hit)}${capped ? ` (at its cap; ${fmt(r.lb_raw)} before it)` : ` (cap ${fmt(r.lb_cap)})`}, pursuit ${fmt(r.pursuit_chance)}% × ${fmt(r.pursuit_power)}%, technical ${fmt(r.tech_chance)}% × ${fmt(r.tech_power)}%. `
-      + `Critical ${fmt(r.crit_chance)}%, limit break ${fmt(r.lb_chance)}%. `
-      + `Assumes${r.peak ? ' your procs at their peak' : ' no procs'}${r.buff_lb_cap ? ` and a +${fmt(r.buff_lb_cap)} LB cap buff` : ''}. `
-      + (stale ? (S.damage.busy ? 'From before the latest change: a new one is being worked out.' : `From before the latest change (worked out ${when(D.at)}).`) : `Worked out ${when(D.at)}.`);
-    box.append(h('span', { class: 'who-damage-value', text: fmt(r.expected) }),
-      h('span', { class: 'who-damage-sub' }, `up to ${fmt(r.max)}`, S.damage.busy ? h('span', { class: 'spin ink', role: 'status', 'aria-label': 'Calculating' }) : null),
-      h('span', { class: 'who-damage-sub', text: `${D.skill || ''}${D.enemy ? ` vs ${D.enemy}` : ''}` }));
-    if (S.damage.error) box.append(h('span', { class: 'who-damage-sub', text: 'Couldn’t be recalculated' }));
-    return box;
   }
 
   // ---------- characters: who is in game, whose data is shown ----------
