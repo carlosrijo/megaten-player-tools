@@ -1497,32 +1497,32 @@
   }
 
   /**
-   * The Expertise page's opening summary: points spent against the cap (points / 100, "pt", as the game's Expertise
-   * window), how many expertises are raised, maxed and chained, then every raised expertise with its class-rank and a bar
-   * to its highest class (max_class from the client's ExpertClassData; Class <max> Rank 0 is maxed). Regular ones by
-   * points, then the chains. A row filters the passive list below to that expertise.
+   * The Expertise page's opening summary, in the Overview Expertise band's style (the user's request): a top line with
+   * the counts at the left and points / cap at the right (points / 100, "pt", as the game's Expertise window) over a thin
+   * bar; then one compact line per raised expertise, regular ones by points and then the chains: its name and class-rank
+   * (orange), how far it is to its highest class (max_class from the client's ExpertClassData; Class <max> Rank 0 is
+   * "Max"), its points (chains cost none), and one run of the icons of every skill its reached ranks give (passives,
+   * then actives). A line filters the passive list below to that expertise.
    */
   function expSummary(rows) {
     const R = S.data.ranks || {}, P = R.points || null, all = (R.ranks || []).filter((r) => n0(r.points) > 0);
     const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
     const card = h('section', { class: 'card exp-sum' });
-    const wrap = sect('Summary', P ? (P.cap ? `${pt(P.total)} of ${pt(P.cap)} spent` : `${pt(P.total)} spent, no cap`) : null, null, card);
+    const wrap = sect('Summary', null, null, card);
     if (!all.length) { card.append(h('p', { class: 'note', text: 'No expertise read yet. Take a snapshot.' })); return wrap; }
-    if (P && P.cap) {
-      const free = n0(P.cap) - n0(P.total);
-      card.append(h('div', { class: 'exp-points', 'data-tip': `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})`
-          + (P.level === 99 ? ' + 1000.00pt at 99' : '') + ` + ${P.extension} expansions × 1000.00pt` },
-        h('span', { class: 'exp-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })),
-        h('span', { class: 'exp-free', text: free > 0 ? `${pt(free)} free` : 'At the cap' })));
-    }
     const maxed = (r) => r.max_class > 0 && n0(r.class) * 10 + n0(r.rank) >= r.max_class * 10;
-    const regular = all.filter((r) => !r.chain).sort((a, b) => n0(b.points) - n0(a.points) || String(a.name).localeCompare(b.name));
-    const chains = all.filter((r) => r.chain).sort((a, b) => n0(b.points) - n0(a.points) || String(a.name).localeCompare(b.name));
+    const byPoints = (a, b) => n0(b.points) - n0(a.points) || String(a.name).localeCompare(b.name);
+    const regular = all.filter((r) => !r.chain).sort(byPoints), chains = all.filter((r) => r.chain).sort(byPoints);
     const counted = rows.filter((r) => isTrue(r.counted)).length;
-    const stat = (v, label) => h('div', { class: 'exp-stat' }, h('span', { class: 'exp-stat-v', text: String(v) }), h('span', { class: 'exp-stat-l', text: label }));
-    card.append(h('div', { class: 'exp-stats' }, stat(regular.length, regular.length === 1 ? 'expertise raised' : 'expertises raised'),
-      stat(all.filter(maxed).length, 'at their highest class'), stat(chains.length, chains.length === 1 ? 'chain expertise' : 'chain expertises'),
-      stat(counted, counted === 1 ? 'passive counted' : 'passives counted')));
+    const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const counts = [plural(regular.length, 'expertise raised', 'expertises raised'), `${all.filter(maxed).length} at their highest class`,
+      plural(chains.length, 'chain', 'chains'), plural(counted, 'passive counted', 'passives counted')].join(' · ');
+    const free = P && P.cap ? n0(P.cap) - n0(P.total) : 0;
+    card.append(h('div', { class: 'exp-top' }, h('span', { class: 'exp-sum-counts', text: counts }),
+      P ? h('div', { class: 'band-points', 'data-tip': P.cap ? `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})`
+          + (P.level === 99 ? ' + 1000.00pt at 99' : '') + ` + ${P.extension} expansions × 1000.00pt` : null },
+        h('span', { class: 'band-pts', text: P.cap ? `${pt(P.total)} / ${pt(P.cap)} · ${free > 0 ? pt(free) + ' free' : 'at the cap'}` : `${pt(P.total)}, no cap` }),
+        P.cap ? h('span', { class: 'band-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })) : null) : null));
     const line = (r) => {
       const top = r.max_class > 0 ? r.max_class * 100000 : 0, done = maxed(r);
       // the skills its reached ranks give (expertise-ranks.json "skills", actives too); older data: its passives from expertise.json
@@ -1530,20 +1530,22 @@
       const offIds = new Set(mine.filter((x) => x.toggle && !x.toggle_on).map((x) => x.skill_id));
       const skills = Array.isArray(r.skills) ? r.skills.map((s) => ({ ...s, off: offIds.has(s.id) }))
         : mine.map((x) => ({ id: x.skill_id, name: x.skill || '—', icon: x.icon, rank: x.rank || '', active: false, off: x.toggle && !x.toggle_on }));
-      const icons = skills.filter((s) => s.icon).map((s) => {
+      const ordered = skills.filter((s) => s.icon && !s.active).concat(skills.filter((s) => s.icon && s.active));
+      const icons = ordered.map((s, i) => {
         const ic = skillIcon(s);
-        ic.dataset.tip = `${s.name} (${s.rank})` + (s.active ? ', active' : '') + (s.off ? ', toggle switched off' : '');
+        ic.dataset.tip = `${s.name} · ${s.active ? 'active' : 'passive'} (${s.rank})` + (s.off ? ', toggle switched off' : '');
         if (s.off) ic.classList.add('off');
+        if (s.active && (i === 0 || !ordered[i - 1].active)) ic.classList.add('first');   // a little air before the actives
         return ic;
       });
-      return h('button', { type: 'button', class: 'exp-sum-row', 'data-tip': `Show ${r.name}’s passives below` + (r.chain ? ' (chain: worked out from the expertises it is made of; costs no points)' : ''),
+      return h('button', { type: 'button', class: 'exp-sum-row', 'aria-label': `${r.name}, class ${r.class} rank ${r.rank}`,
+        'data-tip': `Show ${r.name}’s passives below` + (r.chain ? ' (a chain: worked out from the expertises it is made of; it costs no points)' : ''),
         onclick: () => { S.exp.q = r.name; render(); const el = document.getElementById('exp-list'); if (el) el.scrollIntoView({ block: 'start' }); } },
-        h('span', { class: 'exp-sum-name', text: r.name }),
-        h('span', { class: 'exp-sum-rank', text: `${r.class}-${r.rank}` }),
-        h('span', { class: 'exp-bar', 'aria-hidden': 'true' }, top ? h('i', { style: `width:${Math.min(100, (n0(r.points) / top) * 100)}%` }) : null),
+        h('span', { class: 'exp-rank' }, h('span', { class: 'exp-sum-name', text: r.name }), h('b', { text: `${r.class}-${r.rank}` })),
+        h('span', { class: 'band-bar', 'aria-hidden': 'true' }, top ? h('i', { style: `width:${Math.min(100, (n0(r.points) / top) * 100)}%` }) : null),
         h('span', { class: 'exp-sum-max' + (done ? ' done' : ''), text: done ? 'Max' : top ? `of ${r.max_class}-0` : '' }),
         h('span', { class: 'exp-sum-pt', text: r.chain ? '' : pt(r.points) }),
-        icons.length ? h('span', { class: 'exp-sum-icons' }, icons) : null);
+        h('span', { class: 'band-items exp-icons-run' }, icons));
     };
     const block = (title, list) => (list.length ? [h('h4', { class: 'list-head', text: title }), h('div', { class: 'exp-sum-list' }, list.map(line))] : null);
     card.append(...[block('Expertise', regular), block('Chain expertise', chains)].flat().filter(Boolean));
