@@ -3733,11 +3733,10 @@
         res3[k++] = idOf(fuse([at(pool[i]), at(pool[j]), at(pool[l])], { log: false, plugins: false }));
       two = res2; three = res3;
     }
-    /** Every way to make a demon: { special: [], mitama: [], two: [[a, b]], three: [[a, b, c]] } (demons, base levels). */
+    /** Every way to make a demon: { special: [], two: [[a, b]], three: [[a, b, c]] } (demons, base levels). */
     function recipes(target) {
       buildAll();
-      const n = pool.length, out = { special: specialsFor.get(target.id) || [], mitama: [], two: [], three: [] };
-      if (target.mitamaFused) out.mitama = demons.filter((d) => d.mit === target.id && !d.mitamaFused);
+      const n = pool.length, out = { special: specialsFor.get(target.id) || [], two: [], three: [] };
       let k = 0;
       for (let i = 0; i < n; i++) for (let j = i; j < n; j++) { if (two[k++] === target.id) out.two.push([pool[i], pool[j]]); }
       k = 0;
@@ -3746,7 +3745,9 @@
       out.two.sort((x, y) => cost(x) - cost(y)); out.three.sort((x, y) => cost(x) - cost(y));
       return out;
     }
-    return { F, demons, byId, fuse, recipes, raceName, pool, ranges, built: () => !!two, build: buildAll, isElemental: (d) => d.race === ELEMENTAL_RACE };
+    // the pickers leave out Mitama-fused demons: the game won't fuse them, and the planner only makes them from a Mitama
+    const pickable = demons.filter((d) => !d.mitamaFused);
+    return { F, demons, pickable, byId, fuse, recipes, raceName, pool, ranges, built: () => !!two, build: buildAll, isElemental: (d) => d.race === ELEMENTAL_RACE };
   }
 
   /** A demon picker: a search field that lists matching demons under it (arrow keys, Enter, Esc). */
@@ -3755,7 +3756,7 @@
     const input = h('input', { class: 'input', type: 'search', placeholder, value: current ? current.label : '', 'aria-label': placeholder, spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
     const menu = h('div', { class: 'fus-menu', role: 'listbox', hidden: true });
     let hits = [], at = 0;
-    const all = (list || E.demons);
+    const all = (list || E.pickable);
     const draw = () => {
       const q = input.value.trim().toLowerCase();
       const seen = new Set();
@@ -3902,7 +3903,7 @@
       if (list.length > shown) sec.append(h('button', { type: 'button', class: 'btn btn-sm', style: 'justify-self:start', onclick: () => { U[key] = shown + 60; drawLists(); } }, `Show ${Math.min(60, list.length - shown)} more`));
       return sec;
     };
-    const any = R.special.length || R.mitama.length || R.two.length || R.three.length;
+    const any = R.special.length || R.two.length || R.three.length;
     if (!any) { box.append(h('p', { class: 'notice' }, icon('info'), h('span', { text: `No fusion makes ${T.label}. It comes from somewhere else in the game (a quest, an event, a contract), or only from demons the planner doesn’t list.` }))); return box; }
     if (R.special.length) {
       const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Special fusion' }), h('span', { class: 'card-sub', text: 'Always this result, whatever the levels' })));
@@ -3914,9 +3915,6 @@
       });
       box.append(sec);
     }
-    if (R.mitama.length) box.append(h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Mitama fusion' })),
-      h('ul', { class: 'fus-recipes' }, R.mitama.map((d) => h('li', { class: 'fus-recipe' }, demonChip(E, d, undefined, plan), h('span', { class: 'fus-plus', text: '+' }), h('span', { class: 'fus-chip' }, h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: 'Any Mitama' }), h('span', { class: 'fus-chip-sub', text: 'Ara, Nigi, Kusi or Saki' })))))),
-      h('p', { class: 'note', text: 'The game only allows it once the demon’s reunion ranks add up to 48 or more.' })));
     const lists = h('div', { class: 'fus-body' });
     const elemRows = R.two.filter((r) => r.some((d) => E.isElemental(d)));
     const drawLists = () => {
@@ -3928,7 +3926,7 @@
       box.append(h('div', { class: 'toolbar' }, searchBox(U.with || '', 'Only recipes with this demon or race', (v) => { U.with = v; U.shown2 = 30; U.shown3 = 30; drawLists(); })), lists);
       drawLists();
     }
-    box.append(h('p', { class: 'note', text: 'Recipes use the demons the race chart can make, at their base levels; a demon that has levelled up can give a higher result. Special fusions and the Mitama fusion are listed whatever the levels.' }));
+    box.append(h('p', { class: 'note', text: 'Recipes use the demons the race chart can make, at their base levels; a demon that has levelled up can give a higher result. Special fusions are listed whatever the levels. Mitama-fused demons are left out: the game won’t fuse them.' }));
     return box;
   }
 

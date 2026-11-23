@@ -112,9 +112,11 @@ Under **Tools** in the left bar. Two views:
 - **Fuse demons**: pick two demons (or three for a tri-fusion) and see what they make, with why: the races, the
   fusion level worked out from their levels, elemental rank up or down, special fusions and the plugin they need. Each
   demon starts at its base level; type its real level, since the result depends on it.
-- **Find a recipe**: pick the demon you want and get every way to make it: special fusions, the Mitama fusion, every
+- **Find a recipe**: pick the demon you want and get every way to make it: special fusions, every
   two-demon fusion and every tri-fusion, cheapest first (lowest levels added up). Recipes with an elemental are marked
   **Rank up** or **Rank down**. Click any demon in a recipe to see how to make that one too ("Back to" returns).
+
+Mitama-fused demons are not in the lists: the game won't fuse them.
 
 Demons, levels, races and special fusions are the NewMoon client's. The race chart and the tri-fusion and elemental
 rules are the comp_hack server's fusion code, which NewMoon may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.
