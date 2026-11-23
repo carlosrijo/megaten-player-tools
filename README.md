@@ -17,7 +17,7 @@ After a change, with the app possibly open: `pwsh -NoProfile -File tools\rebuild
 and the app, and opens it again. (A build with the app open only updates the page files, not the program: Windows
 locks those.)
 
-"NewMoon Build Tracker": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
+"NewMoon Build Tracker": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise, Digitalize and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
 
@@ -123,7 +123,7 @@ every bonus they give.
 | Fusion (soul/tarot) set bonuses | Each slot's tarot/soul enchant ids (the worn item's own record; the gear grid as fallback) checked against the enchant-set table: active only when every enchant in the set is worn |
 | Expertise ranks | The client's expertise tree; chain expertises use NewMoon's chain formulas and rank skills (client data, `reference/expertise-*.tsv`). Toggle skills count only while switched on (read from the game: the learned-skill map's "on" flag) |
 | Other learned passives | Every learned passive skill that no expertise rank or Digitalization Level gives (Additional HP/MP, "Additional" affinity skills, Quickness, clan skills, Quickdraw...), from the learned-skill map; shown as "Other learned skills" on the Expertise tab |
-| Digitalization Levels | The character's progress data in memory (level and points per race); each level's "extend" passive skill counts like an expertise passive ("Digitalize: <race>" on the Expertise page) |
+| Digitalization Levels | The character's progress data in memory (level and points per race); each level's "extend" passive skill counts like an expertise passive (one group per race on the Digitalize page, which also shows the digitalize demon) |
 | COMP demons (`demon`) | Each demon's records in memory (`Game\DemonReader.cs`): level, growth type, rebirth ranks, Mitama slots, skill slots, learned skills; base values, growth, traits and Mitama tables from the server's demon tables (`reference\`) |
 
 Layouts are documented in `src/Game/ClientReader.cs`.
@@ -142,5 +142,5 @@ Layouts are documented in `src/Game/ClientReader.cs`.
   numbers against the game, the server's rules, and decoding game data.
 - `data/tooltips.txt` also saves each slot's item record (`(item …)` in the header) and the level; the CSV's
   "Gear records" column does the same per row, so `rebuild` and `recalc` work from ids too.
-- `data/dash/` page data: `snapshots.json`, `gear.json`, `expertise.json`, `bonuses.json`.
+- `data/dash/` page data: `snapshots.json`, `gear.json`, `expertise.json`, `bonuses.json`. `skill-icons/` holds the skill icons the Expertise and Digitalize pages show, converted from the game client's own icon files.
 - Machine-specific paths live in `data/config.json` (created with detected defaults on first run; edit when something is elsewhere): `websiteContent` (the website's content folder), `tokuseiXml` (comp_hack's `datastore/data/tokusei`), `serverConstants` (the local server's `config/constants.xml`: digitalize rates, Mitama set boost skill), `statsFolder` (where new characters' CSVs go), `defaultCharacter`.

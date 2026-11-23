@@ -13,6 +13,7 @@
     grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
     list: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
     shield: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/>',
+    bolt: '<path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z"/>',
     star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8L12 3.5z"/>',
     chart: '<path d="M4 4v16h16"/><path d="M8 15l3.5-4.5 3 2.5L19 7"/>',
     sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
@@ -137,7 +138,7 @@
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {})]);
           const damage = empty ? null : await get('../../data/dash/damage.json', null);
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, damage, damageModel: !empty, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png' } };
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, damage, damageModel: !empty, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
         }
         // stand-in: the saved result again after a moment, stamped as the one asked for (the app runs the gear analysis)
         if (cmd === 'damage') { await wait(1500); const d = await get('../../data/dash/damage.json', null); return d ? { ...d, for: args.for, at: new Date().toISOString().slice(0, 19) } : null; }
@@ -210,7 +211,7 @@
   const BONUS_NAME = { lb_cap: 'Limit break cap' };
   const bonusRowOf = (k, label, unit) => (S.data.bonuses || []).find((r) => r.group === 'Combat' && r.bonus === (BONUS_NAME[k] || label) && (r.unit || '') === (unit || ''));
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
-  const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['history', 'History', 'chart']];
+  const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
     ['Partner', 'Partner', 'Your partner'], ['Only in some fights', 'Situational', 'Only in some fights · not added to the totals'],
@@ -250,6 +251,8 @@
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
     exp: { q: '', closed: new Set() },
+    dg: { q: '', closed: new Set() },
+    extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
     hist: { key: store.get('hist') || 'lngr' },
   };
   if (Q.get('page') === 'compare') { S.page = 'gear'; S.gear.view = 'table'; }   // --page compare, for captures
@@ -871,7 +874,9 @@
       if (p.note) notes.push(String(p.note).replace(/^(When|If) /, (m) => m.toLowerCase()));
       // a tarot or soul fusion line also names the crystal fused into the piece (the piece alone doesn't say which)
       const piece = S.v.gearOf(p), crystal = piece && (p.kind === 'soul' ? piece.soul : p.kind === 'tarot' ? piece.tarot : null);
-      const other = { icon: p.icon === 'demon' ? S.meta.demonPicture : S.data.icons[p.icon] };
+      // "demon": the demon's picture; "skill:<name>": the skill icon file of that name; else a picture in icons.json (compendium, clan, quest)
+      const pic = String(p.icon || '');
+      const other = { icon: pic === 'demon' ? S.meta.demonPicture : pic.startsWith('skill:') ? (S.meta.skillIcons ? S.meta.skillIcons + pic.slice(6) + '.png' : null) : S.data.icons[pic] };
       return h('li', null,
         // the worn piece's or set's icon; a skill's own icon (expertise, demon skills); the demon's picture for the rest it gives
         // hovering it shows a game-style tooltip
@@ -947,6 +952,12 @@
         h('th', { scope: 'col', class: 'num', text: digi() ? 'Total, digitalized' : 'Total' }))), body)));
     page.append(h('p', { class: 'note', text: 'Gear includes tarot, soul fusions, mods, complete sets and appearance bonuses. For bonuses that only apply in some fights, the largest single value is shown.' }));
     drawChips(); draw();
+    // Quest bonus and Demonic Compendium: what each step gives (their values are already in the rows above)
+    const extras = S.data.expertise.filter(isExtra);
+    if (extras.length) {
+      passiveList(page, extras, S.extra, { heading: 'Quest bonus and Demonic Compendium', noIcons: true, empty: '' });
+      page.append(h('p', { class: 'note', text: 'What each step gives. The counted ones are already in the Expertise column above.' }));
+    }
     return page;
   }
 
@@ -1220,25 +1231,39 @@
     return page;
   }
 
-  // ---------- Expertise ----------
-  function pageExpertise() {
-    const rows = S.data.expertise;
-    const page = h('div', { class: 'page' });
-    page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and the ones your Digitalization Levels teach.'));
-
-    const totals = S.data.bonuses.filter((r) => isTrue(r.counted) && n0(r.expertise));
-    const nCounted = rows.filter((r) => isTrue(r.counted)).length;
-    page.append(h('section', { class: 'card' },
-      h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'What expertise adds in total' }), h('span', { class: 'card-sub', text: `${nCounted} passives counted` })),
-      totals.length ? h('div', { class: 'tiles' }, totals.map((r) => h('div', { class: 'tile' },
-        h('span', { class: 'tile-label', text: (r.group === 'Partner' ? 'Partner: ' : '') + r.bonus }), h('span', { class: 'tile-value', text: fmt(r.expertise, r.unit, true) }))))
-        : h('p', { class: 'note', text: 'No expertise bonuses counted yet.' })));
-
+  // ---------- Expertise and Digitalize: two pages over the same list of passives ----------
+  // The expertise data holds both: the "Digitalize: <race>" groups are the Digitalization Level passives (Digitalize
+  // page), every other group is expertise, learned skills, quest and compendium bonuses (Expertise page).
+  const isDlevel = (r) => /^Digitalize: /.test(String(r.expertise || ''));
+  /** What Digitalization Level passives add to one Bonuses row (they sit inside its expertise share). */
+  const shareOf = (r, kinds) => round2((r.parts || []).filter((p) => kinds.includes(p.kind)).reduce((a, p) => a + n0(p.value), 0));
+  const dlevelShare = (r) => shareOf(r, ['dlevel']);
+  /** Quest bonus and Demonic Compendium rows: they ride along in the expertise data, and are shown on the Bonuses page. */
+  const isExtra = (r) => /^(Quest bonus|Demonic Compendium)/.test(String(r.expertise || ''));
+  /** The "adds in total" card: one tile per bonus. */
+  const totalsCard = (title, sub, tiles, none, note) => h('section', { class: 'card' },
+    h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: title }), h('span', { class: 'card-sub', text: sub })),
+    tiles.length ? h('div', { class: 'tiles' }, tiles.map(([r, v]) => h('div', { class: 'tile' },
+      h('span', { class: 'tile-label', text: (r.group === 'Partner' ? 'Partner: ' : '') + r.bonus }), h('span', { class: 'tile-value', text: fmt(v, r.unit, true) }))))
+      : h('p', { class: 'note', text: none }),
+    note ? h('p', { class: 'note', text: note }) : null);
+  /** A skill's own icon from the game (32x32, shown smaller); an empty box of the same size when there is none, so names stay in line. */
+  const skillIcon = (r) => {
+    const box = h('span', { class: 'skill-ico', 'aria-hidden': 'true' });
+    if (r.icon && S.meta.skillIcons) {
+      const img = h('img', { src: S.meta.skillIcons + r.icon + '.png', alt: '', loading: 'lazy' });
+      img.onerror = () => img.remove();
+      box.append(img);
+    }
+    return box;
+  };
+  /** The searchable, collapsible list of passives, one group per expertise (or race). `st` keeps the search and the closed groups. */
+  function passiveList(page, rows, st, o) {
     const names = []; rows.forEach((r) => { if (!names.includes(r.expertise)) names.push(r.expertise); });
     const listHost = h('div');
     const draw = () => {
       listHost.replaceChildren();
-      const q = S.exp.q.trim().toLowerCase();
+      const q = st.q.trim().toLowerCase();
       let shown = 0;
       names.forEach((name) => {
         const mine = rows.filter((r) => r.expertise === name);
@@ -1247,27 +1272,54 @@
         shown++;
         const rk = S.v.ranks.get(name);
         const anyCounted = mine.some((r) => isTrue(r.counted));
-        const det = h('details', { class: 'exp-group', open: q ? true : !S.exp.closed.has(name) },
-          h('summary', null, h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'exp-name', text: name }),
+        const det = h('details', { class: 'exp-group', open: q ? true : !st.closed.has(name) },
+          h('summary', null, h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'exp-name', text: o.title ? o.title(name) : name }),
             h('span', { class: 'exp-meta', text: [rk ? `Class ${rk.class}, rank ${rk.rank}` : null,
               /^(Quest bonus|Demonic Compendium)/.test(name) ? (anyCounted ? (mine.length === 1 ? '1 bonus' : `${mine.length} bonuses`) : null)
                 : mine.length === 1 ? '1 passive' : `${mine.length} passives`].filter(Boolean).join(' · ') }),
+            o.tag ? o.tag(name) : null,
             anyCounted ? null : h('span', { class: 'tag tag-off', text: 'Not counted' })),
           h('div', { class: 'exp-body' }, hit.map((r) => h('div', { class: 'passive' + (isTrue(r.counted) ? '' : ' off') },
-            h('span', { class: 'rank', 'data-tip': 'The rank that unlocks this passive', text: r.rank || '' }), h('span', { text: r.skill || '—' }),
+            h('span', { class: 'rank', 'data-tip': o.rankTip, text: r.rank || '' }), h('span', { class: 'skill' }, o.noIcons ? null : skillIcon(r), h('span', { text: r.skill || '—' })),
             h('span', { class: 'fx' }, String(r.effects || '').split('; ').filter(Boolean).map((t) => h('span', { text: t })))))));
-        det.addEventListener('toggle', () => { if (q) return; if (det.open) S.exp.closed.delete(name); else S.exp.closed.add(name); });
+        det.addEventListener('toggle', () => { if (q) return; if (det.open) st.closed.delete(name); else st.closed.add(name); });
         listHost.append(det);
       });
-      if (!shown) listHost.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty-row', text: q ? `Nothing matches “${S.exp.q.trim()}”.` : 'No expertise read yet. Take a snapshot.' })));
+      if (!shown) listHost.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty-row', text: q ? `Nothing matches “${st.q.trim()}”.` : o.empty })));
     };
     page.append(h('div', { class: 'toolbar' },
-      h('h2', { class: 'section-title', text: 'Every passive' }), h('span', { class: 'toolbar-spacer' }),
-      searchBox(S.exp.q, 'Search an expertise, passive or effect', (v) => { S.exp.q = v; draw(); }),
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { S.exp.closed.clear(); draw(); } }, 'Expand all'),
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => S.exp.closed.add(n)); draw(); } }, 'Collapse all')));
+      h('h2', { class: 'section-title', text: o.heading }), h('span', { class: 'toolbar-spacer' }),
+      o.search ? searchBox(st.q, o.search, (v) => { st.q = v; draw(); }) : null,
+      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { st.closed.clear(); draw(); } }, 'Expand all'),
+      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => st.closed.add(n)); draw(); } }, 'Collapse all')));
     page.append(listHost);
     draw();
+  }
+
+  function pageExpertise() {
+    const rows = S.data.expertise.filter((r) => !isDlevel(r) && !isExtra(r));
+    const page = h('div', { class: 'page' });
+    page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and your other learned passives. Digitalization Levels are on the Digitalize page; the quest bonus and Demonic Compendium are on Bonuses.'));
+    // the expertise share of each bonus, without what the Digitalization Levels, quest bonus and compendium put into it
+    const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, round2(n0(r.expertise) - shareOf(r, ['dlevel', 'quest', 'compendium']))]).filter(([, v]) => v);
+    page.append(totalsCard('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, totals, 'No expertise bonuses counted yet.'));
+    passiveList(page, rows, S.exp, { heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
+    return page;
+  }
+
+  // ---------- Digitalize ----------
+  function pageDigitalize() {
+    const rows = S.data.expertise.filter(isDlevel), DG = S.data.digitalize;
+    const page = h('div', { class: 'page' });
+    page.append(pageHead('The demon you digitalize with, and the passives your Digitalization Levels teach.'));
+    page.append(demonCard());
+    const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, dlevelShare(r)]).filter(([, v]) => v);
+    page.append(totalsCard('What Digitalization Levels add in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, totals, 'No Digitalization Level bonuses counted yet.',
+      'These passives are always on, digitalized or not, so they count in both views. What the demon itself adds only counts in the Digitalized view.'));
+    const race = (name) => name.replace(/^Digitalize: /, '');
+    passiveList(page, rows, S.dg, { heading: 'Every Digitalization Level passive', search: 'Search a race, passive or effect', rankTip: 'The Digitalization Level that teaches this passive',
+      empty: 'No Digitalization Levels read yet. Take a snapshot.', title: race,
+      tag: (name) => (DG && DG.race && race(name).toLowerCase() === String(DG.race).toLowerCase() ? h('span', { class: 'tag tag-demon', 'data-tip': `${DG.demon} is of this race`, text: DG.demon }) : null) });
     return page;
   }
 
@@ -1366,7 +1418,7 @@
   }
 
   // ---------- render ----------
-  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, history: pageHistory };
+  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
@@ -1455,7 +1507,7 @@
     S.state = await host.call('selectCharacter', { name });
     try { Object.assign(S.settings, await host.call('getSettings')); } catch (e) { /* keep */ }
     // what was open or picked belongs to the other character
-    S.compare = null; S.over.open = null; S.over.allChanges = false; S.demons = null; S.bonus.open.clear(); S.bonus.q = ''; S.exp.closed.clear(); S.exp.q = ''; S.gear.sel = null; S.gear.sort = null; S.alignNote = '';
+    S.compare = null; S.over.open = null; S.over.allChanges = false; S.demons = null; S.bonus.open.clear(); S.bonus.q = ''; S.exp.closed.clear(); S.exp.q = ''; S.dg.closed.clear(); S.dg.q = ''; S.gear.sel = null; S.gear.sort = null; S.alignNote = '';
     await reload();
     $('#main').scrollTop = 0;
   }

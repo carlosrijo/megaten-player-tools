@@ -459,6 +459,9 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-meta { color: var(--text-2); font-size: 12px; }
 .exp-body { padding: 0 14px 10px 36px; display: grid; }
 .passive { display: grid; grid-template-columns: 118px minmax(0, 190px) minmax(0, 1fr); gap: 12px; padding: 7px 0; border-top: 1px solid var(--border); align-items: baseline; }
+.passive .skill { display: flex; align-items: center; gap: 8px; min-width: 0; align-self: center; }
+.skill-ico { flex: none; width: 24px; height: 24px; border-radius: 4px; background: var(--hover); overflow: hidden; }
+.skill-ico img { display: block; width: 100%; height: 100%; }
 .passive .rank { color: var(--text-2); font-size: 12px; }
 .passive .fx { color: var(--text-2); display: grid; gap: 1px; }
 .passive.off { color: var(--text-3); }
