@@ -284,7 +284,7 @@
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
-    ddb: { q: '', kind: 'contract', race: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle' },
+    ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle' },
     // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
       // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
@@ -2445,17 +2445,18 @@
       'Demons, stats, affinities, skills, tarot and soul are the NewMoon client\'s. Where each spawns comes from the public server data, so NewMoon may have changed it. Dungeon and boss copies of a demon are not listed on their own: they show under “Enemy only”.')));
     const all = D.data.demons;
     const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : !x.contract.length);
+    const inPick = (x) => (!D.race || x.race === D.race) && (!D.align || x.align === D.align);   // the Race and Alignment dropdowns
     const races = [...new Set(all.map((x) => x.race))].sort();
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Which demons' });
     const body = h('tbody'), count = h('p', { class: 'note' });
     const drawChips = () => chips.replaceChildren(...DDB_KINDS.map(([id, label]) =>
       h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
-        label, h('span', { class: 'count', text: all.filter((x) => inKind(x, id) && (!D.race || x.race === D.race)).length }))));
+        label, h('span', { class: 'count', text: all.filter((x) => inKind(x, id) && inPick(x)).length }))));
     const SORTS = { level: (a, b) => a.level - b.level || a.name.localeCompare(b.name), name: (a, b) => a.name.localeCompare(b.name), race: (a, b) => a.race.localeCompare(b.race) || a.level - b.level };
     const draw = () => {
       body.replaceChildren();
       const words = D.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      const rows = all.filter((x) => inKind(x, D.kind) && (!D.race || x.race === D.race) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
+      const rows = all.filter((x) => inKind(x, D.kind) && inPick(x) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
       rows.forEach((x) => {
         const open = D.open.has(x.id);
         const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
@@ -2479,6 +2480,7 @@
       h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
     page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, race, skill, feature, tarot or zone', (v) => { D.q = v; draw(); }),
       sel('Race', D.race, [['', 'All races']].concat(races.map((r) => [r, r])), (v) => { D.race = v; drawChips(); draw(); }),
+      sel('Alignment', D.align, [['', 'All'], ['Law', 'Law'], ['Neutral', 'Neutral'], ['Chaos', 'Chaos']], (v) => { D.align = v; drawChips(); draw(); }),
       sel('Sort', D.sort, [['level', 'Level'], ['name', 'Name'], ['race', 'Race']], (v) => { D.sort = v; draw(); })));
     page.append(chips);
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },

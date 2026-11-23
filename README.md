@@ -162,7 +162,7 @@ affinities, features and skills to its Mitama-fused form (340 demons have one).
 The list opens on the demons that can be contracted somewhere (140); "Not contracted anywhere" and "All demons" show
 the rest. Dungeon and boss copies of a demon are not listed on their own: the places they appear, where they cannot be
 talked into a contract, are under "Enemy only". Search by name, race, skill, feature, tarot text or zone; filter by
-race; sort by level, name or race. Demons, stats, skills, tarot and soul are the NewMoon client's; spawns are the
+race and alignment (Law, Neutral, Chaos); sort by level, name or race. Demons, stats, skills, tarot and soul are the NewMoon client's; spawns are the
 public server data, so NewMoon may have changed them.
 
 ### Tools: Simulator
