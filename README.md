@@ -169,7 +169,7 @@ talked into a contract, are under "Enemy only". Search by name, race, skill, fea
 race and alignment (Law, Neutral, Chaos); sort by level, name or race. Demons, stats, skills, tarot and soul are the NewMoon client's; spawns are the
 public server data, so NewMoon may have changed them.
 
-### Tools: Skill List
+### Tools: Skill Database
 
 Under **Tools** in the left bar. Every skill in the game, separated by action type: Attack, Spin, Rush, Shot, Rapid,
 Guard, Counter, Dodge, Talk, Threaten, Provoke and Curative (the game's own names and order, from its Help), then

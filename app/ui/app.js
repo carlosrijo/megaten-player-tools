@@ -238,7 +238,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['dungeons', 'Dungeon Explorer', 'gate'], ['fusion', 'Fusion Planner', 'fuse'], ['ddb', 'Demon Database', 'horns'], ['skills', 'Skill List', 'bolt'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book'], ['geardb', 'Gear Database', 'shield'], ['dungeons', 'Dungeon Explorer', 'gate'], ['fusion', 'Fusion Planner', 'fuse'], ['ddb', 'Demon Database', 'horns'], ['skills', 'Skill Database', 'bolt'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -284,8 +284,8 @@
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
-    ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle' },
-    // Skill List: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
+    ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null },   // only: a demon id a link opened
+    // Skill Database: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
     skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), shown: 200, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
     // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
@@ -507,6 +507,7 @@
   });
   function go(page) {
     if (S.page === page) return;
+    if (S.page === 'ddb') S.ddb.only = null;   // a demon a link opened alone: the whole list again next time
     S.page = page; store.set('page', page);
     render(); $('#main').scrollTop = 0;
   }
@@ -2487,15 +2488,20 @@
     const inPick = (x) => (!D.race || x.race === D.race) && (!D.align || x.align === D.align);   // the Race and Alignment dropdowns
     const races = [...new Set(all.map((x) => x.race))].sort();
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Which demons' });
-    const body = h('tbody'), count = h('p', { class: 'note' });
+    const body = h('tbody'), count = h('p', { class: 'note' }), onlyBar = h('div');
     const drawChips = () => chips.replaceChildren(...DDB_KINDS.map(([id, label]) =>
-      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(!D.only && D.kind === id), onclick: () => { D.kind = id; D.only = null; drawChips(); draw(); } },
         label, h('span', { class: 'count', text: all.filter((x) => inKind(x, id) && inPick(x)).length }))));
     const SORTS = { level: (a, b) => a.level - b.level || a.name.localeCompare(b.name), name: (a, b) => a.name.localeCompare(b.name), race: (a, b) => a.race.localeCompare(b.race) || a.level - b.level };
     const draw = () => {
       body.replaceChildren();
       const words = D.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      const rows = all.filter((x) => inKind(x, D.kind) && inPick(x) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
+      // opened from a link (the Skill Database): that one demon only. A search by its name would also list every
+      // demon whose skills, features or race have the word ("Power" matches 57), burying the one clicked.
+      const only = D.only != null ? all.find((x) => x.id === D.only) : null;
+      onlyBar.replaceChildren(...(only ? [h('div', { class: 'notice ddb-only' }, icon('info'), h('span', null, 'Showing only ', h('b', { text: only.name }), '.'),
+        h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.only = null; drawChips(); draw(); } }, 'Show all demons'))] : []));
+      const rows = only ? [only] : all.filter((x) => inKind(x, D.kind) && inPick(x) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
       rows.forEach((x) => {
         const open = D.open.has(x.id);
         const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
@@ -2517,11 +2523,11 @@
     };
     const sel = (label, value, options, onchange) => h('label', { class: 'gdb-check' }, label,
       h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
-    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, race, skill, feature, tarot or zone', (v) => { D.q = v; draw(); }),
-      sel('Race', D.race, [['', 'All races']].concat(races.map((r) => [r, r])), (v) => { D.race = v; drawChips(); draw(); }),
-      sel('Alignment', D.align, [['', 'All'], ['Law', 'Law'], ['Neutral', 'Neutral'], ['Chaos', 'Chaos']], (v) => { D.align = v; drawChips(); draw(); }),
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, race, skill, feature, tarot or zone', (v) => { D.q = v; D.only = null; drawChips(); draw(); }),
+      sel('Race', D.race, [['', 'All races']].concat(races.map((r) => [r, r])), (v) => { D.race = v; D.only = null; drawChips(); draw(); }),
+      sel('Alignment', D.align, [['', 'All'], ['Law', 'Law'], ['Neutral', 'Neutral'], ['Chaos', 'Chaos']], (v) => { D.align = v; D.only = null; drawChips(); draw(); }),
       sel('Sort', D.sort, [['level', 'Level'], ['name', 'Name'], ['race', 'Race']], (v) => { D.sort = v; draw(); })));
-    page.append(chips);
+    page.append(chips, onlyBar);
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Demon' }), h('th', { scope: 'col', class: 'num', text: 'Lv' }), h('th', { scope: 'col', text: 'Alignment' }),
         h('th', { scope: 'col', text: 'Where to contract' }), h('th', { scope: 'col', text: 'Tarot · Soul' }))), body)));
@@ -2529,7 +2535,7 @@
     drawChips(); draw();
     return page;
   }
-  // ---------- Tools: Skill List ----------
+  // ---------- Tools: Skill Database ----------
   // skill-db.json is made by "newmoon-reader skilldb" (src\Build\SkillDb.cs): every skill of the NewMoon client grouped
   // by its action type (the game's Help names them), with element, cost, timings, power and the expertise ranks that
   // unlock it. Which demons learn it or have it as a feature comes from demon-db.json (the Demon Database), read here.
@@ -2585,7 +2591,7 @@
     if (x.fusion) get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Fusion' }), h('span', null, 'A fusion skill: the game data marks it as one, it does not say which pair makes it.')));
     if (get.childNodes.length) box.append(block('How to get it', get));
     if (who && who.length) {
-      const open = (d) => { S.ddb.q = d.name; S.ddb.kind = 'all'; S.ddb.race = ''; S.ddb.align = ''; S.ddb.open = new Set([d.id]); go('ddb'); };
+      const open = (d) => { S.ddb.only = d.id; S.ddb.q = ''; S.ddb.open = new Set([d.id]); go('ddb'); };
       const tag = (r) => (r.how === 'feature' ? 'feature' : r.lv ? `learns at Lv ${r.lv}` : 'knows it') + (r.mt ? ' · Mitama-fused' : '');
       box.append(block(`Demons (${new Set(who.map((r) => r.d.id)).size})`, h('ul', { class: 'gdb-list skl-demons' }, who.map((r) =>
         h('li', null, h('button', { type: 'button', class: 'skl-demon', 'data-tip': 'Open in the Demon Database', onclick: () => open(r.d) },
@@ -2598,7 +2604,7 @@
     loadSkillDb();
     page.append(pageHead('Every skill in the game, separated by action type. Click a skill for what it does and who can learn it.'));
     if (D.state !== 'ready') {
-      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The skill list could not be loaded (skill-db.json is missing beside the page).' : 'Loading the skills…' }));
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The skill database could not be loaded (skill-db.json is missing beside the page).' : 'Loading the skills…' }));
       return page;
     }
     const d = D.data, all = d.skills, byDemon = sklDemons() || new Map();

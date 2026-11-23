@@ -1131,7 +1131,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .ddb-desc { display: block; color: var(--text-2); font-size: 12px; white-space: pre-line; }
 .ddb-enemy { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px 14px; color: var(--text-2); }
 .ddb-form { margin-top: 2px; }
-/* Skill List */
+/* Skill Database */
 .skl-notice { margin-bottom: 0; }
 .skl-notice > div { display: grid; gap: 2px; min-width: 0; }
 .skl-help { margin: 0 0 6px; color: var(--text-2); white-space: pre-line; max-width: 900px; }
