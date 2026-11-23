@@ -1160,4 +1160,4 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-drop-list .gdb-kind { margin-right: 2px; }
 .dun-tt-row { display: flex; justify-content: space-between; gap: 14px; }
 .tt-head .dun-item-pic { flex: none; }
-.dun-vanilla { margin: 0; }
+.dun-warn { padding: 7px 10px; font-size: 12px; }
