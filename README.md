@@ -138,6 +138,8 @@ enemy for its details:
 Places are grouped by where you enter them from (all of Dark Babel's floors under "Entered from Dark Babel", Celu
 Tower's Bronze, Silver and Gold under "Entered from Celu Tower"); click a group to open it. Fields, other places and
 the few dungeons whose entrance the data doesn't give come last. Untick "Group by entrance" for one flat list.
+Each place shows small pictures of its enemies beside its name (up to 8, bosses first with a purple ring, then the
+strongest; "+N" for the rest); hover one for its name and level.
 Search a place, an enemy, a skill, a drop or an entrance; the chips filter dungeons, fields and other places. A search
 opens every group it finds something in, and searching an enemy lists only the matching enemies inside each place.
 
