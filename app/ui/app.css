@@ -34,6 +34,9 @@
   --warn-ink: #7a4d00;
   --warn-mark: #c98500;
   --warn-bg: #fdf3dc;
+  --over-ink: #9c1f3d;     /* past a cap (wasted points): a soft red, the user's pick over the amber it was */
+  --over-mark: #d94a66;
+  --over-bg: #fde7ec;
   --err-bg: #fbe9e7;
   --ok-bg: #e6f4e6;
   --shadow: 0 1px 2px rgba(11, 11, 11, .06), 0 8px 24px rgba(11, 11, 11, .10);
@@ -77,6 +80,9 @@
   --warn-ink: #f3c770;
   --warn-mark: #fab219;
   --warn-bg: #33290f;
+  --over-ink: #f9a8b8;
+  --over-mark: #f7768e;
+  --over-bg: #3a1c26;
   --err-bg: #3a1c19;
   --ok-bg: #16301a;
   --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .5);
@@ -217,7 +223,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .tag-digi { border-color: transparent; background: var(--selected); color: var(--text); }
 .tag-off { border-style: dashed; }
 .tag-max { border-color: var(--border-strong); color: var(--text); }                             /* exactly at a cap */
-.tag-over { border-color: transparent; background: var(--warn-bg); color: var(--warn-ink); }      /* past a cap: wasted */
+.tag-over { border-color: transparent; background: var(--over-bg); color: var(--over-ink); }      /* past a cap: wasted */
 .cmp .tbl tfoot td.capped { color: var(--warn-ink); }
 
 /* ---------- cards ---------- */
@@ -275,13 +281,15 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .sheet-row:hover { background: var(--hover); }
 .sheet-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
 .sheet-row .chev { margin: 0; }
+.sheet-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sheet-name .tag { flex: none; }
 .sheet-label { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-row[aria-expanded="true"] .sheet-label { color: var(--text); font-weight: 600; }
 .sheet-value { font: 600 14px/1.2 var(--font-display); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .sheet-value.bad { color: var(--bad); }
 .cap-bar { display: block; width: 72px; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
 .cap-bar i { display: block; height: 100%; border-radius: 3px; background: var(--text-2); }   /* neutral: this is "total against the cap", not one of the source series */
-.cap-bar.over i { background: var(--warn-mark); }   /* past the cap: the same colour as the sentence above the sheet */
+.cap-bar.over i { background: var(--over-mark); }   /* past the cap: soft red, with the "Over cap" tag beside the name */
 .sheet-detail { display: grid; gap: 6px; padding: 2px 0 12px 22px; justify-items: stretch; }
 .sheet-src { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; font-size: 12px; }
 .sheet-src .swatch { align-self: center; }

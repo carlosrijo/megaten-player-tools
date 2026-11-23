@@ -834,13 +834,15 @@
       const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : [])].filter(([, , v]) => v);
       const open = S.over.open === k;
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
-      // (full and in the warning colour when past it; by how much is in the tooltip and under the opened line)
+      // (full and soft red when past it, with an "Over cap" tag beside the name; by how much is in the tooltip and under the opened line)
       const meter = cap === null ? h('span') : h('span', { class: 'cap-bar' + (over ? ' over' : '') }, h('i', { style: `width:${Math.max(0, Math.min(100, (r.total / cap) * 100))}%` }));
       const row = h('button', { type: 'button', class: 'sheet-row', 'aria-expanded': String(open),
         'data-tip': (srcs.length ? srcs.map(([, name, v]) => `${name} ${f(v)}`).join(' · ') : 'Nothing adds to this yet')
           + (cap === null ? '' : `. Caps at ${fmt(cap, r.unit)}` + (over ? `: ${plain(over)} over, which adds nothing.` : '.')),
         onclick: () => { S.over.open = open ? null : k; render(); } },
-        h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'sheet-label', text: label }), meter,
+        h('span', { class: 'chev' }, icon('chevron')),
+        // past the cap: a short "Over cap" tag beside the name (by how much is in the tooltip and under the opened line)
+        h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label }), over ? h('span', { class: 'tag tag-over', text: 'Over cap' }) : null), meter,
         h('span', { class: 'sheet-value' + (r.total < 0 && !lowIsGood(r.label) ? ' bad' : ''), text: fmt(r.total, r.unit) }));
       if (!open) return row;
       const bonusRow = bonusRowOf(k, r.label, r.unit);
@@ -852,8 +854,8 @@
           : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
         cap === null ? null : h('p', { class: 'note', text: `Caps at ${fmt(cap, r.unit)}: ` + (over ? `the ${plain(over)} above it adds nothing, so those points could go elsewhere.`
           : r.total >= cap ? 'reached, more adds nothing.' : `${plain(round2(cap - r.total))} to go.`) }),
-        bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
-          'Every source in Bonuses') : null)];
+        bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this, on the Bonuses page', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
+          'View more') : null)];
     };
     const sheet = h('section', { class: 'card sheet' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' },
       col.map(([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow)))))));
