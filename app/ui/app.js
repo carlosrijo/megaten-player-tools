@@ -24,6 +24,7 @@
     check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.2 9.5"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    book: '<path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/>',
   };
   function icon(name) {
     const s = document.createElementNS(SVG, 'svg');
@@ -210,7 +211,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['dcm', 'DCM Locator', 'search']];
+  const TOOLS = [['dcm', 'DCM Locator', 'search'], ['quests', 'Quest Guide', 'book']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -250,6 +251,7 @@
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
     dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
+    quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle' },
     exp: { q: '', closed: new Set() },
     dg: { q: '', closed: new Set() },
     extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
@@ -1566,7 +1568,112 @@
     return page;
   }
 
-  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm };
+  // ---------- Tools: Quest Guide ----------
+  // quest-guide.json is made by tools\questexport: the game's quest tables for the text and needs, the server's event
+  // files for the steps (who to talk to, where, what to pick, what you get). It sits beside this file.
+  const QUEST_TYPES = [['available', 'Available'], ['Normal', 'Normal'], ['Repeatable', 'Repeatable'], ['Event', 'Event'], ['I-Time', 'I-Time'], ['Episode', 'Episode'], ['Inactive', 'Inactive']];
+  function loadQuests() {
+    if (S.quest.state !== 'idle') return;
+    S.quest.state = 'loading';
+    fetch('quest-guide.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.quest.data = d; S.quest.state = d ? 'ready' : 'failed';
+      if (d) d.quests.forEach((q) => {
+        const words = [q.title, q.client, q.zone];
+        q.steps.forEach((s) => { words.push(s.objective || '', ...(s.goals || [])); (s.ways || []).forEach((w) => words.push(w.do, w.who || '', w.where, ...(w.get || []), ...(w.lose || []), ...(w.needs || []))); });
+        q.hay = words.join(' ').toLowerCase();
+      });
+      if (S.page === 'quests') render();
+    });
+  }
+  /**
+   * The ways of doing a step, as groups: ways that ask the same and give the same differ only in who you talk to
+   * (three NPCs who all take the report), so they become one instruction naming all of them.
+   */
+  function questWays(ways, q) {
+    const groups = new Map();
+    ways.forEach((w0) => {
+      const w = Object.assign({}, w0, { needs: (w0.needs || []).filter((n) => !q.needs.includes(n)) });
+      const key = JSON.stringify([w.kind === 'npc' && w.who ? 'talk' : w.do + w.where + (w.grid || ''), w.pick, w.needs, w.fights, w.get, w.lose, w.effects]);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(w);
+    });
+    return [...groups.values()];
+  }
+  /** One instruction: what to do and where as a sentence, then what to choose, what you need, and what changes hands. */
+  function questWay(ws, alt) {
+    const w = ws[0];
+    const at = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
+    let sentence;
+    if (w.who) {
+      const seen = new Set(), people = ws.filter((x) => { const k = x.who + at(x); return !seen.has(k) && seen.add(k); });
+      sentence = ['Talk to ', people.map((x, i) => [i ? (i === people.length - 1 ? ' or ' : ', ') : '', h('b', { text: x.who }), at(x)]), '.'];
+    } else sentence = [h('b', { text: w.do }), w.kind === 'event' ? '' : at(w), '.'];
+    const row = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
+    return h('div', { class: 'q-way' },
+      h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, h('span', null, sentence)),
+      w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
+      w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
+      w.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: w.asks })) : null,
+      w.pick && w.pick.length ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('span', null, w.pick.map((p, i) => [i ? h('span', { class: 'q-arrow', text: ' then ' }) : null, h('span', { class: 'q-pick', text: p })]))) : null,
+      row('You must', w.needs), row('You fight', w.fights), row('You receive', w.get, 'q-get'), row('You hand over', w.lose), row('Afterwards', w.effects));
+  }
+  function questDetail(q) {
+    const box = h('div', { class: 'q-detail' });
+    if (q.needs.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Before you can start' }), h('span', null, q.needs.join(' · '))));
+    if (!q.walkthrough) box.append(h('p', { class: 'note', text: 'The server\'s event files do not cover this quest, so only the game\'s own objective text is shown.' }));
+    const ol = h('ol', { class: 'q-steps' });
+    q.steps.forEach((s) => ol.append(h('li', null,
+      /^Step /.test(s.label) ? null : h('div', { class: 'q-step-title', text: s.label }),   // the number is already in the circle
+      s.objective ? h('p', { class: 'q-objective', text: s.objective }) : null,
+      s.goals && s.goals.length ? h('ul', { class: 'q-goals' }, s.goals.map((g) => h('li', { text: g }))) : null,
+      questWays(s.ways || [], q).map((g, i) => questWay(g, i > 0)))));
+    if (q.steps.length) box.append(ol);
+    else box.append(h('p', { class: 'note', text: 'The data has no steps or objective text for this quest.' }));
+    if (q.unlocks && q.unlocks.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Opens' }), h('span', null, q.unlocks.join(' · '))));
+    return box;
+  }
+  function pageQuests() {
+    const D = S.quest, page = h('div', { class: 'page page-dcm' });
+    loadQuests();
+    page.append(pageHead('Every quest with what to do, step by step. Click a quest to open it.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The quest list could not be loaded (quest-guide.json is missing beside the page).' : 'Loading the quests…' }));
+      return page;
+    }
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
+      'Quest names, objectives and kill or collect counts are the game\'s own. The steps (who to talk to, what to pick, rewards) come from the public server\'s event files, so NewMoon may have changed them. Valuables are shown with the name the game data has, which is Japanese.')));
+    const quests = D.data.quests;
+    const inType = (q, t) => (t === 'available' ? q.type !== 'Inactive' : q.type === t);
+    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of quest' });
+    const body = h('tbody');
+    const drawChips = () => chips.replaceChildren(...QUEST_TYPES.map(([id, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.type === id), onclick: () => { D.type = id; drawChips(); draw(); } },
+        label, h('span', { class: 'count', text: quests.filter((q) => inType(q, id)).length }))));
+    const draw = () => {
+      body.replaceChildren();
+      const q = D.q.trim().toLowerCase();
+      const rows = quests.filter((x) => inType(x, D.type) && (!q || x.hay.includes(q)));
+      rows.forEach((x) => {
+        const open = D.open.has(x.id);
+        const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
+        const where = [x.zone, x.grid ? `(${x.grid})` : ''].filter(Boolean).join(' ');
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+          h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+            h('span', { class: 'chev' }, icon('chevron')), h('span', null, x.title, x.walkthrough ? null : h('span', { class: 'src-count', text: 'objective only' })))),
+          h('td', null, x.client || h('span', { class: 'zero', text: '—' }), where ? h('span', { class: 'src-count', text: where }) : null),
+          h('td', null, h('span', { class: 'tag', text: x.type }))));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 }, questDetail(x))));
+      });
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 3, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No quest in this group.' })));
+    };
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a quest, person, place or item', (v) => { D.q = v; draw(); }), chips));
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Quest' }), h('th', { scope: 'col', text: 'Client and place' }), h('th', { scope: 'col', text: 'Kind' }))), body)));
+    page.append(h('p', { class: 'note', text: `${quests.length} quests, ${quests.filter((x) => x.walkthrough).length} with steps from the event files. Data made on ${D.data.generatedAt}. Numbers in brackets are the map grid position.` }));
+    drawChips(); draw();
+    return page;
+  }
+  const RENDER = { overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;

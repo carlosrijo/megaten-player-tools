@@ -60,6 +60,17 @@ To record what players confirmed on NewMoon, add notes to `app\ui\dcm-notes.json
 (`"notes": { "<item id>": ["Sold by X in Y for Z"] }`; the item id is shown at the bottom of an opened row).
 They appear first, marked "NewMoon note".
 
+### Tools: Quest Guide
+
+Under **Tools** in the left bar. Lists every quest (680; 665 without the inactive ones) and, when opened, what to do
+step by step: who to talk to and where (zone and map grid position), which dialogue choices to pick, what you need,
+what you get and give, and the kill or collect counts. Where a step can be done in more than one way (for example a
+Law or a Chaos answer) every way is shown with what it changes. Search by quest, person, place or item; the chips
+filter by kind of quest.
+
+The quest names, objective text and counts are the game's own. The steps come from the public server's event files
+(468 quests have them; the rest show the game's objective text only), so NewMoon may have changed them. Valuables
+(key items) are shown with the name in the game data, which is Japanese.
 ## Commands
 
 ```
