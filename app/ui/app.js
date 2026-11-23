@@ -1584,20 +1584,41 @@
       S.quest.data = d; S.quest.state = d ? 'ready' : 'failed';
       if (d) d.quests.forEach((q) => {
         const words = [q.title, q.client, q.zone];
-        q.steps.forEach((s) => { words.push(s.objective || '', ...(s.goals || [])); (s.ways || []).forEach((w) => words.push(w.do, w.where, ...(w.get || []), ...(w.lose || []), ...(w.needs || []))); });
+        q.steps.forEach((s) => { words.push(s.objective || '', ...(s.goals || [])); (s.ways || []).forEach((w) => words.push(w.do, w.who || '', w.where, ...(w.get || []), ...(w.lose || []), ...(w.needs || []))); });
         q.hay = words.join(' ').toLowerCase();
       });
       if (S.page === 'quests') render();
     });
   }
-  /** One way of doing a step: who or what, where, what to pick, what it needs, gives and takes. */
-  function questWay(w, alt) {
-    const place = [w.where, w.grid ? `(${w.grid})` : ''].filter(Boolean).join(' ');
+  /**
+   * The ways of doing a step, as groups: ways that ask the same and give the same differ only in who you talk to
+   * (three NPCs who all take the report), so they become one instruction naming all of them.
+   */
+  function questWays(ways, q) {
+    const groups = new Map();
+    ways.forEach((w0) => {
+      const w = Object.assign({}, w0, { needs: (w0.needs || []).filter((n) => !q.needs.includes(n)) });
+      const key = JSON.stringify([w.kind === 'npc' && w.who ? 'talk' : w.do + w.where + (w.grid || ''), w.pick, w.needs, w.fights, w.get, w.lose, w.effects]);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(w);
+    });
+    return [...groups.values()];
+  }
+  /** One instruction: what to do and where as a sentence, then what to choose, what you need, and what changes hands. */
+  function questWay(ws, alt) {
+    const w = ws[0];
+    const at = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
+    let sentence;
+    if (w.who) {
+      const seen = new Set(), people = ws.filter((x) => { const k = x.who + at(x); return !seen.has(k) && seen.add(k); });
+      sentence = ['Talk to ', people.map((x, i) => [i ? (i === people.length - 1 ? ' or ' : ', ') : '', h('b', { text: x.who }), at(x)]), '.'];
+    } else sentence = [h('b', { text: w.do }), w.kind === 'event' ? '' : at(w), '.'];
     const row = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
     return h('div', { class: 'q-way' },
-      h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, h('b', { text: w.do }), place ? h('span', { class: 'q-place', text: place }) : null),
-      w.pick && w.pick.length ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Pick' }), h('span', null, w.pick.map((p, i) => [i ? h('span', { class: 'q-arrow', text: ' → ' }) : null, h('span', { class: 'q-pick', text: p })]))) : null,
-      row('Needs', w.needs), row('Fight', w.fights), row('You get', w.get, 'q-get'), row('You give', w.lose), row('Then', w.effects));
+      h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, h('span', null, sentence)),
+      w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
+      w.pick && w.pick.length ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('span', null, w.pick.map((p, i) => [i ? h('span', { class: 'q-arrow', text: ' then ' }) : null, h('span', { class: 'q-pick', text: p })]))) : null,
+      row('You must', w.needs), row('You fight', w.fights), row('You receive', w.get, 'q-get'), row('You hand over', w.lose), row('Afterwards', w.effects));
   }
   function questDetail(q) {
     const box = h('div', { class: 'q-detail' });
@@ -1608,7 +1629,7 @@
       /^Step /.test(s.label) ? null : h('div', { class: 'q-step-title', text: s.label }),   // the number is already in the circle
       s.objective ? h('p', { class: 'q-objective', text: s.objective }) : null,
       s.goals && s.goals.length ? h('ul', { class: 'q-goals' }, s.goals.map((g) => h('li', { text: g }))) : null,
-      (s.ways || []).map((w, i) => questWay(Object.assign({}, w, { needs: (w.needs || []).filter((n) => !q.needs.includes(n)) }), i > 0)))));
+      questWays(s.ways || [], q).map((g, i) => questWay(g, i > 0)))));
     if (q.steps.length) box.append(ol);
     else box.append(h('p', { class: 'note', text: 'The data has no steps or objective text for this quest.' }));
     if (q.unlocks && q.unlocks.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Opens' }), h('span', null, q.unlocks.join(' · '))));
