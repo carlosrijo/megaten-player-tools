@@ -138,7 +138,9 @@
           const [snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks] = empty ? [[], [], [], [], null, null, {}, []] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {}), get('../../data/dash/digi-unlocks.json', [])]);
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
+          // the summoned demon comes with the page data (dash\summoned.json); here the stand-in list's summoned one
+          const summoned = empty ? null : (await this.call('compDemons', { cached: true })).find((d) => d.summoned) || null;
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks, summoned, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
         }
         if (cmd === 'snapshot') {
           await wait(1400);
@@ -760,16 +762,12 @@
 
   /**
    * The demon summoned when the game was last read (a snapshot, or "Load demons from the game"), to the right of your
-   * stats: the picker's card without its bonus list. The list of demons comes from the host's cache, asked for once;
-   * nothing is drawn until it is there, or when no demon was summoned.
+   * stats: the picker's card without its bonus list. It comes with the page data, so it is drawn with the rest;
+   * nothing is drawn when no demon was summoned.
    */
-  let demonsAsked = false;
   function summonedCard() {
-    if (!S.demons && !demonsAsked) {
-      demonsAsked = true;
-      loadDemons(false).then(() => { demonsAsked = false; if (S.demons) refreshSummoned(); });
-    }
-    const d = (S.demons || []).find((x) => x.summoned);
+    // with the page data (dash\summoned.json), so it is there at once; the demon list, once loaded, is newer
+    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
     if (!d) return h('div', { class: 'summoned none' });
     const tag = h('span', { class: 'tag tag-demon', tabindex: 0, text: 'Summoned',
       'data-tip': 'Your summoned demon' + (d.seenAt ? ` when the game was last read (${when(d.seenAt)})` : '') + '. A snapshot, or "Load demons from the game" in the demon list, reads it again.' });
@@ -2007,7 +2005,7 @@
   // ---------- actions ----------
   async function reload() {
     const d = await host.call('load');
-    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [] };
+    S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [], summoned: d.summoned || null };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
     derive();
