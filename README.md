@@ -28,6 +28,7 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   snapshot ("Show all" lists the rest); beside it, one radar chart per element with your affinity boost,
   the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers. The digitalize demon's name is a dropdown to pick another one.
   Under the radars, an **Expertise** card: your expertise points against the cap, as the game's Expertise window shows them (e.g. 52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its class-rank and the icons of the skills its ranks gave you, passive and active on separate lines (a switched-off toggle is dimmed). Click one to open it on the Expertise page, or "View more" for the whole page.
+- **Expertise page:** opens with a **Summary**: points spent against the cap (with what is free), how many expertises are raised, at their highest class and chained, and how many passives are counted; then every raised expertise and chain expertise with its class-rank, a bar to its highest class ("Max" once reached; the highest class is the game client's own) and its points, with the icons of the skills its ranks gave you under it. Click one to show only its passives in the list below.
 - **Assistant:** Black Frost stands in the window's bottom right corner, drawn in 3D from the game's own model with the
   game's own animations (the app reads them from your game folder the first time, so the game must have been running
   once with the app open). It idles, does something by itself now and then, plays a trick when you click it, casts
@@ -50,6 +51,8 @@ Working on the app's page:
 - `NewMoonTracker.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]` saves a
   picture of the page and exits.
 - In a plain browser: `tools\serve.ps1 -Root . -Port 18765`, then `http://localhost:18765/app/ui/index.html`.
+  For the Simulator use `newmoon-reader.exe serve --port 18765 [--data <copy of the data folder>]` instead: the same
+  page, with the real calculation behind the Simulator (the plain server has none, and the page says so).
   A stand-in for the app reads `data\dash`. Add `?empty=1` (first run), `?snap=fail` or `?snap=live` (snapshot results),
   `?game=1`, `?page=…`, `?theme=…`, `?mode=digi`.
 - The assistant: `--capture` pictures leave it out unless the run adds `--query assistant=1`. In a plain browser it
@@ -91,6 +94,50 @@ words at once ("limit break celu"), filter by slot, and untick "Only gear with a
 Stats and effects are read from the NewMoon client's current item tables, not from the spreadsheets. 963 spreadsheet
 rows matched no item in the game data (different spelling); they are listed with the sheet's own text, marked
 "sheet only". The cosmetic ticket tabs (Vanities) are left out.
+
+### Tools: Simulator
+
+Under **Tools** in the left bar. Try other gear and expertise ranks and watch your stats change, without touching the
+game or your saved data. It starts from your character as last read (take a snapshot first).
+
+- **Gear**: open a slot to change any part of the piece, numbered as in the game's fusion window: Slot 1 (the piece it
+  counts as: set bonus and appearance bonus), Slot 2 (whose basic features it carries), Slot 3 (whose characteristics),
+  the tarot, the soul fusion, and the fusion bonus (the LIMIT switch: every fusion bonus of that kind of piece at MAX,
+  +45 on a weapon). "Replace the whole piece" changes Slots 1 to 3 at once; a piece can also be taken off. Mods stay as
+  they are.
+- **Picking**: the list shows what each choice gives for that part. Search a name or an effect ("rapid", "limit break
+  power"): searching an effect puts the pieces that give the most of it first. The highlighted row (arrow keys or the
+  pointer) shows what it would change before you pick it; Enter picks.
+- **Picked before**: everything you pick stays as a chip under its dropdown. Click a chip to use it again (handy to
+  flip between two or three candidates), the x takes it off the list. Undo still goes back to what you wear.
+- **Expertise**: one slider per expertise (rank by rank, or a class at a time), with the points spent against your cap.
+  The cap itself can be set (type it, or − and + by one expansion) to plan for a cap you don't have yet.
+  Chain expertises follow by themselves. Click a name to see what its ranks unlock.
+- **Result** (right): every difference first (your 12 stats, Max HP and MP, then each bonus, with what it was), then the
+  full stat sheet with the changes marked. Sets won and lost are named.
+- Every change has an Undo. **Reset to default** (top right of the gear list) goes back to your character as last
+  read: gear, expertise ranks and point cap ("Undo reset" brings back what you had, until you change something else).
+  The chips stay.
+- **Builds**: the Simulator opens on your builds: a "New build" card and one card per saved build (its name, how many
+  changes from what you wear, the pieces changed and the biggest differences). In a new build, "Save build…" gives
+  it a name; from then on it keeps every change you make to it. A build can be renamed (click its name), duplicated
+  and deleted. Saved builds are also listed under **Simulator** in the left bar; the small arrow there folds the list.
+  A build is a whole plan: when your gear changes, it is compared with your new gear. Each card names its base.
+- **Builds are independent of the character shown.** A new build starts empty ("No base"): its numbers are only what
+  its pieces and expertise ranks give, for the level and alignment set under its name.
+- **Import base** (top right of a build): pick one of your characters and the build starts again from that
+  character's gear and expertise as last read; its numbers are then that character's, and every change is shown
+  against them. Nothing of the character is changed. "Undo import" brings back what the build had; "No base" in the
+  same list goes back to an empty build.
+- **Normal or digitalized**: under a build's name, a demon band like the Overview's. Its picker lists the demons of
+  the build's base (the imported character's COMP demons as last seen, whoever the app is showing) and "No demon".
+  The demon is part of the build: picking one changes nothing for the character, and it is saved with the build.
+- A stat that moved is tinted green (better) or red (worse).
+
+The numbers come from the same calculation as the rest of the app. Stats start from the game's own numbers and move by
+what the change adds, in the server's order (a point of SPD is half a point of LNG-R, and so on). Not counted, as
+everywhere: buffs, and effects the game data has no numbers for (those are listed on the piece and named in a notice).
+
 ## Commands
 
 ```
@@ -100,6 +147,9 @@ bin\Release\net10.0\newmoon-reader.exe snapshot   # read the game, add a row to 
 bin\Release\net10.0\newmoon-reader.exe rebuild    # rebuild page data from saved files (game not needed)
 bin\Release\net10.0\newmoon-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild
 bin\Release\net10.0\newmoon-reader.exe sets       # list set and appearance bonuses for the worn gear
+bin\Release\net10.0\newmoon-reader.exe simulate   # check the Simulator: the build as read must give back the readings and the saved bonus list
+bin\Release\net10.0\newmoon-reader.exe simulate --spec build.json   # the result of another build, as JSON (--init: the build as read; --catalog N: what fits slot N)
+bin\Release\net10.0\newmoon-reader.exe serve --port 18765           # the app's page in a browser, with a working Simulator (for testing)
 bin\Release\net10.0\newmoon-reader.exe alignment       # the character's alignment, read from the game (LAW/NEUTRAL/CHAOS overrides until the next snapshot)
 bin\Release\net10.0\newmoon-reader.exe demon           # list the COMP demons
 bin\Release\net10.0\newmoon-reader.exe demon Specter   # one demon in detail and what digitalizing with it gives

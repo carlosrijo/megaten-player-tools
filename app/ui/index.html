@@ -148,6 +148,35 @@
     <p class="field-help menu-note">Picking another demon recalculates the latest snapshot with it. The spreadsheet is copied first.</p>
   </div>
 
+  <!-- the Simulator's picker: what goes in one part of a worn piece (search, a list, and what the highlighted choice would change) -->
+  <dialog class="dlg dlg-wide sim-pick" id="sim-pick" aria-labelledby="sim-pick-title">
+    <div class="dlg-body">
+      <div class="dlg-head">
+        <div>
+          <h2 id="sim-pick-title"></h2>
+          <p class="field-help" id="sim-pick-sub"></p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-square" id="sim-pick-close" aria-label="Close"><span data-icon="x" aria-hidden="true"></span></button>
+      </div>
+      <div class="toolbar" id="sim-pick-tools"></div>
+      <div class="sim-options" id="sim-pick-list" role="listbox" aria-label="Choices"></div>
+      <div class="sim-preview" id="sim-pick-preview" role="status"></div>
+    </div>
+  </dialog>
+
+
+  <!-- the Simulator's demon picker: the build's digitalize demon, from its base's COMP demons (a dropdown under the name in the demon band) -->
+  <div class="menu" id="sim-demons" popover aria-label="Digitalize demon of the build">
+    <div class="char-list" id="sim-demons-list"></div>
+    <p class="field-help menu-note" id="sim-demons-note"></p>
+  </div>
+
+  <!-- the Simulator's "Import base": which character a build starts from (a dropdown under the button) -->
+  <div class="menu" id="sim-bases" popover aria-label="Import base">
+    <div class="char-list" id="sim-bases-list"></div>
+    <p class="field-help menu-note">Importing starts the build again from that character’s gear and expertise, and its numbers are then that character’s. Nothing of the character is changed.</p>
+  </div>
+
   <dialog class="dlg dlg-wide" id="picture" aria-labelledby="picture-title">
     <div class="dlg-body">
       <div class="dlg-head">
