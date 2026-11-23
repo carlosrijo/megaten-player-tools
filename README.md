@@ -113,7 +113,8 @@ Under **Tools** in the left bar. Two views:
   fusion level worked out from their levels, elemental rank up or down, special fusions and the plugin they need. Each
   demon starts at its base level; type its real level, since the result depends on it.
 - **Find a recipe**: pick the demon you want and get every way to make it: special fusions, every
-  two-demon fusion and every tri-fusion, cheapest first (lowest levels added up). Recipes with an elemental are marked
+  two-demon fusion and every tri-fusion, cheapest first (lowest levels added up), each as a card in an even grid. A special
+  fusion that needs a plugin says which key item; hover it for how to get it in game. Recipes with an elemental are marked
   **Rank up** or **Rank down**. Click any demon in a recipe to see how to make that one too ("Back to" returns).
 
 Mitama-fused demons are not in the lists: the game won't fuse them.
