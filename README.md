@@ -75,7 +75,7 @@ The quest names, objective text and counts are the game's own. The steps come fr
 
 Under **Tools** in the left bar. Every piece of gear in the game (10,270) with what it gives: stats, effects, appearance
 bonus, the sets it belongs to, mod slots, and who can wear it. Where a piece comes from (dungeon, ticket, exchange)
-is traced through the game data (drops, chests, shops, NPC exchanges, the ticket a piece comes in), with players' notes from
+is traced through the game data (drops, chests, shops, NPC exchanges, the ticket a piece comes in), with community notes from
 SnowSheet's gear reference for NewMoon beside it. Search with several
 words at once ("limit break celu"), filter by slot, and untick "Only gear with a known source" to see everything.
 

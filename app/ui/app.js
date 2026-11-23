@@ -1763,7 +1763,7 @@
         const open = D.open.has(it.key);
         const toggle = () => { if (D.open.has(it.key)) D.open.delete(it.key); else D.open.add(it.key); draw(); };
         const gives = it.all.slice(0, 3).join(' · ') + (it.all.length > 3 ? ` · and ${it.all.length - 3} more` : '');
-        // the game's own answer first, then the ticket, then the place the players' notes file it under
+        // the game's own answer first, then the ticket, then the place the community notes file it under
         const ticket = (it.sources.find((s) => s.ticket) || {}).ticket;
         const src = it.get.length ? (it.get[0].k === 'Open' ? `Open ${it.get[0].t}` : `${it.get[0].k}: ${it.get[0].t}`) : ticket ? `Open ${ticket}`
           : it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') : '';
@@ -1785,7 +1785,7 @@
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Gear' }), h('th', { scope: 'col', text: 'Slot' }), h('th', { scope: 'col', text: 'Gives' }), h('th', { scope: 'col', text: 'Where to get it' }))), body)));
     page.append(more);
-    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data; ${items.filter((x) => x.id && x.known).length} with a known way to get them. Data made on ${D.data.generatedAt}. Players' notes are from SnowSheet's gear reference.` }));
+    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data; ${items.filter((x) => x.id && x.known).length} with a known way to get them. Data made on ${D.data.generatedAt}. Community notes are from SnowSheet's gear reference.` }));
     drawChips(); draw();
     return page;
   }
