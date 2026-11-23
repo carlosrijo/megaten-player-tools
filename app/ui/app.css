@@ -259,6 +259,21 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; }
 .exp-bar i { display: block; height: 100%; border-radius: 4px; background: var(--exp); }
 .exp-free { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Expertise page summary */
+.exp-stats { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0 0 6px; }
+.exp-stat { display: flex; align-items: baseline; gap: 6px; }
+.exp-stat-v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--exp); }
+.exp-stat-l { color: var(--text-2); font-size: 12px; }
+.exp-sum-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 0 24px; }
+.exp-sum-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px 90px 44px 78px; align-items: center; gap: 10px; width: 100%; text-align: left;
+  font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px solid var(--border); padding: 6px 6px; cursor: pointer; border-radius: 6px; }
+.exp-sum-row:hover { background: var(--hover); }
+.exp-sum-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-sum-rank { color: var(--exp); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.exp-sum-row .exp-bar { height: 6px; }
+.exp-sum-max { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.exp-sum-max.done { color: var(--exp); font-weight: 600; }
+.exp-sum-pt { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .chain-list { display: grid; gap: 2px; }
 .chain { display: grid; gap: 6px; width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: 0; border-top: 1px solid var(--border); padding: 8px 6px; cursor: pointer; border-radius: 6px; }
 .chain:first-child { border-top: 0; }
