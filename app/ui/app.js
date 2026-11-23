@@ -1691,7 +1691,11 @@
           it.stats = lines(it.stats); it.effects = lines(it.effects); it.appearance = lines(it.appearance);
           (it.sets || []).forEach((s) => { s.effects = lines(s.effects); });
           it.all = [...(it.stats || []), ...(it.effects || []), ...(it.appearance || []), ...(it.sets || []).flatMap((s) => s.effects)];
-          it.hay = [it.name, it.slot, ...it.all, ...(it.sets || []).flatMap((s) => s.with), ...it.sources.flatMap((s) => [s.tab, s.how])].join(' ').toLowerCase();
+          it.get = it.get || [];
+          const getWords = (list) => (list || []).flatMap((g) => [g.k, g.t, g.s || '']);
+          it.known = it.get.length > 0 || it.sources.length > 0;
+          it.hay = [it.name, it.slot, ...it.all, ...(it.sets || []).flatMap((s) => s.with), ...getWords(it.get),
+            ...it.sources.flatMap((s) => [s.tab, s.how, s.ticket || '', ...getWords(s.ticketGet)])].join(' ').toLowerCase();
         });
         d.items.sort((a, b) => a.name.localeCompare(b.name));
       }
@@ -1712,9 +1716,22 @@
       if (many) b.lastChild.prepend(h('li', { class: 'gdb-with', text: s.with.join(', ') }));
       box.append(b); });
     if (!it.all.length && !it.sheetOnly) box.append(h('p', { class: 'note', text: 'This piece gives no stats or effects in the game data.' }));
-    if (it.sources.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Where it comes from' }),
-      h('ul', { class: 'gdb-list' }, it.sources.map((s) => h('li', null, h('b', { text: s.tab }), s.how ? ' · ' + s.how : '', h('span', { class: 'src-count', text: s.sheet }))))));
-    else box.append(h('p', { class: 'note', text: 'The spreadsheets do not list this piece, so its source is not known here.' }));
+    // Where to get it, in the game: what the game data says about the piece itself, then about the ticket it comes in.
+    const getLine = (g) => h('li', null, g.k ? h('span', { class: 'gdb-kind', text: g.k }) : null, h('b', { text: g.t }), g.s ? h('span', { class: 'src-count', text: g.s }) : null, g.v ? h('span', { class: 'gdb-rate', text: g.v }) : null);
+    const where = [];
+    it.get.forEach((g) => where.push(getLine(g)));
+    const tickets = new Map();
+    it.sources.forEach((s) => { if (s.ticket && !tickets.has(s.ticket)) tickets.set(s.ticket, s.ticketGet || []); });
+    tickets.forEach((lines, ticket) => {
+      where.push(h('li', null, h('span', { class: 'gdb-kind', text: 'Comes in' }), h('b', { text: ticket }),
+        lines.length ? null : h('span', { class: 'src-count', text: 'the game data does not say where this ticket comes from' })));
+      lines.forEach((g) => where.push(h('li', { class: 'gdb-sub' }, getLine(g).childNodes ? [...getLine(g).childNodes] : null)));
+    });
+    if (where.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Where to get it' }), h('ul', { class: 'gdb-list gdb-get' }, where)));
+    // What players wrote down about it (the place is the name of the sheet's page, usually the dungeon).
+    const notes = [...new Set(it.sources.map((s) => [s.tab, s.how].filter(Boolean).join(' · ')))];
+    if (notes.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Players\' notes' }), h('ul', { class: 'gdb-list' }, notes.map((n) => h('li', { text: n })))));
+    if (!where.length && !notes.length) box.append(h('p', { class: 'note', text: 'Neither the game data nor the players\' notes say where this piece comes from.' }));
     if (it.id) box.append(h('p', { class: 'note', text: `Item ${it.id}` }));
     return box;
   }
@@ -1727,9 +1744,9 @@
       return page;
     }
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Two sources. ' }),
-      'Stats, effects and sets are read from the NewMoon client\'s current item tables. Where a piece comes from is taken from the community spreadsheets (SnowSheet\'s gear reference and Midori\'s Post Wipe Re:FC), matched by item id or name; that part can be out of date or imprecise.')));
+      'Stats, effects and sets are read from the NewMoon client\'s current item tables. "Where to get it" is traced through the public server data (drops, chests, shops, events), which NewMoon may have changed. "Players\' notes" are what the community wrote down for NewMoon, and can be imprecise.')));
     const items = D.data.items;
-    const pass = (it, slot) => (!D.known || it.sources.length > 0) && (slot === 'all' || it.slot === slot);
+    const pass = (it, slot) => (!D.known || it.known) && (slot === 'all' || it.slot === slot);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by slot' });
     const body = h('tbody'), more = h('div', { class: 'gdb-more' });
     const drawChips = () => chips.replaceChildren(...[['all', 'All']].concat(GDB_SLOTS.map((s) => [s, s])).map(([id, label]) =>
@@ -1743,13 +1760,16 @@
         const open = D.open.has(it.key);
         const toggle = () => { if (D.open.has(it.key)) D.open.delete(it.key); else D.open.add(it.key); draw(); };
         const gives = it.all.slice(0, 3).join(' · ') + (it.all.length > 3 ? ` · and ${it.all.length - 3} more` : '');
-        const src = it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') + (new Set(it.sources.map((s) => s.tab)).size > 2 ? ' and more' : '') : '';
+        // the game's own answer first, then the ticket, then the place the players' notes file it under
+        const ticket = (it.sources.find((s) => s.ticket) || {}).ticket;
+        const src = it.get.length ? `${it.get[0].k}: ${it.get[0].t}` : ticket ? ticket
+          : it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') : '';
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')), h('span', null, it.name, it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null))),
           h('td', null, it.slot || h('span', { class: 'zero', text: '—' })),
           h('td', { class: gives ? 'gdb-gives' : 'zero', text: gives || '—' }),
-          h('td', { class: src ? '' : 'zero', text: src || 'Not in the sheets' })));
+          h('td', { class: src ? '' : 'zero', text: src || 'Not known' })));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, gearDbDetail(it))));
       });
       if (!rows.length) body.append(h('tr', null, h('td', { colspan: 4, class: 'empty-row', text: words.length ? `Nothing matches “${D.q.trim()}”.` : 'No gear in this group.' })));
@@ -1760,9 +1780,9 @@
     page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a name, effect or place (e.g. limit break celu)', (v) => { D.q = v; D.shown = 150; draw(); }), known));
     page.append(chips);
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Gear' }), h('th', { scope: 'col', text: 'Slot' }), h('th', { scope: 'col', text: 'Gives' }), h('th', { scope: 'col', text: 'From' }))), body)));
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Gear' }), h('th', { scope: 'col', text: 'Slot' }), h('th', { scope: 'col', text: 'Gives' }), h('th', { scope: 'col', text: 'Where to get it' }))), body)));
     page.append(more);
-    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data, ${items.filter((x) => x.id && x.sources.length).length} of them listed in the spreadsheets; ${items.filter((x) => x.sheetOnly).length} spreadsheet rows matched no game item. Data made on ${D.data.generatedAt}. Spreadsheets by SnowSheet and Midori.` }));
+    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data; ${items.filter((x) => x.id && x.known).length} with a known way to get them. Data made on ${D.data.generatedAt}. Players' notes are from SnowSheet's gear reference and Midori's Post Wipe Re:FC.` }));
     drawChips(); draw();
     return page;
   }

@@ -680,3 +680,6 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .page-dcm .search { max-width: 380px; }.page-dcm .tbl tr.detail-row > td { white-space: normal; }
 .gdb-list li { overflow-wrap: anywhere; }
 .gdb-with { color: var(--text-2); font-size: 12px; }
+.gdb-kind { display: inline-block; min-width: 96px; margin-right: 8px; color: var(--text-2); font-size: 12px; }
+.gdb-rate { margin-left: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gdb-sub { padding-left: 22px; }
