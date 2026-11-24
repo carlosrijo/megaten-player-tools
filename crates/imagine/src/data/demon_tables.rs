@@ -104,6 +104,27 @@ fn i(s: &str) -> i32 {
     crate::fmt::parse_i32(s).unwrap_or(0)
 }
 
+/// The race id of a DevilData race name (MiDCategoryData `race`, comp_hack libcomp schema binarydata/devildata.xml).
+/// This is the id the server goes by (CharacterState::Digitalize matches the assists' raceID against it, and
+/// GuardianLevelData is keyed by it). devils-game.tsv's `raceId` column comes from the website's devils.json, which
+/// has none for 119 demons (NewMoon-only ones such as Gold Demon Goldfish 12069, Hospitable Pyro Jack 11772, the
+/// Traditional and Deformed demons) and a different one for two (Mezuki 758: WILDER 59, Belphegor 9910949: TYRANT
+/// 112, while DevilData says BRUTE and FALLEN_ANGEL). With race id 0, a demon digitalized from that list showed no
+/// Digitalize boosts at all even though the character had picked them.
+pub fn race_id_of(race: &str) -> Option<i32> {
+    const RACES: [(&str, i32); 43] = [
+        ("NONE", 0), ("SERAPHIM", 1), ("ENTITY", 2), ("DEMON_GOD", 3), ("VILE", 4), ("AVIAN", 5), ("GODDESS", 6),
+        ("HEAVENLY_GOD", 7), ("RAPTOR", 8), ("DIVINE", 9), ("EVIL_DEMON", 10), ("WILD_BIRD", 11), ("YOMA", 12),
+        ("EARTH_ELEMENT", 13), ("GOD_SPIRIT", 14), ("OTHER", 15), ("REAPER", 51), ("HOLY_BEAST", 52), ("BEAST", 53),
+        ("FAIRY", 54), ("ELEMENTAL", 55), ("MAJIN", 56), ("MITAMA", 57), ("DEMIGOD", 58), ("WILDER", 59),
+        ("DRAGON_KING", 60), ("NOCTURNE", 61), ("GODLY_BEAST", 62), ("INNOCENT", 63), ("HUMAN", 64), ("FOUL", 101),
+        ("BRUTE", 102), ("HAUNT", 103), ("DRAGON", 104), ("FALLEN_ANGEL", 105), ("FEMME", 106), ("NATION_RULER", 107),
+        ("EARTH_MOTHER", 108), ("EVIL_DRAGON", 109), ("GUARDIAN", 110), ("DESTROYER", 111), ("TYRANT", 112),
+        ("GAIAN", 113),
+    ];
+    RACES.iter().find(|(n, _)| *n == race).map(|(_, id)| *id)
+}
+
 /// `Ints(s)`: comma separated numbers, an empty text gives none (an empty part inside gives 0).
 fn ints(s: &str) -> Vec<i32> {
     if s.is_empty() { Vec::new() } else { s.split(',').map(i).collect() }
@@ -153,7 +174,8 @@ impl DemonTables {
                     id,
                     name: col(&r, 1)?.to_string(),
                     race: col(&r, 2)?.to_string(),
-                    race_id: i(col(&r, 3)?),
+                    // the server's race (DevilData's race name), else the table's column
+                    race_id: race_id_of(col(&r, 2)?).unwrap_or_else(|| i(col(&r, 3).unwrap_or(""))),
                     growth_type: i(col(&r, 4)?),
                     fusion_options: i(col(&r, 5)?),
                     base_level: i(col(&r, 6)?),

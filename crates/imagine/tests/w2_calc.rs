@@ -190,6 +190,15 @@ fn digitalizing_with_a_mitama_demon() {
     bad.r#type = 99999999;
     let r = calc.compute(&bad, Some(&all), false).unwrap();
     assert_eq!((r.notes.clone(), r.effects.len(), r.devil.is_none()), (vec!["Demon type 99999999 isn't in the demon table.".to_string()], 0, true));
+    // a NewMoon-only demon (Gold Demon Goldfish 12069, no raceId on the website): its race's assists count. They were
+    // all ignored (race id 0), so a player with every Fairy boost picked saw none on the demon card.
+    let mut gold = demon.clone();
+    gold.r#type = 12069;
+    let fairy: Vec<i32> = t.assists_of_race(54).iter().map(|a| a.id).collect();
+    let r = calc.compute(&gold, Some(&fairy), false).unwrap();
+    assert_eq!(r.devil.as_ref().map(|v| v.race_id), Some(54));
+    assert!(r.assists.as_ref().is_some_and(|a| a.contains("STAT_RATE") && a.contains("PASSIVES")), "{:?}", r.assists);
+    assert!(r.rate > r.base_rate && r.max_rate == 100, "{} {} {}", r.base_rate, r.rate, r.max_rate);
 }
 
 #[test]

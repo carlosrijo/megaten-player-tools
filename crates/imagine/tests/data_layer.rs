@@ -56,6 +56,13 @@ fn demon_tables_like_csharp() {
     assert_eq!((satan.name.as_str(), satan.race.as_str(), satan.race_id, satan.base_level), ("Satan", "GOD_SPIRIT", 14, 95));
     assert_eq!(satan.correct.len(), 126);
     assert_eq!(&satan.correct[..8], &[5, 5, 5, 5, 5, 5, 232, 30]);
+    // the race id is DevilData's race (what the server matches assists against), also for demons the website's
+    // devils.json has no raceId for (NewMoon-only ones): Gold Demon Goldfish is a Fairy (54) with Fairy's 18 assists
+    let gold = &t.devils[&12069];
+    assert_eq!((gold.name.as_str(), gold.race.as_str(), gold.race_id, t.assists_of_race(gold.race_id).len()), ("Gold Demon Goldfish", "FAIRY", 54, 18));
+    assert_eq!((t.devils[&758].race_id, t.devils[&9910949].race_id), (102, 105)); // Mezuki BRUTE, Belphegor FALLEN_ANGEL
+    let no_race: Vec<i32> = t.devils.values().filter(|d| d.race != "NONE" && d.race_id == 0).map(|d| d.id).collect();
+    assert_eq!(no_race, Vec::<i32>::new());
     let m = &t.mitama_sets[0];
     assert_eq!((m.requirements.clone(), m.bonus.clone(), m.description.as_str()), (vec![4, 0, 0, 0], vec![0, 20, 2, 10, 0, 0, 0, 0], "Strength+20 Vitality+10"));
     assert_eq!(t.digitalize_races(), vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 51, 52, 53, 54, 55, 56, 58, 59, 60, 61, 62, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113]);
