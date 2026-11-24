@@ -54,6 +54,24 @@ pub fn skill_asset(store: &Store, data: &GameData, skill_id: i32, pid: u32) -> R
     Ok(got.map(|_| asset))
 }
 
+/// An item's icon for the page by name, saved beside the skill icons (dash\skill-icons\<name>.png), so a row that
+/// shows skill icons can show an item's too: a demon equipment's Epitaph Parts item. The name is the client's
+/// (CIconData_Item), else the website's items.json "iconAsset". None when the item has no icon or the picture can't be made.
+pub fn item_asset(store: &Store, data: &GameData, item_id: i32, pid: u32) -> Result<Option<String>> {
+    if item_id <= 0 {
+        return Ok(None);
+    }
+    let (key, web) = data.item_icon(item_id)?;
+    let with_prefix = |a: String| if a.len() >= 5 && a[..5].eq_ignore_ascii_case("icon_") { a } else { format!("icon_{a}") };
+    let name = client_dir(store, pid).and_then(|d| item_icon_file(&d, key)).or_else(|| web.filter(|a| !a.is_empty()).map(with_prefix));
+    let Some(name) = name.filter(|n| !n.chars().any(is_invalid_file_name_char)) else { return Ok(None) };
+    let cached = store.skill_icon_dir().join(format!("{name}.png"));
+    if cached.is_file() {
+        return Ok(Some(name));
+    }
+    Ok(load(&cached, None, (0, Some(name.clone())), pid, store).map(|_| name))
+}
+
 /// The item's icon as a data: URI for the page's JSON, or None.
 pub fn data_uri(store: &Store, data: &GameData, item_id: i32, pid: u32) -> Result<Option<String>> {
     Ok(uri(png(store, data, item_id, pid)?.as_deref()))
