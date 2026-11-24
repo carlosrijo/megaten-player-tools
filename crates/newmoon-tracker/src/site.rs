@@ -49,7 +49,7 @@ pub struct Served {
 
 impl Site {
     pub fn new(dev: bool, data_dir: &Path) -> Site {
-        let repo = crate::backend::repo_root();
+        let repo = newmoon::data::config::repo_root();
         // C# UiDir(): `Path.GetDirectoryName(_dataDir)\app\ui` in dev mode; the repo root found by walking up is the same place
         let dev_ui = if dev {
             let mut cands = Vec::new();
@@ -63,7 +63,7 @@ impl Site {
         } else {
             None
         };
-        let mut disk_ui = vec![crate::backend::program_dir().join("ui")];
+        let mut disk_ui = vec![newmoon::data::config::program_dir().join("ui")];
         if let Some(r) = &repo {
             disk_ui.push(r.join("app").join("ui"));
         }

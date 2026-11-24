@@ -57,7 +57,13 @@ fn main() {
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let ui = Ui::new(event_loop.create_proxy());
-    let app = Arc::new(MainForm::new(opt, ui));
+    let app = match MainForm::new(opt, ui) {
+        Ok(a) => Arc::new(a),
+        Err(e) => {
+            winutil::error_box(None, &format!("NewMoon Build Tracker stopped unexpectedly.\n\n{e}"), TITLE);
+            return;
+        }
+    };
     let opt = app.opt.clone();
 
     // ---- the window ----

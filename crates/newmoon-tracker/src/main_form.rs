@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
-use crate::backend::{self, Backend, CharacterEntry, Characters, ClientInfo, SimRequest, StoreLite};
+use crate::backend::{self, Backend, CharacterEntry, Characters, ClientInfo, EntryExt, SimRequest, Store};
 use crate::character_picture::{self as pic, PicError};
 use crate::jsonx;
 use crate::options::AppOptions;
@@ -58,7 +58,8 @@ pub struct MainForm {
 }
 
 impl MainForm {
-    pub fn new(opt: AppOptions, ui: Ui) -> MainForm {
+    /// C# `new MainForm(opt)`; an error (the characters list could not be saved) is what the C# constructor threw.
+    pub fn new(opt: AppOptions, ui: Ui) -> Result<MainForm> {
         let data_dir = match &opt.data {
             Some(d) => std::path::absolute(d).unwrap_or_else(|_| PathBuf::from(d)),
             None => backend::find_data_dir(),
@@ -73,10 +74,10 @@ impl MainForm {
         } else {
             set.csv.clone().unwrap_or_else(|| backend::default_csv().to_string_lossy().into_owned())
         };
-        let chars = Characters::new(&data_dir, &set.character.clone().unwrap_or_else(backend::default_name), &first_csv);
+        let chars = Characters::new(&data_dir, &set.character.clone().unwrap_or_else(backend::default_name), &first_csv)?;
         let wanted = opt.character.clone().or_else(|| set.active_character.clone()).unwrap_or_default();
-        let active = chars.find(&wanted).or_else(|| chars.all.first()).map(|e| e.name.clone());
-        MainForm {
+        let active = chars.find(&wanted).or_else(|| chars.all.first()).and_then(|e| e.name.clone());
+        Ok(MainForm {
             opt,
             data_dir,
             ui,
@@ -85,7 +86,7 @@ impl MainForm {
             backend: Backend::new(),
             calc: Mutex::new(()),
             scan: Mutex::new(None),
-        }
+        })
     }
 
     fn st(&self) -> MutexGuard<'_, State> {
@@ -187,7 +188,7 @@ impl MainForm {
 
     fn dispatch(self: &Arc<Self>, cmd: &str, args: &Value) -> Result<String> {
         match cmd {
-            "load" => Ok(self.load_data()),
+            "load" => self.load_data(),
             "state" => Ok(self.state_json()),
 
             "status" => {
@@ -222,14 +223,14 @@ impl MainForm {
                         if self.no_writes() {
                             return Err(user_error("Not adding a new character during a capture run."));
                         }
-                        self.st().chars.get_or_add(c.character.as_deref().unwrap_or(&name))
+                        self.st().chars.get_or_add(c.character.as_deref().unwrap_or(&name))?.clone()
                     }
                 };
                 {
                     let mut s = self.st();
-                    s.active = Some(e.name.clone());
+                    s.active = Some(e.name().to_string());
                     if self.opt.capture.is_none() {
-                        s.set.active_character = Some(e.name.clone());
+                        s.set.active_character = Some(e.name().to_string());
                         s.set.save();
                     }
                 }
@@ -244,14 +245,14 @@ impl MainForm {
                     // Done first (the window is certainly still open) and never allowed to fail the snapshot.
                     let mut pictured = false;
                     if e.auto_picture != Some(false) && !self.no_writes() {
-                        if let Ok(game) = self.backend.find_client(&e.name) {
+                        if let Ok(game) = self.backend.find_client(e.name()) {
                             if let Ok(true) = pic::from_info_window(game.main_window_handle(), &dir) {
                                 pictured = true;
                             }
                         }
                     }
                     let csv = e.csv.clone().unwrap_or_default();
-                    let r = self.backend.take_snapshot(&e.name, &dir, &csv)?;
+                    let r = self.backend.take_snapshot(e.name(), &dir, &csv)?;
                     self.backend.rebuild(&dir, &csv)?;
                     Ok(json!({
                         "source": r.source, "statsNote": r.stats_note, "missing": r.missing.unwrap_or_default(),
@@ -295,7 +296,7 @@ impl MainForm {
                 // "cached": the demons seen before, without looking at the game (the page shows those first, then asks again)
                 let scan = !jsonx::truthy(args.get("cached"));
                 let dir = self.char_dir(&e);
-                self.guarded(|| Ok(self.backend.comp_demons(&e.name, &dir, scan)?.to_string()))
+                self.guarded(|| Ok(self.backend.comp_demons(e.name(), &dir, scan)?.to_string()))
             }
 
             "useDemon" => {
@@ -306,7 +307,7 @@ impl MainForm {
                 let key = jsonx::str(args.get("key"));
                 let dir = self.char_dir(&e);
                 // from what is cached: the game is only read by a snapshot or by "Load demons from the game" (compDemons)
-                self.guarded(|| Ok(self.backend.use_demon(&e.name, &dir, &e.csv.clone().unwrap_or_default(), key.as_deref())?.to_string()))
+                self.guarded(|| Ok(self.backend.use_demon(e.name(), &dir, &e.csv.clone().unwrap_or_default(), key.as_deref())?.to_string()))
             }
 
             // ---- character picture: photo of the game window or an image file, cropped in the page ----
@@ -322,7 +323,7 @@ impl MainForm {
                     return Err(user_error("Not taking pictures during a capture run."));
                 }
                 let dir = self.char_dir(&e);
-                let game = self.backend.find_client(&e.name)?; // the client this character is logged in to
+                let game = self.backend.find_client(e.name())?; // the client this character is logged in to
                 let (size, view) = pic::capture_window(game.main_window_handle(), &dir).map_err(pic_to_user)?;
                 Ok(self.picture_source_json(Some(&e), Some(size), view))
             }
@@ -333,7 +334,7 @@ impl MainForm {
                     return Err(user_error("Not choosing pictures during a capture run."));
                 }
                 let owner = winutil::hwnd_of(self.hwnd.load(Ordering::Relaxed));
-                let Some(file) = dialogs::open_image(owner, &format!("Picture for {}", e.name)) else { return Ok("null".to_string()) };
+                let Some(file) = dialogs::open_image(owner, &format!("Picture for {}", e.name())) else { return Ok("null".to_string()) };
                 match pic::use_file(&file, &self.char_dir(&e)) {
                     Ok(size) => Ok(self.picture_source_json(Some(&e), Some(size), None)),
                     Err(_) => Err(user_error("That file couldn't be opened as a picture.")),
@@ -350,10 +351,10 @@ impl MainForm {
                 // A picture chosen by hand stays: snapshots stop replacing it until the person turns that back on.
                 if e.auto_picture != Some(false) {
                     let mut s = self.st();
-                    if let Some(m) = s.chars.find_mut(&e.name) {
+                    if let Some(m) = s.chars.find_mut(e.name()) {
                         m.auto_picture = Some(false);
                     }
-                    s.chars.save();
+                    s.chars.save()?;
                 }
                 Ok(self.state_json())
             }
@@ -365,10 +366,10 @@ impl MainForm {
                 }
                 {
                     let mut s = self.st();
-                    if let Some(m) = s.chars.find_mut(&e.name) {
+                    if let Some(m) = s.chars.find_mut(e.name()) {
                         m.auto_picture = Some(jsonx::truthy(args.get("on")));
                     }
-                    s.chars.save();
+                    s.chars.save()?;
                 }
                 Ok(self.state_json())
             }
@@ -403,14 +404,14 @@ impl MainForm {
                 let parent = Path::new(&csv).parent().filter(|p| p.is_dir()).map(|p| p.to_path_buf());
                 let file_name = Path::new(&csv).file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
                 let owner = winutil::hwnd_of(self.hwnd.load(Ordering::Relaxed));
-                let picked = dialogs::save_csv(owner, &format!("Spreadsheet file for {}'s snapshots", e.name), &file_name, parent.as_deref());
+                let picked = dialogs::save_csv(owner, &format!("Spreadsheet file for {}'s snapshots", e.name()), &file_name, parent.as_deref());
                 let Some(picked) = picked else { return Ok(self.settings_json()) };
                 {
                     let mut s = self.st();
-                    if let Some(m) = s.chars.find_mut(&e.name) {
+                    if let Some(m) = s.chars.find_mut(e.name()) {
                         m.csv = Some(picked.to_string_lossy().into_owned());
                     }
-                    s.chars.save();
+                    s.chars.save()?;
                 }
                 Ok(self.settings_json())
             }
@@ -467,7 +468,7 @@ impl MainForm {
                     Ok(Some(model)) => Ok(model),
                     Ok(None) => Ok("null".to_string()),
                     // C# catches NifException, IOException and UnauthorizedAccessException
-                    Err(err) if err.downcast_ref::<std::io::Error>().is_some() => Ok("null".to_string()),
+                    Err(err) if err.downcast_ref::<std::io::Error>().is_some() || newmoon::data::nif::is_nif_error(&err) => Ok("null".to_string()),
                     Err(err) => Err(err),
                 }
             }
@@ -509,15 +510,15 @@ impl MainForm {
                 }
                 let (characters, owner, active_dir) = {
                     let s = self.st();
-                    let characters: Vec<(String, PathBuf)> = s.chars.all.iter().map(|c| (c.name.clone(), s.chars.data_dir(c))).collect();
+                    let characters: Vec<(String, PathBuf)> = s.chars.all.iter().map(|c| (c.name().to_string(), s.chars.data_dir(c))).collect();
                     // builds saved before they had bases were the first character's (the one whose folder is the data folder)
                     let owner = s
                         .chars
                         .all
                         .iter()
                         .find(|c| matches!(c.dir.as_deref(), None | Some("") | Some(".")))
-                        .map(|c| c.name.clone())
-                        .unwrap_or_else(|| e.name.clone());
+                        .map(|c| c.name().to_string())
+                        .unwrap_or_else(|| e.name().to_string());
                     (characters, owner, s.chars.data_dir(&e))
                 };
                 let skill_icons = |who: &str| -> Option<String> {
@@ -526,7 +527,7 @@ impl MainForm {
                 };
                 let _calc = self.calc.lock().unwrap_or_else(|p| p.into_inner());
                 self.backend.sim_command(&SimRequest {
-                    default_base: &e.name,
+                    default_base: e.name(),
                     data_dir: &self.data_dir,
                     characters: &characters,
                     active_dir: &active_dir,
@@ -639,7 +640,7 @@ impl MainForm {
         let characters: Vec<Value> = entries
             .iter()
             .map(|e| {
-                let g = in_game.iter().find(|c| c.character.as_deref().is_some_and(|n| newmoon::text::eq_ic(n, &e.name)));
+                let g = in_game.iter().find(|c| c.character.as_deref().is_some_and(|n| newmoon::text::eq_ic(n, e.name())));
                 let has_data = self.char_dir(e).join("dash").join("snapshots.json").is_file();
                 json!({
                     "name": e.name, "hasData": has_data, "inGame": g.is_some(),
@@ -661,7 +662,7 @@ impl MainForm {
         let theme = self.st().set.theme.clone();
         let csv = e.as_ref().and_then(|e| e.csv.clone()).unwrap_or_default();
         json!({
-            "character": e.as_ref().map(|e| e.name.clone()),
+            "character": e.as_ref().and_then(|e| e.name.clone()),
             "csv": csv,
             "theme": theme,
             "dataDir": match &e { Some(e) => self.char_dir(e), None => self.data_dir.clone() }.to_string_lossy(),
@@ -671,16 +672,16 @@ impl MainForm {
     }
 
     /// Everything the page shows for the selected character: the four data files the reader builds, the expertise ranks, and a little context.
-    fn load_data(&self) -> String {
+    fn load_data(&self) -> Result<String> {
         let e = self.active_entry();
-        let store = StoreLite::new(match &e {
+        let store = Store::new(match &e {
             Some(e) => self.char_dir(e),
             None => self.data_dir.join("characters").join("_none"),
         });
         let dash = |name: &str| raw_json(&store.dash_dir().join(format!("{name}.json")), "[]");
         let meta = json!({
-            "character": e.as_ref().map(|e| e.name.clone()),
-            "alignment": if e.is_some() { store.alignment() } else { String::new() },
+            "character": e.as_ref().and_then(|e| e.name.clone()),
+            "alignment": if e.is_some() { store.alignment()? } else { String::new() },
             "alignmentKnown": e.is_some() && store.profile_path().is_file(),
             "csv": e.as_ref().and_then(|e| e.csv.clone()).unwrap_or_default(),
             "dataDir": store.dir.to_string_lossy(),
@@ -691,7 +692,7 @@ impl MainForm {
             "skillIcons": e.as_ref().and_then(|e| self.folder_url(e, &Path::new("dash").join("skill-icons"))),
         });
         let dd = store.dash_dir();
-        format!(
+        Ok(format!(
             "{{\"snapshots\":{},\"gear\":{},\"expertise\":{},\"bonuses\":{},\"ranks\":{},\"digitalize\":{},\"unlocks\":{},\"summoned\":{},\"icons\":{},\"meta\":{}}}",
             dash("snapshots"),
             dash("gear"),
@@ -703,7 +704,7 @@ impl MainForm {
             raw_json(&dd.join("summoned.json"), "null"),
             raw_json(&dd.join("icons.json"), "{}"),
             meta
-        )
+        ))
     }
 }
 
