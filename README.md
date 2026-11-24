@@ -32,14 +32,21 @@ A tag with a dash (`v1.1.0-beta.1`) makes a pre-release. To try the build first,
 
 ## Desktop app
 
+The program is written in Rust (`crates\`, a Cargo workspace). It needs Rust (rustup, stable, `x86_64-pc-windows-msvc`)
+and the Visual Studio C++ build tools.
+
 ```
-dotnet build app -c Release
-app\bin\Release\net10.0-windows\NewMoonTracker.exe
+cargo build --release
+target\release\NewMoonTracker.exe
 ```
 
-After a change, with the app possibly open: `pwsh -NoProfile -File tools\rebuild-app.ps1` closes it, builds the reader
-and the app, and opens it again. (A build with the app open only updates the page files, not the program: Windows
-locks those.)
+`cargo build --release` makes both programs in `target\release`: the app (`NewMoonTracker.exe`, with the page files
+inside it) and the command line reader (`newmoon-reader.exe`). After a change, with the app possibly open:
+`pwsh -NoProfile -File tools\rebuild-app.ps1` closes it, builds both and opens it again (Windows locks a running
+program, so a build with the app open fails to replace it).
+
+The C# version (`src\`, `app\*.cs`, `*.csproj`) is the one this was ported from, kept in the repository for comparison
+until it is removed; changes go to the Rust code. `PORTING.md` says how the two correspond.
 
 "NewMoon Build Tracker": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise, Digitalize and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
@@ -259,23 +266,23 @@ everywhere: buffs, and effects the game data has no numbers for (those are liste
 ## Commands
 
 ```
-dotnet build -c Release
-bin\Release\net10.0\newmoon-reader.exe clients    # which clients are running and who is logged in to each
-bin\Release\net10.0\newmoon-reader.exe snapshot   # read the game, add a row to the CSV, rebuild page data
-bin\Release\net10.0\newmoon-reader.exe rebuild    # rebuild page data from saved files (game not needed)
-bin\Release\net10.0\newmoon-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild
-bin\Release\net10.0\newmoon-reader.exe sets       # list set and appearance bonuses for the worn gear
-bin\Release\net10.0\newmoon-reader.exe simulate   # check the Simulator: the build as read must give back the readings and the saved bonus list
-bin\Release\net10.0\newmoon-reader.exe simulate --spec build.json   # the result of another build, as JSON (--init: the build as read; --catalog N: what fits slot N)
-bin\Release\net10.0\newmoon-reader.exe serve --port 18765           # the app's page in a browser, with a working Simulator (for testing)
-bin\Release\net10.0\newmoon-reader.exe alignment       # the character's alignment, read from the game (LAW/NEUTRAL/CHAOS overrides until the next snapshot)
-bin\Release\net10.0\newmoon-reader.exe demon           # list the COMP demons
-bin\Release\net10.0\newmoon-reader.exe demon Specter   # one demon in detail and what digitalizing with it gives
-bin\Release\net10.0\newmoon-reader.exe demon Specter --use   # make it the digitalize demon the page adds
-bin\Release\net10.0\newmoon-reader.exe digilevels      # Digitalization Level and % per race, assists, level-unlock skills
-bin\Release\net10.0\newmoon-reader.exe expertise       # re-read expertise ranks and Digitalization Levels, rebuild (no CSV row)
-bin\Release\net10.0\newmoon-reader.exe toggles         # which toggle skills are on, read from the game ("Name, ..." overrides when it isn't running)
-bin\Release\net10.0\newmoon-reader.exe labels          # regenerate reference\stat-labels-game.tsv: the game's own name for each stat (from the client's effect text)
+cargo build --release
+target\release\newmoon-reader.exe clients    # which clients are running and who is logged in to each
+target\release\newmoon-reader.exe snapshot   # read the game, add a row to the CSV, rebuild page data
+target\release\newmoon-reader.exe rebuild    # rebuild page data from saved files (game not needed)
+target\release\newmoon-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild
+target\release\newmoon-reader.exe sets       # list set and appearance bonuses for the worn gear
+target\release\newmoon-reader.exe simulate   # check the Simulator: the build as read must give back the readings and the saved bonus list
+target\release\newmoon-reader.exe simulate --spec build.json   # the result of another build, as JSON (--init: the build as read; --catalog N: what fits slot N)
+target\release\newmoon-reader.exe serve --port 18765           # the app's page in a browser, with a working Simulator (for testing)
+target\release\newmoon-reader.exe alignment       # the character's alignment, read from the game (LAW/NEUTRAL/CHAOS overrides until the next snapshot)
+target\release\newmoon-reader.exe demon           # list the COMP demons
+target\release\newmoon-reader.exe demon Specter   # one demon in detail and what digitalizing with it gives
+target\release\newmoon-reader.exe demon Specter --use   # make it the digitalize demon the page adds
+target\release\newmoon-reader.exe digilevels      # Digitalization Level and % per race, assists, level-unlock skills
+target\release\newmoon-reader.exe expertise       # re-read expertise ranks and Digitalization Levels, rebuild (no CSV row)
+target\release\newmoon-reader.exe toggles         # which toggle skills are on, read from the game ("Name, ..." overrides when it isn't running)
+target\release\newmoon-reader.exe labels          # regenerate reference\stat-labels-game.tsv: the game's own name for each stat (from the client's effect text)
 et10.0
 ewmoon-reader.exe toggles         # which toggle skills are on, read from the game (a "Name, ..." list overrides when it isn't running)
 ```
@@ -325,8 +332,8 @@ reading. The Expertise tab shows a "not counted" row for whichever is missing. T
 
 ```
 newmoon-reader extras --quests 32 --compendium 60      # --compendium-v2 no if you don't own Compendium v2; none = unset
-bin\Release\net10.0\newmoon-reader.exe model           # the assistant's 3D model (Black Frost) from the game folder into data\cache\models, with a summary
-bin\Release\net10.0\newmoon-reader.exe model --check "<game folder>\Devil\bone"   # which of the client's model/animation files the reader can read
+target\release\newmoon-reader.exe model           # the assistant's 3D model (Black Frost) from the game folder into data\cache\models, with a summary
+target\release\newmoon-reader.exe model --check "<game folder>\Devil\bone"   # which of the client's model/animation files the reader can read
 ```
 
 Without options, `extras` shows the clan (read from the game), reads both counts when the game has them, and lists
@@ -352,7 +359,9 @@ Layouts are documented in `src/Game/ClientReader.cs`.
 
 ## Files
 
-- `src/` code. `Memory/` read-only process access; `Game/` structure layouts; `Calc/` tooltip parsing and bonus math;
+- `crates/` the program (Rust): `newmoon/` the reader library (`memory`, `game`, `data`, `calc`, `build`, one file per
+  former C# file), `newmoon-reader/` the command line, `newmoon-tracker/` the desktop app (window, WebView2, page bridge).
+- `src/` the previous C# code, kept for comparison. `Memory/` read-only process access; `Game/` structure layouts; `Calc/` tooltip parsing and bonus math;
   `Build/` snapshot, CSV, expertise and page-data builders.
 - `data/cache/` last stats, tooltip text per item, the set table, alignment. `data/cache/models/` the assistant's model,
   made from the game's files (the game's art: not in the repository).
