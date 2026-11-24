@@ -290,6 +290,8 @@ impl Dashboard {
                 "hp": num(&g("HP"))?, "max_hp": num(&g("MaxHP"))?, "mp": num(&g("MP"))?, "max_mp": num(&g("MaxMP"))?,
                 "stats_live": src.is_empty() || src == "Information window" || src == "Character data",
                 "stats_from": iso(&stats_from)?,
+                // saved stats kept because the game showed digitalized ones (Snapshot: "... (digitalized: ...)"), not because they could not be read
+                "stats_digitalized": src.contains("(digitalized"),
                 "gear_missing": g("Gear bonuses missing"),
             }));
             for (csv, k) in STAT_KEYS {
