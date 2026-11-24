@@ -288,14 +288,63 @@ fn owner(p: &ClientProcess) -> (Option<String>, i32) {
 }
 
 // ---------- Who is logged in: found without knowing the name ----------
-// The client keeps many copies of status records shaped like the nameplate below: name (ASCII, zero-padded to 64
+/// The logged-in character's name and level. First from the own character record (the path [`read_own_status`]
+/// uses): character record (vtable 0x16CB8F4) with the own flag 0x100 at +8 -> +12 status object (vtable 0x16CB904):
+/// +8 name (ASCII, NUL-terminated), +132 level (byte). Other players, NPCs and demons have records of the same class
+/// without the flag. Seen 2026-11-24: exactly one own record per client (Accsquad5 96, Nobitta 93), ~0.4 s each.
+/// That client (Accsquad5, just logged in, full HP/MP) had no nameplate record at all, so the older nameplate count
+/// below said "nobody logged in"; it stays as the fallback when no own record (or more than one name) is found.
+pub fn detect_character(mem: &GameMemory) -> Option<(String, i32)> {
+    detect_by_own_record(mem).or_else(|| detect_by_nameplate(mem))
+}
+
+fn detect_by_own_record(mem: &GameMemory) -> Option<(String, i32)> {
+    let mut res: Option<(String, i32)> = None;
+    for (r, buf) in mem.scan() {
+        if r.base < 0x02000000 {
+            continue;
+        }
+        let buf: &[u8] = &buf;
+        let mut p = 0usize;
+        while let Some(pp) = find_u32(buf, CHARACTER_VTABLE, p) {
+            p = pp + 4;
+            if pp + 16 > buf.len() {
+                break;
+            }
+            if (u32_at(buf, pp + 8) & 0x100) == 0 {
+                continue;
+            }
+            let st = u32_at(buf, pp + 12);
+            let Some(s) = (if st > 0x10000 { mem.read(st as i64, 136) } else { None }) else { continue };
+            if u32_at(&s, 0) != STATUS_VTABLE {
+                continue;
+            }
+            let len = s[8..72].iter().position(|&b| b == 0).unwrap_or(64);
+            if !(2..=20).contains(&len) || s[8..8 + len].iter().any(|&b| !(0x21..0x7F).contains(&b)) {
+                continue;
+            }
+            let lvl = s[132] as i32;
+            if !(1..=99).contains(&lvl) {
+                continue;
+            }
+            let name: String = s[8..8 + len].iter().map(|&b| b as char).collect();
+            match &res {
+                Some((n, _)) if *n != name => return None,
+                _ => res = Some((name, lvl)),
+            }
+        }
+    }
+    res
+}
+
+// The fallback. The client keeps many copies of status records shaped like the nameplate below: name (ASCII, zero-padded to 64
 // bytes) at H-68, level int32 at H-4, then HP, MaxHP, MP, MaxMP. Seen 2026-11-22 in two clients at once:
 //   own character   : int32 at name-8 = 0xEEA6, int32 at name-4 = 1   (Rubito x566, Rokujuu x86)
 //   partner demon   : int32 at name-8 = 0x4291, int32 at name-4 = 0   (Alilat x70)
 // Other players and NPCs did not have zero-padded records of this shape. So: the own character is the name with
 // the most records marked 1; if no record is marked (a different client build), the most frequent name overall.
 // Names with non-ASCII characters are not recognised.
-pub fn detect_character(mem: &GameMemory) -> Option<(String, i32)> {
+fn detect_by_nameplate(mem: &GameMemory) -> Option<(String, i32)> {
     let mut marked: IndexMap<String, (i32, i32)> = IndexMap::new();
     let mut any: IndexMap<String, (i32, i32)> = IndexMap::new();
     for (_, buf) in mem.scan() {
