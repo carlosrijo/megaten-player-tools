@@ -10,6 +10,7 @@
 
 pub mod build;
 pub mod calc;
+pub mod console;
 pub mod context;
 pub mod data;
 pub mod error;

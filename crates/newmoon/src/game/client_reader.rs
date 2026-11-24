@@ -206,8 +206,13 @@ mod sys {
 
 use sys::main_window_of;
 
+/// The exe of any running process by id (C# `Process.GetProcessById(pid).MainModule.FileName`); None when it can't be read.
+pub fn process_exe_path(pid: u32) -> Option<PathBuf> {
+    sys::exe_and_start(pid).0
+}
+
 /// Every running ImagineClient as the callers see it (C# `Process.GetProcessesByName("ImagineClient")`).
-fn client_processes() -> Vec<ClientProcess> {
+pub fn client_processes() -> Vec<ClientProcess> {
     sys::pids_named("ImagineClient")
         .into_iter()
         .map(|pid| {
