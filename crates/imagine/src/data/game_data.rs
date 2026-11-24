@@ -133,6 +133,30 @@ pub fn game_enchant_table() -> Option<ReferenceFile> {
     reference_file("enchants-game.tsv")
 }
 
+/// The game's name for an item class (reference\item-classes.tsv, the client's CIconData_ItemClass): 23 "Martial-Arts",
+/// 24 "One-Handed Sword", 25 "Stabbing Weapon", 26 "Primitive Weapon"... It is the number an item has as its sub-category,
+/// so it is also what the server's EQUIPPED_WEAPON_TYPE tokusei condition compares (TokuseiManager: the equipped weapon's
+/// sub-category equals the condition's Value). `None` when the client has no name for it.
+pub fn item_class_name(id: i32) -> Option<&'static str> {
+    static NAMES: OnceLock<HashMap<i32, String>> = OnceLock::new();
+    NAMES
+        .get_or_init(|| {
+            let mut m = HashMap::new();
+            for line in reference_lines("item-classes.tsv").ok().flatten().unwrap_or_default() {
+                if line.is_empty() || line.starts_with('#') {
+                    continue;
+                }
+                let r: Vec<&str> = line.split('\t').collect();
+                if let (Some(id), Some(name)) = (r.first().and_then(|s| crate::fmt::parse_i32(s)), r.get(1).filter(|n| !n.trim().is_empty())) {
+                    m.insert(id, name.trim().to_string());
+                }
+            }
+            m
+        })
+        .get(&id)
+        .map(String::as_str)
+}
+
 // ---------- small parsing helpers (C# int.Parse throws, int.TryParse does not) ----------
 
 /// `int.Parse(s)`: an error where C# threw FormatException/OverflowException.

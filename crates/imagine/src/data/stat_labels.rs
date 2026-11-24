@@ -52,6 +52,13 @@ fn no_game_text(id: &str) -> Option<&'static str> {
         "SUMMON_SPEED" => Some("Summon Speed"),
         // the server's own tokusei (Mitama and the like) lower or raise it; the client words it only as "Support Magic damage"
         "RATE_SUPPORT_TAKEN" => Some("Support Magic damage Taken"),
+        // The client words these only for the summoner (target SUMMONER, which the label generator does not read): "Summoner
+        // Curative Received +20%" is tokusei 130138's RATE_HEAL_TAKEN 20 (also 130181), and "Summoner Ailment Resistance
+        // +10" is 130123's RES_STATUS -10: the number is the other way round, a lower RES_STATUS is more resistance
+        // (shown with [`displayed`]). RATE_HEAL is worded by the skill text of Curative Additional Lv1-10 (table RATE_HEAL +10%, text "Curative Boost +10%").
+        "RATE_HEAL_TAKEN" => Some("Curative Received"),
+        "RES_STATUS" => Some("Ailment Resistance"),
+        "RATE_HEAL" => Some("Curative Boost"),
         _ => None,
     }
 }
@@ -67,6 +74,13 @@ pub fn name_opt(id: Option<&str>, typ: i32) -> Option<String> {
     let id = id?;
     let nra = if id.starts_with("NRA_") { of(&format!("{id}:{typ}")) } else { None };
     Some(nra.or_else(|| of(id)).or_else(|| no_game_text(id)).unwrap_or(id).to_string())
+}
+
+/// A stat as the game shows it: its name and the number. Only RES_STATUS differs from the table's value: the game shows
+/// "Ailment Resistance +10" for RES_STATUS -10 (more negative = harder to afflict), so the shown number is the table's
+/// one with the sign turned.
+pub fn displayed(id: &str, typ: i32, value: f64) -> (String, f64) {
+    (name(id, typ), if id == "RES_STATUS" { -value } else { value })
 }
 
 pub fn has(id: &str) -> bool {

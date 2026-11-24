@@ -1,0 +1,88 @@
+#id	name (client CIconData_ItemClass: the item classes the game shows, which is also the sub-category the server's EQUIPPED_WEAPON_TYPE condition compares)
+0	HP Recovery
+1	MP Recovery
+2	HP+MP Recovery
+3	Revival
+4	Ailment Recovery
+5	Enhancement
+6	Fire
+7	Ice
+8	Electric
+9	Force
+10	Mind
+11	Almighty
+12	Expel
+13	Death
+14	Ailment
+15	Special
+16	Growth
+17	Fusion
+18	Appearance
+19	Ticket
+20	Gemstone
+21	Money
+22	Emote
+23	Martial-Arts
+24	One-Handed Sword
+25	Stabbing Weapon
+26	Primitive Weapon
+27	Two-Handed Sword
+28	Spear
+29	Axe
+30	Naginata
+31	Dual-Wielded Melee
+32	Handgun
+33	Rifle
+34	Shotgun
+35	Machine Gun
+36	Assault Rifle
+37	Launcher
+38	Dual-Wielded Guns
+39	Bullet
+40	Head
+41	Body
+42	Neck
+43	Hands
+44	Legs
+45	Feet
+46	Ring
+47	Earrings
+48	Back
+49	Extra
+50	COMP
+51	Face
+52	Talisman
+53	Ceremonial One-Handed Sword
+54	Ceremonial Stabbing Weapon
+55	Ceremonial Primitive Weapon
+56	Ceremonial Two-Handed Sword
+57	Ceremonial Spear
+58	Ceremonial Axe
+59	Ceremonial Naginata
+60	Consumable
+61	Quest Item
+62	Mount Item
+63	Junk
+64	Material
+65	Disassembly Tool
+66	Weapon Mod Tool
+67	Item Voucher
+68	Demon Voucher
+69	Synthesis Support
+70	Armor Mod Tool
+80	Transformation Item
+81	Demon Dungeon Only
+82	Diaspora Only
+83	Demon Equipment
+84	Spiritual Infusion
+101	Precious Metal
+102	Voucher
+103	Shot
+104	Hat
+105	Helmet
+106	Clothing
+107	Armor
+108	Shoes
+109	Accessory
+110	Gloves
+111	Other

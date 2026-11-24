@@ -16,5 +16,6 @@ pub mod pipeline;
 pub mod preview_server;
 pub mod simulator;
 pub mod skill_db;
+pub mod skill_description;
 pub mod snapshot;
 pub mod xml;

@@ -636,6 +636,11 @@ impl ItemEffects {
         if id.starts_with("NRA_") && (3..=5).contains(&typ) {
             return mk(format!("{}% {}", num(value), stat_labels::name(id, typ)), None, false);
         }
+        if id == "RES_STATUS" {
+            // "Ailment Resistance +20" for -20; a plain number, not a percent
+            let (label, shown) = stat_labels::displayed(id, 0, value);
+            return mk(label, Some(shown), false);
+        }
         if id.starts_with("BOOST_") || id.starts_with("RES_") {
             return mk(stat_labels::name(id, 0), Some(value), true);
         }
@@ -670,6 +675,11 @@ impl ItemEffects {
                     v => format!("alignment {v}"),
                 };
                 (Some(contains == eq), if eq { format!("if you are {want}") } else { format!("unless you are {want}") })
+            }
+            Some("EQUIPPED_WEAPON_TYPE") => {
+                // The value is the weapon's item class (what the client calls "One-Handed Sword"), not a stat to show
+                let what = crate::data::game_data::item_class_name(c.value).map(|n| format!("{n} equipped")).unwrap_or_else(|| "a certain weapon equipped".into());
+                (None, if eq { what } else { format!("not {what}") })
             }
             t => {
                 // .Trim() of "{Title(type)} {cmp }{value}"

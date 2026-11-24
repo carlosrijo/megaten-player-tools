@@ -410,3 +410,94 @@ fn toggles_source_tells_when_they_were_read() {
     std::fs::write(old.profile_path(), "{\"note\": \"Updated 2026-11-24 14:00. x\", \"alignment\": \"NEUTRAL\", \"toggles\": [1]}").unwrap();
     assert_eq!(old.toggles_source().unwrap().as_deref(), Some("saved, 2026-11-24 14:00"));
 }
+
+/// The game words these stats only for the summoner, so the label generator never saw them: they must not reach the page as codes.
+#[test]
+fn stat_codes_the_client_words_for_the_summoner_are_not_shown_raw() {
+    assert_eq!(stat_labels::name("RATE_HEAL_TAKEN", 0), "Curative Received"); // "Summoner Curative Received +20%", tokusei 130138
+    assert_eq!(stat_labels::name("RES_STATUS", 0), "Ailment Resistance"); // "Summoner Ailment Resistance +10", tokusei 130123
+    assert_eq!(stat_labels::name("RATE_HEAL", 0), "Curative Boost");
+    // "Ailment Resistance +10" is RES_STATUS -10 in the table
+    assert_eq!(stat_labels::displayed("RES_STATUS", 0, -50.0), ("Ailment Resistance".to_string(), 50.0));
+    assert_eq!(stat_labels::displayed("RATE_CLSR", 1, 15.0), ("Close-Range Damage".to_string(), 15.0));
+    // an EQUIPPED_WEAPON_TYPE value is an item class, which the client names
+    use imagine::data::game_data::item_class_name;
+    assert_eq!(
+        [23, 24, 25, 26].map(item_class_name),
+        [Some("Martial-Arts"), Some("One-Handed Sword"), Some("Stabbing Weapon"), Some("Primitive Weapon")]
+    );
+    assert_eq!(item_class_name(9999), None);
+}
+
+/// Lord of Victory (5549): the game's text says "Close-Range Damage +15%, FCC +5%, Healing received -25%". The skill's table has the
+/// first and last, and the tokusei it lists (520061) is the public server's old "+25% Close-Range Damage, Critical +100 with a
+/// melee weapon", which the page must not show. Run through both ways a tokusei reaches the page: the website's tokusei-effects.json
+/// (the reader's usual) and the server XML alone (the portable app's bundled copy).
+#[test]
+fn lord_of_victory_shows_what_the_game_says() {
+    let rows_for = |content: Option<String>, name: &str, toggle_on: bool| {
+        let dir = temp(name);
+        let st = Store::new(&dir);
+        std::fs::write(st.expertise_ranks_path(), "{\"ranks\":[{\"id\":57,\"name\":\"Lord\",\"class\":6,\"rank\":0}]}").unwrap();
+        if toggle_on {
+            std::fs::create_dir_all(st.profile_path().parent().unwrap()).unwrap();
+            st.save_toggles([5549]).unwrap();
+        }
+        let ctx = std::sync::Arc::new(imagine::context::Context::new(Store::new(&dir), GameData::with_paths(content, None)));
+        let exp = imagine::build::expertise::Expertise::new(ctx);
+        let ranks = vec![serde_json::json!({ "id": 57, "name": "Lord", "class": 6, "rank": 0 })];
+        let rows = exp.rows(None, &ranks, false).unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+        rows.into_iter().find(|r| r.get("skill_id").and_then(|s| s.as_i64()) == Some(5549)).expect("Lord of Victory is a row")
+    };
+    // the website's file, with 520061 as comp_hack has it (conditions on four weapon classes)
+    let site = temp("lov-site");
+    // a website folder must hold every file the reader asks for; empty ones stand in for those this test does not use
+    for (dir, file, empty) in [
+        ("wiki", "items.json", r#"{"items":[]}"#),
+        ("wiki", "skills.json", r#"{"skills":[]}"#),
+        ("wiki", "enchants.json", r#"{"enchants":{}}"#),
+        ("armory", "expertises.json", r#"{"expertises":{}}"#),
+        ("armory", "expertise-rank-skills.json", r#"{"expertises":{}}"#),
+        ("armory", "passive-skills.json", r#"{"skills":{}}"#),
+        ("armory", "enchant-sets.json", r#"{"sets":{}}"#),
+        ("armory", "item-subcategories.json", r#"{"items":{}}"#),
+        ("armory", "sitem-tokusei.json", r#"{"items":{}}"#),
+        ("armory", "mod-effects.json", "{}"),
+        ("armory", "devils.json", "{}"),
+    ] {
+        std::fs::create_dir_all(site.join(dir)).unwrap();
+        std::fs::write(site.join(dir).join(file), empty).unwrap();
+    }
+    std::fs::write(
+        site.join("armory").join("tokusei-effects.json"),
+        r#"{"tokusei":{"520061":{"conditions":[{"type":"EQUIPPED_WEAPON_TYPE","value":23,"group":1},{"type":"EQUIPPED_WEAPON_TYPE","value":24,"group":1}],"correct":[{"id":"RATE_CLSR","type":1,"value":25},{"id":"CRITICAL","type":0,"value":100}]}}}"#,
+    )
+    .unwrap();
+    let want = "Toggle skill, switched on: Close-Range Damage +15%; Curative Received -25%; Final Crit +5% (from the game's description)";
+    for (label, content) in [("website", Some(site.to_string_lossy().into_owned())), ("xml", None)] {
+        let row = rows_for(content, &format!("lov-{label}"), true);
+        assert_eq!(row["effects"].as_str().unwrap(), want, "{label}");
+        let num = |k: &str| row[k].as_f64().unwrap();
+        assert_eq!((num("dmg_close"), num("final_crit"), num("crit")), (15.0, 5.0, 0.0), "{label}: the old +25% and Critical +100 are not counted");
+        // the structured lines the page sums carry the same three, none of them marked as a code
+        let fx: Vec<(String, f64)> = row["fx"].as_array().unwrap().iter().map(|f| (f["label"].as_str().unwrap().to_string(), f["value"].as_f64().unwrap())).collect();
+        assert_eq!(fx, vec![("Close-Range Damage".to_string(), 15.0), ("Curative Received".to_string(), -25.0), ("Final Crit".to_string(), 5.0)], "{label}");
+        // switched off: listed, nothing counted
+        let off = rows_for(None, &format!("lov-{label}-off"), false);
+        assert!(off["effects"].as_str().unwrap().starts_with("Toggle skill, switched off (not counted): "), "{label}");
+        assert_eq!(off["dmg_close"].as_f64().unwrap() + off["final_crit"].as_f64().unwrap(), 0.0, "{label}");
+    }
+    let _ = std::fs::remove_dir_all(&site);
+}
+
+/// A tokusei the text does not contradict is left alone.
+#[test]
+fn a_tokusei_the_text_backs_is_not_flagged() {
+    // Criminal Bullet's tokusei 510082 is
+    // "+50% Long-Range Damage" against one demon family, and the text lists the same +50%
+    let gd = GameData::with_paths(None, None);
+    let def = gd.tokusei_full(510082).unwrap().expect("510082 is in the bundled server data");
+    let text = gd.skill_text(5450).unwrap().expect("Criminal Bullet has a description");
+    assert!(imagine::build::skill_description::stale_effects(&def, &text).is_empty(), "the text agrees with it");
+}

@@ -15,7 +15,7 @@ use crate::calc::character_extras;
 use crate::calc::effect::rx;
 use crate::calc::item_effects::{affinity_cap_label, affinity_name, title};
 use crate::context::Context;
-use crate::data::game_data::GameData;
+use crate::data::game_data::{GameData, item_class_name};
 use crate::data::json::{self, At, Row};
 use crate::data::stat_labels;
 use crate::data::store::Store;
@@ -25,7 +25,7 @@ use crate::game::{client_reader, demon_reader};
 use crate::memory::{self, GameMemory};
 use crate::user_error;
 
-use super::item_icons;
+use super::{item_icons, skill_description};
 
 /// The columns every expertise row carries, in order (the page's combat stats).
 const COLS: [&str; 18] = [
@@ -115,16 +115,63 @@ fn correct_is_pct(id: &str, typ: i32) -> bool {
     typ == 1 || id.starts_with("BOOST_") || crate::calc::gear_effects::is_pct_correct(id)
 }
 
+/// A stat's name and number the way the game shows them (Ailment Resistance is shown with the table's sign turned).
+fn shown_stat(id: Option<&str>, typ: i32, v: f64) -> (String, f64) {
+    match id {
+        Some(id) => stat_labels::displayed(id, typ, v),
+        None => (String::new(), v),
+    }
+}
+
 fn fmt_correct(c: &Value, who: &str) -> String {
-    let v = json::num(c.at("value")).unwrap_or(0.0);
+    let (label, v) = shown_stat(json::str(c.at("id")).as_deref(), json::int(c.at("type")), json::num(c.at("value")).unwrap_or(0.0));
     format!(
         "{}{} {}{}{}",
         if who.is_empty() { String::new() } else { format!("{who} ") },
-        label_of(json::str(c.at("id")).as_deref()),
+        label,
         if v >= 0.0 { "+" } else { "" },
         n(v),
         if correct_is_pct(&json::str(c.at("id")).unwrap_or_default(), json::int(c.at("type"))) { "%" } else { "" }
     )
+}
+
+/// What a tokusei's conditions say, for the end of its line: " (only with certain partners)". The numbers are what the
+/// server compares: an EQUIPPED_WEAPON_TYPE value is the weapon's item class, which the client names ("One-Handed Sword").
+/// Nothing here has a "; " in it (the page splits the effect text there).
+fn condition_text<S: AsRef<str>>(conditions: impl IntoIterator<Item = (S, i32)>) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    let mut weapons: Vec<String> = Vec::new();
+    for (kind, value) in conditions {
+        let part = match kind.as_ref() {
+            "EQUIPPED_WEAPON_TYPE" => {
+                weapons.push(item_class_name(value).map(str::to_string).unwrap_or_else(|| "a certain weapon".into()));
+                continue;
+            }
+            "PARTNER_RACE" | "PARTNER_TYPE" | "PARTNER_FAMILY" | "PARTNER_FAMILIARITY" | "PARTNER_MITAMA" => "with certain partners",
+            "PARTY_DEMON_TYPE" => "with certain demons in the party",
+            "DIGITALIZED" => "while digitalized",
+            "LNC" => "for certain alignments",
+            "GAME_TIME" => "at certain times of day",
+            "MOON_PHASE" => "in certain moon phases",
+            "CURRENT_HP" => "at certain HP",
+            "CURRENT_MP" => "at certain MP",
+            "EXPERTISE" => "with certain expertise ranks",
+            _ => "in certain situations",
+        };
+        if !parts.iter().any(|p| p == part) {
+            parts.push(part.to_string());
+        }
+    }
+    if !weapons.is_empty() {
+        weapons.dedup();
+        let names = match weapons.split_last() {
+            Some((last, rest)) if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
+            Some((last, _)) => last.clone(),
+            None => String::new(),
+        };
+        parts.insert(0, format!("with {names} equipped"));
+    }
+    if parts.is_empty() { String::new() } else { format!(" (only {})", parts.join(" and ")) }
 }
 
 fn sign(v: f64) -> &'static str {
@@ -869,11 +916,25 @@ impl Expertise {
             fx.push(fmt_correct(cc, ""));
             let cid = json::str(cc.at("id"));
             let v = json::num(cc.at("value")).unwrap_or(0.0);
-            sfx.push(obj(json!({ "label": label_of(cid.as_deref()), "value": v, "pct": correct_is_pct(cid.as_deref().unwrap_or(""), json::int(cc.at("type"))), "target": "self", "cond": "always" })));
+            let (label, shown) = shown_stat(cid.as_deref(), json::int(cc.at("type")), v);
+            sfx.push(obj(json!({ "label": label, "value": shown, "pct": correct_is_pct(cid.as_deref().unwrap_or(""), json::int(cc.at("type"))), "target": "self", "cond": "always" })));
             if let Some(col) = cid.as_deref().and_then(correct_to_col) {
                 sums.add(col, v);
             }
         }
+        // The game's own text for the skill, when it lists numbers: a listed tokusei it contradicts is the old, public
+        // server's version of a skill NewMoon reworked (see `skill_description`), and its effects are left out below
+        let description = data.skill_text(sid)?;
+        let mut stale: Vec<(i32, String, f64)> = Vec::new();
+        if let Some(text) = description.as_deref() {
+            for tn in json::arr(p.at("tokuseiIds")) {
+                let t = json::int(Some(tn));
+                if let Some(def) = if t == 0 { None } else { data.tokusei_full(t)? } {
+                    stale.extend(skill_description::stale_effects(&def, text).into_iter().map(|s| (t, s.id, s.value)));
+                }
+            }
+        }
+        let is_stale = |t: i32, id: Option<&str>, v: f64| id.is_some_and(|i| stale.iter().any(|(st, sid, sv)| *st == t && sid == i && (sv - v).abs() < 1e-9));
         for tn in json::arr(p.at("tokuseiIds")) {
             let t = json::int(Some(tn));
             if t == 0 {
@@ -887,25 +948,30 @@ impl Expertise {
                     _ => "",
                 };
                 let cond = if json::truthy(d.at("conditions")) {
-                    " (only with certain partners)"
+                    condition_text(json::arr(d.at("conditions")).map(|c| (json::str(c.at("type")).unwrap_or_default(), json::int(c.at("value")))))
                 } else if json::truthy(d.at("skill")) {
-                    " (certain skills)"
+                    " (certain skills)".to_string()
                 } else {
-                    ""
+                    String::new()
                 };
+                let cond = cond.as_str();
                 for cc in json::arr(d.at("correct")) {
-                    fx.push(fmt_correct(cc, who) + cond);
                     let cid = json::str(cc.at("id"));
                     let v = json::num(cc.at("value")).unwrap_or(0.0);
+                    if is_stale(t, cid.as_deref(), v) {
+                        continue;
+                    }
+                    fx.push(fmt_correct(cc, who) + cond);
                     let pct = correct_is_pct(cid.as_deref().unwrap_or(""), json::int(cc.at("type")));
+                    let (label, shown) = shown_stat(cid.as_deref(), json::int(cc.at("type")), v);
                     sfx.push(obj(json!({
-                        "label": label_of(cid.as_deref()), "value": v, "pct": pct, "target": if who.is_empty() { "self" } else { "partner" },
+                        "label": label, "value": shown, "pct": pct, "target": if who.is_empty() { "self" } else { "partner" },
                         "cond": if cond.is_empty() { "always" } else { "situational" }, "note": trim_cond(cond),
                     })));
                     // The party is the character and the partner: a party effect counts for both
                     if who == "Party's" {
                         sfx.push(obj(json!({
-                            "label": label_of(cid.as_deref()), "value": v, "pct": pct, "target": "self",
+                            "label": label, "value": shown, "pct": pct, "target": "self",
                             "cond": if cond.is_empty() { "always" } else { "situational" }, "note": trim_cond(cond),
                         })));
                     }
@@ -918,6 +984,9 @@ impl Expertise {
                 for a in json::arr(d.at("aspects")) {
                     let typ = json::str(a.at("type"));
                     let mut v = json::num(a.at("value")).unwrap_or(0.0);
+                    if is_stale(t, typ.as_deref(), v) {
+                        continue;
+                    }
                     let attr = a.at("attr");
                     let scaled = attr.is_some() && json::str(attr.at("mult")).as_deref() == Some("CORRECT_TABLE");
                     let mut tbl = 0;
@@ -1001,8 +1070,13 @@ impl Expertise {
                         let actions: Vec<i32> = full.skill_conditions.iter().filter(|s| s.0.as_deref() == Some("ACTION_TYPE")).map(|s| s.1).collect();
                         let situational = !full.conditions.is_empty() || full.target_conditions || full.skill_conditions.iter().any(|s| s.0.as_deref() != Some("ACTION_TYPE"));
                         let src = if full.from_client_text { " (from the client's text)" } else { "" };
+                        let cond_txt = condition_text(full.conditions.iter().map(|c| (c.r#type.clone().unwrap_or_default(), c.value)));
+                        let note = [trim_cond(src), trim_cond(&cond_txt)].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join("; ");
                         let who2_text = if who2.is_empty() { String::new() } else { format!("{who2} ") };
                         for cc in &full.correct {
+                            if is_stale(t, cc.id.as_deref(), cc.value) {
+                                continue;
+                            }
                             let v = if cc.precision > 0 { cc.value / 10f64.powf(cc.precision as f64) } else { cc.value };
                             let cid = cc.id.as_deref().unwrap_or("");
                             // Percent the same way gear decides it (item_effects::correct_effect): type 1, a skill
@@ -1010,16 +1084,17 @@ impl Expertise {
                             // Limit Break Chance Up Improvement 1 is "LB_CHANCE:0:5", +5% in the game's own text.
                             let pct_fx = correct_is_pct(cid, cc.r#type);
                             let pct = pct_fx || cid.starts_with("RATE_");
-                            fx.push(format!("{who2_text}{} {}{}{}{src}", label_of(cc.id.as_deref()), sign(v), n(v), if pct { "%" } else { "" }));
+                            let (label, shown) = shown_stat(cc.id.as_deref(), cc.r#type, v);
+                            fx.push(format!("{who2_text}{label} {}{}{}{src}{cond_txt}", sign(shown), n(shown), if pct { "%" } else { "" }));
                             sfx.push(obj(json!({
-                                "label": label_of(cc.id.as_deref()), "value": v, "pct": pct_fx, "target": if who2.is_empty() { "self" } else { "partner" },
-                                "cond": if situational { "situational" } else { "always" }, "note": trim_cond(src),
+                                "label": label, "value": shown, "pct": pct_fx, "target": if who2.is_empty() { "self" } else { "partner" },
+                                "cond": if situational { "situational" } else { "always" }, "note": note,
                             })));
                             // The party is the character and the partner: a party effect counts for both
                             if who2 == "Party's" {
                                 sfx.push(obj(json!({
-                                    "label": label_of(cc.id.as_deref()), "value": v, "pct": pct_fx, "target": "self",
-                                    "cond": if situational { "situational" } else { "always" }, "note": trim_cond(src),
+                                    "label": label, "value": shown, "pct": pct_fx, "target": "self",
+                                    "cond": if situational { "situational" } else { "always" }, "note": note,
                                 })));
                             }
                             if (who2.is_empty() || who2 == "Party's") && !situational {
@@ -1029,6 +1104,9 @@ impl Expertise {
                             }
                         }
                         for a in &full.aspects {
+                            if is_stale(t, a.id.as_deref(), a.value) {
+                                continue;
+                            }
                             let v = if a.precision > 0 { a.value / 10f64.powf(a.precision as f64) } else { a.value };
                             let aid = a.id.as_deref().unwrap_or("");
                             const ACT: [&str; 12] = ["Attack", "Spin", "Rush", "Shot", "Rapid", "Guard", "Counter", "Dodge", "Talk", "Intimidate", "Taunt", "Support"];
@@ -1040,23 +1118,23 @@ impl Expertise {
                             };
                             if aid == "SKILL_ADD" {
                                 // grants another skill (the value is its id), not a number
-                                fx.push(format!("Adds skill {}{src}", data.skill_names()?.get(&(a.value as i32)).cloned().flatten().unwrap_or_else(|| n(a.value))));
+                                fx.push(format!("Adds skill {}{src}{cond_txt}", data.skill_names()?.get(&(a.value as i32)).cloned().flatten().unwrap_or_else(|| n(a.value))));
                                 continue;
                             }
                             if aid == "AFFINITY_CAP_MAX" {
                                 // Value = the element, Modifier = the amount in %
-                                add_cap(&mut fx, &mut sfx, a.value as i32, a.modifier, if who2.is_empty() { "self" } else { "partner" }, if situational { "situational" } else { "always" }, &trim_cond(src), false);
+                                add_cap(&mut fx, &mut sfx, a.value as i32, a.modifier, if who2.is_empty() { "self" } else { "partner" }, if situational { "situational" } else { "always" }, &note, false);
                                 if who2 == "Party's" {
-                                    add_cap(&mut fx, &mut sfx, a.value as i32, a.modifier, "self", if situational { "situational" } else { "always" }, &trim_cond(src), true);
+                                    add_cap(&mut fx, &mut sfx, a.value as i32, a.modifier, "self", if situational { "situational" } else { "always" }, &note, true);
                                 }
                                 continue;
                             }
                             let pct = aid != "LIMIT_BREAK_MAX";
                             let sit = situational || (aid == "EFFECT_POWER" && actions.len() != 1);
-                            fx.push(format!("{who2_text}{nice} {}{}{}{src}", sign(v), n(v), if pct { "%" } else { "" }));
+                            fx.push(format!("{who2_text}{nice} {}{}{}{src}{cond_txt}", sign(v), n(v), if pct { "%" } else { "" }));
                             sfx.push(obj(json!({
                                 "label": nice, "value": v, "pct": pct, "target": if who2.is_empty() { "self" } else { "partner" },
-                                "cond": if sit { "situational" } else { "always" }, "note": trim_cond(src),
+                                "cond": if sit { "situational" } else { "always" }, "note": note,
                             })));
                             if who2.is_empty() && !sit {
                                 if let Some(col) = aspect_to_col(aid) {
@@ -1068,6 +1146,52 @@ impl Expertise {
                         fx.push(raw.clone().unwrap_or_default());
                     } else {
                         unknown_tok.push(t);
+                    }
+                }
+            }
+        }
+        // A tokusei the game's text contradicted was left out above. What the text lists that the skill's own table and
+        // its other tokusei do not already give comes from the text instead: Lord of Victory's "FCC +5%".
+        if !stale.is_empty() {
+            for l in skill_description::effect_lines(description.as_deref().unwrap_or("")) {
+                let Some(stat) = l.stat else { continue };
+                if (!stat_labels::has(stat) && !stat.starts_with("EFFECT_POWER:")) || stat == "HP_COST_ADJUST" {
+                    continue; // a stat the text names but the reader has no name or column for (HP cost is read only to know the list is understood)
+                }
+                // the power of one kind of skill is worded like the server-data lines ("Spin damage"); it applies when that kind is used
+                // anyway, so a "When using Spin Skills:" heading above it says nothing more
+                let power_of = stat.strip_prefix("EFFECT_POWER:").and_then(|a| a.parse::<usize>().ok());
+                let (when_text, conditional) = match (&l.when, power_of) {
+                    (_, Some(_)) => (None, !l.extra.is_empty()),
+                    (w, None) => (w.clone(), l.conditional),
+                };
+                // a line that only applies in some case needs the words that say which; "Long-Range Damage to Humans: +50%" has none
+                let qualifier = if l.extra.is_empty() { None } else { Some(format!("{}{}", l.label, l.suffix)) };
+                if conditional && when_text.is_none() && qualifier.is_none() {
+                    continue;
+                }
+                const KINDS: [&str; 8] = ["Attack", "Spin", "Rush", "Shot", "Rapid", "Guard", "Counter", "Dodge"];
+                let label = match power_of {
+                    Some(a) => format!("{} damage", KINDS[a]),
+                    None => label_of(Some(stat)),
+                };
+                let given = sfx.iter().any(|r| r.get("target").and_then(Value::as_str) == Some("self") && r.get("label").and_then(Value::as_str).is_some_and(|x| crate::text::eq_ic(x, &label)));
+                if given {
+                    continue; // the skill's table has it (or says it differently): not counted twice
+                }
+                // when it applies: the heading's words ("when using any Spin Skills") or the line's own ("Magic incantation time")
+                let situation = when_text
+                    .map(|w| format!("{}{}", w.chars().next().map(|c| c.to_lowercase().to_string()).unwrap_or_default(), w.chars().skip(1).collect::<String>()))
+                    .or(qualifier);
+                let note = match &situation {
+                    Some(w) => format!("{w}; from the game's description"),
+                    None => "from the game's description".to_string(),
+                };
+                fx.push(format!("{label} {}{}{} ({})", sign(l.value), n(l.value), if l.pct { "%" } else { "" }, note.replace("; ", ", ")));
+                sfx.push(obj(json!({ "label": label, "value": l.value, "pct": l.pct, "target": "self", "cond": if situation.is_some() { "situational" } else { "always" }, "note": note })));
+                if situation.is_none() {
+                    if let Some(col) = correct_to_col(stat) {
+                        sums.add(col, l.value);
                     }
                 }
             }
@@ -1219,6 +1343,22 @@ mod tests {
             obj(json!({ "label": "Slash Affinity Cap", "value": 100.0, "pct": true, "target": "partner", "cond": "always" })),
         ];
         assert!(parse_description(text, &both).is_none());
+    }
+
+    #[test]
+    fn conditions_are_worded_by_what_they_ask() {
+        // Lord of Victory's old tokusei: one of four weapon classes, named as the client names them
+        let weapons = [23, 24, 25, 26].map(|v| ("EQUIPPED_WEAPON_TYPE".to_string(), v));
+        assert_eq!(condition_text(weapons), " (only with Martial-Arts, One-Handed Sword, Stabbing Weapon or Primitive Weapon equipped)");
+        assert_eq!(condition_text([("EQUIPPED_WEAPON_TYPE", 29)]), " (only with Axe equipped)");
+        assert_eq!(condition_text([("EQUIPPED_WEAPON_TYPE", 9999)]), " (only with a certain weapon equipped)");
+        // a partner's conditions keep the old wording (the page shortens it)
+        assert_eq!(condition_text([("PARTNER_RACE", 5), ("PARTNER_FAMILIARITY", 3)]), " (only with certain partners)");
+        assert_eq!(condition_text([("DIGITALIZED", 1)]), " (only while digitalized)");
+        assert_eq!(condition_text([("SOMETHING_NEW", 1), ("DIGITALIZED", 1)]), " (only in certain situations and while digitalized)");
+        assert_eq!(condition_text(Vec::<(&str, i32)>::new()), "");
+        // the page splits effect text at "; ": nothing here may contain one
+        assert!(!condition_text([("LNC", 2), ("GAME_TIME", 1), ("MOON_PHASE", 2)]).contains("; "));
     }
 
     #[test]
