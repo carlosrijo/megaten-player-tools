@@ -23,13 +23,12 @@ use crate::Result;
 use crate::data::json::{self, At};
 use crate::game::DemonRecord;
 
-/// The digitalize window's pictures for the Demon Force boost and the Mitama set boost (the same ones the Digitalize page
-/// shows beside those boosts): they stand in for the summoned demon's Demon Force and Mitama set rows.
-const FORCE_PICTURE: &str = "digitalize_forceicon";
+/// The digitalize window's picture for the Mitama set boost (the one the Digitalize page shows beside that boost): it stands
+/// in for the summoned demon's Mitama set rows.
 const MITAMA_PICTURE: &str = "digitalize_mitamaicon";
 
-/// What stands for a summoned demon's bonus line on the page: a skill (and the equipment item worn for it, whose picture
-/// replaces the skill's when the game has none) or a client interface picture.
+/// What stands for a summoned demon's bonus line on the page: a skill and an item (a worn equipment's Epitaph Parts, or the
+/// item a Demon Force stack entry is drawn with; their picture is used when the skill has none) or a client interface picture.
 enum Pic {
     Skill(i32, i32),
     Client(&'static str),
@@ -58,7 +57,8 @@ impl Digitalize {
         // Demon Force stack
         for &sid in d.force_stack.as_deref().unwrap_or(&[]) {
             if let Some(toks) = (sid > 0).then(|| t.force_stack_tokusei.get(&sid)).flatten() {
-                found.extend(toks.iter().map(|&tid| (tid, "Demon Force".to_string(), Pic::Client(FORCE_PICTURE))));
+                let item = t.force_stack_item.get(&sid).copied().unwrap_or(0);
+                found.extend(toks.iter().map(|&tid| (tid, "Demon Force".to_string(), Pic::Skill(0, item))));
             }
         }
         // Mitama sets (the tokusei ones: bonus entries of -1)

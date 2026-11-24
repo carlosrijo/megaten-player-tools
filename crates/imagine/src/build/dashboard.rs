@@ -943,6 +943,17 @@ impl Dashboard {
             .collect()
     }
 
+    /// The picture of a stat-up skill ("Vitality UP1", "Speed UP1", "Intelligence UP1": what the Expertise page draws them with), found
+    /// by the skill's name in the skill list; saved beside the skill icons. None when the game has no such skill or picture.
+    fn stat_up_icon(&self, stat: &str) -> Result<Option<String>> {
+        let want = format!("{stat} UP1");
+        let id = self.data().skill_names()?.iter().filter(|(_, n)| n.as_deref() == Some(want.as_str())).map(|(&id, _)| id).min();
+        match id {
+            Some(id) => item_icons::skill_asset(self.store(), self.data(), id, 0),
+            None => Ok(None),
+        }
+    }
+
     /// The first step of `bonus_rows`: each part's `group` and `bonus` (the bonus list's names). The C# `Part` is a class,
     /// so the Simulator sees these two fields on its own list after `BonusRows` has run; here that is a separate call
     /// (idempotent: it only reads the other fields).
@@ -1076,6 +1087,18 @@ impl Dashboard {
                     // Force and Mitama set: the digitalize window's picture for that boost (both saved beside the skill icons)
                     let asset = if p.item_id > 0 { item_icons::item_asset(store, data, p.item_id, 0)? } else { item_icons::client_asset(store, &p.picture, 0) };
                     icon = asset.map(|a| format!("skill:{a}"));
+                }
+                if icons.is_some() && icon.is_none() && p.kind == "stats" {
+                    // "Your stats": the stat-up skills' picture of the stat that mostly sets it (cooldown: VIT, incantation: INT; SPD is the second one)
+                    let stat = match p.label.as_str() {
+                        "Cooldown" => Some("Vitality"),
+                        "Incantation" => Some("Intelligence"),
+                        _ => None,
+                    };
+                    icon = match stat {
+                        Some(s) => self.stat_up_icon(s)?.map(|a| format!("skill:{a}")),
+                        None => None,
+                    };
                 }
                 if icon.is_none() && p.demon {
                     icon = Some("demon".into());
