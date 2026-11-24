@@ -152,7 +152,10 @@
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {}), get('../../data/dash/digi-unlocks.json', [])]);
           // the summoned demon comes with the page data (dash\summoned.json); here the stand-in list's summoned one
           const summoned = empty ? null : (await this.call('compDemons', { cached: true })).find((d) => d.summoned) || null;
-          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks, summoned, meta: { character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
+          const pf = empty ? null : await get('../../data/cache/profile.json', null);
+          const savedAt = pf && /^Updated (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/.exec(String(pf.note || ''));
+          const togglesSource = !pf ? null : pf.toggles_source || (pf.toggles && savedAt ? 'saved, ' + savedAt[1] : null);
+          return { snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks, summoned, meta: { togglesSource, character: fake.active, alignment: (fake.align && fake.align[fake.active]) || 'NEUTRAL', alignmentKnown: fake.active === 'Rubito' || !!(fake.align && fake.align[fake.active]), csv: settings.csv, dataDir: settings.dataDir, gameRunning: fake.clients.length > 0, picture: fakePic[fake.active] || null, autoPicture: fakeAuto[fake.active] !== false, demonPicture: empty ? null : '../../data/dash/demon.png', skillIcons: empty ? null : '../../data/dash/skill-icons/' } };
         }
         if (cmd === 'snapshot') {
           await wait(1400);
@@ -304,6 +307,26 @@
       'data-tip': over > 0 ? `Caps at ${fmt(cap, unit)}: the ${fmt(over, unit).replace(/^\+/, '')} above it adds nothing` : `Caps at ${fmt(cap, unit)}: more adds nothing`,
       text: over > 0 ? `${fmt(over, unit).replace(/^\+/, '')} over the cap` : 'At the cap' });
   }
+
+  // ---- toggles (switch skills): only the ones switched on are counted; the page says which parts are theirs ----
+  /** The small tag on a source that is a toggle skill switched on. */
+  const toggleTag = (style) => h('span', { class: 'tag tag-off', style: style || null, text: 'Toggle · on',
+    'data-tip': 'A switch skill, switched on. It is counted because it was on when the game was last read; switched off, it adds nothing.' });
+  /** How much of a bonus row comes from toggles that are on (their parts are marked in the data). */
+  const toggleShare = (row) => round2((row && Array.isArray(row.parts) ? row.parts : []).filter((p) => isTrue(p.toggle)).reduce((a, p) => a + n0(p.value), 0));
+  /** When the toggles were last read ("game, 2026-11-24 14:00" in the data) as "Nov 24, 14:00"; null when unknown. `exact`: read from the game. */
+  function togglesWhen() {
+    const m = /^(game|saved), (\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/.exec(String((S.meta && S.meta.togglesSource) || ''));
+    return m ? { text: when(`${m[2]}T${m[3]}`), exact: m[1] === 'game' } : null;
+  }
+  /** The footnote: which toggle state the numbers reflect. */
+  function togglesNote() {
+    const w = togglesWhen();
+    if (!w) return 'Toggles (switch skills): none has been read from the game yet, so none is counted as on. A snapshot reads them.';
+    return `Toggles as they were on ${w.text}${w.exact ? '' : ' or earlier'}: only the toggles that were on then are counted. A snapshot reads them again.`;
+  }
+  /** "−700% of this is from toggles that are on", or null when no toggle is in it. */
+  const toggleShareText = (row, what) => { const v = toggleShare(row); return v ? `${fmt(v, row.unit, true)} of ${what || 'this'} is from toggles that are on` : null; };
 
   const S = {
     data: null, meta: {}, v: null,
@@ -1019,6 +1042,7 @@
       const plain = (v) => fmt(v, r.unit).replace(/^\+/, '');
       const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : [])].filter(([, , v]) => v);
       const open = S.over.open === k;
+      const bonusRow0 = bonusRowOf(k, r.label, r.unit);
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
       // (full and soft red when past it, with an "Over cap" tag beside the name; by how much is in the tooltip and under the opened line)
       const meter = cap === null ? h('span') : h('span', { class: 'cap-bar' + (over ? ' over' : '') }, h('i', { style: `width:${Math.max(0, Math.min(100, (r.total / cap) * 100))}%` }));
@@ -1031,13 +1055,15 @@
         h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label }), over ? h('span', { class: 'tag tag-over', text: 'Over cap' }) : null), meter,
         h('span', { class: 'sheet-value' + (r.total < 0 && !lowIsGood(r.label) ? ' bad' : ''), text: fmt(r.total, r.unit) }));
       if (!open) return row;
-      const bonusRow = bonusRowOf(k, r.label, r.unit);
+      const bonusRow = bonusRow0;
       const line = (cls, name, value, note) => h('div', { class: 'sheet-src' }, h('i', { class: 'swatch ' + cls }),
         h('span', null, name, note ? h('small', { text: note }) : null), h('b', { text: value }));
       return [row, h('div', { class: 'sheet-detail' },
         srcs.length ? srcs.map(([cls, name, v]) => line(cls, name, f(v),
-          cls === 'sw-gear' && r.extra ? (digi() ? `${f(r.extra)} of it only while digitalized` : `${f(r.extra)} more while digitalized`) : null))
+          cls === 'sw-gear' && r.extra ? (digi() ? `${f(r.extra)} of it only while digitalized` : `${f(r.extra)} more while digitalized`)
+            : cls === 'sw-exp' ? toggleShareText(bonusRow0, 'it') : null))
           : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
+        toggleShare(bonusRow0) ? h('p', { class: 'note', text: togglesNote() }) : null,
         cap === null ? null : h('p', { class: 'note', text: `Caps at ${fmt(cap, r.unit)}: ` + (over ? `the ${plain(over)} above it adds nothing, so those points could go elsewhere.`
           : r.total >= cap ? 'reached, more adds nothing.' : `${plain(round2(cap - r.total))} to go.`) }),
         bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this, on the Bonuses page', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
@@ -1171,7 +1197,7 @@
         // hovering it shows a game-style tooltip
         piece ? withTip(gearIcon(piece), gearTip(piece)) : withTip(gearIcon(other), sourceTip(p, other)),
         h('span', { class: 'kind', text: KIND[p.kind] || p.kind || '' }),
-        h('span', null, p.source, crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null,
+        h('span', null, p.source, crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null, isTrue(p.toggle) ? toggleTag('margin-left:8px') : null,
           notes.length ? h('small', { text: notes.join(' · ') }) : null),
         h('span', { class: 'pv', text: p.value === null || p.value === undefined ? '' : fmt(p.value, row.unit, true) }));
     }));
@@ -1220,13 +1246,17 @@
               h('span', { class: 'chev' }, icon('chevron')),
               h('span', null, r.bonus, h('span', { class: 'src-count', text: nParts === 1 ? '1 source' : `${nParts} sources` }),
                 counted && extra ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: digi() ? `incl. ${fmt(extra, r.unit, true)} digi` : `${fmt(extra, r.unit, true)} digitalized` }) : null,
-                counted ? capTag(n0(total), capOfBonus(r), r.unit, 'margin-left:8px') : null))),
+                counted ? capTag(n0(total), capOfBonus(r), r.unit, 'margin-left:8px') : null,
+                counted && toggleShare(r) ? h('span', { class: 'tag tag-off', style: 'margin-left:8px', 'data-tip': toggleShareText(r, 'this total'), text: `${fmt(toggleShare(r), r.unit, true)} from toggles` }) : null))),
             cell(gear), cell(r.expertise), digi() ? cell(r.demon) : null,
             counted ? cell(total, 'emph')
               : h('td', { class: 'num zero', 'data-tip': 'Depends on the fight, so it is not added up', text: '—' }));
           body.append(tr);
           // Found through an item's name: list just that item's lines, unless the row was opened by hand.
-          if (open) body.append(h('tr', { class: 'detail' }, h('td', { colspan: ncol }, partsList(r, viaSource && !S.bonus.open.has(r.row) ? q : null))));
+          if (open) {
+            const lines = counted ? [toggleShareText(r, 'this total')].filter(Boolean) : [];
+            body.append(h('tr', { class: 'detail' }, h('td', { colspan: ncol }, lines.map((t) => h('p', { class: 'note', text: t })), partsList(r, viaSource && !S.bonus.open.has(r.row) ? q : null))));
+          }
         });
       });
       if (!shown) body.append(h('tr', null, h('td', { colspan: ncol, class: 'empty-row', text: q ? `Nothing matches “${S.bonus.q.trim()}”.` : 'No bonuses recorded yet.' })));
@@ -1240,6 +1270,7 @@
         h('th', { scope: 'col', class: 'num', text: 'Expertise' }), digi() ? h('th', { scope: 'col', class: 'num', text: DG ? DG.demon : 'Demon' }) : null,
         h('th', { scope: 'col', class: 'num', text: digi() ? 'Total, digitalized' : 'Total' }))), body)));
     page.append(h('p', { class: 'note', text: 'Gear includes tarot, soul fusions, mods, complete sets and appearance bonuses. For bonuses that only apply in some fights, the largest single value is shown.' }));
+    page.append(h('p', { class: 'note', text: togglesNote() }));
     drawChips(); draw();
     // Quest bonus and Demonic Compendium: what each step gives (their values are already in the rows above)
     const extras = S.data.expertise.filter(isExtra);

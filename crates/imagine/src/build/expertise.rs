@@ -421,7 +421,7 @@ impl Expertise {
         if let Some(on) = prog.as_ref().and_then(|p| p.switched_on.as_ref()) {
             let mut v: Vec<i32> = on.iter().copied().filter(|id| demons.skills.get(id).is_some_and(|s| s.0 == 2)).collect();
             v.sort();
-            store.save_toggles(v)?;
+            store.save_toggles_from_game(v)?;
         }
         // Quest-bonus count from the completed-quest map (filled once the game has loaded the quest list); kept otherwise
         // and the compendium count from the Demonic Compendium window's header text, when it has been opened

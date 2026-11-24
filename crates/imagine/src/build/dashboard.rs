@@ -261,6 +261,8 @@ pub struct Part {
     /// the digitalize demon's own stats (added to the character's base stats). Both matter to the simulator only.
     pub fuse: bool,
     pub demon_stat: bool,
+    /// From a toggle (switch) skill that is switched on. Toggles that are off never get this far (they have no effects).
+    pub toggle: bool,
 }
 
 /// `new Dashboard(store, data, ctx)`: the store and the data are the context's.
@@ -786,6 +788,7 @@ impl Dashboard {
                     note: f.at("note").and_then(Value::as_str).unwrap_or("").to_string(),
                     from: format!("{} ({})", text("skill"), text("expertise")),
                     skill_id: r.get("skill_id").and_then(Value::as_i64).map_or(0, |i| i as i32),
+                    toggle: r.get("toggle_on").and_then(Value::as_bool).unwrap_or(false),
                     ..Default::default()
                 });
             }
@@ -950,10 +953,14 @@ impl Dashboard {
                         }
                     }
                 }
-                parts.push(obj(json!({
+                let mut part = obj(json!({
                     "source": src, "kind": kind, "value": fmt::round(p.value, 2), "digi": p.cond == "digitalized", "note": p.note, "icon": icon,
                     "tip": if p.skill_id > 0 { data.skill_text(p.skill_id)? } else { None }, // the game's description, for the hover tooltip
-                })));
+                }));
+                if p.toggle {
+                    part.insert("toggle".into(), json!(true)); // a toggle skill that is on: the page tags it, and says how much of a total the toggles give
+                }
+                parts.push(part);
             }
             let id_text = rx::rep(&format!("{}-{}-{unit}", f.group, f.bonus), "[^A-Za-z0-9]+", "-");
             let row = obj(json!({

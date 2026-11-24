@@ -339,3 +339,26 @@ fn csv_like_csharp() {
     assert!(CsvTable::load(dir.join("none.csv")).unwrap().columns.is_empty());
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn toggles_source_tells_when_they_were_read() {
+    let dir = temp("toggles-source");
+    let st = Store::new(&dir);
+    assert_eq!(st.toggles_source().unwrap(), None); // no profile: never read
+    st.save_toggles_from_game([5, 6]).unwrap();
+    let from_game = st.toggles_source().unwrap().unwrap();
+    assert!(from_game.starts_with("game, ") && from_game.len() == "game, ".len() + 16, "{from_game}");
+    assert_eq!(st.active_toggles().unwrap(), vec![5, 6]);
+    // an alignment change is not a reading of the toggles
+    st.save_alignment(Some("law")).unwrap();
+    assert_eq!(st.toggles_source().unwrap().as_deref(), Some(from_game.as_str()));
+    // toggles set by hand drop the stamp; the profile's own save time stands in (no newer than that)
+    st.save_toggles([7]).unwrap();
+    let saved = st.toggles_source().unwrap().unwrap();
+    assert!(saved.starts_with("saved, ") && saved.len() == "saved, ".len() + 16, "{saved}");
+    // a profile from before the stamp: its note's time
+    let old = Store::new(temp("toggles-source-old"));
+    std::fs::create_dir_all(old.profile_path().parent().unwrap()).unwrap();
+    std::fs::write(old.profile_path(), "{\"note\": \"Updated 2026-11-24 14:00. x\", \"alignment\": \"NEUTRAL\", \"toggles\": [1]}").unwrap();
+    assert_eq!(old.toggles_source().unwrap().as_deref(), Some("saved, 2026-11-24 14:00"));
+}
