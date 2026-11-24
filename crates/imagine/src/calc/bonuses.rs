@@ -25,9 +25,11 @@ pub const STAT_MAP: &[(&str, &str)] = &[
     ("Close-range damage dealt %", "^Close-Range Damage( Dealt)?$"),
     ("Long-range damage dealt %", "^Long-Range Damage( Dealt)?$"),
     ("Spell damage dealt %", "^(Spell|Magic) Damage( Dealt)?$"),
+    ("Support damage dealt %", "^Support( Magic)? Damage( Dealt)?$"),
     ("Close-range damage taken %", "^Close-Range Damage (Taken|Suffered)$"),
     ("Long-range damage taken %", "^Long-Range Damage (Taken|Suffered)$"),
     ("Spell damage taken %", "^(Spell|Magic) Damage (Taken|Suffered)$"),
+    ("Support damage taken %", "^Support( Magic)? Damage (Taken|Suffered)$"),
     ("Spin skill boost %", "^Spin( Skill)? (Damage|Power|Boost)$"),
     ("Attack skill boost %", "^Attack( Skill)? (Damage|Power|Boost)$"),
     ("Rush skill boost %", "^Rush( Skill)? (Damage|Power|Boost)$"),
@@ -316,6 +318,9 @@ mod tests {
         let l = labels();
         assert_eq!(canonical("critical", &l), ("Critical".to_string(), "Combat"));
         assert_eq!(canonical("Cooldown", &l), ("Cooldown".to_string(), "Combat"));
+        assert_eq!(canonical("Support Magic damage", &l), ("Support damage dealt".to_string(), "Combat"));
+        assert_eq!(canonical("Support Magic damage Taken", &l), ("Support damage taken".to_string(), "Combat"));
+        assert_eq!(canonical("Support", &l), ("Support".to_string(), "Stats"));
         assert_eq!(canonical("Fire Affinity", &l), ("Fire affinity".to_string(), "Affinity"));
         assert_eq!(canonical("Strike affinity cap", &l), ("Blunt affinity cap".to_string(), "Affinity"));
         assert_eq!(canonical("gun resist", &l), ("Handgun resist".to_string(), "Other"));

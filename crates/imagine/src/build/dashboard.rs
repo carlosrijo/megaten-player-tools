@@ -51,7 +51,7 @@ const STAT_KEYS: [(&str, &str); 12] = [
     ("M.Def", "mdef"),
 ];
 
-pub const COMBAT_KEYS: [(&str, &str); 22] = [
+pub const COMBAT_KEYS: [(&str, &str); 24] = [
     ("Critical", "crit"),
     ("Final critical correction", "final_crit"),
     ("Limit break chance", "lb_chance"),
@@ -63,9 +63,11 @@ pub const COMBAT_KEYS: [(&str, &str); 22] = [
     ("Close-range damage dealt %", "dmg_close"),
     ("Long-range damage dealt %", "dmg_long"),
     ("Spell damage dealt %", "dmg_spell"),
+    ("Support damage dealt %", "dmg_support"),
     ("Close-range damage taken %", "taken_close"),
     ("Long-range damage taken %", "taken_long"),
     ("Spell damage taken %", "taken_spell"),
+    ("Support damage taken %", "taken_support"),
     ("Spin skill boost %", "boost_spin"),
     ("Attack skill boost %", "boost_attack"),
     ("Rush skill boost %", "boost_rush"),
@@ -139,6 +141,7 @@ fn contrib(fx: &[&Effect]) -> Vec<(&'static str, f64)> {
         ("dmg_close", sum_fx(fx, p("Close-range damage dealt %"), "any")),
         ("dmg_long", sum_fx(fx, p("Long-range damage dealt %"), "any")),
         ("dmg_spell", sum_fx(fx, p("Spell damage dealt %"), "any")),
+        ("dmg_support", sum_fx(fx, p("Support damage dealt %"), "any")),
         ("taken", sum_fx(fx, p("Close-range damage taken %"), "any")),
         ("cooldown", sum_fx(fx, p("Cooldown %"), "any")),
     ]

@@ -497,8 +497,9 @@ impl Snapshot {
             let combat = bonuses::combat_summary(&gear.compute(&texts, Some(&ids), None, None, details.as_deref(), row_level, None)?.effects);
             for c in &combat {
                 for (col, v) in [(format!("{} (gear)", c.stat), c.always), (format!("{} (gear, digitalized)", c.stat), c.digi)] {
+                    // a stat added to the sheet after this CSV was made (Support damage) gets its column here, so old rows have it
                     if !t.columns.contains(&col) {
-                        continue;
+                        t.columns.push(col.clone());
                     }
                     let old = t.get(&t.rows[ri], &col);
                     let ov = fmt::parse_f64(&old).unwrap_or(0.0);

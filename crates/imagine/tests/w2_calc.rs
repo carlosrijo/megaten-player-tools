@@ -241,12 +241,13 @@ fn gear_database_matches_the_csharp_file() {
     // record's use restrictions; the C# looked on the record itself and never found them): +7,848 bytes, nothing else.
     // Since 2026-11-24 (skill names from the game), 4 "Adds skill" names are the client's (Death Curse, Duality Pulse,
     // Improved Basic Attack, Out of Darkness) and one CORRECT_TABLE note reads "0.02 × Luck": +13 bytes. Since 0.4.1 the
-    // file's "note" names the game (IMAGINE) instead of the private server: same length, new hash.
+    // file's "note" names the game (IMAGINE) instead of the private server: same length, new hash. Since the Support
+    // damage stats: one effect line says "Support Magic damage Taken" where it said RATE_SUPPORT_TAKEN: +8 bytes.
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (3750410, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (3750418, GEARDB_FNV));
 }
 
 /// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods") after its
 /// `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 4436066399502186425;
+const GEARDB_FNV: u64 = 16892118575779482527;

@@ -50,6 +50,8 @@ fn no_game_text(id: &str) -> Option<&'static str> {
     match id {
         "MOVE1" => Some("Movement Speed"),
         "SUMMON_SPEED" => Some("Summon Speed"),
+        // the server's own tokusei (Mitama and the like) lower or raise it; the client words it only as "Support Magic damage"
+        "RATE_SUPPORT_TAKEN" => Some("Support Magic damage Taken"),
         _ => None,
     }
 }

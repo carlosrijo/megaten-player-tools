@@ -28,9 +28,9 @@ use crate::user_error;
 use super::item_icons;
 
 /// The columns every expertise row carries, in order (the page's combat stats).
-const COLS: [&str; 16] = [
-    "crit", "final_crit", "lb_chance", "lb_power", "pursuit_chance", "pursuit_power", "ta_chance", "ta_power", "dmg_close", "dmg_long", "dmg_spell", "taken_close", "taken_long",
-    "taken_spell", "cooldown", "lb_cap",
+const COLS: [&str; 18] = [
+    "crit", "final_crit", "lb_chance", "lb_power", "pursuit_chance", "pursuit_power", "ta_chance", "ta_power", "dmg_close", "dmg_long", "dmg_spell", "dmg_support", "taken_close",
+    "taken_long", "taken_spell", "taken_support", "cooldown", "lb_cap",
 ];
 
 fn correct_to_col(id: &str) -> Option<&'static str> {
@@ -42,9 +42,11 @@ fn correct_to_col(id: &str) -> Option<&'static str> {
         "RATE_CLSR" => "dmg_close",
         "RATE_LNGR" => "dmg_long",
         "RATE_SPELL" => "dmg_spell",
+        "RATE_SUPPORT" => "dmg_support",
         "RATE_CLSR_TAKEN" => "taken_close",
         "RATE_LNGR_TAKEN" => "taken_long",
         "RATE_SPELL_TAKEN" => "taken_spell",
+        "RATE_SUPPORT_TAKEN" => "taken_support",
         "COOLDOWN_TIME" => "cooldown",
         _ => return None,
     })
@@ -79,7 +81,7 @@ fn tbl_name(i: i32) -> &'static str {
 
 /// The sums per column of one skill row.
 #[derive(Default)]
-struct Sums([f64; 16]);
+struct Sums([f64; 18]);
 
 impl Sums {
     fn add(&mut self, col: &str, v: f64) {

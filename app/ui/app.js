@@ -259,8 +259,8 @@
     ['crit', 'Critical', ''], ['final_crit', 'Final critical correction', '%'], ['lb_chance', 'Limit break chance', '%'], ['lb_power', 'Limit break power', '%'],
     ['lb_cap', 'Limit break damage cap', ''], ['pursuit_chance', 'Pursuit chance', '%'], ['pursuit_power', 'Pursuit power', '%'],
     ['ta_chance', 'Technical attack chance', '%'], ['ta_power', 'Technical attack power', '%'],
-    ['dmg_close', 'Close-range damage dealt', '%'], ['dmg_long', 'Long-range damage dealt', '%'], ['dmg_spell', 'Spell damage dealt', '%'],
-    ['taken_close', 'Close-range damage taken', '%'], ['taken_long', 'Long-range damage taken', '%'], ['taken_spell', 'Spell damage taken', '%'],
+    ['dmg_close', 'Close-range damage dealt', '%'], ['dmg_long', 'Long-range damage dealt', '%'], ['dmg_spell', 'Spell damage dealt', '%'], ['dmg_support', 'Support damage dealt', '%'],
+    ['taken_close', 'Close-range damage taken', '%'], ['taken_long', 'Long-range damage taken', '%'], ['taken_spell', 'Spell damage taken', '%'], ['taken_support', 'Support damage taken', '%'],
     ['boost_spin', 'Spin skill boost', '%'], ['boost_attack', 'Attack skill boost', '%'], ['boost_rush', 'Rush skill boost', '%'], ['boost_rapid', 'Rapid skill boost', '%'], ['boost_shot', 'Shot skill boost', '%'],
     ['cooldown', 'Cooldown', '%'], ['move_speed', 'Movement speed', '%'],
   ];
@@ -268,8 +268,8 @@
   const SHEET = [
     [['Offence', [['crit', 'Critical'], ['final_crit', 'Final correction'], ['lb_chance', 'Limit break chance'], ['lb_power', 'Limit break power'], ['lb_cap', 'Limit break cap'],
       ['ta_chance', 'Technical chance'], ['ta_power', 'Technical power'], ['pursuit_chance', 'Pursuit chance'], ['pursuit_power', 'Pursuit power']]]],
-    [['Damage dealt', [['dmg_close', 'Close-range'], ['dmg_long', 'Long-range'], ['dmg_spell', 'Spell']]],
-      ['Damage taken', [['taken_close', 'Close-range'], ['taken_long', 'Long-range'], ['taken_spell', 'Spell']]],
+    [['Damage dealt', [['dmg_close', 'Close-range'], ['dmg_long', 'Long-range'], ['dmg_spell', 'Spell'], ['dmg_support', 'Support']]],
+      ['Damage taken', [['taken_close', 'Close-range'], ['taken_long', 'Long-range'], ['taken_spell', 'Spell'], ['taken_support', 'Support']]],
       ['Speed', [['cooldown', 'Cooldown'], ['move_speed', 'Movement']]]],
   ];
   /** The Bonuses row behind a key stat (same name, same unit; the cap is called "Limit break cap" there). */
