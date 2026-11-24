@@ -45,7 +45,12 @@ pub fn png(store: &Store, data: &GameData, item_id: i32, pid: u32) -> Result<Opt
 pub fn skill_asset(store: &Store, data: &GameData, skill_id: i32, pid: u32) -> Result<Option<String>> {
     let asset = if skill_id > 0 { data.skill_icon_asset(skill_id)? } else { None };
     let Some(asset) = asset else { return Ok(None) };
-    let got = load(&store.skill_icon_dir().join(format!("{asset}.png")), None, (0, Some(asset.clone())), pid, store);
+    let cached = store.skill_icon_dir().join(format!("{asset}.png"));
+    // Already saved: only the name is needed (reading the picture just to drop it cost ~25% of a rebuild).
+    if cached.is_file() {
+        return Ok(Some(asset));
+    }
+    let got = load(&cached, None, (0, Some(asset.clone())), pid, store);
     Ok(got.map(|_| asset))
 }
 

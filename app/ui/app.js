@@ -4299,11 +4299,12 @@
 
   // ---------- characters: who is in game, whose data is shown ----------
   const chooser = $('#chooser');
-  /** Look at the running game clients (read-only): who is logged in where. */
-  async function scanClients() {
+  /** Look at the running game clients (read-only): who is logged in where. `{ keepKnown: true }` (the background
+   *  check) looks again only at clients with no character yet; anything else (also a click event) looks at all. */
+  async function scanClients(opts) {
     if (S.scanning) return;
     S.scanning = true; renderChrome(); drawChooser();
-    try { S.state = await host.call('clients'); S.lastScan = Date.now(); checkBuild(); }
+    try { S.state = await host.call('clients', { keepKnown: !!(opts && opts.keepKnown === true) }); S.lastScan = Date.now(); checkBuild(); }
     catch (e) { /* the indicator keeps its last answer */ }
     finally { S.scanning = false; renderChrome(); drawChooser(); }
   }
@@ -4845,13 +4846,15 @@
   // game status
   // Cheap check every few seconds; a full look at the clients only when one opened or closed, or (every half
   // minute) while a client is still sitting at the title screen.
+  // Clients whose character is known are not read again (keepKnown); nothing runs while the window is minimized
+  // (the app hides the page then).
   async function pollStatus() {
-    if (S.scanning || S.busy) return;
+    if (S.scanning || S.busy || document.hidden) return;
     try {
       const st = await host.call('status');
       if (st.gameRunning && A.state === 'missing' && assistantWanted()) startAssistant();   // the game is up now: its files can be found
       const waiting = S.state.clients.some((c) => !c.character) && Date.now() - (S.lastScan || 0) > 30000;
-      if (st.clientsChanged || waiting) { await scanClients(); await settle(false); }
+      if (st.clientsChanged || waiting) { await scanClients({ keepKnown: true }); await settle(false); }
     } catch (e) { /* next round */ }
   }
 
@@ -4873,6 +4876,9 @@
       if (Q.get('assistant') === '1') await Promise.race([going.then(() => new Promise((r) => setTimeout(r, 400))), new Promise((r) => setTimeout(r, 5000))]);
     }
     requestAnimationFrame(() => requestAnimationFrame(() => host.call('ready').catch(() => {})));
-    if (host.native) setInterval(pollStatus, 5000);
+    if (host.native) {
+      setInterval(pollStatus, 5000);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) pollStatus(); });   // back from minimized: look now
+    }
   })();
 })();
