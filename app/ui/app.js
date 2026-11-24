@@ -269,7 +269,7 @@
     data: null, meta: {}, v: null,
     settings: { character: 'Rubito', csv: '', theme: 'system', dataDir: '' },
     mode: Q.get('mode') || store.get('mode') || 'normal',
-    page: Q.get('page') || store.get('page') || 'overview',
+    page: Q.get('page') || 'overview',   // always opens on Overview (the last page is not remembered)
     busy: false, scanning: false, lastScan: 0,
     state: { active: null, scanned: false, clients: [], characters: [] },   // who is in game, whose data is shown
     compare: null,
@@ -508,7 +508,7 @@
   function go(page) {
     if (S.page === page) return;
     if (S.page === 'ddb') S.ddb.only = null;   // a demon a link opened alone: the whole list again next time
-    S.page = page; store.set('page', page);
+    S.page = page;
     render(); $('#main').scrollTop = 0;
   }
   // (Normal / Digitalized is picked in the demon dropdown on the Overview: "No demon" or a demon. See setMode.)
