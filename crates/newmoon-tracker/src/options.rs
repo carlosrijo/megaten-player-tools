@@ -8,6 +8,7 @@
 //!                                      extra page options for that run only (compare = Gear's Compare view)
 //!   ... --character Name                show that saved character for this run
 //!   ... --data <folder>                 use another data folder (a copy, for tests; scripted runs may then save into it)
+//!   ... --log-level debug|info|warn     how much goes into the log in <data folder>\logs (default info)
 //!   NewMoonTracker.exe --tour steps.json --capture folder [--size 1280x720]
 //!                                      click through the page as scripted, saving a picture per step (for the demo video)
 //!   ... --tour steps.json --capture folder --live
@@ -31,6 +32,8 @@ pub struct AppOptions {
     pub character: Option<String>,
     pub tour: Option<String>,
     pub data: Option<String>,
+    /// `--log-level debug|info|warn`: how much goes into the local log (default info)
+    pub log_level: Option<String>,
     pub width: i32,
     pub height: i32,
 }
@@ -50,6 +53,7 @@ impl AppOptions {
             character: None,
             tour: None,
             data: None,
+            log_level: None,
             width: 1280,
             height: 860,
         };
@@ -78,6 +82,7 @@ impl AppOptions {
                 "--live" => o.live = true,
                 "--offscreen" => o.offscreen = true,
                 "--data" => o.data = next(),
+                "--log-level" => o.log_level = next(),
                 "--size" => {
                     let s = next().unwrap_or_default();
                     let p: Vec<&str> = s.split('x').collect();

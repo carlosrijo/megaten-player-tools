@@ -24,15 +24,17 @@ const MANIFEST: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?
 </assembly>
 "#;
 
+// the version, git commit and build date the program reports (Settings, the log, crash reports): emit_build_info()
+include!("../newmoon/build_info.rs");
+
 fn main() {
-    println!("cargo:rerun-if-changed=build.rs");
+    emit_build_info();
     println!("cargo:rerun-if-changed=../../app/app.ico");
-    println!("cargo:rerun-if-env-changed=NEWMOON_VERSION");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
     // tools\publish-portable.ps1 style: NEWMOON_VERSION=1.2.0 stamps that version (default: the crate's version)
-    let version = std::env::var("NEWMOON_VERSION").unwrap_or_else(|_| std::env::var("CARGO_PKG_VERSION").unwrap_or_default());
+    let version = std::env::var("NEWMOON_VERSION").ok().filter(|v| !v.trim().is_empty()).unwrap_or_else(|| std::env::var("CARGO_PKG_VERSION").unwrap_or_default());
     let mut parts = [0u64; 4];
     for (i, p) in version.split('.').take(4).enumerate() {
         parts[i] = p.trim().parse().unwrap_or(0);

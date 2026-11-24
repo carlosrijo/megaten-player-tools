@@ -19,6 +19,7 @@ use crate::calc::tooltip_parser::TooltipParser;
 use crate::context::Context;
 use crate::data::json::{self, At};
 use crate::data::store::{CachedTip, Store};
+use crate::diag::log;
 use crate::fmt;
 use crate::game::{WornItem, client_reader, demon_reader};
 use crate::memory::GameMemory;
@@ -132,13 +133,18 @@ impl Snapshot {
         let data = &*self.ctx.data;
         let proc = client_reader::find_client(name)?;
         let mem = GameMemory::new(proc.id())?;
+        let started = std::time::Instant::now();
+        crate::log_info!("snapshot: reading client pid {} ({}), game memory opened read-only", proc.id(), proc.folder);
         std::fs::create_dir_all(store.cache_dir())?;
         let now = Local::now().naive_local();
 
         let known_items = data.items()?;
-        let mut win = client_reader::read_info_window(&mem, name, |id| known_items.contains_key(&id));
+        let mut win = log::timed("snapshot: Information window", || client_reader::read_info_window(&mem, name, |id| known_items.contains_key(&id)), |w| if w.is_some() { "open".into() } else { "not open".into() });
         // A closed window's block can linger; only trust it if its items match the live gear grid.
-        let grid = client_reader::live_gear(&mem);
+        let grid = log::timed("snapshot: worn gear", || client_reader::live_gear(&mem), |g| match g {
+            Some(g) => format!("found, {} of 15 slots worn, item records {}", g.ids.iter().filter(|&&i| i > 0).count(), if g.details.is_some() { "read" } else { "not read" }),
+            None => "not found".into(),
+        });
         let live: Option<Vec<i32>> = grid.as_ref().map(|g| g.ids.clone());
         if let (Some(w), Some(l)) = (&win, &live) {
             if w.items != *l {
@@ -151,14 +157,22 @@ impl Snapshot {
 
         // Game's equipment-set table (static game data): re-read once per client start.
         if !store.set_table_path().exists() || last_write_time(&store.set_table_path()).is_none_or(|t| t < proc.started) {
-            if let Some(table) = client_reader::read_set_table(&mem) {
+            let sets = log::timed("snapshot: equipment-set table", || client_reader::read_set_table(&mem), |t| match t {
+                Some(t) => format!("found, {} sets", t.len()),
+                None => "not found".into(),
+            });
+            if let Some(table) = sets {
                 store.save_set_table(&table)?;
             }
         }
 
         // The digitalize demon (the one in use now, else the saved one). While digitalized, the window's stats include
         // the demon, so they're not taken as the character's own: the saved ones are used instead.
-        let digi = DigitalizeSave::read(&mem, store, data, now)?;
+        let digi = log::timed("snapshot: digitalize demon", || DigitalizeSave::read(&mem, store, data, now), |r| match r {
+            Ok(Some(d)) => format!("found, {}", if d.digitalized_when_taken { "digitalized now" } else { "not digitalized" }),
+            Ok(None) => "no demon to go by".into(),
+            Err(_) => "failed".into(),
+        })?;
         if let Some(d) = &digi {
             d.save(store)?;
             if let Some(dm) = &d.demon {
@@ -218,7 +232,11 @@ impl Snapshot {
             win = None;
             r.while_digitalized = true;
         }
-        let own_status = if win.is_none() && !digitalized_when_taken && live.is_some() { client_reader::read_own_status(&mem, false) } else { None };
+        let own_status = if win.is_none() && !digitalized_when_taken && live.is_some() {
+            log::timed("snapshot: own stats", || client_reader::read_own_status(&mem, false), |s| if s.is_some() { "found".into() } else { "not found".into() })
+        } else {
+            None
+        };
         if let Some(win) = &win {
             r.source = "window".into();
             stats_from = now;
@@ -269,7 +287,7 @@ impl Snapshot {
             };
             let last = json::load(store.last_stats_path())?;
             r.items = live.clone();
-            let np = client_reader::read_nameplate(&mem, name);
+            let np = log::timed("snapshot: nameplate", || client_reader::read_nameplate(&mem, name), |n| if n.is_some() { "found".into() } else { "not found".into() });
             r.level = np.map(|n| n.level).unwrap_or_else(|| json::int(last.at("level")));
             stats_from = parse_datetime(&json::str(last.at("taken_at")).ok_or_else(|| anyhow::anyhow!("Value cannot be null. (Parameter 's')"))?)?;
             r.hp = json::int(last.at("hp"));
@@ -380,6 +398,7 @@ impl Snapshot {
             t.rows.push(snap);
             t.save(csv_path)?;
         }
+        crate::log_info!("snapshot: done in {} ms: stats from {}, level {}, gear with no saved bonuses: {}", started.elapsed().as_millis(), r.source, r.level, if r.missing.is_empty() { 0 } else { r.missing.split(", ").count() });
         Ok(r)
     }
 

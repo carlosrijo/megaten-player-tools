@@ -119,6 +119,30 @@
         <div class="field-row"><button type="button" class="btn" id="data-show">Open folder</button></div>
       </div>
 
+      <div class="field">
+        <span class="field-label">About this version</span>
+        <dl class="about" id="about-block"><dt>Version</dt><dd>—</dd></dl>
+        <div class="field-row">
+          <button type="button" class="btn" id="about-copy" data-tip="Copies these lines, to paste into a bug report">Copy</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field-label">When something goes wrong</span>
+        <div class="field-row field-wrap">
+          <button type="button" class="btn" id="doctor-run">Check my setup</button>
+          <button type="button" class="btn" id="bundle-save">Save a support bundle…</button>
+          <button type="button" class="btn" id="logs-show">Show logs</button>
+        </div>
+        <label class="check-row"><input type="checkbox" id="bundle-names"><span>Include character names in the bundle</span></label>
+        <span class="field-help" id="bundle-help" role="status">The bundle is one zip: the version, a setup check, the log, your settings and a list of your data files. It never holds your spreadsheets, anything read from the game, or pictures. Your Windows user name is left out, and so are character names (they become Character 1, Character 2…) unless you tick the box.</span>
+        <span class="field-help" id="bundle-result" role="status" hidden></span>
+        <div class="field-row" id="bundle-done" hidden>
+          <button type="button" class="btn" id="bundle-show">Show in folder</button>
+        </div>
+        <div class="checks" id="doctor-out" role="status" aria-live="polite" hidden></div>
+      </div>
+
       <p class="dlg-note"><span data-icon="shield" aria-hidden="true"></span>This app only reads the game's memory. It never writes to the game or changes anything in it.</p>
     </form>
   </dialog>

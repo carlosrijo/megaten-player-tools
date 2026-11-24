@@ -1,8 +1,10 @@
 //! Port of `src/Build/*.cs`: snapshot, page data, database builders.
+pub mod bundle;
 pub mod csv;
 pub mod dashboard;
 pub mod demon_db;
 pub mod demon_model;
+pub mod doctor;
 pub mod digitalize_demon;
 pub mod dungeons;
 pub mod expertise;

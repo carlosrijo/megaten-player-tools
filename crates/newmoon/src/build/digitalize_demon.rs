@@ -21,6 +21,7 @@ use crate::data::game_data::GameData;
 use crate::data::json::{self, At, Escape};
 use crate::data::store::Store;
 use crate::data::tga;
+use crate::diag::log;
 use crate::game::DemonRecord;
 use crate::game::demon_reader::{self, Progress};
 use crate::memory::GameMemory;
@@ -235,8 +236,8 @@ impl DigitalizeSave {
     /// session). Assists and the Mitama boost are read again each time. None when there's no demon to go by.
     pub fn read(mem: &GameMemory, store: &Store, data: &GameData, now: NaiveDateTime) -> Result<Option<DigitalizeSave>> {
         let saved = DigitalizeSave::load(store)?;
-        let progress = demon_reader::read_progress(mem);
-        let demons = demon_reader::read_demons(mem, false);
+        let progress = log::timed("snapshot: progress", || demon_reader::read_progress(mem), |p| match p { Some(p) => format!("found, {} entries in the learned-skill list", p.skills.as_ref().map_or(0, |s| s.len())), None => "not found".into() });
+        let demons = log::timed("snapshot: demons", || demon_reader::read_demons(mem, false), |d| format!("{} demon records with details", d.len()));
         pipeline::note_demons(store, &demons, now)?; // the demons seen, and which one is summoned now (the Overview shows it)
         let mut demon: Option<DemonRecord> = None;
         if let Some(p) = progress.as_ref().filter(|p| p.digitalized()) {
