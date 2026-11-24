@@ -1,0 +1,10 @@
+[package]
+name = "newmoon-reader"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = "1.0.105"
+newmoon = { version = "0.1.0", path = "../newmoon" }
+serde_json = "1.0.154"
