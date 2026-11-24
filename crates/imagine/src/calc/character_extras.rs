@@ -282,8 +282,10 @@ fn tokusei_effects(rules: &Rules, tid: i32, source: &str, item: &str, target: &s
                 }
             }
         } else if v.id == "RES_STATUS" {
-            e.label = "Ailment Defense".into();
-            e.value = Some(-value); // the game: "Ailment Defense + 20" for RES_STATUS -20
+            // the game: "Ailment Resistance +20" for RES_STATUS -20 (the same name and sign gear and skills use)
+            let (label, shown) = stat_labels::displayed("RES_STATUS", 0, value);
+            e.label = label;
+            e.value = Some(shown);
         } else if v.id.starts_with("BOOST_") {
             e.label = stat_labels::name(&v.id, 0);
             e.pct = true;

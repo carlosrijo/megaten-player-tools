@@ -296,12 +296,15 @@ fn gear_database_matches_the_csharp_file() {
     // Since 2026-11-24 (skill names from the game), 4 "Adds skill" names are the client's (Death Curse, Duality Pulse,
     // Improved Basic Attack, Out of Darkness) and one CORRECT_TABLE note reads "0.02 × Luck": +13 bytes. Since 0.4.1 the
     // file's "note" names the game (IMAGINE) instead of the private server: same length, new hash. Since the Support
-    // damage stats: one effect line says "Support Magic damage Taken" where it said RATE_SUPPORT_TAKEN: +8 bytes.
+    // damage stats: one effect line says "Support Magic damage Taken" where it said RATE_SUPPORT_TAKEN: +8 bytes. Since the
+    // stats the client words only for the summoner got their names (Ailment Resistance with its sign turned, Curative
+    // Boost, Curative Received) and EQUIPPED_WEAPON_TYPE conditions name the weapon class ("Axe equipped" for "Equipped
+    // Weapon Type 29"): +3,323 bytes, only in those lines.
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (3750418, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (3753741, GEARDB_FNV));
 }
 
 /// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods") after its
 /// `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 16892118575779482527;
+const GEARDB_FNV: u64 = 17706717497178937754;
