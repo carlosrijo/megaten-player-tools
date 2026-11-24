@@ -61,7 +61,7 @@ fn item_effects_of_a_fused_weapon() {
     if !external_data() {
         return;
     }
-    // Hecatonchires's Leviathan Blaster of the Warmonger: tarot 64, soul 3105, three fusion bonuses at the top of the table
+    // Hecatonchires's Leviathan Blaster of the Warmonger: tarot 64, soul 3105, three fusion bonuses at the top of the table; the soul's tokusei come from reference	okusei-newmoon.tsv
     let w = WornItem { id: 2625, tarot: 64, soul: 3105, basic: 2625, special: 2616, mods: vec![20, 15, 200, 319, 321], fuse: vec![50, 50, 50], durability: 41, max_durability: 49 };
     let fx = ItemEffects::new(data(), "LAW", 95, IndexMap::new());
     let got: Vec<String> = fx.compute(Some(&w), 0, "Levi Blaster", None).unwrap().iter().map(w2dump::fx).collect();
@@ -83,9 +83,13 @@ fn item_effects_of_a_fused_weapon() {
         "  fx label=Rapid Damage|value=20|pct=1|cond=always|note=|target=self|source=mod|item=Levi Blaster|tok=30008|skill=0|missing=0",
         "  fx label=Rapid Damage|value=50|pct=1|cond=always|note=|target=self|source=mod|item=Levi Blaster|tok=30089|skill=0|missing=0",
         "  fx label=Rapid Damage|value=4|pct=1|cond=always|note=|target=self|source=tarot|item=Levi Blaster|tok=30057|skill=0|missing=0",
-        "  fx label=Unknown effect (tokusei 2000192)|value=~|pct=0|cond=unparsed|note=|target=self|source=soul|item=Levi Blaster|tok=2000192|skill=0|missing=1",
-        "  fx label=Unknown effect (tokusei 2000193)|value=~|pct=0|cond=unparsed|note=|target=self|source=soul|item=Levi Blaster|tok=2000193|skill=0|missing=1",
-        "  fx label=Unknown effect (tokusei 2000194)|value=~|pct=0|cond=unparsed|note=|target=self|source=soul|item=Levi Blaster|tok=2000194|skill=0|missing=1",
+        "  fx label=Final Crit|value=5|pct=1|cond=digitalized|note=from the client's text (no server data)|target=self|source=soul|item=Levi Blaster|tok=2000192|skill=0|missing=0",
+        "  fx label=Limit Break Chance|value=5|pct=1|cond=digitalized|note=from the client's text (no server data)|target=self|source=soul|item=Levi Blaster|tok=2000192|skill=0|missing=0",
+        "  fx label=Limit Break Power|value=5|pct=1|cond=digitalized|note=from the client's text (no server data)|target=self|source=soul|item=Levi Blaster|tok=2000192|skill=0|missing=0",
+        "  fx label=Final Crit|value=5|pct=1|cond=digitalized|note=from the client's text (no server data)|target=partner|source=soul|item=Levi Blaster|tok=2000193|skill=0|missing=0",
+        "  fx label=Limit Break Chance|value=5|pct=1|cond=digitalized|note=from the client's text (no server data)|target=partner|source=soul|item=Levi Blaster|tok=2000193|skill=0|missing=0",
+        "  fx label=Limit Break Power|value=5|pct=1|cond=digitalized|note=from the client's text (no server data)|target=partner|source=soul|item=Levi Blaster|tok=2000193|skill=0|missing=0",
+        "  fx label=Damage Dealt|value=20|pct=1|cond=situational|note=vs NEUTRAL enemies; from the client's text (no server data)|target=self|source=soul|item=Levi Blaster|tok=2000194|skill=0|missing=0",
     ];
     assert_eq!(got, want);
 

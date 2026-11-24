@@ -727,4 +727,30 @@ mod tests {
         v.value = 2.0;
         assert_eq!(with(&v, 57.0).0, 114.0);
     }
+
+    /// Ogami's Crystal as a soul fusion (enchant 3105, "of the Warmonger"): its tokusei 2000192-2000194 are in neither comp_hack
+    /// nor the website file, so before reference\tokusei-newmoon.tsv the effects were "Unknown effect" rows the Bonuses page
+    /// dropped, and a weapon's Final Critical, Limit Break chance and power bonuses only showed while a fresh tooltip of the
+    /// weapon was saved. The game's text: "While Digitalized, Player/Demon's Final Critical rate correction +5%, Limit Break
+    /// chance +5%, Limit Break power +5%. Player's Damage to Neutral enemies +20%."
+    #[test]
+    fn ogamis_crystal_soul_needs_no_tooltip() {
+        let fx = ItemEffects::new(Arc::new(GameData::new()), "NEUTRAL", 95, IndexMap::new());
+        let list = fx.enchant(3105, false, "Weapon").unwrap();
+        assert!(list.iter().all(|e| !e.missing_data && e.cond != "unparsed"), "{list:#?}");
+        let find = |label: &str, target: &str| list.iter().filter(|e| e.label == label && e.target == target).collect::<Vec<_>>();
+        // the player's and the digitalized demon's side, only while digitalized, +5% each
+        for target in ["self", "partner"] {
+            for label in ["Final Crit", "Limit Break Chance", "Limit Break Power"] {
+                let hit = find(label, target);
+                assert_eq!(hit.len(), 1, "{label} / {target}: {list:#?}");
+                assert_eq!((hit[0].value, hit[0].pct, hit[0].cond.as_str(), hit[0].source.as_str()), (Some(5.0), true, "digitalized", "soul"), "{label} / {target}");
+            }
+        }
+        // the damage line is conditional on the enemy's alignment, so it is never counted in a total
+        let damage: Vec<&Effect> = list.iter().filter(|e| e.cond_note.contains("NEUTRAL")).collect();
+        assert_eq!(damage.len(), 1, "{list:#?}");
+        assert_eq!((damage[0].value, damage[0].cond.as_str(), damage[0].target.as_str()), (Some(20.0), "situational", "self"));
+        assert_eq!(list.len(), 7, "{list:#?}");
+    }
 }
