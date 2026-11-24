@@ -14,6 +14,19 @@ put it in a folder of its own and run it. It needs 64-bit Windows 10 or 11 with 
 can write to (not Program Files); to move it to another PC, copy the exe together with that folder. Your stats CSV
 goes in `Documents\smt-stats` (change `statsFolder` in `data\config.json`).
 
+### Check the download
+
+Each release lists the SHA-256 of its `NewMoonTracker.exe` in its notes (and in `NewMoonTracker.exe.sha256` beside
+it). It is the fingerprint of the exact exe GitHub built from the release's tag, the one the team tested. Before the
+first run, in PowerShell in the exe's folder:
+
+```powershell
+(Get-FileHash .\NewMoonTracker.exe -Algorithm SHA256).Hash
+```
+
+It must match the release's value (capital or small letters do not matter). If it does not, the file is not the one
+released: delete it and download it again from the release page, never from a copy someone passed on.
+
 The release has no pictures from the game (demon, enemy and DCM icons): those are the game's own art, made locally
 from the client with the commands below, so those pages show names without icons.
 

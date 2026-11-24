@@ -76,7 +76,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = '${{ github.ref_name }}'
-          $flags = @('--title', "NewMoon Build Tracker $tag", '--generate-notes')
+          # The SHA-256 goes in the notes too, so a player can check the exe against the page without downloading the
+          # .sha256 file (README.md, "Check the download"). --notes is put above the generated notes.
+          $h = (Get-Content dist/NewMoonTracker.exe.sha256 -Raw).Split(' ')[0].Trim()
+          $notes = @(
+            '### Check the download'
+            ''
+            'SHA-256 of `NewMoonTracker.exe`:'
+            ''
+            '```'
+            $h
+            '```'
+            ''
+            'In PowerShell, in the folder with the exe:'
+            ''
+            '```powershell'
+            '(Get-FileHash .\NewMoonTracker.exe -Algorithm SHA256).Hash'
+            '```'
+            ''
+            'The two must match (capital or small letters do not matter). If they do not, do not run the exe.'
+          ) -join "`n"
+          $flags = @('--title', "NewMoon Build Tracker $tag", '--notes', $notes, '--generate-notes')
           if ($tag -like '*-*') { $flags += '--prerelease' }
           gh release create $tag dist/NewMoonTracker.exe dist/NewMoonTracker.exe.sha256 @flags
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
