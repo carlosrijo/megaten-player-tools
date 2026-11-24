@@ -42,7 +42,7 @@ jobs:
           $h = (Get-FileHash dist/NewMoonTracker.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           "$h  NewMoonTracker.exe" | Out-File dist/NewMoonTracker.exe.sha256 -Encoding ascii
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: NewMoonTracker-${{ steps.ver.outputs.version }}
           path: dist/*

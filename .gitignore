@@ -18,6 +18,7 @@ app/ui/skill-db-icons/
 /data/
 # the portable release, made by tools\publish-portable.ps1
 dist/
+/demo/
 
 # Rust build output
 /target/
