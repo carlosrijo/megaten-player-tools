@@ -1232,3 +1232,78 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .check-advice { margin-top: 2px; font-size: 12px; word-break: break-word; }
 .check-advice b { font-weight: 600; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- Digitalize Planner ---------- */
+/* One data colour: the digitalize pink (--demon) for the levels the plan adds; your own levels in the text colour. */
+.page-dpl .note.warn { color: var(--over-ink); }
+.tag.dpl-kind { flex: none; min-width: 52px; justify-content: center; }
+.fus-opt.dpl-have { opacity: .55; cursor: default; }
+.fus-opt.dpl-have:hover { background: none; }
+.dpl-check.dpl-check-none { border-color: transparent; }
+.dpl-goals { display: flex; flex-wrap: wrap; gap: 8px; }
+.dpl-goal { display: inline-flex; align-items: center; gap: 8px; padding: 4px 4px 4px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); min-width: 0; }
+.dpl-goal .dcm-icon { margin: 0 0 0 -6px; }
+.dpl-goal-text { display: grid; line-height: 1.25; min-width: 0; }
+.dpl-goal-text b { font-size: 13px; }
+.dpl-lvl { width: auto; height: 26px; padding: 0 6px; font-size: 12px; }
+.dpl-x { all: unset; box-sizing: border-box; width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 6px; color: var(--text-3); cursor: pointer; }
+.dpl-x:hover { background: var(--hover); color: var(--text); }
+.dpl-x:focus-visible { outline: 2px solid var(--focus); }
+.dpl-x .icon { width: 14px; height: 14px; }
+.dpl-sum { display: flex; flex-wrap: wrap; gap: 10px 28px; }
+.dpl-stat { display: grid; gap: 2px; }
+.dpl-stat b { font: 600 20px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.dpl-stat-list { flex: 1 1 240px; align-content: start; font-size: 13px; }
+.dpl-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.dpl-step { border: 1px solid var(--border); border-left: 3px solid var(--demon); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+.dpl-step-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dpl-n { width: 22px; height: 22px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--surface-2); color: var(--text-2); }
+.dpl-step-name b { font-size: 14px; }
+.dpl-dp { font-weight: 600; font-variant-numeric: tabular-nums; }
+.dpl-line { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: start; font-size: 12px; }
+.dpl-key { color: var(--text-3); padding-top: 2px; }
+.dpl-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.dpl-tags .tag { height: auto; min-height: 18px; white-space: normal; padding: 2px 7px; line-height: 1.3; }
+.dpl-pics { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.dpl-mini { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+.dpl-mini .dcm-icon { width: 22px; height: 22px; margin: 0; }
+.dpl-mini .dcm-icon img { width: 22px; height: 22px; }
+.dpl-map-card { overflow-x: auto; }
+.dpl-map { display: grid; grid-template-columns: 58px repeat(3, minmax(180px, 1fr)); gap: 8px; align-items: start; }
+.dpl-col-head { font-size: 12px; font-weight: 600; color: var(--text-2); text-align: center; }
+.dpl-row-head { font-size: 12px; color: var(--text-3); padding-top: 10px; }
+.dpl-cell { display: grid; gap: 6px; }
+.dpl-tile { all: unset; box-sizing: border-box; display: grid; gap: 5px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; min-width: 0; }
+.dpl-tile:hover { background: var(--hover); }
+.dpl-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.dpl-tile.locked { border-style: dashed; }
+.dpl-tile.locked .dpl-tile-head b { color: var(--text-2); }
+.dpl-tile.planned { border-color: color-mix(in srgb, var(--demon) 55%, transparent); }
+.dpl-tile.sel { box-shadow: 0 0 0 2px var(--focus); }
+.dpl-tile-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.dpl-lv { font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; }
+.dpl-tile.planned .dpl-lv { color: var(--text); font-weight: 600; }
+.dpl-bar { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+.dpl-bar i { height: 5px; border-radius: 2px; background: var(--grid); }
+.dpl-bar i.on, .swatch.dpl-sw-on { background: var(--text-2); }
+.dpl-bar i.plan, .swatch.dpl-sw-plan { background: var(--demon); }
+.dpl-needs { display: flex; flex-wrap: nowrap; gap: 2px 8px; font-size: 11px; line-height: 15px; color: var(--text-3); overflow: hidden; white-space: nowrap; }
+.dpl-needs .met { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--text-3); }
+.dpl-tbl td { font-size: 12px; }
+.dpl-tbl tr.dpl-have td { color: var(--text-3); }
+.dpl-tbl tr.dpl-have .dcm-icon { opacity: .6; }
+.dpl-rest { display: contents; }
+.dpl-menu { max-height: 380px; padding-top: 0; }
+.dpl-menu-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -4px 2px; background: var(--surface); border-bottom: 1px solid var(--border); min-height: 34px; box-sizing: border-box; }
+.dpl-check { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); display: inline-grid; place-items: center; }
+.dpl-check.ticked { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.dpl-check .icon { width: 14px; height: 14px; }
+.dpl-check.ticked .icon circle { display: none; }
+.slot-icon.dpl-orbs { width: 34px; height: 34px; image-rendering: auto; }
+.dpl-goal-title { display: inline-flex; align-items: center; gap: 6px; }
+.dpl-goal-title .tag { height: 16px; font-size: 10px; min-width: 0; padding: 0 6px; }
+.dpl-tile-head { align-items: center; }
+.dpl-tile-head > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dpl-tile { grid-template-columns: 34px 1fr; column-gap: 9px; align-items: center; }
+.dpl-tile .dpl-orbs { width: 34px; height: 34px; }
+.dpl-tile-body { display: grid; gap: 5px; min-width: 0; }

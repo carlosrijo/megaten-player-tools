@@ -199,6 +199,37 @@ makes (417 of 850); the others come from quests, events or contracts.
 
 Demons, levels, races and special fusions are the IMAGINE client's. The race chart and the tri-fusion and elemental
 rules are the comp_hack server's fusion code, which IMAGINE may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.
+
+### Tools: Digitalize Planner
+
+Under **Tools** in the left bar. Pick what you want from Digitalize and it works out which races to raise, to which
+Digitalization Level, in what order, and how many Digitalize points (DP) that takes:
+
+- **Your goals**: the boosts you are after: the always-on passives the levels teach, for you or for your demon
+  (stats like "Intelligence +55", affinities, the Limit Break cap). Search by effect; "demon" or "you" narrows it to one
+  side, and each match says what it costs from where you are, cheapest first. Tick as many as you like: the list stays
+  open with your search, **Add all shown** ticks every match you don't have yet, and the plan updates as you tick. Each
+  goal card shows its race as three of its demons in small round pictures. Digitalize's own choices (the assists:
+  duration, cooldown, the demon's stat share and skills, Demon Force, Mitama sets) are not goals. A race level itself
+  can be aimed at from the race's table (**Plan to here**). Goals are kept between visits.
+- **The plan**: the cheapest set of race levels that meets every goal, as steps in an order that works. Each step says
+  the DP, which demons you can raise that race with, the races it opens and the boosts you learn on the way. Races that
+  go past DLv 5 are marked: past 5 a race only rises with a Mitama-fused demon.
+- **Races**: every race by side (Law, Neutral, Chaos) and tier, with your level, what the plan adds (pink) and what
+  opens a locked one. Click a race for its ten levels: DP per level, demons, passive, assist choices, and **Plan to here**.
+
+**From my levels** plans from the levels and points of the last snapshot; **From scratch** from the races everyone
+starts with. Tiers are how many DP a race's levels take: tier 1 is 70.2M DP from DLv 1 to 10, tier 5 five times that.
+
+The planner knows the catches: Entity and Fiend start open but no level of theirs opens a demon, so to raise them you
+need a demon another race opens (Fiend: David at Fiend 1; Entity: Urthona, Urizen, Tharmas or Luvah at Earth Element
+or Elemental 8, and others).
+
+Races, unlocks, DP per level, demons, passives and assists: the server's Digitalization tables (`reference\guardian-*.tsv`),
+with the client's own names and texts. The rules (DP go to the race of the demon you are digitalized with; a race opens
+when all its needs are met; DLv 10 at most, 5 without a Mitama-fused demon) are the comp_hack server's code, which
+NewMoon may have changed. Not checked in game yet. The page data is `app\ui\digi-planner.json`, made by
+`imagine-reader digiplanner` from the reference tables.
 ### Tools: Dungeon Explorer
 
 Under **Tools** in the left bar. Every dungeon (175; each difficulty such as Bronze, Silver and Gold on its own), field and other place with enemies, and the enemies in it that

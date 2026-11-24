@@ -32,6 +32,7 @@
     plus: '<path d="M12 5v14M5 12h14"/>',
     gate: '<path d="M5 20.5V10a7 7 0 0 1 14 0v10.5"/><path d="M3 20.5h18"/><path d="M9.5 20.5v-5a2.5 2.5 0 0 1 5 0v5"/>',
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
+    route: '<circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="5.5" r="2.2"/><path d="M8.2 18.5H15a3.2 3.2 0 0 0 0-6.4H9a3.2 3.2 0 0 1 0-6.4h6.8"/>',
     trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 10.5v6M14 10.5v6"/>',
   };
   function icon(name) {
@@ -283,7 +284,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['quests', 'Quest Guide', 'book'], ['fusion', 'Fusion Planner', 'fuse'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['quests', 'Quest Guide', 'book'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -359,6 +360,7 @@
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle' },
     gdb: { q: '', slot: 'all', known: true, open: new Set(), shown: 150, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
+    dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
@@ -4068,6 +4070,463 @@
     return page;
   }
 
+  // ---------- Tools: Digitalize Planner ----------
+  // digi-planner.json is made by "imagine-reader digiplanner" (crates\imagine\src\build\digi_planner.rs) from the server's
+  // Digitalization tables. The rules followed here are the server's (comp_hack CharacterManager::UpdateDigitalizePoints and
+  // the digitalize check in SkillManager):
+  //  - points go to the race of the demon you are digitalized with, so a race can only be raised with a demon of that race
+  //    you may digitalize: one a level of that race names (at or below the level you have), or one a special unlock
+  //    lets in (any one race:level pair of GuardianSpecialData);
+  //  - a race is enabled at level 1 as soon as every race:level pair of its unlock row is reached;
+  //  - levels stop at 10, and at 5 while the demon is not Mitama-fused.
+  function loadDigiPlan() {
+    if (S.dpl.state !== 'idle') return;
+    S.dpl.state = 'loading';
+    fetch('digi-planner.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.dpl.eng = d ? digiEngine(d) : null;
+      S.dpl.state = d ? 'ready' : 'failed';
+      if (S.page === 'dplan') render();
+    });
+  }
+
+  /** The planner over the exported tables: start states, the cheapest plan for a set of goals, and its steps. */
+  function digiEngine(P) {
+    const races = new Map(), demons = new Map();
+    P.races.forEach((r) => {
+      // cum[L]: points from level 1 to level L
+      r.cum = [0, 0]; r.xp.forEach((x, i) => { r.cum[i + 2] = r.cum[i + 1] + x; });
+      r.gated = r.demons.map(([id, name, level, base]) => ({ id, name, level, base }));
+      races.set(r.id, r);
+      r.gated.forEach((d) => { if (!demons.has(d.id)) demons.set(d.id, { id: d.id, name: d.name, race: r.id, base: d.base, gate: d.level, opts: [] }); });
+    });
+    P.special.forEach(([id, name, race, base, opts]) => {
+      const d = demons.get(id) || { id, name, race, base, gate: null, opts: [] };
+      d.opts = opts.filter(([r]) => races.has(r));
+      demons.set(id, d);
+    });
+    const raceName = (id) => (races.get(id) || {}).name || `race ${id}`;
+    const ofRace = new Map();
+    demons.forEach((d) => { if (!ofRace.has(d.race)) ofRace.set(d.race, []); ofRace.get(d.race).push(d); });
+    // a demon's ways in: its own race at the level that names it, or any special pair
+    const waysIn = (d) => {
+      const w = d.gate ? [[d.race, d.gate]] : [];
+      d.opts.forEach(([r, l]) => { if (!w.some(([a, b]) => a === r && b <= l)) w.push([r, l]); });
+      return w;
+    };
+
+    /** A start: { lv, pts } per race. From the game's levels (null: from scratch: the races with no unlock row at 1). */
+    function start(read) {
+      const lv = new Map(), pts = new Map();
+      const got = new Map((read || []).map((e) => [n0(e.race_id), e]));
+      races.forEach((r) => {
+        const e = got.get(r.id);
+        lv.set(r.id, e ? n0(e.level) : r.unlock.length ? 0 : 1);
+        pts.set(r.id, e ? n0(e.points) : 0);
+        if (!r.unlock.length && lv.get(r.id) < 1) lv.set(r.id, 1);   // enabled from the start
+      });
+      return { lv, pts };
+    }
+    const reached = (lv, [r, l]) => (lv.get(r) || 0) >= l;
+    /** Races whose unlock pairs are all reached but that are still at 0 get level 1, as the server does. */
+    function unlockAll(lv) {
+      const opened = [];
+      for (let again = true; again;) {
+        again = false;
+        races.forEach((r) => { if (!lv.get(r.id) && r.unlock.length && r.unlock.every((p) => reached(lv, p))) { lv.set(r.id, 1); opened.push(r.id); again = true; } });
+      }
+      return opened;
+    }
+    /** Points to take a race from where the start has it to level `to`. */
+    function cost(st, id, to) {
+      const r = races.get(id), cur = st.lv.get(id) || 0;
+      if (!r || to <= Math.max(cur, 1)) return 0;
+      return Math.max(0, r.cum[to] - r.cum[Math.max(cur, 1)] - (cur >= 1 ? st.pts.get(id) || 0 : 0));
+    }
+    /** The demons you could raise a race with at level `at` of it, with `lv` for the other races. */
+    const trainers = (id, at, lv) => (ofRace.get(id) || []).filter((d) => (d.gate && d.gate <= at) || d.opts.some(([r, l]) => (r === id ? at : lv.get(r) || 0) >= l));
+    /** What a demon needs to be digitalized, with `lv`: true when it already may be. */
+    const canUse = (d, lv) => waysIn(d).some((p) => reached(lv, p));
+
+    /**
+     * The cheapest plan for the goals ({ k: 'race', race, level } | { k: 'demon', id }) from a start: the level each race
+     * must reach. All unlock pairs of a race needed are needed too; a race that has to earn points needs a demon of it
+     * you may digitalize, and a demon goal needs one of its ways in: those two are choices, tried cheapest first.
+     */
+    function solve(st, goals) {
+      const base = new Map(), groups = [], bad = [];
+      goals.forEach((g) => {
+        if (g.k === 'race' && races.has(g.race)) base.set(g.race, Math.max(base.get(g.race) || 0, g.level));
+        if (g.k === 'demon') {
+          const d = demons.get(g.id);
+          if (!d) return;
+          const w = waysIn(d);
+          if (!w.length) bad.push(`No level names ${d.name}, and it has no special unlock.`);
+          else groups.push({ why: d.name, options: w });
+        }
+      });
+      const eff = (need, r) => Math.max(st.lv.get(r) || 0, need.get(r) || 0);
+      const close = (req) => {
+        const need = new Map(req);
+        for (let again = true; again;) {
+          again = false;
+          need.forEach((l, r) => {
+            const R = races.get(r);
+            if (!R || l < 1 || (st.lv.get(r) || 0) >= 1) return;
+            R.unlock.forEach(([u, ul]) => { if ((need.get(u) || 0) < ul) { need.set(u, ul); again = true; } });
+          });
+        }
+        return need;
+      };
+      const total = (need) => { let c = 0; need.forEach((l, r) => { c += cost(st, r, l); }); return c; };
+      // a race that must earn points: the ways to have a demon of it to digitalize (null: one is there already)
+      const trainerGroup = (need, r) => {
+        const at = Math.max(st.lv.get(r) || 0, 1);
+        if ((ofRace.get(r) || []).some((d) => d.gate && d.gate <= at)) return null;
+        const options = [];
+        (ofRace.get(r) || []).forEach((d) => d.opts.forEach(([a, l]) => {
+          if (a === r ? l > at : false) return;   // its own race at a level it hasn't got yet: no help
+          if (a === r) { options.length = 0; options.push(null); return; }
+          if (!options.some((o) => o && o[0] === a && o[1] <= l)) options.push([a, l]);
+        }));
+        if (options.includes(null)) return null;
+        return { why: `a demon to raise ${raceName(r)} with`, race: r, options };
+      };
+      let best = null, fail = null;
+      const seen = new Set();
+      let budget = 20000;   // the search is small (a few choices with 2-4 ways each); this only guards a runaway
+      const rec = (req) => {
+        if (--budget < 0) return;
+        const need = close(req), c = total(need);
+        if (best && c >= best.cost) return;
+        const key = [...need].filter(([r, l]) => l > (st.lv.get(r) || 0)).sort((a, b) => a[0] - b[0]).map((p) => p.join(':')).join(',');
+        if (seen.has(key)) return;
+        seen.add(key);
+        const all = groups.slice();
+        need.forEach((l, r) => { if (l > Math.max(st.lv.get(r) || 0, 1)) { const g = trainerGroup(need, r); if (g) all.push(g); } });
+        const open = all.find((g) => !g.options.some(([r, l]) => eff(need, r) >= l));
+        if (!open) { best = { need, cost: c }; return; }
+        if (!open.options.length) { fail = fail || `There is no way to get ${open.why}.`; return; }
+        open.options
+          .map((o) => { const n2 = new Map(req); n2.set(o[0], Math.max(n2.get(o[0]) || 0, o[1])); return { n2, c: total(close(n2)) }; })
+          .sort((a, b) => a.c - b.c)
+          .forEach(({ n2 }) => rec(n2));
+      };
+      if (!bad.length) rec(base);
+      if (!best) return { ok: false, why: bad[0] || fail || 'No plan found.' };
+      return { ok: true, need: best.need, cost: best.cost, steps: steps(st, best.need) };
+    }
+
+    /**
+     * The plan as steps in an order that works: a race is raised only once it is enabled and you have a demon of it to
+     * digitalize. Each step says what it opens: races enabled, demons you may digitalize, passives learned, assists offered.
+     */
+    function steps(st, need) {
+      const lv = new Map(st.lv), out = [];
+      let todo = [...need].filter(([r, l]) => l > Math.max(st.lv.get(r) || 0, 1)).map(([r, l]) => ({ r, l }));
+      unlockAll(lv);
+      const usableNow = () => new Set([...demons.values()].filter((d) => canUse(d, lv)).map((d) => d.id));
+      let usable = usableNow();
+      for (let guard = 0; todo.length && guard < 100; guard++) {
+        // the ready ones: enabled, with a demon to raise it; cheapest first (so the early steps open things soonest)
+        const ready = todo.filter((t) => (lv.get(t.r) || 0) >= 1 && trainers(t.r, lv.get(t.r), lv).length)
+          .map((t) => ({ t, c: cost({ lv, pts: st.pts }, t.r, t.l) })).sort((a, b) => a.c - b.c);
+        if (!ready.length) break;
+        // a race another one waits on goes first only up to what that one needs; here every race goes to its final level
+        const { t } = ready[0], R = races.get(t.r), from = lv.get(t.r);
+        const with_ = trainers(t.r, from, lv);
+        const dp = cost({ lv, pts: from === st.lv.get(t.r) ? st.pts : new Map() }, t.r, t.l);
+        lv.set(t.r, t.l);
+        const opened = unlockAll(lv);
+        const now = usableNow(), newDemons = [...now].filter((id) => !usable.has(id)).map((id) => demons.get(id));
+        usable = now;
+        out.push({
+          race: t.r, name: R.name, tier: R.tier, from, to: t.l, dp, with: with_,
+          mitama: t.l > P.plainCap,
+          opens: opened.map((id) => ({ id, name: raceName(id) })),
+          demons: newDemons,
+          extend: R.extend.filter(([l]) => l > from && l <= t.l).map(([l, id, name, text, who]) => ({ l, id, name, text, who })),
+          assists: R.assists.filter(([l]) => l > from && l <= t.l).map(([l, ch]) => ({ l, ch })),
+        });
+        todo = todo.filter((x) => x !== t);
+      }
+      if (todo.length) out.stuck = todo.map((t) => raceName(t.r));
+      return out;
+    }
+    return { P, races, demons, raceName, start, solve, cost, waysIn, canUse, trainers, unlockAll };
+  }
+
+  /** The planner's goals, kept between visits: race levels (with the boost they are for) and demons. */
+  function dplGoalsSave() { store.set('dpl-goals', JSON.stringify(S.dpl.goals)); }
+
+  /** A demon's picture (the Fusion Planner's, from the client); the first letter when there is none. */
+  function dplPic(d, big) {
+    const box = h('span', { class: 'dcm-icon' + (big ? ' fus-pic-big' : ''), 'aria-hidden': 'true' });
+    box.append(h('img', { src: `dcm-icons/${d.id}.png`, alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }));
+    return box;
+  }
+
+  /**
+   * A search field over the boosts you can aim for: the passive each level teaches (stats, affinities, Limit Break cap,
+   * for you or for your demon), always on once learned. The digitalize-only choices (assists: duration, cooldown, the
+   * demon's stat share and skills, Demon Force, Mitama sets) and demons to digitalize are not goals here.
+   * Each says what it costs from where you are, and the cheapest comes first among equal matches.
+   * Pick as many as you like: a click (or Enter) ticks or unticks one and the list stays open with the same search;
+   * "Add all shown" ticks every match you don't have yet. `toggle(goal)` adds or removes it, `isOn(goal)` says if it's in.
+   */
+  function dplGoalCombo(E, st, toggle, isOn) {
+    const items = [];
+    E.races.forEach((r) => {
+      const cur = st.lv.get(r.id) || 0;
+      r.extend.forEach(([l, , , text, who]) => items.push({ kind: who === 'demon' ? 'Demon' : 'You', label: text, race: r.name, l, have: cur >= l,
+        goal: { k: 'race', race: r.id, level: l, why: `${text}${who === 'demon' ? ' (demon)' : ''}` } }));
+    });
+    let costed = false;
+    const costAll = () => {   // a plan per boost, once, when the list is first opened (a few ms in all)
+      if (costed) return;
+      costed = true;
+      items.forEach((x) => { const p = x.have ? null : E.solve(st, [x.goal]); x.dp = x.have ? 0 : p && p.ok ? p.cost : Infinity; });
+      items.forEach((x) => { x.sub = `${x.race} DLv ${x.l} · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
+    };
+    const wrap = h('div', { class: 'fus-combo' });
+    const ph = 'Add a boost: search a stat or affinity, e.g. Intelligence, Slash, Limit Break';
+    const input = h('input', { class: 'input', type: 'search', placeholder: ph, 'aria-label': ph, spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
+    const menu = h('div', { class: 'fus-menu dpl-menu', role: 'listbox', 'aria-multiselectable': 'true', hidden: true });
+    let hits = [], at = 0;
+    const draw = () => {
+      costAll();
+      const keep = menu.scrollTop;
+      const q = input.value.trim().toLowerCase();
+      const words = q.split(/\s+/).filter(Boolean);
+      // "demon" / "you" in the search pick whose boost it is
+      hits = items.filter((x) => { const hay = `${x.kind} ${x.label} ${x.race}`.toLowerCase(); return words.every((w) => hay.includes(w)); })
+        // the ones you have last (dimmed): still listed, so you can see where a boost comes from
+        .sort((a, b) => (a.have ? 1 : 0) - (b.have ? 1 : 0) || (a.label.toLowerCase().startsWith(q) ? 0 : 1) - (b.label.toLowerCase().startsWith(q) ? 0 : 1) || a.dp - b.dp || a.label.localeCompare(b.label)).slice(0, 80);
+      at = Math.min(at, Math.max(0, hits.length - 1));
+      const addable = hits.filter((x) => !x.have && !isOn(x.goal));
+      const head = h('div', { class: 'dpl-menu-head' },
+        h('span', { class: 'src-count', style: 'margin-left:0', text: `${hits.length}${hits.length === 80 ? '+' : ''} boost${hits.length === 1 ? '' : 's'} · ${U.goals.length} picked` }),
+        h('span', { class: 'toolbar-spacer' }),
+        addable.length && words.length ? h('button', { type: 'button', class: 'btn btn-sm btn-ghost', onmousedown: (ev) => { ev.preventDefault(); addable.forEach((x) => toggle(x.goal)); draw(); } }, `Add all ${addable.length} shown`) : null);
+      menu.replaceChildren(head, ...(hits.length ? hits.map((x, i) => {
+        const on = isOn(x.goal);
+        // one you have already can't be picked: listed (dimmed, no box) only to show where you got it
+        if (x.have) return h('div', { class: 'fus-opt dpl-have', role: 'option', 'aria-selected': 'false', 'aria-disabled': 'true', onmousedown: (ev) => ev.preventDefault() },
+          h('span', { class: 'dpl-check dpl-check-none', 'aria-hidden': 'true' }),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : ''), text: x.kind }),
+          h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
+        return h('div', { class: 'fus-opt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(on),
+          onmousedown: (ev) => { ev.preventDefault(); at = i; pick(x); } },
+          h('span', { class: 'dpl-check' + (on ? ' ticked' : ''), 'aria-hidden': 'true' }, on ? icon('check') : null),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : 'A boost for you', text: x.kind }),
+          h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
+      }) : [h('div', { class: 'fus-opt empty', text: 'No boost matches.' })]));
+      menu.scrollTop = keep;
+      const cur = menu.querySelector('.fus-opt.on'); if (cur) cur.scrollIntoView({ block: 'nearest' });
+    };
+    const U = S.dpl;
+    const open = () => { menu.hidden = false; input.setAttribute('aria-expanded', 'true'); draw(); };
+    const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+    const pick = (x) => { if (x.have) return; toggle(x.goal); draw(); };   // stays open, same search: pick the next one
+    // the arrow keys stop at the last one you can pick (the ones you have are listed after them)
+    const lastPickable = () => Math.max(0, hits.findIndex((x) => x.have) < 0 ? hits.length - 1 : hits.findIndex((x) => x.have) - 1);
+    input.addEventListener('focus', open);
+    input.addEventListener('input', () => { at = 0; menu.scrollTop = 0; open(); });
+    input.addEventListener('blur', close);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); if (menu.hidden) open(); else { at = Math.min(at + 1, lastPickable()); draw(); } }
+      else if (ev.key === 'ArrowUp') { ev.preventDefault(); at = Math.max(at - 1, 0); draw(); }
+      else if (ev.key === 'Enter') { if (!menu.hidden && hits[at]) { ev.preventDefault(); pick(hits[at]); } }
+      else if (ev.key === 'Escape') { if (!menu.hidden) { ev.stopPropagation(); close(); } }
+    });
+    wrap.append(h('div', { class: 'search' }, icon('search'), input), menu);
+    return wrap;
+  }
+
+  const dpShort = (v) => (v >= 1e6 ? `${nf.format(Math.round(v / 1e5) / 10)}M` : v >= 1e3 ? `${nf.format(Math.round(v / 100) / 10)}K` : nf.format(v));
+
+  function pageDigiPlan() {
+    const U = S.dpl, page = h('div', { class: 'page page-dpl' });
+    loadDigiPlan();
+    const read = S.data && S.data.ranks && Array.isArray(S.data.ranks.digitalize_levels) && S.data.ranks.digitalize_levels.length ? S.data.ranks.digitalize_levels : null;
+    const mine = U.from === 'mine' && !!read;
+    page.append(pageHead('Pick what you want from Digitalize. The planner works out which races to raise, in what order, and the points it takes.',
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Start from' },
+        [['mine', 'From my levels'], ['scratch', 'From scratch']].map(([id, label]) =>
+          h('button', { type: 'button', 'aria-pressed': String((id === 'mine') === mine), disabled: id === 'mine' && !read ? true : null,
+            'data-tip': id === 'mine' ? (read ? `The Digitalization Levels and points read from the game (${(S.data.ranks.source || '').replace(/^Client memory, /, '')})` : 'No Digitalization Levels read yet. Take a snapshot.') : 'Only the races everyone starts with, at level 1',
+            onclick: () => { U.from = id; store.set('dpl-from', id); render(); } }, label)))));
+    if (U.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: U.state === 'failed' ? 'The planner data could not be loaded (digi-planner.json is missing beside the page).' : 'Loading the Digitalization tables…' }));
+      return page;
+    }
+    const E = U.eng, st = E.start(mine ? read : null);
+    if (U.from === 'mine' && !read) page.append(h('p', { class: 'note', text: 'No Digitalization Levels read yet, so this plans from scratch. Take a snapshot to plan from yours.' }));
+    // The search stays in place while you tick boosts in it (it keeps its focus and list); everything under it is redrawn
+    // at each tick: the goal cards, the plan and the race map.
+    const chips = h('div', { class: 'dpl-goals-wrap' }), count = h('span', { class: 'card-sub' }), rest = h('div', { class: 'dpl-rest' });
+    const clear = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', onclick: () => { U.goals = []; dplGoalsSave(); render(); } }, 'Clear all');
+    const redraw = () => {
+      const plan = U.goals.length ? E.solve(st, U.goals) : null;
+      count.textContent = U.goals.length ? `${U.goals.length} goal${U.goals.length === 1 ? '' : 's'}` : '';
+      clear.hidden = !U.goals.length;
+      chips.replaceChildren(dplGoalCards(E, st));
+      rest.replaceChildren(dplPlan(E, st, plan), dplMap(E, st, plan));
+    };
+    const same = (x, g) => x.k === g.k && (g.k === 'race' ? x.race === g.race && (x.why || '') === (g.why || '') : x.id === g.id);
+    const isOn = (g) => U.goals.some((x) => same(x, g));
+    const toggle = (g) => {
+      const i = U.goals.findIndex((x) => same(x, g));
+      if (i >= 0) U.goals.splice(i, 1); else U.goals.push({ ...g });
+      dplGoalsSave(); redraw();
+    };
+    page.append(sect('Your goals', count, null, h('section', { class: 'card' },
+      h('div', { class: 'toolbar' }, dplGoalCombo(E, st, toggle, isOn), h('span', { class: 'toolbar-spacer' }), clear), chips)));
+    page.append(rest);
+    redraw();
+    page.append(h('p', { class: 'note fus-foot', text: 'Races, unlocks, points per level, demons, passives and assists: the server’s Digitalization tables, with the client’s names and texts. The rules (points go to your demon’s race; a race opens when all its needs are met; level 10 at most, 5 without a Mitama-fused demon): the server’s code, which NewMoon may have changed. Not checked in game yet.' }));
+    return page;
+  }
+
+  /**
+   * A race's picture: its first three demons (the ones its lowest levels open; for Entity and Fiend, whose levels open
+   * none, the demons other races open for it) as small round orbs, like a gear set's pieces.
+   */
+  function dplRaceOrbs(E, r) {
+    const ids = r.gated.map((d) => d.id);
+    [...E.demons.values()].filter((d) => d.race === r.id && !d.gate).forEach((d) => ids.push(d.id));
+    const three = [...new Set(ids)].slice(0, 3);
+    return h('span', { class: `slot-icon orbs orbs-${three.length} dpl-orbs`, 'aria-hidden': 'true' },
+      three.map((id) => h('img', { src: `dcm-icons/${id}.png`, alt: '', loading: 'lazy', onerror: (ev) => { ev.target.style.visibility = 'hidden'; } })));
+  }
+
+  /** The goal cards under the search: what each boost is, its race and level (changeable), and a remove button. */
+  function dplGoalCards(E, st) {
+    const U = S.dpl;
+    const chip = (g, i) => {
+      const remove = h('button', { type: 'button', class: 'dpl-x', 'aria-label': 'Remove this goal', onclick: () => { U.goals.splice(i, 1); dplGoalsSave(); render(); } }, icon('x'));
+      if (g.k === 'demon') {
+        const d = E.demons.get(g.id);
+        if (!d) return null;
+        const ok = E.canUse(d, st.lv);
+        return h('span', { class: 'dpl-goal' }, dplPic(d), h('span', { class: 'dpl-goal-text' }, h('b', { text: `Digitalize ${d.name}` }),
+          h('span', { class: 'card-sub', text: ok ? 'you can already' : E.waysIn(d).map(([r, l]) => `${E.raceName(r)} ${l}`).join(' or ') })), remove);
+      }
+      const R = E.races.get(g.race);
+      if (!R) return null;
+      const cur = st.lv.get(g.race) || 0;
+      const sel = h('select', { class: 'input dpl-lvl', 'aria-label': `${R.name} level to reach`, onchange: () => { g.level = Number(sel.value); dplGoalsSave(); render(); } },
+        Array.from({ length: E.P.cap }, (_, k) => k + 1).map((l) => h('option', { value: l, selected: l === g.level ? true : null, text: `DLv ${l}` })));
+      // the boost is the card's title (what you want); the race and level under it
+      const demonSide = /\(demon\)$/.test(g.why || '');
+      const title = g.why ? g.why.replace(/ \(demon\)$/, '') : R.name;
+      return h('span', { class: 'dpl-goal' }, dplRaceOrbs(E, R),
+        h('span', { class: 'dpl-goal-text' }, h('span', { class: 'dpl-goal-title' }, h('b', { text: title }),
+          g.why ? h('span', { class: 'tag dpl-kind' + (demonSide ? ' tag-demon' : ''), text: demonSide ? 'Demon' : 'You' }) : null),
+          h('span', { class: 'card-sub', text: [g.why ? R.name : null, cur >= g.level ? 'done' : cur ? `you have DLv ${cur}` : 'locked'].filter(Boolean).join(' · ') })), sel, remove);
+    };
+    return U.goals.length ? h('div', { class: 'dpl-goals' }, U.goals.map(chip))
+      : h('p', { class: 'note', text: 'Add the boosts you are after: the stat, affinity and Limit Break passives the levels teach, for you or for your demon. Tick as many as you like in the list; type “demon” or “you” to see only one side. To aim at a race level itself, click a race below.' });
+  }
+
+  function dplPlan(E, st, plan) {
+    if (!plan) return sect('The plan', null, null, h('section', { class: 'card' }, h('p', { class: 'note', text: 'Add a goal to see the plan.' })));
+    if (!plan.ok) return sect('The plan', null, null, h('section', { class: 'card' }, h('p', { class: 'note', text: plan.why })));
+    const S2 = plan.steps;
+    if (!S2.length) return sect('The plan', null, null, h('section', { class: 'card' }, h('p', { class: 'note', text: 'Nothing to do: you already have every goal.' })));
+    const sum = h('div', { class: 'dpl-sum' },
+      h('div', { class: 'dpl-stat' }, h('span', { class: 'card-sub', text: 'Digitalize points' }), h('b', { text: nf.format(plan.cost) })),
+      h('div', { class: 'dpl-stat' }, h('span', { class: 'card-sub', text: 'Races to raise' }), h('b', { text: String(S2.length) })),
+      S2.some((x) => x.mitama) ? h('div', { class: 'dpl-stat dpl-stat-list', 'data-tip': `Past DLv ${E.P.plainCap} a race only rises while you are digitalized with a Mitama-fused demon of it` },
+        h('span', { class: 'card-sub', text: 'Needs a Mitama-fused demon' }), h('span', { text: S2.filter((x) => x.mitama).map((x) => x.name).join(', ') })) : null);
+    const list = h('ol', { class: 'dpl-steps' }, S2.map((x, i) => {
+      const lines = [];
+      if (x.with.length) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Raise it with' }),
+        h('span', { class: 'dpl-pics' }, x.with.slice(0, 8).map((d) => h('span', { class: 'dpl-mini', 'data-tip': `${d.name} (base level ${d.base})` }, dplPic(d), h('span', { text: d.name }))),
+          x.with.length > 8 ? h('span', { class: 'src-count', text: `+${x.with.length - 8} more` }) : null)));
+      if (x.mitama) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Note' }), h('span', { text: `Past DLv ${E.P.plainCap} the demon has to be Mitama-fused (a plain one stops at ${E.P.plainCap}).` })));
+      if (x.opens.length) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Opens' }), h('span', { class: 'dpl-tags' }, x.opens.map((r) => h('span', { class: 'tag tag-digi', text: r.name })))));
+      // the boosts learned on the way (for you, or for your demon); the assists and demons a level opens are in the race's table
+      if (x.extend.length) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Boosts' }),
+        h('span', { class: 'dpl-tags' }, x.extend.map((e) => h('span', { class: 'tag' + (e.who === 'demon' ? ' tag-demon' : ''), 'data-tip': `${e.name}, learned at DLv ${e.l}, for ${e.who === 'demon' ? 'your demon' : 'you'}`, text: `${e.text}${e.who === 'demon' ? ' (demon)' : ''}` })))));
+      return h('li', { class: 'dpl-step' },
+        h('div', { class: 'dpl-step-head' }, h('span', { class: 'dpl-n', text: String(i + 1) }),
+          h('span', { class: 'dpl-step-name' }, h('b', { text: x.name }), h('span', { class: 'card-sub', text: ` DLv ${x.from} → ${x.to}` })),
+          h('span', { class: 'tag', 'data-tip': 'Tier: how many points its levels take, 1 (least) to 5 (most)', text: `Tier ${x.tier}` }),
+          h('span', { class: 'toolbar-spacer' }),
+          h('span', { class: 'dpl-dp', 'data-tip': `${nf.format(x.dp)} Digitalize points`, text: `${dpShort(x.dp)} DP` })),
+        lines);
+    }));
+    const stuck = S2.stuck ? h('p', { class: 'note warn', text: `Could not place: ${S2.stuck.join(', ')}.` }) : null;
+    return sect('The plan', 'cheapest first, in an order that works', null, h('section', { class: 'card' }, sum, list, stuck));
+  }
+
+  /** Every race as a tile, by side (Law, Neutral, Chaos) and tier, with your level, the plan's level and what opens it. */
+  function dplMap(E, st, plan) {
+    const U = S.dpl, need = plan && plan.ok ? plan.need : new Map();
+    const sides = [['LAW', 'Law'], ['NEUTRAL', 'Neutral'], ['CHAOS', 'Chaos']];
+    const tiers = [...new Set([...E.races.values()].map((r) => r.tier))].sort((a, b) => a - b);
+    const tile = (r) => {
+      const cur = st.lv.get(r.id) || 0, to = Math.max(need.get(r.id) || 0, cur), pts = st.pts.get(r.id) || 0;
+      const next = cur >= 1 && cur < E.P.cap ? r.xp[cur - 1] : 0;
+      const pct = next ? Math.min(100, (pts / next) * 100) : cur >= E.P.cap ? 100 : 0;
+      const bar = h('span', { class: 'dpl-bar', 'aria-hidden': 'true' },
+        Array.from({ length: E.P.cap }, (_, k) => h('i', { class: k < cur ? 'on' : k < to ? 'plan' : '' })));
+      // a race open from the start keeps an empty needs line, so every tile is the same height
+      const needs = r.unlock.length ? h('span', { class: 'dpl-needs' }, r.unlock.map(([u, l]) => h('span', { class: (st.lv.get(u) || 0) >= l ? 'met' : '', text: `${E.raceName(u)} ${l}` })))
+        : h('span', { class: 'dpl-needs', 'aria-hidden': 'true', text: ' ' });
+      return h('button', { type: 'button', class: 'dpl-tile' + (cur ? '' : ' locked') + (to > cur ? ' planned' : '') + (U.sel === r.id ? ' sel' : ''), 'aria-pressed': String(U.sel === r.id),
+        'data-tip': cur ? `${r.name}: DLv ${cur}` + (next ? `, ${nf.format(pct)}% to the next` : '') + (to > cur ? `. The plan takes it to ${to}.` : '') : `${r.name} is locked` + (to ? `. The plan opens it${to > 1 ? ` and takes it to ${to}` : ''}.` : '.'),
+        onclick: () => { U.sel = U.sel === r.id ? null : r.id; render(); } },
+        // two columns: the race's orbs, then the rest (name and level, the level bar, what opens it)
+        dplRaceOrbs(E, r),
+        h('span', { class: 'dpl-tile-body' },
+          h('span', { class: 'dpl-tile-head' }, h('b', { text: r.name }), h('span', { class: 'toolbar-spacer' }), h('span', { class: 'dpl-lv', text: cur ? (to > cur ? `${cur} → ${to}` : String(cur)) : to ? `→ ${to}` : '—' })),
+          bar, needs));
+    };
+    const grid = h('div', { class: 'dpl-map' },
+      h('span'), sides.map(([, label]) => h('span', { class: 'dpl-col-head', text: label })),
+      tiers.map((t) => [h('span', { class: 'dpl-row-head', 'data-tip': `Tier ${t}: DLv 1 to 10 takes ${t}× the points of tier 1`, text: `Tier ${t}` }),
+        sides.map(([side]) => h('div', { class: 'dpl-cell' }, [...E.races.values()].filter((r) => r.side === side && r.tier === t).map(tile)))]));
+    // the legend: the bar's two colours, then the two looks of a race's needs (the samples are drawn like the tiles' own)
+    const key = legend(['dpl-sw-on', 'Your levels'], ['dpl-sw-plan', 'Levels the plan adds']);
+    key.append(h('span', null, h('span', { class: 'dpl-needs' }, h('span', { class: 'met', text: 'Wild Bird 4' })), 'Need you have'),
+      h('span', null, h('span', { class: 'dpl-needs' }, h('span', { text: 'Avian 6' })), 'Need still to reach'));
+    const body = [h('section', { class: 'card dpl-map-card' }, grid, key)];
+    if (U.sel && E.races.has(U.sel)) body.push(dplRace(E, st, E.races.get(U.sel)));
+    return sect('Races', 'click one for its levels', null, ...body);
+  }
+
+  /** One race's ten levels: points, demons, passive and assists, each with a button to plan up to it. */
+  function dplRace(E, st, r) {
+    const U = S.dpl, cur = st.lv.get(r.id) || 0;
+    const rows = Array.from({ length: E.P.cap }, (_, k) => k + 1).map((l) => {
+      const ds = r.gated.filter((d) => d.level === l), ex = r.extend.filter(([x]) => x === l), as = r.assists.find(([x]) => x === l);
+      return h('tr', { class: l <= cur ? 'dpl-have' : '' },
+        h('td', { class: 'num', text: String(l) }),
+        h('td', { class: 'num', text: l === 1 ? '—' : nf.format(r.xp[l - 2]) }),
+        h('td', null, ds.length ? h('span', { class: 'dpl-pics' }, ds.map((d) => h('span', { class: 'dpl-mini' }, dplPic(d), h('span', { text: d.name })))) : null),
+        h('td', null, ex.map(([, , name, text, who]) => h('div', { 'data-tip': name, text: `${text}${who === 'demon' ? ' (demon)' : ''}` }))),
+        h('td', null, as ? as[1].map(([, t]) => t).join(' / ') : ''),
+        h('td', null, l > cur ? h('button', { type: 'button', class: 'btn btn-sm btn-ghost', onclick: () => {
+          const g = U.goals.find((x) => x.k === 'race' && x.race === r.id && !x.why);
+          if (g) g.level = l; else U.goals.push({ k: 'race', race: r.id, level: l });
+          dplGoalsSave(); render();
+        } }, 'Plan to here') : h('span', { class: 'card-sub', text: 'have' })));
+    });
+    const others = [...E.demons.values()].filter((d) => d.opts.some(([x]) => x === r.id) && d.race !== r.id);
+    const own = [...E.demons.values()].filter((d) => d.race === r.id && !d.gate);
+    return h('section', { class: 'card dpl-race' },
+      h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: `${r.name} · Tier ${r.tier}` }),
+        h('span', { class: 'card-sub', text: [cur ? `you have DLv ${cur}` : 'locked', r.unlock.length ? `opens with ${r.unlock.map(([u, l]) => `${E.raceName(u)} ${l}`).join(' + ')}` : 'open from the start', `DLv 1 to 10: ${nf.format(r.cum[E.P.cap])} points`].join(' · ') })),
+      h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl dpl-tbl' },
+        h('thead', null, h('tr', null, ['DLv', 'Points to reach', 'Demons it opens', 'Passive learned', 'Assist choice', ''].map((t) => h('th', { text: t })))),
+        h('tbody', null, rows))),
+      own.length ? h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Its other demons' }),
+        h('span', { class: 'dpl-pics' }, own.map((d) => h('span', { class: 'dpl-mini', 'data-tip': `Opened by ${d.opts.map(([x, l]) => `${E.raceName(x)} ${l}`).join(' or ')}` }, dplPic(d), h('span', { text: d.name }))))) : null,
+      others.length ? h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Also opens' }),
+        h('span', { class: 'dpl-pics' }, others.map((d) => h('span', { class: 'dpl-mini', 'data-tip': `${d.name} (${E.raceName(d.race)}): ${d.opts.map(([x, l]) => `${E.raceName(x)} ${l}`).join(' or ')}` }, dplPic(d), h('span', { text: d.name }))))) : null);
+  }
+
   // ---------- Tools: Fusion Planner ----------
   // fusion-data.json is made by tools\fusionexport: the demons, races and special fusions are the IMAGINE client's; the
   // race chart and the tri-fusion rules are the comp_hack server's (FusionManager.cpp), followed here step by step,
@@ -4523,7 +4982,7 @@
     return box;
   }
 
-  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
+  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, dplan: pageDigiPlan, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
