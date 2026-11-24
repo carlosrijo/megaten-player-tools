@@ -2,8 +2,6 @@
 //!
 //! The whole "read the game, save, rebuild the page data" sequence in one place, shared by the command line
 //! (the `newmoon-reader` crate) and the desktop app.
-//!
-//! Not here yet (wave 4): the Simulator member (`Pipeline.Sim`). Where the C# constructs it, see `// WAVE4: sim`.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -32,6 +30,7 @@ use super::dashboard::{Dashboard, DemonOffer};
 use super::demon_model::base64;
 use super::digitalize_demon::{DigitalizeSave, compact, demon_from_value, demon_to_value, iso_s};
 use super::expertise::Expertise;
+use super::simulator::Simulator;
 use super::snapshot::{Snapshot, SnapshotResult};
 
 // ---------- the statics ----------
@@ -230,12 +229,9 @@ pub struct Pipeline {
     pub ctx: Arc<Context>,
     dash: Dashboard,
     exp: Expertise,
-    // WAVE4: sim  `public Simulator Sim { get; }` = new Simulator(Store, Data, _dash, _exp, blankSets, blankIcons)
-    /// For the Simulator (wave 4): the set table of a "no base" pipeline, and the store whose icon cache it uses.
-    #[allow(dead_code)]
-    pub(crate) blank_sets: Option<BlankSets>,
-    #[allow(dead_code)]
-    pub(crate) blank_icons: Option<Store>,
+    /// The Simulator tool: what another build would give (nothing is read from the game or written). Shared between
+    /// threads (it takes its own lock, one call at a time).
+    pub sim: Simulator,
 }
 
 impl Pipeline {
@@ -246,8 +242,8 @@ impl Pipeline {
     pub fn new(data_dir: impl Into<PathBuf>, data: Option<Arc<GameData>>, blank_sets: Option<BlankSets>, blank_icons: Option<Store>) -> Pipeline {
         let data = data.unwrap_or_else(|| Arc::new(GameData::new()));
         let ctx = Arc::new(Context::new(Store::new(data_dir), data));
-        // WAVE4: sim  Sim = new Simulator(Store, Data, _dash, _exp, blankSets, blankIcons);
-        Pipeline { dash: Dashboard::new(Arc::clone(&ctx)), exp: Expertise::new(Arc::clone(&ctx)), ctx, blank_sets, blank_icons }
+        let sim = Simulator::new(Arc::clone(&ctx), blank_sets, blank_icons);
+        Pipeline { dash: Dashboard::new(Arc::clone(&ctx)), exp: Expertise::new(Arc::clone(&ctx)), ctx, sim }
     }
 
     pub fn store(&self) -> &Store {

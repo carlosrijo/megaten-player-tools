@@ -785,6 +785,27 @@ impl Dashboard {
         all
     }
 
+    /// The first step of `bonus_rows`: each part's `group` and `bonus` (the bonus list's names). The C# `Part` is a class,
+    /// so the Simulator sees these two fields on its own list after `BonusRows` has run; here that is a separate call
+    /// (idempotent: it only reads the other fields).
+    pub fn label_parts(all: &mut [Part]) {
+        for p in all.iter_mut() {
+            let (c_name, c_group) = bonuses::canonical(&p.label, &GameStatLabels);
+            p.group = if p.cond == "situational" {
+                "Only in some fights".to_string()
+            } else if p.target != "self" {
+                "Partner".to_string()
+            } else {
+                c_group.to_string()
+            };
+            p.bonus = if p.cond == "situational" && !p.note.is_empty() {
+                format!("{c_name} ({})", rx::rep(&rx::rep(&p.note, "^When ", "when "), "^Against", "against"))
+            } else {
+                c_name
+            };
+        }
+    }
+
     /// The bonus list's rows from the parts: one row per bonus, with gear / expertise / demon / totals and its sources.
     /// icons: where the quest, clan and compendium pictures go (icons.json); None = no pictures looked up at all
     /// (the simulator: nothing is written).
@@ -800,21 +821,7 @@ impl Dashboard {
             _ => 5, // "Only in some fights"
         };
         let combat_order: HashMap<String, usize> = bonuses::STAT_MAP.iter().enumerate().map(|(i, s)| (rx::rep(s.0, " %$", ""), i)).collect();
-        for p in &mut all {
-            let (c_name, c_group) = bonuses::canonical(&p.label, &GameStatLabels);
-            p.group = if p.cond == "situational" {
-                "Only in some fights".to_string()
-            } else if p.target != "self" {
-                "Partner".to_string()
-            } else {
-                c_group.to_string()
-            };
-            p.bonus = if p.cond == "situational" && !p.note.is_empty() {
-                format!("{c_name} ({})", rx::rep(&rx::rep(&p.note, "^When ", "when "), "^Against", "against"))
-            } else {
-                c_name
-            };
-        }
+        Dashboard::label_parts(&mut all);
 
         let r2 = |v: f64| fmt::g(fmt::round(v, 2));
         let mut rows: Vec<(Row, i32, f64, String)> = Vec::new();
