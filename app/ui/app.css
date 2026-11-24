@@ -282,7 +282,9 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 /* the rest of the band: the skills' icons in one run */
 .exp-icons-run { gap: 3px; align-content: start; }
 .exp-icons-run .skill-ico.off { opacity: .35; }
-.exp-icons-run .skill-ico.first:not(:first-child) { margin-left: 8px; }
+/* the air between groups sits after a group's last icon, not before the next one's first: when a group starts a new
+   line, the space stays at the end of the line above and every line starts flush left */
+.exp-icons-run .skill-ico:has(+ .skill-ico.first) { margin-right: 8px; }
 @media (max-width: 1100px) { .exp-ranks { grid-template-rows: none; grid-auto-flow: row; } }   /* one column of chains, more room for icons */
 /* gear: each worn piece is its game icon in a slot-like tile, then the complete sets. Names and numbers are the Gear
    page's: a tile's tooltip is the game's, a click opens the piece there. */
