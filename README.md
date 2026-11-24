@@ -398,7 +398,10 @@ demon columns with it (the CSV is copied to `<csv>.backup-before-demon-switch.cs
 snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The demon that was summoned when the game was last read (a snapshot, or "Load demons from the game") shows as a small card to the right of your stats on the Overview. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
 client's `Interface\tga` into `data\dash\demon.png` when the demon is saved; **Details** opens the stats it adds and its assists per level), a
 third part in each key stat's breakdown, and
-a demon column on Bonuses (rows only the demon gives appear in that view only). The CSV gets "Digitalize demon",
+a demon column on Bonuses (rows only the demon gives appear in that view only). While not digitalized, the demon summoned beside you
+gives you what its effects aim at its summoner (a Demon Force entry's "Long-Range +60", its passives' cooldown and cost cuts): they
+appear on Bonuses as a column and parts named "<demon> (summoned)" and in the key stats' breakdown, and are left out of the digitalized
+totals. The CSV gets "Digitalize demon",
 "<stat> (demon, digitalized)" per key stat, and "Digitalize demon record" (so `recalc` can redo it). A snapshot taken
 while digitalized doesn't take the window's 12 stats/HP/MP (they include the demon); the saved normal ones are used.
 

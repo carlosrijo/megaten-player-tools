@@ -708,6 +708,11 @@ impl Simulator {
         }
         let expertise_rows = self.exp.rows(Some(&Value::Object(snap)), &entries, false)?;
         let mut parts = Dashboard::parts(&gear, &short_name, demon.as_ref(), &expertise_rows);
+        // The partner summoned beside the character gives it what its tokusei aim at the summoner (as in bonuses.json)
+        if let Some(partner) = Dashboard::summoned_demon(b.seen.values()).filter(|_| !b.blank) {
+            let calc = Digitalize::new(Arc::clone(data), ItemEffects::new(Arc::clone(data), &b.alignment, b.level, ranks.clone()));
+            parts.extend(Dashboard::summoner_parts_of(&calc.summoner_effects(partner, b.boost)?));
+        }
         // BonusRows labels the parts it is given (the C# parts are shared with the caller)
         Dashboard::label_parts(&mut parts);
         let rows = self.dash.bonus_rows(parts.clone(), None)?;
@@ -1223,7 +1228,8 @@ fn sum_stats(parts: &[Part], digi: bool) -> Sums {
         if p.target != "self" || p.group != "Stats" || p.demon_stat {
             continue;
         }
-        let on = if p.kind == "demon" { digi && p.cond == "digitalized" } else { p.cond == "always" || (digi && p.kind == "gear" && p.cond == "digitalized") };
+        // the summoned partner is away while digitalized
+        let on = if p.kind == "summoned" { !digi && p.cond == "always" } else if p.kind == "demon" { digi && p.cond == "digitalized" } else { p.cond == "always" || (digi && p.kind == "gear" && p.cond == "digitalized") };
         if !on {
             continue;
         }

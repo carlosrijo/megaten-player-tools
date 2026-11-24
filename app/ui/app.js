@@ -278,6 +278,8 @@
   /** The Bonuses row behind a key stat (same name, same unit; the cap is called "Limit break cap" there). */
   const BONUS_NAME = { lb_cap: 'Limit break cap' };
   const bonusRowOf = (k, label, unit) => (S.data.bonuses || []).find((r) => r.group === 'Combat' && r.bonus === (BONUS_NAME[k] || label) && (r.unit || '') === (unit || ''));
+  /** "Alilat (summoned)": the summoned demon's name as its bonus parts carry it (empty when it gives nothing). */
+  const summonedName = () => { for (const r of (S.data.bonuses || [])) { const p = (r.parts || []).find((x) => x.kind === 'summoned'); if (p) return String(p.source); } return ''; };
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
@@ -287,7 +289,7 @@
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
     ['Partner', 'Partner', 'Your partner'], ['Only in some fights', 'Situational', 'Only in some fights · not added to the totals'],
   ];
-  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon' };
+  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon' };
   const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon'];
   const lowIsGood = (name) => /taken|cooldown|cast time|incantation/i.test(name);
 
@@ -388,7 +390,9 @@
       // what the digitalize demon adds (only while digitalized): the saved demon, else the snapshot's own record
       const dgc = d.digitalize && d.digitalize.combat;
       const demon = dgc && dgc[k] !== undefined ? n0(dgc[k]) : n0(latest[k + '_demon']);
-      by[k] = { stat: k, label, unit, gear, gearDigi, exp, demon };
+      // what the demon summoned beside you gives you (only a normal total: nobody is out while digitalized)
+      const summoned = n0((bonusRowOf(k, label, unit) || {}).summoned);
+      by[k] = { stat: k, label, unit, gear, gearDigi, exp, demon, summoned };
     });
     // Which bonuses each item / set contributes to: from the per-source parts of the all-bonuses list.
     const setKey = (text) => { const m = /\((?:\d+\/\d+, )?(fusion set|set) (\d+)\)\s*$/.exec(String(text || '')); return m ? `${m[1]}:${m[2]}` : null; };
@@ -444,8 +448,8 @@
     const r = S.v.by[k];
     if (!r) return null;
     const gear = digi() ? r.gearDigi : r.gear;
-    const demonNow = digi() ? r.demon : 0;
-    return { ...r, gearNow: gear, demonNow, total: round2(gear + r.exp + demonNow), extra: round2(r.gearDigi - r.gear) };
+    const demonNow = digi() ? r.demon : 0, summonedNow = digi() ? 0 : r.summoned;
+    return { ...r, gearNow: gear, demonNow, summonedNow, total: round2(gear + r.exp + demonNow + summonedNow), extra: round2(r.gearDigi - r.gear) };
   }
 
   // ---------- tooltip ----------
@@ -1040,7 +1044,8 @@
       const cap = CAPS[k] === undefined ? null : CAPS[k];
       const over = cap !== null && r.total > cap ? round2(r.total - cap) : 0;
       const plain = (v) => fmt(v, r.unit).replace(/^\+/, '');
-      const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : [])].filter(([, , v]) => v);
+      const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : []),
+        ...(!digi() ? [['sw-demon', summonedName(), r.summonedNow]] : [])].filter(([, , v]) => v);
       const open = S.over.open === k;
       const bonusRow0 = bonusRowOf(k, r.label, r.unit);
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
@@ -1198,6 +1203,7 @@
         piece ? withTip(gearIcon(piece), gearTip(piece)) : withTip(gearIcon(other), sourceTip(p, other)),
         h('span', { class: 'kind', text: KIND[p.kind] || p.kind || '' }),
         h('span', null, p.source, crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null, isTrue(p.toggle) ? toggleTag('margin-left:8px') : null,
+          p.kind === 'summoned' ? h('span', { class: 'tag ' + (digi() ? 'tag-off' : 'tag-demon'), style: 'margin-left:8px', 'data-tip': String(p.source).replace(/ \(summoned\)$/, '') + ' gives you this only while it is summoned beside you, not while you are digitalized', text: 'While summoned' }) : null,
           notes.length ? h('small', { text: notes.join(' · ') }) : null),
         h('span', { class: 'pv', text: p.value === null || p.value === undefined ? '' : fmt(p.value, row.unit, true) }));
     }));
@@ -1206,8 +1212,10 @@
   function pageBonuses() {
     // Rows that only the digitalize demon gives appear in the Digitalized view only.
     const demonOnly = (r) => (r.parts || []).length > 0 && r.parts.every((p) => p.kind === 'demon');
-    const all = S.data.bonuses.filter((r) => digi() || !demonOnly(r));
-    const DG = S.data.digitalize, ncol = digi() ? 5 : 4;
+    const summonedOnly = (r) => (r.parts || []).length > 0 && r.parts.every((p) => p.kind === 'summoned');   // nobody is out while digitalized
+    const all = S.data.bonuses.filter((r) => (digi() ? !summonedOnly(r) : !demonOnly(r)));
+    const SM = digi() ? '' : summonedName();   // "Alilat (summoned)": a column of its own while a partner is out
+    const DG = S.data.digitalize, ncol = digi() || SM ? 5 : 4;
     const page = h('div', { class: 'page' });
     page.append(pageHead(digi() && DG ? `Everything your gear, expertise and ${DG.demon} (digitalized) give. Click a row to see where each part comes from.`
       : 'Everything your gear and expertise give. Click a row to see where each part comes from.'));
@@ -1248,7 +1256,7 @@
                 counted && extra ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: digi() ? `incl. ${fmt(extra, r.unit, true)} digi` : `${fmt(extra, r.unit, true)} digitalized` }) : null,
                 counted ? capTag(n0(total), capOfBonus(r), r.unit, 'margin-left:8px') : null,
                 counted && toggleShare(r) ? h('span', { class: 'tag tag-off', style: 'margin-left:8px', 'data-tip': toggleShareText(r, 'this total'), text: `${fmt(toggleShare(r), r.unit, true)} from toggles` }) : null))),
-            cell(gear), cell(r.expertise), digi() ? cell(r.demon) : null,
+            cell(gear), cell(r.expertise), digi() ? cell(r.demon) : null, SM ? cell(r.summoned === undefined ? 0 : r.summoned) : null,
             counted ? cell(total, 'emph')
               : h('td', { class: 'num zero', 'data-tip': 'Depends on the fight, so it is not added up', text: '—' }));
           body.append(tr);
@@ -1268,8 +1276,10 @@
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Bonus' }), h('th', { scope: 'col', class: 'num', text: 'Gear' }),
         h('th', { scope: 'col', class: 'num', text: 'Expertise' }), digi() ? h('th', { scope: 'col', class: 'num', text: DG ? DG.demon : 'Demon' }) : null,
+        SM ? h('th', { scope: 'col', class: 'num', text: SM, 'data-tip': 'Counts only while this demon is summoned beside you. It is left out of the digitalized totals.' }) : null,
         h('th', { scope: 'col', class: 'num', text: digi() ? 'Total, digitalized' : 'Total' }))), body)));
-    page.append(h('p', { class: 'note', text: 'Gear includes tarot, soul fusions, mods, complete sets and appearance bonuses. For bonuses that only apply in some fights, the largest single value is shown.' }));
+    page.append(h('p', { class: 'note', text: 'Gear includes tarot, soul fusions, mods, complete sets and appearance bonuses. For bonuses that only apply in some fights, the largest single value is shown.'
+      + (SM ? ` ${SM.replace(/ \(summoned\)$/, '')}'s column counts only while ${SM.replace(/ \(summoned\)$/, '')} is summoned beside you; it is not in the digitalized totals.` : '') }));
     page.append(h('p', { class: 'note', text: togglesNote() }));
     drawChips(); draw();
     // Quest bonus and Demonic Compendium: what each step gives (their values are already in the rows above)

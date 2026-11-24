@@ -104,8 +104,8 @@ impl DigitalizeResult {
 
 /// C# `Digitalize(GameData data, ItemEffects fx)`.
 pub struct Digitalize {
-    data: Arc<GameData>,
-    fx: ItemEffects,
+    pub(super) data: Arc<GameData>,
+    pub(super) fx: ItemEffects,
 }
 
 impl Digitalize {
@@ -299,7 +299,7 @@ impl Digitalize {
 
     /// A Mitama set's tokusei. Some are IMAGINE-only (e.g. 2000078, the boosted Wyrd 3 "LB Cap+500") and missing from
     /// the tokusei data; for those the set's own description gives the LB cap number.
-    fn set_tokusei(&self, tid: i32, description: &str) -> Result<Vec<Effect>> {
+    pub(super) fn set_tokusei(&self, tid: i32, description: &str) -> Result<Vec<Effect>> {
         let list = self.fx.tokusei(tid, "digitalize", "")?;
         if !list.iter().all(|e| e.missing_data) {
             return Ok(list);
@@ -462,7 +462,7 @@ fn rebirth(s: &mut [i32], ranks: &[i32]) {
 }
 
 /// GetMitamaBonuses: sets active when each Mitama kind fills enough slots of the set's rune.
-fn mitama_sets_of(d: &DemonRecord, t: &DemonTables, exclude_tokusei: bool) -> Vec<MitamaSet> {
+pub(super) fn mitama_sets_of(d: &DemonRecord, t: &DemonTables, exclude_tokusei: bool) -> Vec<MitamaSet> {
     let mut res = Vec::new();
     if d.mitama_type <= 0 || d.mitama_reunion.iter().all(|&b| b == 0) {
         return res;
