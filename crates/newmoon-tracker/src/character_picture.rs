@@ -357,3 +357,53 @@ pub fn remove(folder: &Path) -> std::io::Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temp(name: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("nm-pic-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn finds_the_information_window_by_its_labels() {
+        // a 600x700 "photo": mid grey with the two label patches pasted where the game draws them
+        let (pw, ph) = (600usize, 700usize);
+        let mut bgra = vec![60u8; pw * ph * 4];
+        let (ox, oy) = (37usize, 29usize);
+        for (name, at) in [("info-window-labels-1.png", LABELS1_AT), ("info-window-labels-2.png", LABELS2_AT)] {
+            let img = image::load_from_memory(&AssetFiles::get(name).unwrap().data).unwrap().to_rgba8();
+            for (x, y, p) in img.enumerate_pixels() {
+                let o = ((oy + at.1 as usize + y as usize) * pw + ox + at.0 as usize + x as usize) * 4;
+                bgra[o] = p[2];
+                bgra[o + 1] = p[1];
+                bgra[o + 2] = p[0];
+            }
+        }
+        let photo = Photo { w: pw as i32, h: ph as i32, bgra };
+        assert_eq!(find_info_window(&photo), Some((ox as i32, oy as i32)));
+        let blank = Photo { w: pw as i32, h: ph as i32, bgra: vec![60u8; pw * ph * 4] };
+        assert_eq!(find_info_window(&blank), None);
+    }
+
+    #[test]
+    fn a_file_becomes_the_source_and_is_cropped_to_four_by_three() {
+        let d = temp("crop");
+        let file = d.join("in.png");
+        RgbImage::from_pixel(1000, 900, Rgb([200, 100, 50])).save(&file).unwrap();
+        let folder = d.join("char");
+        assert_eq!(use_file(&file, &folder).unwrap(), (1000, 900));
+        assert_eq!(source_size(&folder), Some((1000, 900)));
+        crop(&folder, 0, 0, 800, 800).unwrap();
+        // 800 wide -> 600 tall, scaled into 480x360
+        assert_eq!(image::image_dimensions(folder.join(PICTURE_FILE)).unwrap(), (480, 360));
+        assert!(matches!(crop(&folder, 0, 0, 10, 10), Err(PicError::Invalid(_))));
+        remove(&folder).unwrap();
+        assert!(!folder.join(PICTURE_FILE).exists() && !folder.join(SOURCE_FILE).exists());
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}

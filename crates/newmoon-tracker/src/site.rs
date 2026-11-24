@@ -32,7 +32,6 @@ pub struct UiFiles;
 pub struct AssetFiles;
 
 /// app\app.ico: the window's and the taskbar's icon (the exe's own icon resource is the same file).
-pub static APP_ICO: &[u8] = include_bytes!("../../../app/app.ico");
 
 pub struct Site {
     /// `--dev`: app\ui on disk, looked at first

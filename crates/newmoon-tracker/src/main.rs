@@ -130,7 +130,7 @@ fn main() {
         let app = app.clone();
         Arc::new(move |json, source| app.on_message(json, source))
     };
-    let mut web = match WebHost::create(hwnd, &user_data, dark, opt.dev, site, handler) {
+    let web = match WebHost::create(hwnd, &user_data, dark, opt.dev, site, handler) {
         Ok(w) => w,
         Err(e) => {
             winutil::error_box(

@@ -370,6 +370,7 @@ pub struct AlignmentOutcome {
 }
 
 /// What `MainForm.SimPipe` needs to find or make a Pipeline: the characters (name -> folder) and the data folder.
+#[allow(dead_code)] // read by the real implementation
 pub struct SimRequest<'a> {
     /// `e.Name` of the active character (the default "base")
     pub default_base: &'a str,
