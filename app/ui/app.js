@@ -313,7 +313,7 @@
     busy: false, scanning: false, lastScan: 0,
     state: { active: null, scanned: false, clients: [], characters: [] },   // who is in game, whose data is shown
     compare: null,
-    over: { open: null, demon: store.get('demon-open') === '1', allChanges: false, switching: null, aff: store.get('aff') || null },   // (aff: the affinity series brought forward)   // Overview: the opened stat, demon details shown, every change listed, the demon being switched to
+    over: { open: null, demon: store.get('demon-open') === '1', allChanges: false, switching: null, aff: store.get('aff') || null },   // (aff: the affinity series shown on its own)   // Overview: the opened stat, demon details shown, every change listed, the demon being switched to
     demons: null,   // the COMP demons as last listed (the picker shows these at once, then looks at the game again)
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
@@ -809,9 +809,30 @@
   }
 
   /**
+   * The radar's scale: from the deepest weakness (or 0) up to `high`, with rings at a clean step, 4 at most however wide
+   * the range is. The outer ring is `high` rounded up to a clean number (half a step when the step is 100 or more, so
+   * 208 gets 250 and not 300). The centre is the deepest weakness rounded down a little (not a whole step, which
+   * would give a small weakness a quarter of the radar to itself). Returns the centre, the rim and the ring values.
+   */
+  function affinityScale(low, high) {
+    let lo = 0, hi = 0, rings = [];
+    for (const step of [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000]) {
+      const fine = step >= 100 ? 25 : step >= 50 ? 10 : 5, round = step >= 100 ? step / 2 : step;
+      lo = Math.min(0, Math.floor(low / fine) * fine);
+      hi = Math.ceil(high / round) * round;
+      rings = [];
+      for (let v = (Math.floor(lo / step) + 1) * step; v < hi; v += step) rings.push(v);   // (the centre itself is not a ring)
+      rings.push(hi);
+      if (rings.length <= 4) break;
+    }
+    return { lo, hi, rings };
+  }
+
+  /**
    * Affinity, beside the stat sheet: one radar, one spoke per element, three things on the same percentage scale:
    * the boost to what you deal, the cap that boost stops at, and how much of the element you resist (below 0 is a
-   * weakness). The buttons under it bring one of the three forward: the others fade and its numbers appear on the spokes.
+   * weakness). The buttons under it pick what is shown: all three, or just one of them (its numbers then appear on
+   * the spokes, and the scale fits what is shown).
    */
   const AFF_SERIES = [['boost', 'Boost'], ['cap', 'Cap'], ['res', 'Resistance']];
   function affinityCard() {
@@ -824,8 +845,13 @@
     }
     const focus = AFF_SERIES.some(([k]) => k === S.over.aff) ? S.over.aff : null;
     const val = { boost: aff.boost.map((e) => e.total), cap: aff.cap.map((e) => e.total), res: aff.resistance.map((e) => e.total) };
-    // the scale: from the deepest weakness (or 0) to the cap, or past it when something is over the cap; steps of 50
-    const lo = Math.min(0, Math.floor(Math.min(...val.res, ...val.boost) / 50) * 50), hi = Math.max(100, Math.ceil(Math.max(...val.cap, ...val.boost, ...val.res) / 50) * 50);
+    // what is shown: all three, or only the one picked
+    const show = focus ? [focus] : AFF_SERIES.map(([k]) => k);
+    // the scale fits what is shown. Next to the boost and resistance the cap does not set it (a cap of 800% would squeeze
+    // every boost into the middle): the outer ring fits those, and at least the usual 100% cap, and a cap past it stops
+    // at the rim, marked there with its real value. A cap shown on its own is what the scale fits.
+    const fit = show.filter((k) => k !== 'cap' || show.length === 1);
+    const { lo, hi, rings } = affinityScale(Math.min(0, ...fit.map((k) => Math.min(...val[k]))), Math.max(show.length > 1 ? 100 : 50, ...fit.map((k) => Math.max(...val[k]))));
     const W = 346, H = 318, cx = W / 2, cy = H / 2, R = 94;   // sized for the card's column, with room for a two-line label on every spoke
     const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img',
       'aria-label': 'Affinity by element. ' + aff.boost.map((e, i) => `${e.name}: boost ${fmt(e.total, '%')}, cap ${fmt(val.cap[i])}%, resistance ${fmt(val.res[i], '%')}`).join('; ') });
@@ -833,17 +859,18 @@
     const at = (i, v, r0) => { const r = r0 !== undefined ? r0 : R * Math.max(0, Math.min(1, (v - lo) / (hi - lo))); return [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))]; };
     const path = (pts) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('') + 'Z';
     const all = aff.boost.map((_, i) => i);
-    // grid: the spokes, a ring every 50 with its number between the first two spokes, the 0 ring a little stronger
+    // grid: the spokes, a few rings with their numbers between the first two spokes, the 0 ring a little stronger
     all.forEach((i) => { const [x, y] = at(i, hi); svg.append(s('line', { class: 'gridline', x1: cx, y1: cy, x2: x, y2: y })); });
-    for (let v = lo + 50; v <= hi; v += 50) {
+    const ringLabels = [];   // (added after the series, so a filled area is not over a number)
+    for (const v of rings) {
       svg.append(s('path', { class: v === 0 && lo < 0 ? 'zeroline' : 'gridline', d: path(all.map((i) => at(i, v))) }));
       const [x, y] = at(0.5, v);
-      svg.append(Object.assign(s('text', { class: 'ring-label', x: x + 3, y: y + 3 }), { textContent: fmt(v) + (v === hi ? '%' : '') }));
+      ringLabels.push(Object.assign(s('text', { class: 'ring-label', x: x + 3, y: y + 3 }), { textContent: fmt(v) + (v === hi ? '%' : '') }));
     }
-    // the three series; the one brought forward is drawn last, the others faded
+    // the series shown (the ones not picked are left out); a value past the rim is drawn at the rim
     const draw = { boost: 'circle', res: 'square', cap: null };
-    AFF_SERIES.map(([k]) => k).sort((a, b) => (a === focus) - (b === focus)).forEach((k) => {
-      const g = s('g', { class: `aff-s aff-${k}` + (focus && focus !== k ? ' dim' : '') });
+    show.forEach((k) => {
+      const g = s('g', { class: `aff-s aff-${k}` });
       g.append(s('path', { class: 'aff-area', d: path(all.map((i) => at(i, val[k][i]))) }), s('path', { class: 'aff-line', d: path(all.map((i) => at(i, val[k][i]))) }));
       if (draw[k]) all.forEach((i) => {
         if (!val[k][i]) return;
@@ -853,15 +880,17 @@
       });
       svg.append(g);
     });
-    // Labels go outside the rim, each centred on its spoke: the element, and under it the number of the series brought
-    // forward. Near the top and bottom neighbours sit side by side, so a label that would run into one already placed
-    // moves further out along its spoke. Each spoke's tooltip has all three numbers and where they come from.
+    svg.append(...ringLabels);
+    // Labels go outside the rim, each centred on its spoke: the element, and under it the number of the series picked
+    // (under "All", the real cap where it runs past the rim, with a small arrow on the rim). Near the top and bottom
+    // neighbours sit side by side, so a label that would run into one already placed moves further out along its spoke. Each spoke's tooltip has all three numbers and where they come from.
     const split = (e) => { const parts = [['gear', e.gear], ['expertise', e.exp], ...(digi() && DG ? [[DG.demon, e.demon]] : [])].filter(([, v]) => v); return parts.length > 1 ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : parts.length ? ` (${parts[0][0]})` : ''; };
     const placed = [], raised = aff.cap.filter((c) => c.raise);
     all.forEach((i) => {
       const e = aff.boost[i], rs = aff.resistance[i], cp = aff.cap[i], capText = fmt(cp.total) + '%', c = Math.cos(ang(i)), sn = Math.sin(ang(i));
       // the number of the series brought forward: nothing rather than "0%", and the cap without a plus sign
-      const value = focus === 'cap' ? capText : focus && val[focus][i] ? fmt(val[focus][i], '%') : '', quiet = !e.total && !rs.total && !cp.raise;
+      const over = show.includes('cap') && cp.total > hi, quiet = !e.total && !rs.total && !cp.raise;
+      const value = focus === 'cap' ? capText : focus && val[focus][i] ? fmt(val[focus][i], '%') : over ? 'cap ' + capText : '';
       const anchor = c > 0.3 ? 'start' : c < -0.3 ? 'end' : 'middle';
       const w = Math.max(e.name.length, value.length) * 6.4 + 4, hgt = value ? 25 : 13;   // room the text needs, near enough
       let r = R + 9 + 13 * Math.abs(sn), box, lx, ly;
@@ -873,17 +902,19 @@
       }
       placed.push(box);
       const [rx, ry] = at(i, hi), top = ly - hgt / 2 + 10;
+      // a cap past the rim: its line stops there, with a small arrow pointing outwards
+      if (over) { const [bx, by] = at(i, 0, R + 1), [tx, ty] = at(i, 0, R + 7); svg.append(s('path', { class: 'aff-over', d: `M${(bx - 3.5 * sn).toFixed(1)},${(by + 3.5 * c).toFixed(1)}L${tx.toFixed(1)},${ty.toFixed(1)}L${(bx + 3.5 * sn).toFixed(1)},${(by - 3.5 * c).toFixed(1)}Z` })); }
       svg.append(s('g', { 'data-tip': `${e.name}: boost ${fmt(e.total, '%')}${split(e)} · cap ${capText}${cp.raise ? ` (100% + ${fmt(cp.raise)}%)` : ''} · resistance ${fmt(rs.total, '%')}${split(rs)}` },
         s('line', { x1: cx, y1: cy, x2: rx, y2: ry, stroke: 'transparent', 'stroke-width': 16 }),
         Object.assign(s('text', { class: 'aff-name' + (quiet ? ' none' : ''), x: lx, y: top, 'text-anchor': anchor }), { textContent: e.name }),
-        value ? Object.assign(s('text', { class: 'aff-value' + (focus === 'res' && val.res[i] < 0 ? ' bad' : ''), x: lx, y: top + 12, 'text-anchor': anchor }), { textContent: value }) : null));
+        value ? Object.assign(s('text', { class: 'aff-value' + (focus === 'res' && val.res[i] < 0 ? ' bad' : '') + (over && !focus ? ' over' : ''), x: lx, y: top + 12, 'text-anchor': anchor }), { textContent: value }) : null));
     });
-    // the legend is the control: All, or one of the three
+    // the legend is the control: all three, or only one of them
     const pick = (k, label, mark) => h('button', { type: 'button', 'aria-pressed': String(focus === k), onclick: () => { S.over.aff = k; store.set('aff', k || ''); render(); } },
       mark ? h('i', { class: 'aff-key aff-key-' + k }) : null, label);
     card.append(h('div', { class: 'chart radar' }, svg),
-      h('div', { class: 'seg aff-pick', role: 'group', 'aria-label': 'Bring forward' }, pick(null, 'All'), AFF_SERIES.map(([k, label]) => pick(k, label, true))));
-    // a line about the series brought forward; nothing under "All" (the user asked for that hint to go)
+      h('div', { class: 'seg aff-pick', role: 'group', 'aria-label': 'Show' }, pick(null, 'All'), AFF_SERIES.map(([k, label]) => pick(k, label, true))));
+    // a line about the series shown on its own; nothing under "All" (the user asked for that hint to go)
     if (focus) card.append(h('p', { class: 'note', text: focus === 'cap' ? 'Boosts stop at 100%' + (raised.length ? `, except where something of yours raises the cap: ${raised.map((c) => `${c.name} ${fmt(c.total)}%`).join(', ')}.` : '. Nothing of yours raises it for any element.')
       : focus === 'res' ? 'How much of each element you resist. Inside the 0 ring is a weakness.'
       : 'What you add to the damage you deal with each element.' }));

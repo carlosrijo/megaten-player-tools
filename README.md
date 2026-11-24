@@ -94,7 +94,9 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
   showing how close you are; it changes colour past the cap). Click a line to see what gear, expertise and the
   digitalize demon each add, and to jump to every source on Bonuses. On the right, one radar chart per element with
   your affinity boost, the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes
-  Ice 150%) and your resistance; the buttons under it bring one of the three forward and show its numbers.
+  Ice 150%) and your resistance; the buttons under it show all three or just one (its numbers then appear on the
+  spokes, and the scale fits what is shown). With all three, the outer ring fits your boosts and resistances, and a
+  cap that runs past it stops at the rim with its real value beside it.
   At the bottom, across the page, **What changed**: the 5 biggest changes since an earlier snapshot ("Show all" lists
   the rest). The snapshot picker says how many changes each one has.
 - **Expertise page:** opens with a **Summary**: points spent against the cap (with what is free), how many expertises are raised, at their highest class and chained, and how many passives are counted; then every raised expertise and chain expertise with its class-rank, a bar to its highest class ("Max" once reached; the highest class is the game client's own) and its points, with the icons of the skills its ranks gave you under it. Click one to show only its passives in the list below.

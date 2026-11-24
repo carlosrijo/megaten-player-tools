@@ -351,11 +351,10 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .radar svg { width: auto; max-width: 100%; height: auto; }
 .radar .gridline, .radar .zeroline { fill: none; }
 .radar .zeroline { stroke: var(--axis); stroke-width: 1.5; }
-.radar text.ring-label { fill: var(--text-3); font-size: 11px; }
+.radar text.ring-label { fill: var(--text-3); font-size: 10px; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }   /* small, with a halo so a line behind it does not cut the number */
 .radar .aff-s { --c: var(--aff); transition: opacity .12s ease; }
 .radar .aff-res { --c: var(--aff-res); }
 .radar .aff-cap { --c: var(--text-2); }
-.radar .aff-s.dim { opacity: .22; }
 .radar .aff-area { fill: var(--c); opacity: .14; }
 .radar .aff-cap .aff-area { fill: none; }
 .radar .aff-line { fill: none; stroke: var(--c); stroke-width: 2; stroke-linejoin: round; }
@@ -366,6 +365,8 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .radar text.aff-name.none { fill: var(--text-3); }
 .radar text.aff-value { fill: var(--text); font-weight: 600; }
 .radar text.aff-value.bad { fill: var(--bad); }
+.radar text.aff-value.over { fill: var(--text-2); font-weight: 500; }   /* a cap past the rim, under All */
+.radar .aff-over { fill: var(--text-2); }
 .aff-pick { justify-self: center; }
 .aff-pick button { gap: 6px; }
 .aff-key { display: inline-block; width: 9px; height: 9px; background: var(--aff); border-radius: 50%; }
