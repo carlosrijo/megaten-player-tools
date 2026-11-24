@@ -1150,6 +1150,9 @@ impl Dashboard {
                 }));
                 if let Some(n) = &item_name {
                     part.insert("item_name".into(), json!(n));
+                    if let Some(t) = data.item_text(p.item_id)? {
+                        part.insert("item_tip".into(), json!(t)); // the item's own description, for the hover tooltip
+                    }
                 }
                 if p.toggle {
                     part.insert("toggle".into(), json!(true)); // a toggle skill that is on: the page tags it, and says how much of a total the toggles give

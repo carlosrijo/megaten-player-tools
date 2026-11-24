@@ -1396,7 +1396,8 @@
   const sourceTip = (p, iconOf) => () => h('div', { class: 'tt' },
     p.item_name ? tipHead(gearIcon(iconOf), p.item_name, `${KIND[p.kind] || p.kind || ''} · ${p.source}`)
       : tipHead(gearIcon(iconOf), String(p.source).replace(/ \((Other learned skills|Quest bonus[^)]*\)|Demonic Compendium[^)]*\))\)?$/, ''), KIND[p.kind] || p.kind || ''),
-    ...tipLines(p.tip), p.note ? h('div', { class: 'tt-line tt-gap', text: p.item_name ? String(p.note).replace(` · ${p.item_name}`, '') : p.note }) : null);
+    ...tipLines(p.item_tip), ...(p.item_tip && p.item_tip === p.tip ? [] : tipLines(p.tip)),
+    p.note ? h('div', { class: 'tt-line tt-gap', text: p.item_name ? String(p.note).replace(` · ${p.item_name}`, '') : p.note }) : null);
   // A piece's icon from the game (32x32, pixel-crisp); an empty box of the same size for sets and pieces without one.
   // A set shows its pieces' icons as a cluster of small round "orbs" (up to four).
   const gearIcon = (g) => {
