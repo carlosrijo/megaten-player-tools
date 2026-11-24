@@ -851,7 +851,7 @@
     // every boost into the middle): the outer ring fits those, and at least the usual 100% cap, and a cap past it stops
     // at the rim, marked there with its real value. A cap shown on its own is what the scale fits.
     const fit = show.filter((k) => k !== 'cap' || show.length === 1);
-    const { lo, hi, rings } = affinityScale(Math.min(0, ...fit.map((k) => Math.min(...val[k]))), Math.max(show.length > 1 ? 100 : 50, ...fit.map((k) => Math.max(...val[k]))));
+    const { lo, hi, rings } = affinityScale(Math.min(0, ...fit.map((k) => Math.min(...val[k]))), Math.max(show.length > 1 ? 100 : focus === 'res' ? 10 : 50, ...fit.map((k) => Math.max(...val[k]))));
     const W = 346, H = 318, cx = W / 2, cy = H / 2, R = 94;   // sized for the card's column, with room for a two-line label on every spoke
     const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img',
       'aria-label': 'Affinity by element. ' + aff.boost.map((e, i) => `${e.name}: boost ${fmt(e.total, '%')}, cap ${fmt(val.cap[i])}%, resistance ${fmt(val.res[i], '%')}`).join('; ') });
