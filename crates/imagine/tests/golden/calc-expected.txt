@@ -324,9 +324,11 @@ PAT Technical attack power ^(TA|Tech(nical)? Attack) (Power|Damage)$
 PAT Close-range damage dealt % ^Close-Range Damage( Dealt)?$
 PAT Long-range damage dealt % ^Long-Range Damage( Dealt)?$
 PAT Spell damage dealt % ^(Spell|Magic) Damage( Dealt)?$
+PAT Support damage dealt % ^Support( Magic)? Damage( Dealt)?$
 PAT Close-range damage taken % ^Close-Range Damage (Taken|Suffered)$
 PAT Long-range damage taken % ^Long-Range Damage (Taken|Suffered)$
 PAT Spell damage taken % ^(Spell|Magic) Damage (Taken|Suffered)$
+PAT Support damage taken % ^Support( Magic)? Damage (Taken|Suffered)$
 PAT Spin skill boost % ^Spin( Skill)? (Damage|Power|Boost)$
 PAT Attack skill boost % ^Attack( Skill)? (Damage|Power|Boost)$
 PAT Rush skill boost % ^Rush( Skill)? (Damage|Power|Boost)$
@@ -346,9 +348,11 @@ DS Technical attack power = 0
 DS Close-range damage dealt % = 0
 DS Long-range damage dealt % = 0
 DS Spell damage dealt % = 0
+DS Support damage dealt % = 0
 DS Close-range damage taken % = -10
 DS Long-range damage taken % = -10
 DS Spell damage taken % = -10
+DS Support damage taken % = 0
 DS Spin skill boost % = 2.5
 DS Attack skill boost % = 0
 DS Rush skill boost % = 0
@@ -368,9 +372,11 @@ CS Technical attack power | 0 | 0 |
 CS Close-range damage dealt % | 0 | 0 | 
 CS Long-range damage dealt % | 0 | 0 | 
 CS Spell damage dealt % | 0 | 0 | 
+CS Support damage dealt % | 0 | 0 | 
 CS Close-range damage taken % | -10 | -10 | Class Ring -10%
 CS Long-range damage taken % | -10 | -10 | Class Ring -10%
 CS Spell damage taken % | -10 | -10 | Class Ring -10%
+CS Support damage taken % | 0 | 0 | 
 CS Spin skill boost % | 2.5 | 2.5 | Class Ring +2.5%
 CS Attack skill boost % | 0 | 0 | 
 CS Rush skill boost % | 0 | 0 | 

@@ -87,6 +87,8 @@ fn stat_labels_like_csharp() {
     assert_eq!(stat_labels::of("BOOST_SLASH"), Some("Slash Affinity"));
     assert_eq!(stat_labels::name("RATE_CLSR", 0), "Close-Range Damage");
     assert_eq!(stat_labels::name("RATE_CLSR_TAKEN", 0), "Close-range Damage Taken");
+    assert_eq!(stat_labels::name("RATE_SUPPORT", 0), "Support Magic damage");
+    assert_eq!(stat_labels::name("RATE_SUPPORT_TAKEN", 0), "Support Magic damage Taken");
     assert_eq!(stat_labels::name("MOVE1", 0), "Movement Speed");
     assert_eq!(stat_labels::name("UNKNOWN_STAT", 0), "UNKNOWN_STAT");
     assert_eq!(stat_labels::name_opt(None, 0), None);
