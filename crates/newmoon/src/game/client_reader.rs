@@ -245,6 +245,9 @@ pub fn find_client(name: &str) -> Result<ClientProcess> {
         if owner_of(&p).is_some_and(|n| eq_ic(&n, name)) {
             return Ok(p);
         }
+        // Inside share_sweeps, looking at another client kept a copy of its memory (~1-2 GB) that nothing else in
+        // this scope will use: let it go now rather than at the end of the scope.
+        crate::memory::release_sweep(p.pid);
     }
     Err(user_error(format!("No running client has '{name}' logged in.")))
 }
@@ -353,13 +356,27 @@ pub struct ClientInfo {
 
 /// Every running client with its logged-in character. Takes about a second per client.
 pub fn list_clients() -> Vec<ClientInfo> {
+    list_clients_with(false)
+}
+
+/// [`list_clients`]; with `keep_known`, a client whose character was already found keeps that answer (however old)
+/// and only the others are looked at again. For the page's background check while a client sits at the title
+/// screen: it re-read every client, ~1 s of memory reading each, every half minute.
+pub fn list_clients_with(keep_known: bool) -> Vec<ClientInfo> {
     let mut res = Vec::new();
     for p in client_processes() {
-        // A fresh look every time here (logins change); it also refreshes what find_client remembers.
-        with_owners(|o| {
-            o.shift_remove(&(p.pid, p.started));
-        });
-        let who = owner(&p);
+        let key = (p.pid, p.started);
+        let known = if keep_known { with_owners(|o| o.get(&key).and_then(|(n, lvl, _)| n.clone().map(|n| (Some(n), *lvl)))) } else { None };
+        let who = match known {
+            Some(k) => k,
+            None => {
+                // A fresh look (logins change); it also refreshes what find_client remembers.
+                with_owners(|o| {
+                    o.shift_remove(&key);
+                });
+                owner(&p)
+            }
+        };
         res.push(ClientInfo { pid: p.pid, folder: p.folder.clone(), started: p.started, character: who.0, level: who.1 });
     }
     res.sort_by(|a, b| ic_key(&a.folder).cmp(&ic_key(&b.folder)).then(a.pid.cmp(&b.pid)));
@@ -867,13 +884,20 @@ fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Opt
     }
     let src = |v: i32| if v <= 0 { 0 } else { v };
     let mut res: Vec<Option<WornItem>> = vec![None; 15];
+    // Every record wanted starts with a worn item's id (+0 is the key's item id), so a vectorised range check on the
+    // ids skips almost all of memory; the exact id test then drops the in-range strangers. Same hits, same order, as
+    // the old step-by-4 loop over every offset (~0.45 s of a snapshot).
+    let ids: Vec<i32> = obj_of.keys().map(|&(id, _)| id).collect();
+    let (lo, hi) = (ids.iter().copied().min().unwrap_or(1), ids.iter().copied().max().unwrap_or(0));
     for (_, buf) in mem.scan() {
         let buf: &[u8] = &buf;
         let mut p = 0usize;
-        while p + 56 <= buf.len() {
-            let pp = p;
-            p += 4;
-            if i32_at(buf, pp + 8) != 0 {
+        while let Some(pp) = find_i32_in_range(buf, lo, hi, p) {
+            p = pp + 4;
+            if pp + 56 > buf.len() {
+                break;
+            }
+            if !ids.contains(&i32_at(buf, pp)) || i32_at(buf, pp + 8) != 0 {
                 continue;
             }
             let flags = u32_at(buf, pp + 12);

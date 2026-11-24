@@ -200,7 +200,9 @@ impl MainForm {
 
             "clients" => {
                 // Read-only look at every running client: who is logged in where. About a second per client.
-                let list = self.scan_clients()?;
+                // keepKnown (the page's background check): only clients with no character found yet are looked at.
+                let keep_known = args.get("keepKnown").and_then(Value::as_bool).unwrap_or(false);
+                let list = self.scan_clients(keep_known)?;
                 {
                     let mut s = self.st();
                     s.clients = list;
@@ -241,18 +243,24 @@ impl MainForm {
                 let e = self.require_active("No character is selected yet. Log in to the game, then pick the character.")?;
                 let dir = self.char_dir(&e);
                 self.guarded(|| {
-                    // While the Information window is open, its character view becomes this character's picture.
-                    // Done first (the window is certainly still open) and never allowed to fail the snapshot.
+                    let csv = e.csv.clone().unwrap_or_default();
                     let mut pictured = false;
-                    if e.auto_picture != Some(false) && !self.no_writes() {
-                        if let Ok(game) = self.backend.find_client(e.name()) {
-                            if let Ok(true) = pic::from_info_window(game.main_window_handle(), &dir) {
-                                pictured = true;
+                    let r = {
+                        // One copy of the game's memory for the client lookup below and the whole snapshot: when the
+                        // lookup is over a minute old it sweeps the client, and that sweep is then the snapshot's
+                        // (it was a separate ~0.65 s one). Let go before the rebuild.
+                        let _shared = newmoon::memory::share_sweeps();
+                        // While the Information window is open, its character view becomes this character's picture.
+                        // Done first (the window is certainly still open) and never allowed to fail the snapshot.
+                        if e.auto_picture != Some(false) && !self.no_writes() {
+                            if let Ok(game) = self.backend.find_client(e.name()) {
+                                if let Ok(true) = pic::from_info_window(game.main_window_handle(), &dir) {
+                                    pictured = true;
+                                }
                             }
                         }
-                    }
-                    let csv = e.csv.clone().unwrap_or_default();
-                    let r = self.backend.take_snapshot(e.name(), &dir, &csv)?;
+                        self.backend.take_snapshot(e.name(), &dir, &csv)?
+                    };
                     self.backend.rebuild(&dir, &csv)?;
                     Ok(json!({
                         "source": r.source, "statsNote": r.stats_note, "missing": r.missing.unwrap_or_default(),
@@ -564,7 +572,8 @@ impl MainForm {
     }
 
     /// C# `_scan is { IsCompleted: false } ? _scan : Task.Run(ClientReader.ListClients)`, awaited.
-    fn scan_clients(self: &Arc<Self>) -> Result<Vec<ClientInfo>> {
+    /// A scan already running is joined whatever `keep_known` it was started with.
+    fn scan_clients(self: &Arc<Self>, keep_known: bool) -> Result<Vec<ClientInfo>> {
         let job = {
             let mut slot = self.scan.lock().unwrap_or_else(|p| p.into_inner());
             match slot.as_ref() {
@@ -574,7 +583,7 @@ impl MainForm {
                     *slot = Some(j.clone());
                     let (me, jj) = (self.clone(), j.clone());
                     std::thread::spawn(move || {
-                        let r = me.backend.list_clients().map_err(|e| (e.to_string(), newmoon::error::is_user_error(&e)));
+                        let r = me.backend.list_clients(keep_known).map_err(|e| (e.to_string(), newmoon::error::is_user_error(&e)));
                         *jj.done.lock().unwrap_or_else(|p| p.into_inner()) = Some(r);
                         jj.cv.notify_all();
                     });

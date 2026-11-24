@@ -186,11 +186,17 @@ impl WebHost {
         Ok(())
     }
 
-    /// Fill the window's client area (the WinForms control was Dock = Fill).
+    /// Fill the window's client area (the WinForms control was Dock = Fill). While the window is minimized the page
+    /// is hidden (WebView2's advice: it stops drawing, and the page sees `document.hidden` and skips its background
+    /// checks of the game clients); shown again on restore.
     pub fn resize(&self) {
         let (w, h) = winutil::client_size(self.hwnd);
         unsafe {
-            let _ = self.controller.SetBounds(RECT { left: 0, top: 0, right: w, bottom: h });
+            let minimized = windows::Win32::UI::WindowsAndMessaging::IsIconic(self.hwnd).as_bool();
+            let _ = self.controller.SetIsVisible(!minimized);
+            if !minimized {
+                let _ = self.controller.SetBounds(RECT { left: 0, top: 0, right: w, bottom: h });
+            }
         }
     }
 

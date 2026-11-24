@@ -203,8 +203,8 @@ impl Backend {
 
     /// C# `ClientReader.ListClients()` (Task.Run'd by the "clients" command). Read-only look at every running client:
     /// who is logged in where, sorted by folder then pid. About a second per client.
-    pub fn list_clients(&self) -> Result<Vec<ClientInfo>> {
-        Ok(newmoon::game::client_reader::list_clients())
+    pub fn list_clients(&self, keep_known: bool) -> Result<Vec<ClientInfo>> {
+        Ok(newmoon::game::client_reader::list_clients_with(keep_known))
     }
 
     /// C# `ClientReader.FindClient(name)`: the client this character is logged in to. Throws UserError

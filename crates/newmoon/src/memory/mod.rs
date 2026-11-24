@@ -241,6 +241,16 @@ pub fn share_sweeps() -> SweepScope {
     SweepScope { owner }
 }
 
+/// Inside [`share_sweeps`]: drops the kept copy of one client's memory (the next sweep of it reads it again).
+/// Nothing outside a scope.
+pub fn release_sweep(pid: u32) {
+    SHARED.with(|s| {
+        if let Some(st) = s.borrow_mut().as_mut() {
+            st.sweeps.remove(&pid);
+        }
+    });
+}
+
 /// Read-only handle to a game process (C# `GameMemory`).
 pub struct GameMemory {
     /// the process handle as a plain integer (keeps the type `Send`)
