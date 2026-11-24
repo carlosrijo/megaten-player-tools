@@ -166,8 +166,12 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .game-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--text-3); }
 .game.on .game-dot { background: var(--good); border-color: var(--good); }
 
-.side { grid-area: side; display: flex; flex-direction: column; justify-content: space-between; padding: 10px 8px 12px; border-right: 1px solid var(--border); min-height: 0; }
-.nav { display: grid; gap: 2px; }
+.side { grid-area: side; display: flex; flex-direction: column; justify-content: space-between; padding: 10px 8px 12px; border-right: 1px solid var(--border); min-height: 0; overflow: hidden; }
+/* The sidebar never grows past the window: the top bar and the snapshot block (.side-foot) stay put and only the list of
+   sections scrolls (in a short window the Tools links and the snapshot line used to be cut off with no way to reach them). */
+.nav { display: grid; gap: 2px; align-content: start; flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.nav::-webkit-scrollbar { width: 8px; }
+.nav::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
 .nav-item { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 8px; color: var(--text-2); cursor: pointer; position: relative; }
 .nav-item:hover { background: var(--hover); color: var(--text); }
 .nav-item[aria-current="page"] { background: var(--selected); color: var(--text); font-weight: 600; }
@@ -175,7 +179,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .nav-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .nav-label { flex: 1; }
 .nav-key { font-size: 11px; color: var(--text-3); font-weight: 400; }
-.side-foot { display: grid; gap: 2px; padding: 10px; font-size: 12px; color: var(--text-2); border-top: 1px solid var(--border); }
+.side-foot { flex: none; display: grid; gap: 2px; padding: 10px; font-size: 12px; color: var(--text-2); border-top: 1px solid var(--border); }
 .side-foot b { color: var(--text); font-weight: 600; }
 .side-foot .warn { color: var(--warn-ink); }
 
