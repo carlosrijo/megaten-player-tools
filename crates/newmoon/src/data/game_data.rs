@@ -153,21 +153,21 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 }
 
 /// XML text of an element (`XElement.Value`: all descendant text).
-fn xml_value(n: roxmltree::Node) -> String {
+pub(crate) fn xml_value(n: roxmltree::Node) -> String {
     n.descendants().filter(|d| d.is_text()).filter_map(|d| d.text()).collect()
 }
 
-fn xml_children<'a, 'i>(n: roxmltree::Node<'a, 'i>, name: &'static str) -> impl Iterator<Item = roxmltree::Node<'a, 'i>> {
+pub(crate) fn xml_children<'a, 'i>(n: roxmltree::Node<'a, 'i>, name: &'static str) -> impl Iterator<Item = roxmltree::Node<'a, 'i>> {
     n.children().filter(move |c| c.is_element() && c.tag_name().name() == name)
 }
 
 /// `o.Elements("member").FirstOrDefault(m => (string)m.Attribute("name") == name)?.Value.Trim()`
-fn member_text(o: roxmltree::Node, name: &str) -> Option<String> {
+pub(crate) fn member_text(o: roxmltree::Node, name: &str) -> Option<String> {
     xml_children(o, "member").find(|m| m.attribute("name") == Some(name)).map(|m| xml_value(m).trim().to_string())
 }
 
 /// `o.Elements("member").Where(name).Elements("element").Elements("object")`
-fn member_objects<'a, 'i>(o: roxmltree::Node<'a, 'i>, name: &str) -> Vec<roxmltree::Node<'a, 'i>> {
+pub(crate) fn member_objects<'a, 'i>(o: roxmltree::Node<'a, 'i>, name: &str) -> Vec<roxmltree::Node<'a, 'i>> {
     xml_children(o, "member")
         .filter(|m| m.attribute("name") == Some(name))
         .flat_map(|m| xml_children(m, "element"))
@@ -175,7 +175,7 @@ fn member_objects<'a, 'i>(o: roxmltree::Node<'a, 'i>, name: &str) -> Vec<roxmltr
         .collect()
 }
 
-fn parse_xml(text: &str) -> Result<roxmltree::Document<'_>> {
+pub(crate) fn parse_xml(text: &str) -> Result<roxmltree::Document<'_>> {
     Ok(roxmltree::Document::parse_with_options(text, roxmltree::ParsingOptions { allow_dtd: true, ..Default::default() })?)
 }
 
@@ -313,24 +313,9 @@ static ASPECT_KEYS: [&str; 9] = [
     "DAMAGE_DEALT",
 ];
 
-/// Copy of `GearEffects.PctCorrect`, which `Calc.GearEffects.IsPctCorrect` answers in C#. Kept here until the calc module is
-/// ported: replace the body with a call to `crate::calc::gear_effects::is_pct_correct`.
+/// `GearEffects.IsPctCorrect` (the list lives in the calc module, as in C#).
 fn is_pct_correct(id: &str) -> bool {
-    matches!(
-        id,
-        "FINAL_CRIT_CHANCE"
-            | "LB_CHANCE"
-            | "LB_DAMAGE"
-            | "RATE_CLSR"
-            | "RATE_LNGR"
-            | "RATE_SPELL"
-            | "RATE_CLSR_TAKEN"
-            | "RATE_LNGR_TAKEN"
-            | "RATE_SPELL_TAKEN"
-            | "COOLDOWN_TIME"
-            | "RATE_XP"
-            | "RATE_EXPERTISE"
-    )
+    crate::calc::gear_effects::is_pct_correct(id)
 }
 
 static RE_ENCHANT_COND: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(-?\d+):(-?\d+)?,?(-?\d+)?,?>([\d,]*)$").unwrap());

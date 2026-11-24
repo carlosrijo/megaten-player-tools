@@ -1,1 +1,955 @@
-//! Port of `src/Build/GearDb.cs` (not written yet).
+//! Port of `src/Build/GearDb.cs`.
+//!
+//! The Gear Database page's data (app\ui\gear-db.json): every piece of gear in the NewMoon client with what it gives,
+//! plus where the community's spreadsheets say it comes from.
+//!
+//! What an item gives is read from the client's CURRENT tables, decoded to XML beforehand (reference\README.md):
+//!   ItemData.xml          equip type, gender, alignment, weapon type and affinity, mod slots, the correct table (stats)
+//!   SItemData.xml         the item's special-effect tokusei
+//!   EquipmentSetData.xml  sets (several pieces) and appearance bonuses (one-piece sets)
+//!   CItemData.xml         names
+//! Tokusei are turned into text by the reader's own ItemEffects (the code that works out the worn gear's bonuses).
+//! The website's items.json is NOT used here: on 2026-11-23 it was two months older than the client and wrong for
+//! items NewMoon had rebalanced since (Renki Crystallized Spirit 48074: damage 44% there, 30% in the client).
+//!
+//! The community notes are SnowSheet's gear reference (smt-gear-analysis\data\sheet_gear.tsv, rows with source_sheet
+//! "gear_reference"; the Re:FC rows in that file are another server's and are skipped): matched by item id where the
+//! sheet gives one, else by name. Sheet rows that match no game item
+//! are kept as entries of their own, marked as coming from the sheet only.
+//!
+//! Differences from C#, forced by the language: the decoded tables are parsed whole (roxmltree) and walked record by
+//! record instead of streamed; the C# statics (`Openers`, `Names`, `Raw`) are a [`Sources`] value passed down.
+
+// The checks keep the C# shape (nested ifs, index loops) so each line can be compared with the original.
+#![allow(clippy::collapsible_if, clippy::needless_range_loop, clippy::type_complexity, clippy::too_many_arguments, clippy::manual_range_contains)]
+
+use std::collections::{HashMap, HashSet};
+use std::path::Path;
+use std::sync::{Arc, LazyLock};
+
+use indexmap::{IndexMap, IndexSet};
+use regex::Regex;
+use serde_json::{Map, Value, json};
+
+use crate::Result;
+use crate::calc::effect::Effect;
+use crate::calc::item_effects::{ItemEffects, affinity_name, to_title_case};
+use crate::data::game_data::{GameData, int_parse, member_text, parse_xml, xml_children, xml_value};
+use crate::data::json::{self, At, Escape};
+use crate::fmt;
+
+type Obj = Map<String, Value>;
+type Node<'a, 'i> = roxmltree::Node<'a, 'i>;
+
+const BASE_STATS: [&str; 7] = ["CLSR", "LNGR", "SPELL", "SUPPORT", "CRITICAL", "PDEF", "MDEF"];
+
+fn slot_name(equip: &str) -> Option<&'static str> {
+    Some(match equip {
+        "EQUIP_TYPE_HEAD" => "Head",
+        "EQUIP_TYPE_FACE" => "Face",
+        "EQUIP_TYPE_NECK" => "Neck",
+        "EQUIP_TYPE_TOP" => "Top",
+        "EQUIP_TYPE_ARMS" => "Arms",
+        "EQUIP_TYPE_BOTTOM" => "Bottom",
+        "EQUIP_TYPE_FEET" => "Feet",
+        "EQUIP_TYPE_COMP" => "COMP",
+        "EQUIP_TYPE_RING" => "Ring",
+        "EQUIP_TYPE_EARRING" => "Earring",
+        "EQUIP_TYPE_EXTRA" => "Extra",
+        "EQUIP_TYPE_BACK" => "Back",
+        "EQUIP_TYPE_TALISMAN" => "Talisman",
+        "EQUIP_TYPE_WEAPON" => "Weapon",
+        "EQUIP_TYPE_BULLETS" => "Bullets",
+        _ => return None,
+    })
+}
+
+static RE_WS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").expect("ws"));
+static RE_NON_KEY: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-z0-9]+").expect("key"));
+static RE_THE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^the\s+").expect("the"));
+static RE_NON_LOOSE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-rt-z0-9]+").expect("loose key"));
+static RE_NO_WORDS_SP: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Z][A-Z0-9_]{3,} ").expect("no words"));
+static RE_NO_WORDS_B: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Z][A-Z0-9_]{3,}\b").expect("no words"));
+static RE_TICKET: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)ticket|\bDT\b|voucher|plate").expect("ticket"));
+static RE_ITEM_ID: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"Item ID:\s*(\d+)").expect("item id"));
+static RE_HOW_SPLIT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s*(?:\|\||;;|>)\s*").expect("how split"));
+static RE_DIGITS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\d+").expect("digits"));
+static RE_JP_NAME: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"JP name:[^;]*;?").expect("jp name"));
+static RE_NOTE_SPLIT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[;]|\s/\s").expect("note split"));
+static RE_SEASON: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d{4})\d{2}_(.+)$").expect("season"));
+
+/// `Regex.Replace(s, @"\s+", " ").Trim()`
+fn squash(s: &str) -> String {
+    RE_WS.replace_all(s, " ").trim().to_string()
+}
+
+/// `Int(s)`: `int.TryParse` or 0.
+fn int(s: Option<&str>) -> i32 {
+    s.and_then(fmt::parse_i32).unwrap_or(0)
+}
+
+fn key(name: &str) -> String {
+    RE_NON_KEY.replace_all(&name.to_lowercase(), "").into_owned()
+}
+
+/// A looser name key for a second try: sheet names differ from the client's in "The", plurals and possessives.
+fn loose_key(name: &str) -> String {
+    let lower = name.to_lowercase();
+    RE_NON_LOOSE.replace_all(&RE_THE.replace(&lower, ""), "").into_owned()
+}
+
+/// The first `member` of `o` called `name`.
+fn member<'a, 'i>(o: Node<'a, 'i>, name: &str) -> Option<Node<'a, 'i>> {
+    xml_children(o, "member").find(|m| m.attribute("name") == Some(name))
+}
+
+/// `M(o, name)`: the member's text, trimmed.
+fn m(o: Option<Node>, name: &str) -> Option<String> {
+    member_text(o?, name)
+}
+
+/// `Obj(o, name)`: the object inside the member.
+fn obj<'a, 'i>(o: Option<Node<'a, 'i>>, name: &str) -> Option<Node<'a, 'i>> {
+    xml_children(member(o?, name)?, "object").next()
+}
+
+/// The `element` children of a member, as numbers (`Int(e.Value)`), zeros dropped.
+fn int_list(o: Node, name: &str) -> Option<Vec<i32>> {
+    Some(xml_children(member(o, name)?, "element").map(|e| int(Some(&xml_value(e)))).filter(|&x| x != 0).collect())
+}
+
+/// `Descendants("member").FirstOrDefault(m => name == ...)`: the first member (at any depth) called `name`.
+fn first_member_desc<'a, 'i>(o: Node<'a, 'i>, name: &str) -> Option<Node<'a, 'i>> {
+    o.descendants().find(|n| n.is_element() && n.tag_name().name() == "member" && n.attribute("name") == Some(name))
+}
+
+/// Top-level records of a big decoded table.
+fn records<'a, 'i>(doc: &'a roxmltree::Document<'i>) -> impl Iterator<Item = Node<'a, 'i>> {
+    doc.root_element().children().filter(|n| n.is_element() && n.tag_name().name() == "object")
+}
+
+/// A line the reader has no words for comes out as its raw table id ("TALK_RATE 2"): such lines are not shown.
+pub(crate) fn no_words(line: &str) -> bool {
+    RE_NO_WORDS_B.is_match(line)
+}
+
+pub(crate) fn text(e: &Effect, data: &GameData) -> Result<String> {
+    // an effect the server data lacks: the game's own description of it, never the internal number
+    if e.label.starts_with("Unknown effect") && e.tokusei > 0 {
+        let own = squash(&data.client_tokusei_text(e.tokusei)?.unwrap_or_default());
+        return Ok(if !own.is_empty() { own } else { "An effect the game data does not describe".to_string() });
+    }
+    let v = match e.value {
+        Some(d) => format!(" {}{}{}", if d > 0.0 { "+" } else if d < 0.0 { "−" } else { "" }, fmt::custom(d.abs(), "0.##"), if e.pct { "%" } else { "" }),
+        None => String::new(),
+    };
+    let who = if e.target == "self" || e.target.is_empty() {
+        String::new()
+    } else {
+        let mut cs = e.target.chars();
+        let first = cs.next().map(upper_char).unwrap_or_default();
+        format!("{first}{}: ", cs.as_str())
+    };
+    let note = if e.cond == "always" {
+        String::new()
+    } else if !e.cond_note.is_empty() {
+        e.cond_note.clone()
+    } else if e.cond == "digitalized" {
+        "while digitalized".to_string()
+    } else if e.cond == "situational" {
+        "depends on the fight".to_string()
+    } else {
+        String::new()
+    };
+    Ok(format!("{who}{}{v}{}", e.label, if !note.is_empty() { format!(" ({note})") } else { String::new() }))
+}
+
+/// `char.ToUpperInvariant(c)`: one char to one char (a char with a longer upper-case form stays as it is).
+fn upper_char(c: char) -> char {
+    let mut u = c.to_uppercase();
+    match (u.next(), u.next()) {
+        (Some(x), None) => x,
+        _ => c,
+    }
+}
+
+/// `Distinct(JsonArray)`: the first of each equal element.
+fn distinct(a: Vec<Value>) -> Vec<Value> {
+    let mut seen = HashSet::new();
+    a.into_iter().filter(|x| seen.insert(x.to_string())).collect()
+}
+
+/// The in-game sources of the items, and the names and opening items they refer to (C# statics `Openers`, `Names`, `Raw`).
+#[derive(Default)]
+struct Sources {
+    /// random box number -> the items that open it
+    openers: IndexMap<i32, Vec<i32>>,
+    names: IndexMap<i32, String>,
+    /// item id -> its raw in-game sources
+    raw: HashMap<i32, Value>,
+}
+
+/// `JsonNode.ToString()` of a property as `Str(o, k)`: a string as is, other JSON as its text, "" when missing.
+fn str_of(o: &Obj, k: &str) -> String {
+    match o.get(k) {
+        None | Some(Value::Null) => String::new(),
+        Some(Value::String(s)) => s.clone(),
+        Some(v) => v.to_string(),
+    }
+}
+
+fn dbl(o: &Obj, k: &str) -> f64 {
+    fmt::parse_f64(&str_of(o, k)).unwrap_or(0.0)
+}
+
+fn pct(r: f64) -> String {
+    format!("{}%", fmt::custom(r, "0.##"))
+}
+
+/// The distinct non-empty values of a field over a group, first appearance order.
+fn distinct_field(g: &[&Obj], k: &str) -> Vec<String> {
+    let mut seen = IndexSet::new();
+    for x in g {
+        let s = str_of(x, k);
+        if !s.is_empty() {
+            seen.insert(s);
+        }
+    }
+    seen.into_iter().collect()
+}
+
+fn zones(g: &[&Obj]) -> String {
+    let z = distinct_field(g, "zone");
+    if z.len() > 5 { format!("{} and {} more", z[..5].join(", "), z.len() - 5) } else { z.join(", ") }
+}
+
+fn season(o: &Obj) -> String {
+    match RE_SEASON.captures(&str_of(o, "season")) {
+        Some(c) => {
+            let g2 = &c[2];
+            let mut cs = g2.chars();
+            let first = cs.next().map(upper_char).unwrap_or_default();
+            format!(" ({first}{} {} event)", cs.as_str().replace('_', " "), &c[1])
+        }
+        None => String::new(),
+    }
+}
+
+/// `GroupBy(key)`: the groups in first-appearance order.
+fn group_by<'a>(src: &[&'a Obj], kind: impl Fn(&Obj) -> bool, key: impl Fn(&Obj) -> String) -> Vec<(String, Vec<&'a Obj>)> {
+    let mut groups: IndexMap<String, Vec<&'a Obj>> = IndexMap::new();
+    for x in src.iter().filter(|x| kind(x)) {
+        groups.entry(key(x)).or_default().push(x);
+    }
+    groups.into_iter().collect()
+}
+
+/// One line of the "how to get it" list, with its sort keys and the lines under it.
+struct Line {
+    rank: i32,
+    sort: f64,
+    obj: Obj,
+    kids: Option<Vec<Obj>>,
+}
+
+fn line(depth: i32, k: &str, t: &str, s: &str, v: &str) -> Obj {
+    let mut o = Obj::new();
+    o.insert("k".into(), json!(k));
+    o.insert("t".into(), json!(t));
+    if !s.is_empty() {
+        o.insert("s".into(), json!(s));
+    }
+    if !v.is_empty() {
+        o.insert("v".into(), json!(v));
+    }
+    if depth > 0 {
+        o.insert("d".into(), json!(depth));
+    }
+    o
+}
+
+/// The raw in-game sources of one item (tools\dcmexport --ids: drops, chests, shops, events, boxes from the server's
+/// files) as lines a player can act on: { k: kind, t: who or where, s: detail, v: rate or price }. Best first.
+fn get_lines(sources: &Sources, raw: &Value, depth: i32, visited: &mut HashSet<i32>) -> Vec<Obj> {
+    let src_all: Vec<&Obj> = match raw {
+        Value::Array(a) => a.iter().filter_map(Value::as_object).collect(),
+        _ => Vec::new(),
+    };
+    let mut res: Vec<Line> = Vec::new();
+    let no_place = "The data does not say where";
+    let ln = |k: &str, t: &str, s: &str, v: &str| line(depth, k, t, s, v);
+    let kind_is = |k: &'static str| move |x: &Obj| str_of(x, "kind") == k;
+
+    for (_, g) in group_by(&src_all, kind_is("shop"), |x| format!("{}|{}", str_of(x, "shopId"), str_of(x, "price"))) {
+        // the shop's name, then where it is and who runs it (the NPC and zone whose event opens the shop)
+        let f = g[0];
+        let at = if !str_of(f, "zone").is_empty() { format!(" in {}", str_of(f, "zone")) } else { String::new() };
+        let detail = [
+            if !str_of(f, "npc").is_empty() { format!("talk to {}", str_of(f, "npc")) } else { String::new() },
+            if !str_of(f, "tab").is_empty() { format!("tab: {}", str_of(f, "tab")) } else { String::new() },
+        ]
+        .into_iter()
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(" · ");
+        res.push(Line {
+            rank: 1,
+            sort: dbl(f, "price"),
+            obj: ln("Buy", &format!("{}{at}", str_of(f, "shop")), &detail, &format!("{} {}", fmt::n0(dbl(f, "price")), str_of(f, "currency"))),
+            kids: None,
+        });
+    }
+    // an NPC exchange: who, where, and what it costs (the client's own exchange tables). One line per cost:
+    // the same trade is offered by the same NPC in several places.
+    for (cost, g) in group_by(&src_all, kind_is("barter"), |x| str_of(x, "cost")) {
+        let with_place: Vec<&Obj> = g.iter().copied().filter(|x| !str_of(x, "npc").is_empty() || !str_of(x, "zone").is_empty()).collect();
+        let mut by_npc: IndexMap<String, Vec<&Obj>> = IndexMap::new();
+        for x in with_place {
+            by_npc.entry(str_of(x, "npc")).or_default().push(x);
+        }
+        let people: Vec<String> = by_npc
+            .iter()
+            .map(|(npc, p)| {
+                let zs = distinct_field(p, "zone");
+                let place = if zs.is_empty() {
+                    String::new()
+                } else {
+                    format!(
+                        " in {}{}",
+                        zs.iter().take(3).cloned().collect::<Vec<_>>().join(", "),
+                        if zs.len() > 3 { format!(" and {} more place{}", zs.len() - 3, if zs.len() - 3 == 1 { "" } else { "s" }) } else { String::new() }
+                    )
+                };
+                format!("{}{place}", if !npc.is_empty() { npc.as_str() } else { "an NPC" })
+            })
+            .collect();
+        let who = if !people.is_empty() {
+            format!(
+                "Talk to {}{}",
+                people.iter().take(3).cloned().collect::<Vec<_>>().join("; or "),
+                if people.len() > 3 { format!("; or {} others", people.len() - 3) } else { String::new() }
+            )
+        } else {
+            "An exchange NPC the data does not place".to_string()
+        };
+        res.push(Line { rank: if !people.is_empty() { 1 } else { 6 }, sort: 0.5, obj: ln("Exchange", &who, &if !cost.is_empty() { format!("for {cost}") } else { String::new() }, ""), kids: None });
+    }
+    for (_, g) in group_by(&src_all, kind_is("drop"), |x| format!("{}|{}|{}", str_of(x, "enemy"), str_of(x, "rate"), str_of(x, "season"))) {
+        let z = zones(&g);
+        res.push(Line {
+            rank: 2,
+            sort: -dbl(g[0], "rate"),
+            obj: ln("Enemy drop", &format!("{}{}", str_of(g[0], "enemy"), season(g[0])), if !z.is_empty() { &z } else { no_place }, &pct(dbl(g[0], "rate"))),
+            kids: None,
+        });
+    }
+    for (_, g) in group_by(&src_all, |x| matches!(str_of(x, "kind").as_str(), "loot" | "chest"), |x| format!("{}{}|{}", str_of(x, "ref"), str_of(x, "dropSetId"), str_of(x, "rate"))) {
+        let z = zones(&g);
+        let desc = str_of(g[0], "desc");
+        let t = if !z.is_empty() {
+            format!("{z}{}", season(g[0]))
+        } else if !desc.is_empty() {
+            desc
+        } else {
+            no_place.to_string()
+        };
+        res.push(Line { rank: 3, sort: -dbl(g[0], "rate"), obj: ln("Chest", &t, "", &pct(dbl(g[0], "rate"))), kids: None });
+    }
+    for (_, g) in group_by(&src_all, kind_is("plasma"), |x| format!("{}|{}", str_of(x, "zone"), str_of(x, "rate"))) {
+        let z = str_of(g[0], "zone");
+        res.push(Line { rank: 3, sort: -dbl(g[0], "rate"), obj: ln("Plasma", if !z.is_empty() { &z } else { no_place }, "", &pct(dbl(g[0], "rate"))), kids: None });
+    }
+    for (_, g) in group_by(&src_all, kind_is("event"), |x| format!("{}|{}", str_of(x, "zone"), str_of(x, "season"))) {
+        let who = distinct_field(&g, "npc");
+        let z = str_of(g[0], "zone");
+        let t = format!("{}{}", if !z.is_empty() { z.as_str() } else { no_place }, season(g[0]));
+        let s = if !who.is_empty() {
+            format!("Talk to {}{}", who.iter().take(4).cloned().collect::<Vec<_>>().join(", "), if who.len() > 4 { format!(" and {} more", who.len() - 4) } else { String::new() })
+        } else {
+            String::new()
+        };
+        res.push(Line { rank: 4, sort: 0.0, obj: ln("Event or NPC", &t, &s, ""), kids: None });
+    }
+    for x in src_all.iter().filter(|x| str_of(x, "kind") == "box") {
+        // the item that opens this box, and where that item comes from in turn
+        if let Some(ops) = sources.openers.get(&(dbl(x, "giftBox") as i32)) {
+            for &op in ops.iter().take(3) {
+                let open = ln("Open", sources.names.get(&op).map_or("a box", String::as_str), "", &pct(dbl(x, "rate")));
+                let mut below: Vec<Obj> = Vec::new();
+                if depth < 3 && visited.insert(op) {
+                    if let Some(op_raw) = sources.raw.get(&op) {
+                        below.extend(get_lines(sources, op_raw, depth + 1, visited));
+                    }
+                }
+                if below.is_empty() {
+                    let mut o = Obj::new();
+                    o.insert("k".into(), json!(""));
+                    o.insert("t".into(), json!("The game data does not say where this comes from"));
+                    o.insert("d".into(), json!(depth + 1));
+                    below.push(o);
+                }
+                res.push(Line { rank: 5, sort: -dbl(x, "rate"), obj: open, kids: Some(below) });
+            }
+            if ops.len() > 3 {
+                res.push(Line { rank: 5, sort: 1.0, obj: ln("", &format!("or {} other items that open the same box", ops.len() - 3), "", ""), kids: None });
+            }
+        } else {
+            res.push(Line { rank: 5, sort: -dbl(x, "rate"), obj: ln("Random box", "A box the game data does not link to an item", "", &pct(dbl(x, "rate"))), kids: None });
+        }
+    }
+    for (_, g) in group_by(&src_all, |x| matches!(str_of(x, "kind").as_str(), "destiny" | "demonquest" | "dropset"), |x| format!("{}|{}|{}", str_of(x, "kind"), str_of(x, "desc"), str_of(x, "rate"))) {
+        let kind = str_of(g[0], "kind");
+        let desc = str_of(g[0], "desc");
+        res.push(Line {
+            rank: 6,
+            sort: -dbl(g[0], "rate"),
+            obj: ln(
+                if kind == "destiny" {
+                    "Destiny box"
+                } else if kind == "demonquest" {
+                    "Demon quest"
+                } else {
+                    "Drop table"
+                },
+                if !desc.is_empty() { &desc } else { "A drop table" },
+                if kind == "dropset" { "The data does not say which enemy uses this table" } else { "" },
+                &pct(dbl(g[0], "rate")),
+            ),
+            kids: None,
+        });
+    }
+    for x in src_all.iter().filter(|x| str_of(x, "kind") == "present") {
+        res.push(Line { rank: 7, sort: 0.0, obj: ln("Demon present", &format!("From {} as your partner", str_of(x, "demon")), &format!("{} present", str_of(x, "tier")), ""), kids: None });
+    }
+
+    // OrderBy(rank).ThenBy(sort): stable
+    res.sort_by(|a, b| a.rank.cmp(&b.rank).then(a.sort.partial_cmp(&b.sort).unwrap_or(std::cmp::Ordering::Equal)));
+    let mut ordered = res;
+    let key_of = |l: &Line| Value::Object(l.obj.clone()).to_string();
+    // "Open X" with nothing known about X is noise next to a line that does say where to go
+    let dead_end = |l: &Line| l.kids.as_ref().is_some_and(|b| b.len() == 1 && b[0].get("k").and_then(Value::as_str) == Some(""));
+    if ordered.iter().any(|l| !dead_end(l)) {
+        ordered.retain(|l| !dead_end(l));
+    }
+    let cap = if depth == 0 { 14 } else { 5 };
+    let mut parents = 0;
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut outp: Vec<Obj> = Vec::new();
+    for l in &ordered {
+        if !seen.insert(key_of(l)) || parents >= cap {
+            continue;
+        }
+        parents += 1;
+        outp.push(l.obj.clone());
+        for c in l.kids.iter().flatten() {
+            outp.push(c.clone());
+        }
+    }
+    let distinct_count = ordered.iter().map(key_of).collect::<HashSet<_>>().len() as i64;
+    let left = distinct_count - parents as i64;
+    if left > 0 {
+        outp.push(line(depth, "", &format!("and {left} more places"), "", ""));
+    }
+    outp
+}
+
+/// `ids_out`: write the ids to trace (all gear, and every ticket item) to this file and stop: the input of tools\dcmexport --ids.
+/// `game_sources`: dcmexport's output for those ids: where each drops, is sold or handed out in the server's files.
+pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_file: &str, ids_out: Option<&str>, game_sources: Option<&str>) -> Result<()> {
+    let mut sources = Sources::default();
+    if let Some(gs) = game_sources.filter(|p| Path::new(p).is_file()) {
+        let root = json::load(gs)?;
+        for it in json::arr(root.at("items")) {
+            if let Some(sa) = it.at("sources").filter(|s| s.as_array().is_some_and(|a| !a.is_empty())) {
+                sources.raw.insert(json::int(it.at("id")), sa.clone());
+            }
+        }
+    }
+    // Neutral, level 99, no expertise: a requirement the item states stays visible as a note on the line.
+    let fx = ItemEffects::new(Arc::clone(&data), "NEUTRAL", 99, IndexMap::new());
+    let dec = Path::new(decoded);
+
+    let mut name: IndexMap<i32, String> = IndexMap::new();
+    {
+        let xml = json::read_all_text(&dec.join("CItemData.xml"))?;
+        let doc = parse_xml(&xml)?;
+        for c in records(&doc) {
+            let b = obj(Some(c), "baseData");
+            let n = squash(&m(b, "name").unwrap_or_default());
+            if !n.is_empty() {
+                name.insert(int(m(b, "ID").as_deref()), n);
+            }
+        }
+    }
+    let mut special: HashMap<i32, Vec<i32>> = HashMap::new();
+    {
+        let xml = json::read_all_text(&dec.join("SItemData.xml"))?;
+        let doc = parse_xml(&xml)?;
+        for s in records(&doc) {
+            if let Some(t) = int_list(s, "tokusei").filter(|t| !t.is_empty()) {
+                special.insert(int(m(Some(s), "ID").as_deref()), t);
+            }
+        }
+    }
+    struct SetRow {
+        pieces: Vec<i32>,
+        tokusei: Vec<i32>,
+    }
+    let mut sets: Vec<SetRow> = Vec::new();
+    {
+        let xml = json::read_all_text(&dec.join("EquipmentSetData.xml"))?;
+        let doc = parse_xml(&xml)?;
+        for s in records(&doc) {
+            let pieces = int_list(s, "equipment").unwrap_or_default();
+            let tok = int_list(s, "tokusei").unwrap_or_default();
+            if !pieces.is_empty() && !tok.is_empty() {
+                sets.push(SetRow { pieces, tokusei: tok });
+            }
+        }
+    }
+    let mut sets_of: HashMap<i32, Vec<usize>> = HashMap::new();
+    for (i, s) in sets.iter().enumerate() {
+        for &p in &s.pieces {
+            sets_of.entry(p).or_default().push(i);
+        }
+    }
+
+    // A random box (the server's drop sets with a GiftBoxID) is opened by using an item: the item's use-skill has
+    // function 320 and the box number as its first special parameter (SkillData). Data tickets work this way too.
+    let mut box_of_skill: HashMap<i32, i32> = HashMap::new();
+    let skill_file = dec.join("SkillData.xml");
+    if skill_file.is_file() {
+        let xml = json::read_all_text(&skill_file)?;
+        let doc = parse_xml(&xml)?;
+        let first_member = first_member_desc;
+        for sk in records(&doc) {
+            if first_member(sk, "functionID").map(|n| xml_value(n).trim().to_string()).as_deref() != Some("320") {
+                continue;
+            }
+            let bx = first_member(sk, "specialParams")
+                .map(|sp| xml_children(sp, "element").map(|e| int(Some(&xml_value(e)))).find(|&v| v != 0).unwrap_or(0))
+                .unwrap_or(0);
+            if bx != 0 {
+                box_of_skill.insert(int(m(obj(Some(sk), "common"), "id").as_deref()), bx);
+            }
+        }
+    }
+    sources.names = name.clone();
+
+    let mut items: Vec<Obj> = Vec::new();
+    let mut by_id: IndexMap<i32, usize> = IndexMap::new();
+    {
+        let xml = json::read_all_text(&dec.join("ItemData.xml"))?;
+        let doc = parse_xml(&xml)?;
+        for it in records(&doc) {
+            let common = obj(Some(it), "common");
+            let basic = obj(Some(it), "basic");
+            let restr = obj(Some(it), "restriction");
+            let id = int(m(common, "id").as_deref());
+            let equip = m(basic, "equipType").unwrap_or_default();
+            let use_skill = int(it
+                .descendants()
+                .find(|n| n.is_element() && n.tag_name().name() == "member" && n.attribute("name") == Some("useSkill"))
+                .map(xml_value)
+                .as_deref());
+            if use_skill != 0 {
+                if let Some(&opens) = box_of_skill.get(&use_skill) {
+                    if name.contains_key(&id) {
+                        sources.openers.entry(opens).or_default().push(id);
+                    }
+                }
+            }
+            let Some(slot) = slot_name(&equip) else { continue };
+            let Some(nm) = name.get(&id).cloned() else { continue };
+            let mut o = Obj::new();
+            o.insert("id".into(), json!(id));
+            o.insert("name".into(), json!(nm));
+            o.insert("slot".into(), json!(slot));
+            let g = int(m(restr, "gender").as_deref());
+            o.insert("gender".into(), json!(if g == 0 { "Male" } else if g == 1 { "Female" } else { "Any" }));
+            let al = m(restr, "alignment").unwrap_or_else(|| "ALL".into());
+            if al != "ALL" {
+                o.insert("alignment".into(), json!(to_title_case(&al.to_lowercase().replace('_', " "))));
+            }
+            if slot == "Weapon" {
+                let wt = m(basic, "weaponType");
+                o.insert(
+                    "weapon".into(),
+                    json!(if wt.as_deref() == Some("LONG_RANGE") {
+                        "Long range"
+                    } else if wt.as_deref() == Some("CLOSE_RANGE") {
+                        "Close range"
+                    } else {
+                        ""
+                    }),
+                );
+                if let Some(aff) = affinity_name(int(m(common, "affinity").as_deref())) {
+                    o.insert("affinity".into(), json!(aff));
+                }
+            }
+            let mods = int(m(Some(it), "modSlots").or_else(|| m(basic, "modSlots")).as_deref());
+            if mods > 0 {
+                o.insert("mods".into(), json!(mods));
+            }
+
+            let mut stats: Vec<Value> = Vec::new();
+            let mut effects: Vec<Value> = Vec::new();
+            if let Some(tbl) = common.and_then(|c| member(c, "correctTbl")) {
+                for c in tbl.descendants().filter(|n| n.is_element() && n.tag_name().name() == "object") {
+                    let cid = member_text(c, "ID").unwrap_or_default();
+                    let val = member_text(c, "Value").and_then(|s| fmt::parse_f64(&s)).unwrap_or(0.0);
+                    if cid.is_empty() || cid == "NONE" || val == 0.0 {
+                        continue;
+                    }
+                    let e = fx.correct(&cid, int(member_text(c, "Type").as_deref()), val, "always", "item", &nm);
+                    let line = text(&e, &data)?;
+                    // no words for it: its raw table id ("TALK_RATE 2") is not shown
+                    if !RE_NO_WORDS_SP.is_match(&line) {
+                        if BASE_STATS.contains(&cid.as_str()) { &mut stats } else { &mut effects }.push(json!(line));
+                    }
+                }
+            }
+            if let Some(toks) = special.get(&id) {
+                for &t in toks {
+                    for e in fx.tokusei(t, "characteristic", &nm)? {
+                        let line = text(&e, &data)?;
+                        if !RE_NO_WORDS_SP.is_match(&line) {
+                            effects.push(json!(line));
+                        }
+                    }
+                }
+            }
+            o.insert("stats".into(), Value::Array(stats));
+            o.insert("effects".into(), Value::Array(distinct(effects)));
+
+            // sets this piece belongs to; a one-piece set is the item's appearance bonus
+            let mut set_list: Vec<Obj> = Vec::new();
+            let mut appearance: Vec<Value> = Vec::new();
+            let mut seen_sets: HashSet<String> = HashSet::new();
+            for &si in sets_of.get(&id).map(Vec::as_slice).unwrap_or(&[]) {
+                let s = &sets[si];
+                let mut bonus: Vec<Value> = Vec::new();
+                for &t in &s.tokusei {
+                    for e in fx.tokusei(t, if s.pieces.len() == 1 { "appearance" } else { "set" }, &nm)? {
+                        let line = text(&e, &data)?;
+                        // a line the reader has no words for comes out as its raw table id ("TALK_RATE 0 (skill: Demon Race 11)"): not shown
+                        if !no_words(&line) {
+                            bonus.push(json!(line));
+                        }
+                    }
+                }
+                let bonus = distinct(bonus);
+                if bonus.is_empty() {
+                    continue;
+                }
+                if s.pieces.len() == 1 {
+                    appearance.extend(bonus);
+                    continue;
+                }
+                let mut with: Vec<String> = Vec::new();
+                for p in s.pieces.iter().filter(|&&p| p != id) {
+                    if let Some(pn) = name.get(p) {
+                        if !with.contains(pn) {
+                            with.push(pn.clone());
+                        }
+                    }
+                }
+                let bonus_text = Value::Array(bonus.clone()).to_string();
+                if with.is_empty() || !seen_sets.insert(format!("{}#{bonus_text}", with.join("|"))) {
+                    continue; // gendered copies of one set
+                }
+                // the same bonus with one other piece, offered by many pieces (a COMP with any of twenty weapons): one entry listing them
+                let same = if with.len() == 1 {
+                    set_list.iter_mut().find(|x| x.get("any").is_some() && x.get("effects").map(Value::to_string) == Some(bonus_text.clone()))
+                } else {
+                    None
+                };
+                if let Some(same) = same {
+                    if let Some(Value::Array(w)) = same.get_mut("with") {
+                        w.push(json!(with[0]));
+                    }
+                    continue;
+                }
+                let mut entry = Obj::new();
+                entry.insert("with".into(), Value::Array(with.iter().map(|x| json!(x)).collect()));
+                entry.insert("effects".into(), Value::Array(bonus));
+                if with.len() == 1 {
+                    entry.insert("any".into(), json!(true));
+                }
+                set_list.push(entry);
+            }
+            if !set_list.is_empty() {
+                o.insert("sets".into(), Value::Array(set_list.into_iter().map(Value::Object).collect()));
+            }
+            if !appearance.is_empty() {
+                o.insert("appearance".into(), Value::Array(distinct(appearance)));
+            }
+            o.insert("sources".into(), Value::Array(Vec::new()));
+            items.push(o);
+            by_id.insert(id, items.len() - 1); // byId[id] = o: a repeated id points at the later record
+        }
+    }
+    for o in items.iter_mut() {
+        if let Some(rs) = sources.raw.get(&json::int(o.get("id"))) {
+            let gl = get_lines(&sources, rs, 0, &mut HashSet::new());
+            if !gl.is_empty() {
+                o.insert("get".into(), Value::Array(gl.into_iter().map(Value::Object).collect()));
+            }
+        }
+    }
+
+    // Tickets: items that are not gear and are called a ticket ("... Data Ticket", "... DT"); gear comes out of them.
+    let mut ticket_by_key: IndexMap<String, i32> = IndexMap::new();
+    for (&kid, kname) in &name {
+        if !by_id.contains_key(&kid) && RE_TICKET.is_match(kname) {
+            ticket_by_key.entry(key(kname)).or_insert(kid); // TryAdd
+        }
+    }
+    if let Some(ids_out) = ids_out {
+        let box_items: Vec<i32> = sources.openers.values().flatten().copied().collect::<IndexSet<i32>>().into_iter().collect();
+        let mut all: Vec<i32> = by_id.keys().copied().chain(ticket_by_key.values().copied()).chain(box_items.iter().copied()).collect::<IndexSet<i32>>().into_iter().collect();
+        all.sort();
+        let mut text_out = String::new();
+        for x in all {
+            text_out.push_str(&format!("{x}\r\n"));
+        }
+        std::fs::write(ids_out, text_out)?;
+        println!("{} gear ids, {} ticket ids and {} box-opening items written to {}.", by_id.len(), ticket_by_key.len(), box_items.len(), ids_out);
+        return Ok(());
+    }
+
+    // ---- the spreadsheets: where it comes from ----
+    let mut by_name: IndexMap<String, Vec<usize>> = IndexMap::new();
+    let mut by_loose: IndexMap<String, Vec<usize>> = IndexMap::new();
+    for (i, o) in items.iter().enumerate() {
+        let n = o.get("name").and_then(Value::as_str).unwrap_or("");
+        by_name.entry(key(n)).or_default().push(i);
+        by_loose.entry(loose_key(n)).or_default().push(i);
+    }
+    let (mut rows, mut by_id_hits, mut by_name_hits, mut unmatched, mut vanity, mut other_server) = (0, 0, 0, 0, 0, 0);
+    let mut sheet_only: Vec<Obj> = Vec::new();
+    if let Some(sheet) = sheet_tsv.filter(|p| Path::new(p).is_file()) {
+        let text_all = json::read_all_text(Path::new(sheet))?;
+        let lines = read_all_lines(&text_all);
+        let mut head: HashMap<String, usize> = HashMap::new();
+        for (i, h) in lines.first().map(|l| l.split('\t').collect::<Vec<_>>()).unwrap_or_default().into_iter().enumerate() {
+            if head.insert(h.to_string(), i).is_some() {
+                return Err(anyhow::anyhow!("An item with the same key has already been added. Key: {h}"));
+            }
+        }
+        let f = |p: &[&str], col: &str| -> String { head.get(col).filter(|&&i| i < p.len()).map(|&i| p[i].trim().to_string()).unwrap_or_default() };
+        let flat = |s: &str| squash(&s.replace(" ;; ", " · ").replace(" || ", " · "));
+        for line in lines.iter().skip(1) {
+            let p: Vec<&str> = line.split('\t').collect();
+            if f(&p, "item_name").is_empty() {
+                continue;
+            }
+            // Only SnowSheet's gear reference is NewMoon's. Midori's Post Wipe Re:FC is another server's sheet (the user,
+            // 2026-11-23): its rows are in sheet_gear.tsv too and must not be used.
+            if f(&p, "source_sheet") != "gear_reference" {
+                other_server += 1;
+                continue;
+            }
+            if f(&p, "tab").starts_with("Vanities") {
+                vanity += 1; // cosmetic data tickets: not gear, no stats
+                continue;
+            }
+            rows += 1;
+            let how_raw = f(&p, "how_obtained");
+            let mut src = Obj::new();
+            src.insert("sheet".into(), json!("SnowSheet gear reference"));
+            src.insert("tab".into(), json!(f(&p, "tab")));
+            src.insert("how".into(), json!(flat(&how_raw)));
+            // the ticket the sheet names (by "Item ID: n", or by its name), and where the game data says that ticket comes from
+            let mut ticket = 0;
+            if let Some(idm) = RE_ITEM_ID.captures(&how_raw) {
+                let tid = int_parse(&idm[1])?;
+                if name.contains_key(&tid) && !by_id.contains_key(&tid) {
+                    ticket = tid;
+                }
+            }
+            if ticket == 0 {
+                for part in RE_HOW_SPLIT.split(&how_raw) {
+                    if let Some(&tk) = ticket_by_key.get(&key(part)) {
+                        ticket = tk;
+                        break;
+                    }
+                }
+            }
+            if ticket != 0 {
+                src.insert("ticket".into(), json!(name[&ticket]));
+                if let Some(ts) = sources.raw.get(&ticket) {
+                    src.insert("ticketGet".into(), Value::Array(get_lines(&sources, ts, 0, &mut HashSet::new()).into_iter().map(Value::Object).collect()));
+                }
+            }
+            let mut hit: Vec<usize> = Vec::new();
+            for mm in RE_DIGITS.find_iter(&f(&p, "item_id")) {
+                if let Some(&i) = by_id.get(&int_parse(mm.as_str())?) {
+                    hit.push(i);
+                }
+            }
+            if !hit.is_empty() {
+                by_id_hits += 1;
+            } else {
+                // "Lover's Suit (Blue) / Lover's Dress (Blue)": the male and the female piece; the notes column lists more names
+                let item_name = f(&p, "item_name");
+                let notes = RE_JP_NAME.replace_all(&f(&p, "notes"), "").into_owned();
+                let names: IndexSet<String> = item_name.split(" / ").map(key).chain(RE_NOTE_SPLIT.split(&notes).map(key)).filter(|k| k.len() > 2).collect();
+                for k in &names {
+                    if let Some(l) = by_name.get(k) {
+                        hit.extend(l);
+                    }
+                }
+                if hit.is_empty() {
+                    for raw in item_name.split(" / ") {
+                        let lk = loose_key(raw);
+                        if lk.len() > 3 {
+                            if let Some(l) = by_loose.get(&lk) {
+                                hit.extend(l);
+                            }
+                        }
+                    }
+                }
+                if !hit.is_empty() {
+                    by_name_hits += 1;
+                }
+            }
+            if hit.is_empty() {
+                unmatched += 1;
+                let mut slots: Vec<Value> = Vec::new();
+                for col in ["slot1_text", "slot2_text", "slot3_text"] {
+                    if !f(&p, col).is_empty() {
+                        slots.push(json!(flat(&f(&p, col))));
+                    }
+                }
+                let mut so = Obj::new();
+                so.insert("id".into(), json!(0));
+                so.insert("name".into(), json!(f(&p, "item_name")));
+                so.insert("slot".into(), json!(f(&p, "equip_slot_type")));
+                so.insert("gender".into(), json!(f(&p, "mf_restriction")));
+                so.insert("sheetOnly".into(), json!(true));
+                so.insert("stats".into(), Value::Array(Vec::new()));
+                so.insert("effects".into(), Value::Array(slots));
+                so.insert("sources".into(), Value::Array(vec![Value::Object(src)]));
+                sheet_only.push(so);
+                continue;
+            }
+            let src_text = Value::Object(src.clone()).to_string();
+            let mut done: HashSet<usize> = HashSet::new();
+            for i in hit {
+                if !done.insert(i) {
+                    continue; // Distinct
+                }
+                if let Some(Value::Array(list)) = items[i].get_mut("sources") {
+                    if !list.iter().any(|x| x.to_string() == src_text) {
+                        list.push(Value::Object(src.clone()));
+                    }
+                }
+            }
+        }
+    }
+
+    let in_game = items.iter().filter(|o| o.get("get").is_some()).count();
+    let src_len = |o: &Obj| o.get("sources").and_then(Value::as_array).map_or(0, Vec::len);
+    let via_ticket = items
+        .iter()
+        .filter(|o| o.get("get").is_none() && o.get("sources").and_then(Value::as_array).is_some_and(|a| a.iter().any(|s| s.get("ticketGet").is_some_and(|v| !v.is_null()))))
+        .count();
+    let with_src = items.iter().filter(|o| src_len(o) > 0).count();
+    let item_count = items.len();
+
+    let mut all: Vec<Value> = items.into_iter().map(Value::Object).collect();
+    all.extend(sheet_only.into_iter().map(Value::Object));
+    let mut result = Obj::new();
+    result.insert("generatedAt".into(), json!(chrono::Utc::now().format("%Y-%m-%d").to_string()));
+    result.insert("note".into(), json!("Stats, effects and sets: the NewMoon client's current tables. Community notes: SnowSheet's gear reference for NewMoon."));
+    result.insert("items".into(), Value::Array(all));
+    let out_path = Path::new(out_file);
+    let full = std::path::absolute(out_path)?;
+    if let Some(parent) = full.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(out_path, json::serialize(&Value::Object(result), Escape::Relaxed, false))?;
+    println!("In-game source found for {in_game} pieces directly and {via_ticket} more through their ticket.");
+    println!("{item_count} pieces of gear from the client, {with_src} with a source from the sheets. {} KB.", std::fs::metadata(out_path)?.len() / 1024);
+    println!(
+        "Sheet rows: {rows}; matched by id {by_id_hits}, by name {by_name_hits}, not matched {unmatched} (kept as sheet-only entries). {vanity} cosmetic ticket rows (Vanities tabs) left out. {other_server} rows of the other server's sheet (Re:FC) ignored."
+    );
+    Ok(())
+}
+
+/// `File.ReadAllLines`: lines ended by \r\n, \n or \r (no empty last line after a final break).
+fn read_all_lines(text: &str) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut cur = String::new();
+    let mut chars = text.chars().peekable();
+    let mut any = false;
+    while let Some(c) = chars.next() {
+        any = true;
+        match c {
+            '\r' => {
+                if chars.peek() == Some(&'\n') {
+                    chars.next();
+                }
+                lines.push(std::mem::take(&mut cur));
+                any = false;
+            }
+            '\n' => {
+                lines.push(std::mem::take(&mut cur));
+                any = false;
+            }
+            _ => cur.push(c),
+        }
+    }
+    if any {
+        lines.push(cur);
+    }
+    lines
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn keys() {
+        assert_eq!(key("Lover's Suit (Blue)"), "loverssuitblue");
+        // the loose key drops the "s" too (the character class a-r, t-z)
+        assert_eq!(loose_key("The Lover's Suit"), "loveruit");
+    }
+
+    #[test]
+    fn lines_like_read_all_lines() {
+        assert_eq!(read_all_lines("a\r\nb\nc\rd"), vec!["a", "b", "c", "d"]);
+        assert_eq!(read_all_lines("a\n"), vec!["a"]);
+        assert_eq!(read_all_lines("a\n\n"), vec!["a", ""]);
+    }
+
+    #[test]
+    fn effect_text() {
+        let data = GameData::with_paths(None, None);
+        let e = Effect { label: "Close-Range".into(), value: Some(24.0), ..Default::default() };
+        assert_eq!(text(&e, &data).unwrap(), "Close-Range +24");
+        let e = Effect { label: "Max HP".into(), value: Some(-2.5), pct: true, cond: "situational".into(), target: "partner".into(), ..Default::default() };
+        assert_eq!(text(&e, &data).unwrap(), "Partner: Max HP −2.5% (depends on the fight)");
+        assert!(no_words("TALK_RATE 2"));
+        assert!(!no_words("Talk Rate +2"));
+    }
+
+    #[test]
+    fn box_lines_nest_and_dead_ends_drop() {
+        let mut sources = Sources::default();
+        sources.openers.insert(7, vec![100]);
+        sources.names.insert(100, "Mystery Box".into());
+        let raw = json!([{ "kind": "box", "giftBox": 7, "rate": 5 }, { "kind": "shop", "shopId": 1, "price": 1500, "shop": "General Store", "currency": "Macca", "zone": "Ginza" }]);
+        let lines = get_lines(&sources, &raw, 0, &mut HashSet::new());
+        // the shop comes first; the box's opener has no known source, so its dead-end "Open" line is dropped
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0]["k"], "Buy");
+        assert_eq!(lines[0]["v"], "1,500 Macca");
+        sources.raw.insert(100, json!([{ "kind": "drop", "enemy": "Pixie", "rate": 2.5, "zone": "Ginza" }]));
+        let lines = get_lines(&sources, &raw, 0, &mut HashSet::new());
+        assert_eq!(lines.iter().map(|l| l["k"].as_str().unwrap()).collect::<Vec<_>>(), vec!["Buy", "Open", "Enemy drop"]);
+        assert_eq!(lines[2]["d"], 1);
+    }
+}
