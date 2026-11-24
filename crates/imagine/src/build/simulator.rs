@@ -985,7 +985,8 @@ impl Simulator {
                     let passive = data.passives()?.get(&sid.to_string()).is_some_and(|p| !p.is_null());
                     sk.push(obj(json!({ "name": name, "passive": passive })));
                 }
-                unlocks.push(obj(json!({ "rank": rank_idx, "skills": rows_value(sk) })));
+                // a rank that lets the character learn only some of its skills says how many
+                unlocks.push(obj(json!({ "rank": rank_idx, "skills": rows_value(sk), "pick": data.rank_pick_count(d.id, rank_idx)? })));
             }
             defs.push(obj(json!({
                 "id": d.id, "name": d.name, "chain": d.is_chain,

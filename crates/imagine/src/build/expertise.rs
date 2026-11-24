@@ -359,6 +359,18 @@ pub fn cols() -> &'static [&'static str] {
     &COLS
 }
 
+/// What one reached expertise rank gives (see `Expertise::granted`).
+struct Grant {
+    /// class x 10 + rank
+    rank: i32,
+    /// the skills that count: every skill of a rank with no choice, the learned pick of a rank with one
+    skills: Vec<i32>,
+    /// a rank with a choice: all the skills it offers (empty when there is none)
+    options: Vec<i32>,
+    /// a rank with a choice, and the learned skills were never read, so the pick isn't known
+    unknown_pick: bool,
+}
+
 /// C# `Expertise(store, data)`: it holds the context the store and the data come from.
 pub struct Expertise {
     ctx: Arc<Context>,
@@ -445,6 +457,17 @@ impl Expertise {
             None => existing()?.and_then(|v| v.at("learned_passives").cloned()).unwrap_or(Value::Null),
             Some(skills) => json!(self.other_passives(skills.iter().copied().collect())?),
         };
+        // Every learned skill, as the game holds it. Some expertise ranks offer several skills and let the character learn
+        // only one of them (the server's LearnSkill), so which one it learned is what says which one counts (`granted`).
+        // Kept from the last read when the learned skills can't be read now.
+        let learned_all: Value = match prog.as_ref().and_then(|p| p.skills.as_ref()) {
+            None => existing()?.and_then(|v| v.at("learned_skills").cloned()).unwrap_or(Value::Null),
+            Some(skills) => {
+                let mut v: Vec<i32> = skills.iter().copied().collect();
+                v.sort();
+                json!(v)
+            }
+        };
         // Expertise points spent (the regular expertises only; chains are computed from them and cost nothing) and the
         // cap: CharacterManager::GetMaxExpertisePoints = 1,700,000 + floor(level / 10) x 100,000 (+100,000 at level 99)
         // + ExpertiseExtension x 100,000; extension -1 = no cap. The game shows points / 100 ("52000.00pt").
@@ -464,6 +487,7 @@ impl Expertise {
                 "ranks": ranks,
                 "digitalize_levels": dlv,
                 "learned_passives": other,
+                "learned_skills": learned_all,
             }),
         )?;
         Ok(ranks)
@@ -566,6 +590,38 @@ impl Expertise {
             .map(|js| json::arr(Some(js)).map(|en| (json::int(en.at("rank")), json::arr(en.at("skills")).map(|s| json::int(Some(s))).collect())).collect()))
     }
 
+    /// The skills an expertise at rank `rank_idx` (class x 10 + rank) gives the character, rank by rank.
+    ///
+    /// A rank lists the skills it can unlock and how many the character may learn (ExpertClassData skillCount; the
+    /// server's LearnSkill refuses the rest). Where it lists more than that (Pursuit class 1: Strength, Magic,
+    /// Intelligence or Speed) the character holds only its pick, and only a skill it has learned applies. `learned` is
+    /// the learned skills as last read (None = never read): without it the pick is not known, so the rank gives nothing
+    /// and says so (`Grant::unknown_pick`), instead of giving every option at once.
+    fn granted(&self, id: i32, rank_idx: i32, learned: Option<&HashSet<i32>>) -> Result<Vec<Grant>> {
+        let mut res = Vec::new();
+        for (en_rank, skills) in self.rank_entries(id)?.unwrap_or_default() {
+            if en_rank > rank_idx {
+                continue;
+            }
+            match self.data().rank_pick_count(id, en_rank)? {
+                None => res.push(Grant { rank: en_rank, skills, options: Vec::new(), unknown_pick: false }),
+                Some(_) => {
+                    let picked: Vec<i32> = skills.iter().copied().filter(|s| learned.is_some_and(|l| l.contains(s))).collect();
+                    res.push(Grant { rank: en_rank, skills: picked, options: skills, unknown_pick: learned.is_none() });
+                }
+            }
+        }
+        Ok(res)
+    }
+
+    /// The learned skills saved by `read` (expertise-ranks.json "learned_skills"); None when none were read yet.
+    fn learned_of(saved: Option<&Value>) -> Option<HashSet<i32>> {
+        match saved.and_then(|v| v.at("learned_skills")) {
+            Some(Value::Array(a)) => Some(a.iter().map(|s| json::int(Some(s))).collect()),
+            _ => None,
+        }
+    }
+
     /// For the Overview's Expertise card and the Expertise page summary: every skill the reached ranks of each expertise (chains and regular) give, actives too (the
     /// passive rows of expertise.json leave actives out, as they add no stats). Written into expertise-ranks.json as
     /// "skills" [{id, name, icon, rank, active}] on each entry, so `rebuild` fills it without the game.
@@ -573,6 +629,7 @@ impl Expertise {
     fn save_chain_skills(&self) -> Result<()> {
         let data = self.data();
         let mut doc = json::load(self.store().expertise_ranks_path())?;
+        let learned = Expertise::learned_of(Some(&doc));
         let mut changed = false;
         let skill_names = data.skill_names()?;
         let passives = data.passives()?;
@@ -601,10 +658,7 @@ impl Expertise {
                 }
                 let rank_idx = json::int(o.get("class")).wrapping_mul(10).wrapping_add(json::int(o.get("rank")));
                 let mut list: Vec<Value> = Vec::new();
-                for (en_rank, skills) in self.rank_entries(json::int(o.get("id")))?.unwrap_or_default() {
-                    if en_rank > rank_idx {
-                        continue;
-                    }
+                for Grant { rank: en_rank, skills, .. } in self.granted(json::int(o.get("id")), rank_idx, learned.as_ref())? {
                     for sid in skills {
                         list.push(json!({
                             "id": sid,
@@ -662,6 +716,10 @@ impl Expertise {
         let active_toggles: HashSet<i32> = store.active_toggles()?.into_iter().collect(); // toggle skills the person marked as on
         let sctx = SkillCtx { stat_by_tbl, active_toggles, icons };
 
+        // (no ranks file: a simulator base with no character behind it, which has learned nothing)
+        let saved: Option<Value> = if store.expertise_ranks_path().exists() { Some(json::load(store.expertise_ranks_path())?) } else { None };
+        let learned = Expertise::learned_of(saved.as_ref());
+
         let mut rows: Vec<Row> = Vec::new();
         for e in rk {
             let cls = json::int(e.at("class"));
@@ -681,18 +739,35 @@ impl Expertise {
                 continue;
             }
             let id = json::int(e.at("id"));
-            let Some(entries) = self.rank_entries(id)? else { continue };
-            for (en_rank, skills) in entries {
-                if en_rank > rank_idx {
-                    continue;
+            for g in self.granted(id, rank_idx, learned.as_ref())? {
+                let rank_text = format!("Class {} Rank {}", g.rank / 10, g.rank % 10);
+                for sid in g.skills {
+                    self.add_skill(&sctx, &mut rows, sid, &format!("exp-{id}-{sid}"), name.as_deref(), &rank_text)?;
                 }
-                for sid in skills {
-                    self.add_skill(&sctx, &mut rows, sid, &format!("exp-{id}-{sid}"), name.as_deref(), &format!("Class {} Rank {}", en_rank / 10, en_rank % 10))?;
+                // A rank with a choice and no learned pick (never read, or not picked yet): one line that says so, when
+                // any of the options would have added something
+                if g.unknown_pick || (!g.options.is_empty() && !g.options.iter().any(|s| learned.as_ref().is_some_and(|l| l.contains(s)))) {
+                    let passives = data.passives()?;
+                    if g.options.iter().any(|s| passives.get(&s.to_string()).is_some_and(|p| !p.is_null())) {
+                        let names = data.skill_names()?;
+                        let list: Vec<String> = g.options.iter().map(|s| names.get(s).cloned().flatten().unwrap_or_else(|| "a skill the game data has no name for".to_string())).collect();
+                        let mut o = obj(json!({
+                            "row": format!("exp-{id}-pick-{}", g.rank), "expertise": name, "rank": rank_text, "skill": "",
+                            "effects": if g.unknown_pick {
+                                format!("Learn one of: {}. Which one you learned isn't known yet, so none of them is counted. Take a snapshot with the game running.", list.join(", "))
+                            } else {
+                                format!("Nothing learned here yet. Learn one of: {}. Only the one you learn counts.", list.join(", "))
+                            },
+                            "counted": false,
+                        }));
+                        for c in COLS {
+                            o.insert(c.into(), json!(0));
+                        }
+                        rows.push(o);
+                    }
                 }
             }
         }
-        // (no ranks file: a simulator base with no character behind it, which has learned nothing)
-        let saved: Option<Value> = if store.expertise_ranks_path().exists() { Some(json::load(store.expertise_ranks_path())?) } else { None };
         for sid_node in json::arr(saved.as_ref().and_then(|v| v.at("learned_passives"))) {
             self.add_skill(&sctx, &mut rows, json::int(Some(sid_node)), &format!("learn-{}", json::int(Some(sid_node))), Some("Other learned skills"), "")?;
         }

@@ -86,7 +86,7 @@ with open(os.path.join(REF, 'expertise-imagine.tsv'), 'w', encoding='utf-8', new
 
 # ---------- D. expertise rank skills
 with open(os.path.join(REF, 'expertise-rank-skills.tsv'), 'w', encoding='utf-8', newline='\n') as o:
-    o.write('#expertise id\tclass\trank\tskill ids\tskill names (CSkillData)\n')
+    o.write('#expertise id\tclass\trank\tskill ids\tskill names (CSkillData)\tskills to learn (fewer than the skill ids = pick that many, the rest are other options; LearnSkill checks it)\n')
     for p in rows(os.path.join(CD, 'out', 'expertise-class-skills.tsv')):
-        o.write(f"{p[0]}\t{p[2]}\t{p[3]}\t{p[4]}\t{p[5]}\n")
+        o.write(f"{p[0]}\t{p[2]}\t{p[3]}\t{p[4]}\t{p[5]}\t{p[6]}\n")
 print('expertise names', len(names))
