@@ -36,6 +36,9 @@
         <button type="button" class="btn btn-primary" id="snap" data-tip="Read the game now (F5). Read-only.">
           <span class="btn-icon" data-icon="camera" aria-hidden="true"></span><span id="snap-label">Take snapshot</span>
         </button>
+        <button type="button" class="btn btn-ghost btn-square" id="snap-help" aria-label="Before a snapshot" data-tip="What to open in game before a snapshot">
+          <span data-icon="info" aria-hidden="true"></span>
+        </button>
         <button type="button" class="btn btn-ghost btn-square" id="open-settings" aria-label="Settings" data-tip="Settings">
           <span data-icon="sliders" aria-hidden="true"></span>
         </button>
@@ -145,6 +148,17 @@
 
       <p class="dlg-note"><span data-icon="shield" aria-hidden="true"></span>This app only reads the game's memory. It never writes to the game or changes anything in it.</p>
     </form>
+  </dialog>
+
+  <dialog class="dlg dlg-steps" id="snap-steps" aria-labelledby="snap-steps-title">
+    <div class="dlg-body">
+      <div class="dlg-head">
+        <h2 id="snap-steps-title">Before a snapshot</h2>
+        <button type="button" class="btn btn-ghost btn-square" id="snap-steps-close" aria-label="Close"><span data-icon="x" aria-hidden="true"></span></button>
+      </div>
+      <div class="snap-steps-body" id="snap-steps-body"></div>
+      <div><button type="button" class="btn btn-primary" id="snap-steps-go"><span class="btn-icon" data-icon="camera" aria-hidden="true"></span>Take snapshot</button></div>
+    </div>
   </dialog>
 
   <dialog class="dlg" id="chooser" aria-labelledby="chooser-title">

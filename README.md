@@ -63,6 +63,14 @@ program, so a build with the app open fails to replace it).
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
 
+The info button beside **Take snapshot** (and the Overview before a character's first snapshot) lists what to open in
+game first, because the game only loads some data when its window is opened: start a Double Fusion at the Cathedral
+of Shadows and cancel it (loads every COMP demon, so the digitalize demon can be read), open Quest Completion Bonuses
+(Menu > Quest > View Quest Bonuses) and the Demonic Compendium (Menu > Devil > Demonic Compendium) once (the quest and
+compendium counts), and keep the Information window (Menu > PC > Status Equipment) open (exact stats, tarot and soul,
+the picture). The menu paths show the game's own menu pictures, cut from the client's
+`Interface\tga\menu_icon_00.tga` when the page asks (page command `menuIcons`; nothing is saved).
+
 - **Overview:** beside your picture, Max HP, Max MP and the 12 stats as compact bars (base, bonus and, in the
   Digitalized view, what the digitalize demon adds). Under them, three one-line bands:
   - **Expertise:** your expertise points against the cap, as the game's Expertise window shows them (e.g.
