@@ -426,6 +426,11 @@ impl Pipeline {
         Snapshot::new(Arc::clone(&self.ctx)).recalc_csv(csv)
     }
 
+    /// Every CSV row's gear named the game's way (only names change; the CSV is copied first when one does).
+    pub fn rename_gear(&self, csv: &str) -> Result<(Vec<String>, Option<PathBuf>)> {
+        Snapshot::new(Arc::clone(&self.ctx)).rename_gear_csv(csv)
+    }
+
     /// Set the character's alignment (LAW / NEUTRAL / CHAOS), which decides gear lines like "If Player is LAW ...".
     /// Snapshots call it with the game's own value (`read_alignment`); a person can also set it by hand.
     /// When it changes and there are saved snapshots, every CSV row's gear columns are recomputed and the page data is
