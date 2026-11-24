@@ -327,15 +327,6 @@
   }
   /** "−700% of this is from toggles that are on", or null when no toggle is in it. */
   const toggleShareText = (row, what) => { const v = toggleShare(row); return v ? `${fmt(v, row.unit, true)} of ${what || 'this'} is from toggles that are on` : null; };
-  // Damage dealt / taken start at 100% and the server stops at 0 damage: a total under −100% adds nothing more.
-  const RATE_NAME = /^(Close-range|Long-range|Spell|Support) damage (dealt|taken)$/;
-  /** The note for a rate stat whose total is below −100%, or null. */
-  function belowFloorText(name, total) {
-    const m = RATE_NAME.exec(String(name || ''));
-    if (!m || !(num(total) < -100)) return null;
-    return `The game stops at 0 damage ${m[2]}, so the ${fmt(round2(-100 - total))}% below −100% changes nothing.`;
-  }
-  const belowFloorTag = (name, total, style) => { const t = belowFloorText(name, total); return t ? h('span', { class: 'tag tag-over', style: style || null, 'data-tip': t, text: 'Below −100%' }) : null; };
 
   const S = {
     data: null, meta: {}, v: null,
@@ -1051,17 +1042,17 @@
       const plain = (v) => fmt(v, r.unit).replace(/^\+/, '');
       const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : [])].filter(([, , v]) => v);
       const open = S.over.open === k;
-      const bonusRow0 = bonusRowOf(k, r.label, r.unit), floorText = belowFloorText(r.label, r.total);
+      const bonusRow0 = bonusRowOf(k, r.label, r.unit);
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
       // (full and soft red when past it, with an "Over cap" tag beside the name; by how much is in the tooltip and under the opened line)
       const meter = cap === null ? h('span') : h('span', { class: 'cap-bar' + (over ? ' over' : '') }, h('i', { style: `width:${Math.max(0, Math.min(100, (r.total / cap) * 100))}%` }));
       const row = h('button', { type: 'button', class: 'sheet-row', 'aria-expanded': String(open),
         'data-tip': (srcs.length ? srcs.map(([, name, v]) => `${name} ${f(v)}`).join(' · ') : 'Nothing adds to this yet')
-          + (floorText ? '. ' + floorText : '') + (cap === null ? '' : `. Caps at ${fmt(cap, r.unit)}` + (over ? `: ${plain(over)} over, which adds nothing.` : '.')),
+          + (cap === null ? '' : `. Caps at ${fmt(cap, r.unit)}` + (over ? `: ${plain(over)} over, which adds nothing.` : '.')),
         onclick: () => { S.over.open = open ? null : k; render(); } },
         h('span', { class: 'chev' }, icon('chevron')),
         // past the cap: a short "Over cap" tag beside the name (by how much is in the tooltip and under the opened line)
-        h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label }), over ? h('span', { class: 'tag tag-over', text: 'Over cap' }) : null, floorText ? h('span', { class: 'tag tag-over', text: 'Below −100%' }) : null), meter,
+        h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label }), over ? h('span', { class: 'tag tag-over', text: 'Over cap' }) : null), meter,
         h('span', { class: 'sheet-value' + (r.total < 0 && !lowIsGood(r.label) ? ' bad' : ''), text: fmt(r.total, r.unit) }));
       if (!open) return row;
       const bonusRow = bonusRow0;
@@ -1072,7 +1063,6 @@
           cls === 'sw-gear' && r.extra ? (digi() ? `${f(r.extra)} of it only while digitalized` : `${f(r.extra)} more while digitalized`)
             : cls === 'sw-exp' ? toggleShareText(bonusRow0, 'it') : null))
           : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
-        floorText ? h('p', { class: 'note', text: floorText }) : null,
         toggleShare(bonusRow0) ? h('p', { class: 'note', text: togglesNote() }) : null,
         cap === null ? null : h('p', { class: 'note', text: `Caps at ${fmt(cap, r.unit)}: ` + (over ? `the ${plain(over)} above it adds nothing, so those points could go elsewhere.`
           : r.total >= cap ? 'reached, more adds nothing.' : `${plain(round2(cap - r.total))} to go.`) }),
@@ -1257,7 +1247,6 @@
               h('span', null, r.bonus, h('span', { class: 'src-count', text: nParts === 1 ? '1 source' : `${nParts} sources` }),
                 counted && extra ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: digi() ? `incl. ${fmt(extra, r.unit, true)} digi` : `${fmt(extra, r.unit, true)} digitalized` }) : null,
                 counted ? capTag(n0(total), capOfBonus(r), r.unit, 'margin-left:8px') : null,
-                counted && r.group === 'Combat' ? belowFloorTag(r.bonus, total, 'margin-left:8px') : null,
                 counted && toggleShare(r) ? h('span', { class: 'tag tag-off', style: 'margin-left:8px', 'data-tip': toggleShareText(r, 'this total'), text: `${fmt(toggleShare(r), r.unit, true)} from toggles` }) : null))),
             cell(gear), cell(r.expertise), digi() ? cell(r.demon) : null,
             counted ? cell(total, 'emph')
@@ -1265,7 +1254,7 @@
           body.append(tr);
           // Found through an item's name: list just that item's lines, unless the row was opened by hand.
           if (open) {
-            const lines = counted ? [toggleShareText(r, 'this total'), r.group === 'Combat' ? belowFloorText(r.bonus, total) : null].filter(Boolean) : [];
+            const lines = counted ? [toggleShareText(r, 'this total')].filter(Boolean) : [];
             body.append(h('tr', { class: 'detail' }, h('td', { colspan: ncol }, lines.map((t) => h('p', { class: 'note', text: t })), partsList(r, viaSource && !S.bonus.open.has(r.row) ? q : null))));
           }
         });
