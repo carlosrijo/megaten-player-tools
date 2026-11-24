@@ -81,11 +81,12 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
 
     if cmd == "geardb" {
         // The Gear Database page's data, from the client's decoded tables and the community sheets (no game, no character).
-        //   geardb --decoded <dir with ItemData.xml, SItemData.xml, EquipmentSetData.xml, CItemData.xml> [--sheets sheet_gear.tsv] [--out app\ui\gear-db.json]
+        //   geardb --decoded <dir with ItemData.xml, SItemData.xml, EquipmentSetData.xml, CItemData.xml> [--sheets sheet_gear.tsv] [--client <game folder, for icons>] [--out app\ui\gear-db.json]
         let decoded = get("decoded").ok_or_else(|| user_error("geardb needs --decoded <folder with the decoded client tables>."))?;
         let out = get_or("out", path_combine(&path_combine("app", "ui"), "gear-db.json"));
         // --ids-out: the ids for tools\dcmexport --ids; --game-sources: its output
-        gear_db::build(Arc::new(GameData::new()), decoded, get("sheets"), &out, get("ids-out"), get("game-sources"))?;
+        let client = client_arg(get("client"))?;
+        gear_db::build(Arc::new(GameData::new()), decoded, get("sheets"), &out, get("ids-out"), get("game-sources"), client.as_deref())?;
         return Ok(0);
     }
     if cmd == "dungeons" {

@@ -7,7 +7,9 @@
 //!   ItemData.xml          equip type, gender, alignment, weapon type and affinity, mod slots, the correct table (stats)
 //!   SItemData.xml         the item's special-effect tokusei
 //!   EquipmentSetData.xml  sets (several pieces) and appearance bonuses (one-piece sets)
-//!   CItemData.xml         names
+//!   CItemData.xml         names and icon numbers
+//! Icons: the icon number goes through the client's CIconData_Item.bin to its picture (Interface\tga or tga2, as for
+//! the Gear page's icons), saved once as app\ui\gear-db-icons\<picture>.png beside the json (game art, not in git).
 //! Tokusei are turned into text by the reader's own ItemEffects (the code that works out the worn gear's bonuses).
 //! The website's items.json is NOT used here: on 2026-11-23 it was two months older than the client and wrong for
 //! items NewMoon had rebalanced since (Renki Crystallized Spirit 48074: damage 44% there, 30% in the client).
@@ -25,6 +27,8 @@
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+
+use super::item_icons;
 use std::sync::{Arc, LazyLock};
 
 use indexmap::{IndexMap, IndexSet};
@@ -41,7 +45,7 @@ use crate::fmt;
 type Obj = Map<String, Value>;
 type Node<'a, 'i> = roxmltree::Node<'a, 'i>;
 
-const BASE_STATS: [&str; 7] = ["CLSR", "LNGR", "SPELL", "SUPPORT", "CRITICAL", "PDEF", "MDEF"];
+// "stats" = the item's own CorrectTbl lines (the tooltip's Basic Features); "effects" = its special-effect tokusei (Characteristics).
 
 fn slot_name(equip: &str) -> Option<&'static str> {
     Some(match equip {
@@ -455,7 +459,7 @@ fn get_lines(sources: &Sources, raw: &Value, depth: i32, visited: &mut HashSet<i
 
 /// `ids_out`: write the ids to trace (all gear, and every ticket item) to this file and stop: the input of tools\dcmexport --ids.
 /// `game_sources`: dcmexport's output for those ids: where each drops, is sold or handed out in the server's files.
-pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_file: &str, ids_out: Option<&str>, game_sources: Option<&str>) -> Result<()> {
+pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_file: &str, ids_out: Option<&str>, game_sources: Option<&str>, client_dir: Option<&Path>) -> Result<()> {
     let mut sources = Sources::default();
     if let Some(gs) = game_sources.filter(|p| Path::new(p).is_file()) {
         let root = json::load(gs)?;
@@ -470,6 +474,7 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
     let dec = Path::new(decoded);
 
     let mut name: IndexMap<i32, String> = IndexMap::new();
+    let mut icon_key: HashMap<i32, i32> = HashMap::new();
     {
         let xml = json::read_all_text(&dec.join("CItemData.xml"))?;
         let doc = parse_xml(&xml)?;
@@ -477,7 +482,9 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             let b = obj(Some(c), "baseData");
             let n = squash(&m(b, "name").unwrap_or_default());
             if !n.is_empty() {
-                name.insert(int(m(b, "ID").as_deref()), n);
+                let cid = int(m(b, "ID").as_deref());
+                name.insert(cid, n);
+                icon_key.insert(cid, int(m(b, "icon").as_deref()));
             }
         }
     }
@@ -605,7 +612,7 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                     let line = text(&e, &data)?;
                     // no words for it: its raw table id ("TALK_RATE 2") is not shown
                     if !RE_NO_WORDS_SP.is_match(&line) {
-                        if BASE_STATS.contains(&cid.as_str()) { &mut stats } else { &mut effects }.push(json!(line));
+                        stats.push(json!(line)); // every line of the item's own table: the tooltip's Basic Features
                     }
                 }
             }
@@ -619,7 +626,7 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                     }
                 }
             }
-            o.insert("stats".into(), Value::Array(stats));
+            o.insert("stats".into(), Value::Array(distinct(stats)));
             o.insert("effects".into(), Value::Array(distinct(effects)));
 
             // sets this piece belongs to; a one-piece set is the item's appearance bonus
@@ -716,6 +723,43 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
         std::fs::write(ids_out, text_out)?;
         println!("{} gear ids, {} ticket ids and {} box-opening items written to {}.", by_id.len(), ticket_by_key.len(), box_items.len(), ids_out);
         return Ok(());
+    }
+
+    // ---- icons: the picture the game shows for the item ----
+    let (mut with_icon, mut no_picture) = (0, 0);
+    if let Some(client) = client_dir {
+        let icon_dir = std::path::absolute(out_file)?.parent().map(Path::to_path_buf).unwrap_or_default().join("gear-db-icons");
+        std::fs::create_dir_all(&icon_dir)?;
+        let mut done: HashMap<String, bool> = HashMap::new();
+        for o in items.iter_mut() {
+            let id = json::int(o.get("id"));
+            let Some(file) = icon_key.get(&id).and_then(|&k| item_icons::item_icon_file(client, k)) else {
+                no_picture += 1;
+                continue;
+            };
+            let have = match done.get(&file) {
+                Some(&b) => b,
+                None => {
+                    let dest = icon_dir.join(format!("{file}.png"));
+                    let b = dest.is_file()
+                        || match item_icons::client_png(client, &file, &[]) {
+                            Some(png) => {
+                                std::fs::write(&dest, png)?;
+                                true
+                            }
+                            None => false,
+                        };
+                    done.insert(file.clone(), b);
+                    b
+                }
+            };
+            if have {
+                o.insert("icon".into(), json!(format!("gear-db-icons/{file}.png")));
+                with_icon += 1;
+            } else {
+                no_picture += 1;
+            }
+        }
     }
 
     // ---- the spreadsheets: where it comes from ----
@@ -870,6 +914,11 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
         std::fs::create_dir_all(parent)?;
     }
     std::fs::write(out_path, json::serialize(&Value::Object(result), Escape::Relaxed, false))?;
+    if client_dir.is_some() {
+        println!("Icons: {with_icon} pieces have one; {no_picture} have no picture in the client.");
+    } else {
+        println!("No icons: the game folder is not known (pass --client <game folder>).");
+    }
     println!("In-game source found for {in_game} pieces directly and {via_ticket} more through their ticket.");
     println!("{item_count} pieces of gear from the client, {with_src} with a source from the sheets. {} KB.", std::fs::metadata(out_path)?.len() / 1024);
     println!(

@@ -228,15 +228,17 @@ fn gear_database_matches_the_csharp_file() {
         return;
     }
     let out = std::env::temp_dir().join(format!("newmoon-geardb-{}.json", std::process::id()));
-    newmoon::build::gear_db::build(data(), decoded.to_str().unwrap(), sheets.to_str(), out.to_str().unwrap(), None, None).unwrap();
+    newmoon::build::gear_db::build(data(), decoded.to_str().unwrap(), sheets.to_str(), out.to_str().unwrap(), None, None, None).unwrap();
     let bytes = std::fs::read(&out).unwrap();
     let _ = std::fs::remove_file(&out);
     let text = String::from_utf8(bytes).unwrap();
-    // the C# CLI wrote 3736521 bytes for the same inputs; the file starts with the day it ran
+    // the C# CLI wrote 3736521 bytes for the same inputs; since 2026-11-24 every CorrectTbl line is in "stats" (the Gear
+    // page tooltip's Basic Features) instead of only the base stats, which moves lines and adds 6,028 commas. The file
+    // starts with the day it ran.
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (3736521, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (3742549, GEARDB_FNV));
 }
 
-/// FNV-1a of the C# `geardb` output after its `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 7993018080722391307;
+/// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats") after its `{"generatedAt":"yyyy-mm-dd"` start.
+const GEARDB_FNV: u64 = 7080139912481597827;

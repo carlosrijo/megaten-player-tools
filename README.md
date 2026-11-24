@@ -136,6 +136,11 @@ Stats and effects are read from the NewMoon client's current item tables, not fr
 rows matched no item in the game data (different spelling); they are listed with the sheet's own text, marked
 "sheet only". The cosmetic ticket tabs (Vanities) are left out.
 
+Each piece shows the icon the game shows for it (10,168 of 10,270; 102 have no picture in the client).
+The pictures are the game's own art, so they are not in the repository: they are made from your game folder by
+`newmoon-reader geardb ... --client <game folder>` (reference\README.md), into `app\ui\gear-db-icons\`. Without
+them the list shows empty boxes.
+
 ### Tools: Fusion Planner
 
 Under **Tools** in the left bar. Two views:
