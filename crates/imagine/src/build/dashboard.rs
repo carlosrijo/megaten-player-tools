@@ -272,6 +272,10 @@ pub struct Part {
     pub pct: bool,
     /// The skill whose icon stands for this part (demon skills, expertise skills), or 0; `demon`: the demon's own icon.
     pub skill_id: i32,
+    /// A summoned demon's equipment: the item (Epitaph Parts) whose picture stands in when the skill has none. picture: a
+    /// client interface picture that stands for the part (Demon Force, Mitama set).
+    pub item_id: i32,
+    pub picture: String,
     pub demon: bool,
     /// `fuse`: a fusion great-success bonus (the server adds it before a stat's percent step). `demon_stat`: one of
     /// the digitalize demon's own stats (added to the character's base stats). Both matter to the simulator only.
@@ -932,6 +936,8 @@ impl Dashboard {
                 note: e.cond_note.clone(),
                 from: e.item.clone(),
                 skill_id: e.skill_id,
+                item_id: e.item_id,
+                picture: e.picture.clone(),
                 ..Default::default()
             })
             .collect()
@@ -1064,6 +1070,12 @@ impl Dashboard {
                     if let Some(asset) = item_icons::skill_asset(store, data, p.skill_id, 0)? {
                         icon = Some(format!("skill:{asset}"));
                     }
+                }
+                if icons.is_some() && icon.is_none() {
+                    // the summoned demon's equipment has no picture for its skill: the Epitaph Parts item it is made from; its Demon
+                    // Force and Mitama set: the digitalize window's picture for that boost (both saved beside the skill icons)
+                    let asset = if p.item_id > 0 { item_icons::item_asset(store, data, p.item_id, 0)? } else { item_icons::client_asset(store, &p.picture, 0) };
+                    icon = asset.map(|a| format!("skill:{a}"));
                 }
                 if icon.is_none() && p.demon {
                     icon = Some("demon".into());

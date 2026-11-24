@@ -24,6 +24,11 @@ pub struct Effect {
     pub tokusei: i32,
     /// The skill this comes from, when it is a digitalize demon's skill or trait (for its icon); else 0.
     pub skill_id: i32,
+    /// The item this comes from, when its picture stands in for a skill that has none (a summoned demon's equipment: the
+    /// Epitaph Parts item it is made from); else 0.
+    pub item_id: i32,
+    /// The client interface picture that stands for this (a summoned demon's Demon Force, its Mitama set); else empty.
+    pub picture: String,
     /// Set when the server data for this part is missing (the reader then uses the tooltip's lines for it).
     pub missing_data: bool,
 }
@@ -41,6 +46,8 @@ impl Default for Effect {
             item: String::new(),
             tokusei: 0,
             skill_id: 0,
+            item_id: 0,
+            picture: String::new(),
             missing_data: false,
         }
     }

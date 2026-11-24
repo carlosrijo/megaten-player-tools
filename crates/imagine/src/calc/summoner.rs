@@ -23,6 +23,18 @@ use crate::Result;
 use crate::data::json::{self, At};
 use crate::game::DemonRecord;
 
+/// The digitalize window's pictures for the Demon Force boost and the Mitama set boost (the same ones the Digitalize page
+/// shows beside those boosts): they stand in for the summoned demon's Demon Force and Mitama set rows.
+const FORCE_PICTURE: &str = "digitalize_forceicon";
+const MITAMA_PICTURE: &str = "digitalize_mitamaicon";
+
+/// What stands for a summoned demon's bonus line on the page: a skill (and the equipment item worn for it, whose picture
+/// replaces the skill's when the game has none) or a client interface picture.
+enum Pic {
+    Skill(i32, i32),
+    Client(&'static str),
+}
+
 /// What a summoned demon's name is on the page: "Alilat (summoned)".
 pub fn source_name(d: &DemonRecord) -> String {
     format!("{} (summoned)", d.name)
@@ -40,13 +52,13 @@ impl Digitalize {
         let mut out = Vec::new();
         let Some(devil) = t.devils.get(&d.r#type) else { return Ok(out) };
         let item = source_name(d);
-        // (tokusei, where it comes from, the skill it belongs to for its icon)
-        let mut found: Vec<(i32, String, i32)> = Vec::new();
+        // (tokusei, where it comes from, its picture)
+        let mut found: Vec<(i32, String, Pic)> = Vec::new();
 
         // Demon Force stack
         for &sid in d.force_stack.as_deref().unwrap_or(&[]) {
             if let Some(toks) = (sid > 0).then(|| t.force_stack_tokusei.get(&sid)).flatten() {
-                found.extend(toks.iter().map(|&tid| (tid, "Demon Force".to_string(), 0)));
+                found.extend(toks.iter().map(|&tid| (tid, "Demon Force".to_string(), Pic::Client(FORCE_PICTURE))));
             }
         }
         // Mitama sets (the tokusei ones: bonus entries of -1)
@@ -56,7 +68,7 @@ impl Digitalize {
                 let mut i = 0;
                 while i + 1 < b.len() {
                     if b[i] == -1 && b[i + 1] != 0 {
-                        found.push((b[i + 1], format!("Mitama set {}", set_name(set.id)), 0));
+                        found.push((b[i + 1], format!("Mitama set {}", set_name(set.id)), Pic::Client(MITAMA_PICTURE)));
                     }
                     i += 2;
                 }
@@ -64,34 +76,35 @@ impl Digitalize {
         }
         // Passives of the learned skills, then the traits (a worn demon equipment's skill replaces its slot's trait)
         let skill_name = |id: i32| -> Result<String> { Ok(data.skill_names()?.get(&id).cloned().flatten().unwrap_or_else(|| format!("skill {id}"))) };
-        let mut skills: Vec<(i32, &str)> = Vec::new();
+        // (skill, where it comes from, the worn equipment item it stands for)
+        let mut skills: Vec<(i32, &str, i32)> = Vec::new();
         for &id in d.skills.iter().filter(|&&x| x > 0) {
             if t.skills.get(&id).is_some_and(|&(cat, _)| cat == 0) {
-                skills.push((id, "passive"));
+                skills.push((id, "passive", 0));
             }
         }
         for i in 0..4usize {
             let equip = d.equipment.as_ref().and_then(|e| e.get(i)).copied().unwrap_or(0);
             if equip > 0 {
                 if let Some(&sk) = t.equipment_skill.get(&equip) {
-                    skills.push((sk, "equipment"));
+                    skills.push((sk, "equipment", equip));
                 }
             } else if i < devil.traits.len() && devil.traits[i] > 0 {
-                skills.push((devil.traits[i], "trait"));
+                skills.push((devil.traits[i], "trait", 0));
             }
         }
-        for (id, kind) in skills {
+        for (id, kind, item_id) in skills {
             let Some(p) = data.passives()?.get(&id.to_string()).filter(|v| !v.is_null()) else { continue };
             let name = skill_name(id)?;
             for tn in json::arr(p.at("tokuseiIds")) {
                 let tid = json::int(Some(tn));
                 if tid != 0 {
-                    found.push((tid, format!("{kind} {name}"), id));
+                    found.push((tid, format!("{kind} {name}"), Pic::Skill(id, item_id)));
                 }
             }
         }
 
-        for (tid, from, skill_id) in found {
+        for (tid, from, pic) in found {
             // only the ones the server aims at the summoner (a tokusei the data lacks can't be told)
             if !data.tokusei_full(tid)?.is_some_and(|def| def.target == "SUMMONER") {
                 continue;
@@ -100,7 +113,13 @@ impl Digitalize {
                 e.target = "self".into();
                 e.source = "summoned".into();
                 e.item = item.clone();
-                e.skill_id = skill_id;
+                match pic {
+                    Pic::Skill(skill_id, item_id) => {
+                        e.skill_id = skill_id;
+                        e.item_id = item_id;
+                    }
+                    Pic::Client(name) => e.picture = name.to_string(),
+                }
                 // a tokusei that needs the owner digitalized has nothing to do beside a partner
                 if e.cond == "digitalized" {
                     e.cond = "inactive".into();
