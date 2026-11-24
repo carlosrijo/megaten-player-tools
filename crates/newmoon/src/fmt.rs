@@ -38,7 +38,7 @@ pub fn g(x: f64) -> String {
         return "NaN".into();
     }
     if x.is_infinite() {
-        return if x > 0.0 { "∞".into() } else { "-∞".into() };
+        return if x > 0.0 { "Infinity".into() } else { "-Infinity".into() };
     }
     shortest(x.is_sign_negative(), &format!("{:e}", x.abs()), 17)
 }
@@ -133,7 +133,7 @@ pub fn custom(x: f64, pattern: &str) -> String {
         return "NaN".into();
     }
     if x.is_infinite() {
-        return if x > 0.0 { "∞".into() } else { "-∞".into() };
+        return if x > 0.0 { "Infinity".into() } else { "-Infinity".into() };
     }
     let neg = x.is_sign_negative();
     let (mut digits, mut scale) = decompose(&format!("{:.14e}", x.abs()));
@@ -239,20 +239,36 @@ pub fn round_away(x: f64, digits: i32) -> f64 {
     (x * p).round() / p
 }
 
-/// `double.Parse` / `TryParse` with InvariantCulture and NumberStyles.Float: surrounding white space allowed.
+/// .NET `NumberStyles` white space: only ASCII 0x09-0x0D and space (Rust's `trim` would also strip NBSP etc.).
+fn trim_net(s: &str) -> &str {
+    s.trim_matches(|c: char| c == ' ' || ('\u{9}'..='\u{d}').contains(&c))
+}
+
+/// `double.Parse` / `TryParse` with InvariantCulture and NumberStyles.Float: surrounding ASCII white space allowed,
+/// "NaN", "Infinity" and "-Infinity" (any case) accepted, too-large numbers give ±Infinity (.NET Core 3.0+).
 pub fn parse_f64(s: &str) -> Option<f64> {
-    let t = s.trim();
+    let t = trim_net(s);
     if t.is_empty() {
         return None;
     }
-    t.parse::<f64>().ok().filter(|v| v.is_finite() || t.eq_ignore_ascii_case("infinity") || t.eq_ignore_ascii_case("-infinity"))
+    let lower = t.to_ascii_lowercase();
+    match lower.as_str() {
+        "nan" | "+nan" | "-nan" => return Some(f64::NAN),
+        "infinity" | "+infinity" | "∞" | "+∞" => return Some(f64::INFINITY),
+        "-infinity" | "-∞" => return Some(f64::NEG_INFINITY),
+        _ => {}
+    }
+    // Rust also reads "inf"/"nan" spellings .NET doesn't; anything with letters other than an exponent is rejected
+    if lower.chars().any(|c| c.is_ascii_alphabetic() && c != 'e') {
+        return None;
+    }
+    t.parse::<f64>().ok()
 }
 
-/// `int.Parse` / `TryParse` with InvariantCulture (NumberStyles.Integer: white space and a leading sign allowed).
+/// `int.Parse` / `TryParse` with InvariantCulture (NumberStyles.Integer: ASCII white space and a leading sign allowed).
 pub fn parse_i32(s: &str) -> Option<i32> {
-    s.trim().parse::<i32>().ok()
+    trim_net(s).parse::<i32>().ok()
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
