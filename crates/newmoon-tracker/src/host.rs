@@ -49,16 +49,27 @@ impl WebHost {
         user_data: &std::path::Path,
         dark: bool,
         dev: bool,
+        offscreen: bool,
         site: Arc<Site>,
         on_message: MessageHandler,
     ) -> anyhow::Result<WebHost> {
         let _ = std::fs::create_dir_all(user_data);
+        // Off screen the browser would decide nobody can see the page and stop drawing it: tell it not to check.
+        let options: Option<ICoreWebView2EnvironmentOptions> = offscreen.then(|| {
+            let o = webview2_com::CoreWebView2EnvironmentOptions::default();
+            unsafe {
+                o.set_additional_browser_arguments(
+                    "--disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows --disable-renderer-backgrounding".to_string(),
+                );
+            }
+            o.into()
+        });
         let env = {
             let (tx, rx) = mpsc::channel();
             let folder = HSTRING::from(user_data.as_os_str());
             CreateCoreWebView2EnvironmentCompletedHandler::wait_for_async_operation(
                 Box::new(move |handler| unsafe {
-                    CreateCoreWebView2EnvironmentWithOptions(PCWSTR::null(), &folder, None::<&ICoreWebView2EnvironmentOptions>, &handler)
+                    CreateCoreWebView2EnvironmentWithOptions(PCWSTR::null(), &folder, options.as_ref(), &handler)
                         .map_err(webview2_com::Error::WindowsError)
                 }),
                 Box::new(move |error_code, environment| {

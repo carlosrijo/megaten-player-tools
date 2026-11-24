@@ -74,6 +74,9 @@ fn main() {
         .with_drag_and_drop(false);
     if opt.capture.is_some() {
         builder = builder.with_inner_size(PhysicalSize::new(opt.width.max(1) as u32, opt.height.max(1) as u32));
+        if opt.offscreen {
+            builder = builder.with_skip_taskbar(true); // `ShowInTaskbar = false`
+        }
     }
     let window = match builder.build(&event_loop) {
         Ok(w) => w,
@@ -90,6 +93,12 @@ fn main() {
     let mut maximize = false;
     if opt.capture.is_some() {
         center_on_primary(hwnd);
+        if opt.offscreen {
+            // Beside the desktop, past its right edge: still a shown window (so the page keeps drawing), but nobody
+            // sees it and the real mouse cannot reach it.
+            let (w, h) = winutil::outer_size(hwnd);
+            winutil::set_outer_bounds(hwnd, winutil::virtual_screen_right() + 200, 0, w, h);
+        }
     } else {
         let (bounds, maximized) = app.saved_bounds();
         let placed = match bounds.as_deref() {
@@ -126,17 +135,19 @@ fn main() {
     let local = std::env::var_os("LOCALAPPDATA").map(std::path::PathBuf::from).unwrap_or_else(|| std::path::PathBuf::from("."));
     if opt.capture.is_some() {
         // A capture or tour run starts from a clean page every time (nothing remembered from the run before).
-        let _ = std::fs::remove_dir_all(local.join("NewMoonTracker").join("WebView2-capture"));
+        // Each run has its own folder (named after its process), so two scripted runs at once don't share one;
+        // folders left by runs that have ended are cleared here.
+        clear_old_capture_folders(&local.join("NewMoonTracker"));
     }
     // scripted runs keep their own page storage, so they never change what the real window remembers
-    let user_data = local.join("NewMoonTracker").join(if opt.capture.is_some() { "WebView2-capture" } else { "WebView2" });
+    let user_data = local.join("NewMoonTracker").join(if opt.capture.is_some() { format!("WebView2-capture-{}", std::process::id()) } else { "WebView2".to_string() });
     let _ = std::fs::create_dir_all(&app.data_dir);
     let site = Arc::new(site::Site::new(opt.dev, &app.data_dir));
     let handler: host::MessageHandler = {
         let app = app.clone();
         Arc::new(move |json, source| app.on_message(json, source))
     };
-    let web = match WebHost::create(hwnd, &user_data, dark, opt.dev, site, handler) {
+    let web = match WebHost::create(hwnd, &user_data, dark, opt.dev, opt.offscreen, site, handler) {
         Ok(w) => w,
         Err(e) => {
             winutil::error_box(
@@ -196,6 +207,10 @@ fn main() {
                         winutil::apply_chrome(hwnd, dark);
                         w.set_background(dark);
                     }
+                    UserEvent::Resize { w, h, reply } => {
+                        winutil::resize_about_centre(hwnd, w, h);
+                        let _ = reply.send(Ok(()));
+                    }
                     UserEvent::Close => {
                         app.save_bounds(winutil::saved_bounds(hwnd));
                         *control_flow = ControlFlow::Exit;
@@ -217,4 +232,25 @@ fn center_on_primary(hwnd: windows::Win32::Foundation::HWND) {
     let (w, h) = winutil::outer_size(hwnd);
     let wa = winutil::primary_work_area();
     winutil::set_outer_bounds(hwnd, wa.left + ((wa.right - wa.left) - w) / 2, wa.top + ((wa.bottom - wa.top) - h) / 2, w, h);
+}
+
+/// Every `WebView2-capture*` folder whose trailing number is not the id of a running NewMoonTracker process: the
+/// leftovers of scripted runs that have ended.
+fn clear_old_capture_folders(app_data: &std::path::Path) {
+    let Ok(entries) = std::fs::read_dir(app_data) else { return };
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if !name.to_ascii_lowercase().starts_with("webview2-capture") || !entry.path().is_dir() {
+            continue;
+        }
+        let alive = name
+            .rsplit('-')
+            .next()
+            .and_then(|last| last.parse::<u32>().ok())
+            .and_then(winutil::process_name)
+            .is_some_and(|p| p.to_ascii_lowercase().contains("newmoontracker"));
+        if !alive {
+            let _ = std::fs::remove_dir_all(entry.path());
+        }
+    }
 }

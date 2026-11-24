@@ -154,7 +154,7 @@ pub fn live_tour_and_exit(app: &MainForm) {
     let dir = app.opt.capture.clone().unwrap_or_default();
     let r = (|| -> Result<()> {
         sleep(700);
-        crate::live_tour::run(&app.ui, app.opt.tour.as_deref().unwrap_or_default(), &dir)
+        crate::live_tour::run(&app.ui, app.opt.tour.as_deref().unwrap_or_default(), &dir, &|w, h| app.ui.resize_about_centre(w, h).map_err(ui_err))
     })();
     if let Err(e) = r {
         let _ = std::fs::create_dir_all(&dir);

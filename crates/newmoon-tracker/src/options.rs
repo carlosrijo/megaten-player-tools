@@ -12,6 +12,7 @@
 //!                                      click through the page as scripted, saving a picture per step (for the demo video)
 //!   ... --tour steps.json --capture folder --live
 //!                                      the same steps filmed as they happen, with a pointer that moves and clicks
+//!   ... --capture ... --offscreen       that run's window is placed beside the desktop, where nobody sees it or mouses over it
 //!   ... --capture out.png --then-scheme light|dark
 //!                                      stand in for Windows switching its light/dark setting while the app is open:
 //!                                      the page is told the new scheme after it has loaded, then the picture is taken
@@ -20,6 +21,7 @@
 pub struct AppOptions {
     pub dev: bool,
     pub live: bool,
+    pub offscreen: bool,
     pub capture: Option<String>,
     pub page: Option<String>,
     pub theme: Option<String>,
@@ -38,6 +40,7 @@ impl AppOptions {
         let mut o = AppOptions {
             dev: false,
             live: false,
+            offscreen: false,
             capture: None,
             page: None,
             theme: None,
@@ -73,6 +76,7 @@ impl AppOptions {
                 "--character" => o.character = next(),
                 "--tour" => o.tour = next(),
                 "--live" => o.live = true,
+                "--offscreen" => o.offscreen = true,
                 "--data" => o.data = next(),
                 "--size" => {
                     let s = next().unwrap_or_default();

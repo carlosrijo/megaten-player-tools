@@ -6,7 +6,7 @@ use windows::Win32::Graphics::Dwm::DwmSetWindowAttribute;
 use windows::Win32::Graphics::Gdi::*;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Registry::*;
-use windows::Win32::UI::HiDpi::{GetDpiForWindow, GetSystemMetricsForDpi};
+use windows::Win32::UI::HiDpi::{AdjustWindowRectExForDpi, GetDpiForWindow, GetSystemMetricsForDpi};
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::{BOOL, PCWSTR, w};
 
@@ -172,4 +172,46 @@ pub fn error_box(hwnd: Option<HWND>, text: &str, title: &str) {
 pub fn explorer(args: &str) {
     use std::os::windows::process::CommandExt;
     let _ = std::process::Command::new("explorer.exe").raw_arg(args).spawn();
+}
+
+/// The virtual screen's right edge (`SystemInformation.VirtualScreen.Right`): past the last monitor.
+pub fn virtual_screen_right() -> i32 {
+    unsafe { GetSystemMetrics(SM_XVIRTUALSCREEN) + GetSystemMetrics(SM_CXVIRTUALSCREEN) }
+}
+
+/// A live tour's "resize" step (C# `MainForm.ResizeAboutCentre`): the window is sized so its client area is w x h
+/// (`SizeFromClientSize`), keeping the window's centre where it was.
+pub fn resize_about_centre(hwnd: HWND, w: i32, h: i32) {
+    unsafe {
+        let mut r = RECT::default();
+        if GetWindowRect(hwnd, &mut r).is_err() {
+            return;
+        }
+        let (cx, cy) = (r.left + (r.right - r.left) / 2, r.top + (r.bottom - r.top) / 2);
+        let mut want = RECT { left: 0, top: 0, right: w, bottom: h };
+        let style = WINDOW_STYLE(GetWindowLongPtrW(hwnd, GWL_STYLE) as u32);
+        let ex = WINDOW_EX_STYLE(GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32);
+        let dpi = GetDpiForWindow(hwnd).max(96);
+        let _ = AdjustWindowRectExForDpi(&mut want, style, false, ex, dpi);
+        let (ow, oh) = (want.right - want.left, want.bottom - want.top);
+        let _ = SetWindowPos(hwnd, None, cx - ow / 2, cy - oh / 2, ow, oh, SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+}
+
+/// `Process.GetProcessById(pid).ProcessName`: the running program's file name without ".exe"; None when no such
+/// process is running (or it cannot be looked at).
+pub fn process_name(pid: u32) -> Option<String> {
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION};
+    unsafe {
+        let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+        let mut buf = [0u16; 1024];
+        let mut len = buf.len() as u32;
+        let r = QueryFullProcessImageNameW(h, PROCESS_NAME_WIN32, windows::core::PWSTR(buf.as_mut_ptr()), &mut len);
+        let _ = CloseHandle(h);
+        r.ok()?;
+        let path = String::from_utf16_lossy(&buf[..len as usize]);
+        let file = path.rsplit(['\\', '/']).next().unwrap_or(&path);
+        Some(file.strip_suffix(".exe").or_else(|| file.strip_suffix(".EXE")).unwrap_or(file).to_string())
+    }
 }

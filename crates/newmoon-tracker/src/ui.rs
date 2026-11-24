@@ -30,6 +30,8 @@ pub enum UserEvent {
     SetScheme(Option<String>),
     /// `ApplyChrome(dark)`: title bar and the colour behind the page
     ApplyChrome(bool),
+    /// `ResizeAboutCentre(w, h)`: the page area becomes w x h, the window staying where its centre is
+    Resize { w: i32, h: i32, reply: Reply<()> },
     /// `Close()`
     Close,
 }
@@ -85,6 +87,13 @@ impl Ui {
 
     pub fn apply_chrome(&self, dark: bool) {
         let _ = self.send(UserEvent::ApplyChrome(dark));
+    }
+
+    /// A live tour's "resize" step (C# `MainForm.ResizeAboutCentre`): returns when the window has its new size.
+    pub fn resize_about_centre(&self, w: i32, h: i32) -> Result<(), String> {
+        let (tx, rx) = mpsc::channel();
+        self.send(UserEvent::Resize { w, h, reply: tx })?;
+        rx.recv().map_err(|_| "The window is closed.".to_string())?
     }
 
     pub fn close(&self) {
