@@ -221,8 +221,11 @@ fn fnv(bytes: &[u8]) -> u64 {
 
 #[test]
 fn gear_database_matches_the_csharp_file() {
-    let decoded = Path::new(r"%USERPROFILE%\Documents\smt-decoded\server");
-    let sheets = Path::new(r"%USERPROFILE%\Documents\repos\smt-gear-analysis\data\sheet_gear.tsv");
+    // NEWMOON_DECODED and NEWMOON_GEAR_SHEET, or the usual places under %USERPROFILE%\Documents
+    let docs = std::path::PathBuf::from(std::env::var_os("USERPROFILE").unwrap_or_default()).join("Documents");
+    let decoded = std::env::var_os("NEWMOON_DECODED").map(std::path::PathBuf::from).unwrap_or_else(|| docs.join(r"smt-decoded\server"));
+    let sheets = std::env::var_os("NEWMOON_GEAR_SHEET").map(std::path::PathBuf::from).unwrap_or_else(|| docs.join(r"repos\smt-gear-analysis\data\sheet_gear.tsv"));
+    let (decoded, sheets) = (decoded.as_path(), sheets.as_path());
     if !external_data() || !decoded.join("ItemData.xml").is_file() || !sheets.is_file() {
         eprintln!("skipped: the decoded client tables or the gear sheet are not on this machine");
         return;

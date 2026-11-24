@@ -1,7 +1,7 @@
 # newmoon-reader
 
 Read-only snapshots of a NewMoon character's stats and gear from the running ImagineClient,
-plus the data files for the "Rubito Build Tracker" page.
+and BABEL, the desktop app that shows them.
 
 It only ever opens the game process with read access (`PROCESS_QUERY_INFORMATION | PROCESS_VM_READ`):
 it never writes to the game or changes anything.
@@ -59,9 +59,6 @@ inside it) and the command line reader (`newmoon-reader.exe`). After a change, w
 `pwsh -NoProfile -File tools\rebuild-app.ps1` closes it, builds both and opens it again (Windows locks a running
 program, so a build with the app open fails to replace it).
 
-The C# version (`src\`, `app\*.cs`, `*.csproj`) is the one this was ported from, kept in the repository for comparison
-until it is removed; changes go to the Rust code. `PORTING.md` says how the two correspond.
-
 "BABEL": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise, Digitalize and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
@@ -93,21 +90,20 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
   click the name in the header to switch.
-- `app\MainForm.cs` the window (WinForms + WebView2) and the handful of requests the page can make.
+- `crates\newmoon-tracker\src\main_form.rs` the window (WebView2) and the handful of requests the page can make.
 - `app\ui\` the page: `index.html`, `app.css`, `app.js` (plain JavaScript, no libraries, works offline).
-- `src\Build\Pipeline.cs` the snapshot / rebuild steps shared by the app and the command line.
+- `crates\newmoon\src\build\pipeline.rs` the snapshot / rebuild steps shared by the app and the command line.
 - Preferences (character, CSV path, theme, window position) live in `%AppData%\NewMoonTracker\settings.json`.
 - Theme: by default the app follows Windows' light/dark app setting, also when it changes while the app is open
-  (Settings can pin Light or Dark). The window sets the page's colour scheme (`SetScheme` in `MainForm.cs`); the page
+  (Settings can pin Light or Dark). The window sets the page's colour scheme (`set_scheme` in `host.rs`); the page
   only asks `prefers-color-scheme`. `--capture out.png --then-scheme light|dark` checks the live switch.
 
 Working on the app's page:
 - `BABEL.exe --dev` loads the page straight from `app\ui`, so page edits need no rebuild (F12 opens DevTools).
 - `BABEL.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]` saves a
   picture of the page and exits.
-- In a plain browser: `tools\serve.ps1 -Root . -Port 18765`, then `http://localhost:18765/app/ui/index.html`.
-  For the Simulator use `newmoon-reader.exe serve --port 18765 [--data <copy of the data folder>]` instead: the same
-  page, with the real calculation behind the Simulator (the plain server has none, and the page says so).
+- In a plain browser: `newmoon-reader.exe serve --port 18765 [--data <copy of the data folder>]`, then
+  `http://localhost:18765/app/ui/index.html` (the same page, with the real calculation behind the Simulator).
   A stand-in for the app reads `data\dash`. Add `?empty=1` (first run), `?snap=fail` or `?snap=live` (snapshot results),
   `?game=1`, `?page=…`, `?theme=…`, `?mode=digi`.
 - The assistant: `--capture` pictures leave it out unless the run adds `--query assistant=1`. In a plain browser it
@@ -152,7 +148,7 @@ rows matched no item in the game data (different spelling); they are listed with
 
 Each piece shows the icon the game shows for it (10,168 of 10,270; 102 have no picture in the client).
 The pictures are the game's own art, so they are not in the repository: they are made from your game folder by
-`newmoon-reader geardb ... --client <game folder>` (reference\README.md), into `app\ui\gear-db-icons\`. Without
+`newmoon-reader geardb ... --client <game folder>`, into `app\ui\gear-db-icons\`. Without
 them the list shows empty boxes.
 
 ### Tools: Fusion Planner
@@ -399,33 +395,26 @@ every bonus they give.
 | 12 stats, HP/MP | The own characters status object (always in memory; the CSV says "Character data"). While the Information window is open its block is used instead; it gives the same numbers |
 | Equipped items | Gear grid (always in memory; newest complete grid wins) |
 | Level | Nameplate record |
-| Item bonuses (stats, characteristics, tarot, soul, mods) | Each worn item's record in memory (stats source item, special-effect source item, mods, fusion great-success bonuses, tarot, soul) worked out with the server data (`Calc\ItemEffects.cs`). A part with no server data (e.g. Ogami's Crystal) uses the item's tooltip text (cached per item id); so do old snapshots without records |
+| Item bonuses (stats, characteristics, tarot, soul, mods) | Each worn item's record in memory (stats source item, special-effect source item, mods, fusion great-success bonuses, tarot, soul) worked out with the server data (`calc/item_effects.rs`). A part with no server data (e.g. Ogami's Crystal) uses the item's tooltip text (cached per item id); so do old snapshots without records |
 | Set and appearance bonuses | The client's equipment-set table (one-piece entries are appearance bonuses), with effect numbers from the server data |
 | Fusion (soul/tarot) set bonuses | Each slot's tarot/soul enchant ids (the worn item's own record; the gear grid as fallback) checked against the enchant-set table: active only when every enchant in the set is worn |
 | Expertise ranks | The client's expertise tree; chain expertises use NewMoon's chain formulas and rank skills (client data, `reference/expertise-*.tsv`). Toggle skills count only while switched on (read from the game: the learned-skill map's "on" flag) |
 | Other learned passives | Every learned passive skill that no expertise rank or Digitalization Level gives (Additional HP/MP, "Additional" affinity skills, Quickness, clan skills, Quickdraw...), from the learned-skill map; shown as "Other learned skills" on the Expertise tab |
 | Digitalization Levels | The character's progress data in memory (level and points per race); each level's "extend" passive skill counts like an expertise passive (one group per race on the Digitalize page, which also shows the digitalize demon) |
-| The assistant (Black Frost) | The client's own 3D files: `Devil\bone\D2_11_003a_Base.nif` (model, bones, texture) and the 15 animations its `.kfm` lists (Jack Frost's `.kf` files, which the game itself uses for Black Frost). Read by `src\Data\Nif.cs`, turned into one file for the page by `src\Build\DemonModel.cs` |
-| COMP demons (`demon`) | Each demon's records in memory (`Game\DemonReader.cs`): level, growth type, rebirth ranks, Mitama slots, skill slots, learned skills; base values, growth, traits and Mitama tables from the server's demon tables (`reference\`) |
+| The assistant (Black Frost) | The client's own 3D files: `Devil\bone\D2_11_003a_Base.nif` (model, bones, texture) and the 15 animations its `.kfm` lists (Jack Frost's `.kf` files, which the game itself uses for Black Frost). Read by `data/nif.rs`, turned into one file for the page by `build/demon_model.rs` |
+| COMP demons (`demon`) | Each demon's records in memory (`game/demon_reader.rs`): level, growth type, rebirth ranks, Mitama slots, skill slots, learned skills; base values, growth, traits and Mitama tables from the server's demon tables (`reference\`) |
 
-Layouts are documented in `src/Game/ClientReader.cs`.
+Layouts are documented in `crates/newmoon/src/game/client_reader.rs`.
 
 ## Files
 
-- `crates/` the program (Rust): `newmoon/` the reader library (`memory`, `game`, `data`, `calc`, `build`, one file per
-  former C# file), `newmoon-reader/` the command line, `newmoon-tracker/` the desktop app (window, WebView2, page bridge).
-- `src/` the previous C# code, kept for comparison. `Memory/` read-only process access; `Game/` structure layouts; `Calc/` tooltip parsing and bonus math;
-  `Build/` snapshot, CSV, expertise and page-data builders.
+- `crates/` the program (Rust): `newmoon/` the reader library (`memory`, `game`, `data`, `calc`, `build`), `newmoon-reader/` the command line, `newmoon-tracker/` the desktop app (window, WebView2, page bridge).
 - `data/cache/` last stats, tooltip text per item, the set table, alignment. `data/cache/models/` the assistant's model,
   made from the game's files (the game's art: not in the repository).
 - `app/ui/assistant.js` draws the assistant (plain WebGL, no library).
 - `reference/enchants-game.tsv` the client's own enchant table; `reference/devils-game.tsv`, `devil-growth.tsv`,
   `mitama-*.tsv`, `guardian-assist.tsv`, `guardian-levels.tsv`, `skills-digitize.tsv` the server's demon and digitalize tables;
-  `tokusei-*.tsv`, `expertise-newmoon.tsv`, `traits-unresolved.tsv` NewMoon data from the client (see
-  `reference/README.md`; `tools/sbinexport` regenerates them).
-- `tools/memdbg` is a read-only memory explorer for finding new data in the client (modes listed in its header).
-- `.claude/skills/` holds skills for AI agents working on this repo: dev workflow, memory investigation, checking
-  numbers against the game, the server's rules, and decoding game data.
+  `tokusei-*.tsv`, `expertise-newmoon.tsv`, `traits-unresolved.tsv` NewMoon data from the client.
 - `data/tooltips.txt` also saves each slot's item record (`(item …)` in the header) and the level; the CSV's
   "Gear records" column does the same per row, so `rebuild` and `recalc` work from ids too.
 - `data/dash/` page data: `snapshots.json`, `gear.json`, `expertise.json`, `bonuses.json`. `skill-icons/` holds the skill icons the Expertise and Digitalize pages show, converted from the game client's own icon files.

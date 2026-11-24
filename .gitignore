@@ -2,7 +2,7 @@ bin/
 obj/
 *.user
 .vs/
-.claude/settings.local.json
+
 # demon icons for the DCM Locator: the game's own art, made locally by tools\dcmexport
 app/ui/dcm-icons/
 # enemy pictures for the Dungeon Explorer: game art, made locally by newmoon-reader dungeons --client
@@ -26,3 +26,23 @@ dist/
 /target/
 # the release exe's debug symbols (BABEL.pdb): not shipped, kept as a workflow artifact for reading crash reports
 dist-symbols/
+
+# our own notes and agent setup (local paths, how we work): kept on disk, never committed
+/.claude/
+/CLAUDE.md
+/HANDOVER.md
+/PORTING.md
+/reference/README.md
+/bug-report-*.md
+/legacy-powershell/
+# the C# version the Rust code was ported from, and its tools and scripts: kept on disk, never committed
+/NewMoonReader.csproj
+/src/
+/app/*.cs
+/app/*.csproj
+/page/
+/tools/*/
+/tools/*.ps1
+!/tools/publish-portable.ps1
+!/tools/rebuild-app.ps1
+/reference/clientdata-scripts/*.ps1
