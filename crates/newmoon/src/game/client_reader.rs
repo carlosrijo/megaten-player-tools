@@ -605,16 +605,20 @@ pub struct OwnStatus {
 
 /// Level, HP/MP and the 12 stats (base, bonus) of the client's own character, from its status object (the same class
 /// as demons'): own character record +12 -> status (vtable 0x16CB904): +132 level (one byte: the 3 above it can hold
-/// leftover bytes, e.g. Rokujuu 0x1927D661 = level 97), +136 HP, +140 max HP, +144 MP
-/// (u16), +146 max MP (u16); one 4-byte entry per CorrectTbl index from +176: +2 base, +4 bonus (int16), so STR..LUCK
+/// leftover bytes, e.g. Rokujuu 0x1927D661 = level 97), +136 MAX HP, +140 CURRENT HP, +144 MAX MP (u16), +146
+/// CURRENT MP (u16) (the demons' status objects have them the other way round: HP, max HP, MP, max MP); one 4-byte
+/// entry per CorrectTbl index from +176: +2 base, +4 bonus (int16), so STR..LUCK
 /// are indexes 0-5 and CLS-R..Support 12-15, P.Def 19, M.Def 20. Checked against the open Information window (all 24
-/// numbers and HP/MP equal). None when unreadable or when two own records disagree.
+/// numbers and HP/MP equal, at full HP/MP). None when unreadable or when two own records disagree.
 ///
-/// `digitalized`: while digitalized, +140 keeps a stale max HP below the current HP (Rubito + Shikigami:
-/// HP 1317 at +136, 1134 at +140; the game shows 1317): the current HP is then taken as the max.
+/// The order of the HP/MP words was found 2026-11-24 with HP and MP below the maximum: Rubito's HUD showed HP 589/709
+/// and MP 0/264 while +136 = 709, +140 = 589 (counting down with the HP), +144 = 264, +146 = 0. It was read the other
+/// way round before, which only worked at full HP and MP (both words equal); with either below the maximum the record
+/// was thrown away and a snapshot fell back to the saved stats. The digitalized case that led to `digitalized` was the
+/// same thing (Rubito + Shikigami: +136 = 1317 = the game's Max HP, +140 = 1134 = his current HP, not a "stale max
+/// HP"). `_digitalized` is therefore unused; it stays so the callers and the C# signature are unchanged.
 pub fn read_own_status(mem: &GameMemory, digitalized: bool) -> Option<OwnStatus> {
     let mut res: Option<OwnStatus> = None;
-    const IDX: [usize; 12] = [0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 19, 20]; // STAT_NAMES order
     for (r, buf) in mem.scan() {
         if r.base < 0x02000000 {
             continue;
@@ -635,23 +639,7 @@ pub fn read_own_status(mem: &GameMemory, digitalized: bool) -> Option<OwnStatus>
             if u32_at(&s, 0) != STATUS_VTABLE {
                 continue;
             }
-            let mut pairs = vec![0i32; 24];
-            for i in 0..12 {
-                pairs[i * 2] = i16_at(&s, 178 + IDX[i] * 4) as i32;
-                pairs[i * 2 + 1] = i16_at(&s, 180 + IDX[i] * 4) as i32;
-            }
-            let lvl = s[132] as i32;
-            let hp = i32_at(&s, 136);
-            let mut mhp = i32_at(&s, 140);
-            let mp = u16_at(&s, 144) as i32;
-            let mmp = u16_at(&s, 146) as i32;
-            if digitalized && hp > mhp {
-                mhp = hp;
-            }
-            if lvl < 1 || lvl > 99 || mhp < 1 || hp < 0 || hp > mhp || mp > mmp {
-                continue;
-            }
-            let o = OwnStatus { level: lvl, hp, max_hp: mhp, mp, max_mp: mmp, pairs };
+            let Some(o) = own_status_of(&s, digitalized) else { continue };
             if let Some(prev) = &res {
                 if prev.pairs != o.pairs || prev.max_hp != o.max_hp {
                     return None;
@@ -661,6 +649,30 @@ pub fn read_own_status(mem: &GameMemory, digitalized: bool) -> Option<OwnStatus>
         }
     }
     res
+}
+
+/// The numbers [`read_own_status`] takes from one own-character status object (`s`: its first 264 bytes, vtable already
+/// checked), or None when they can't be a live status.
+fn own_status_of(s: &[u8], _digitalized: bool) -> Option<OwnStatus> {
+    const IDX: [usize; 12] = [0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 19, 20]; // STAT_NAMES order
+    let mut pairs = vec![0i32; 24];
+    for i in 0..12 {
+        pairs[i * 2] = i16_at(s, 178 + IDX[i] * 4) as i32;
+        pairs[i * 2 + 1] = i16_at(s, 180 + IDX[i] * 4) as i32;
+    }
+    let lvl = s[132] as i32;
+    // The own character's words are max first, current second (the demons' are the other way round): +136 max HP,
+    // +140 current HP, +144 max MP, +146 current MP. See [`read_own_status`].
+    let mhp = i32_at(s, 136);
+    let hp = i32_at(s, 140);
+    let mmp = u16_at(s, 144) as i32;
+    let mp = u16_at(s, 146) as i32;
+    if lvl < 1 || lvl > 99 || mhp < 1 || hp < 0 {
+        return None;
+    }
+    // The current values never really exceed the maximum; when the maximum has just dropped (a toggle switched on) the
+    // current word can lag for a moment, which is no reason to drop the record.
+    Some(OwnStatus { level: lvl, hp: hp.min(mhp), max_hp: mhp, mp: mp.min(mmp), max_mp: mmp, pairs })
 }
 
 /// The client's own character's alignment points (LNC), or None when unreadable: own character record +12 -> status
@@ -998,6 +1010,78 @@ pub fn read_set_table(mem: &GameMemory) -> Option<Vec<SetRecord>> {
         sets.push(SetRecord { id: i32_at(&buf, o), pieces, tokusei: tok });
     }
     Some(sets)
+}
+
+#[cfg(test)]
+mod own_status_tests {
+    use super::*;
+
+    /// Rubito's 12 stats (base, bonus) from the 2026-11-24 02:22 snapshot, in STAT_NAMES order.
+    const PAIRS: [i32; 24] = [1, 109, 1, 65, 1, 66, 82, 66, 99, 156, 53, 33, 64, 71, 182, 362, 87, 141, 128, 45, 67, 7, 74, 16];
+
+    /// A status object as the game holds it: the words at +136 / +140 / +144 / +146 as they sit in memory.
+    fn status(level: u8, w136: i32, w140: i32, w144: u16, w146: u16) -> Vec<u8> {
+        const IDX: [usize; 12] = [0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 19, 20];
+        let mut s = vec![0u8; 264];
+        s[0..4].copy_from_slice(&STATUS_VTABLE.to_le_bytes());
+        s[132] = level;
+        s[136..140].copy_from_slice(&w136.to_le_bytes());
+        s[140..144].copy_from_slice(&w140.to_le_bytes());
+        s[144..146].copy_from_slice(&w144.to_le_bytes());
+        s[146..148].copy_from_slice(&w146.to_le_bytes());
+        for i in 0..12 {
+            s[178 + IDX[i] * 4..180 + IDX[i] * 4].copy_from_slice(&(PAIRS[i * 2] as i16).to_le_bytes());
+            s[180 + IDX[i] * 4..182 + IDX[i] * 4].copy_from_slice(&(PAIRS[i * 2 + 1] as i16).to_le_bytes());
+        }
+        s
+    }
+
+    /// Rubito on 2026-11-24 (client1, not digitalized, Alilat summoned, a few MP-draining toggles on): the game's own
+    /// HUD showed HP 589/709 and MP 0/264 while the status object held +136 = 709, +140 = 589 (it counted down 60
+    /// every ~2.8 s: 709, 649, 589, ...), +144 = 264, +146 = 0. So +136 is the MAX HP and +140 the CURRENT HP, +144 the
+    /// max MP and +146 the current MP. The reader took them the other way round and threw the record away whenever
+    /// HP or MP was below the maximum, so a snapshot fell back to the saved stats (and the page said "digitalized").
+    #[test]
+    fn damaged_character_with_no_mp_is_read() {
+        for digitalized in [false, true] {
+            let o = own_status_of(&status(95, 709, 589, 264, 0), digitalized).expect("a live status, not a rejected one");
+            assert_eq!((o.level, o.hp, o.max_hp, o.mp, o.max_mp), (95, 589, 709, 0, 264));
+            assert_eq!(o.pairs, PAIRS.to_vec());
+        }
+    }
+
+    /// Rubito + Shikigami digitalized (2026-11-23): +136 held 1317 and +140 1134; the game's Max HP was 1317 (checked
+    /// against the digitalize formula), so 1134 is the current HP, not a "stale max HP". Same answer digitalized or not.
+    #[test]
+    fn digitalized_hp_below_the_maximum() {
+        for digitalized in [false, true] {
+            let o = own_status_of(&status(95, 1317, 1134, 453, 453), digitalized).expect("readable");
+            assert_eq!((o.hp, o.max_hp, o.mp, o.max_mp), (1134, 1317, 453, 453));
+        }
+    }
+
+    /// The 02:22 snapshot, taken at full HP and MP: both words equal.
+    #[test]
+    fn full_hp_and_mp() {
+        let o = own_status_of(&status(95, 1063, 1063, 264, 264), false).expect("readable");
+        assert_eq!((o.hp, o.max_hp, o.mp, o.max_mp), (1063, 1063, 264, 264));
+    }
+
+    /// Current values never go above the maximum: when the maximum has just dropped (a toggle switched on) the
+    /// current word can lag for a moment; that is not a reason to throw the record away.
+    #[test]
+    fn current_above_the_maximum_is_clamped() {
+        let o = own_status_of(&status(95, 709, 1063, 264, 300), false).expect("readable");
+        assert_eq!((o.hp, o.max_hp, o.mp, o.max_mp), (709, 709, 264, 264));
+    }
+
+    #[test]
+    fn garbage_is_still_rejected() {
+        assert!(own_status_of(&status(0, 709, 589, 264, 0), false).is_none(), "level 0");
+        assert!(own_status_of(&status(100, 709, 589, 264, 0), false).is_none(), "level 100");
+        assert!(own_status_of(&status(95, 0, 0, 264, 0), false).is_none(), "no max HP");
+        assert!(own_status_of(&status(95, 709, -1, 264, 0), false).is_none(), "negative HP");
+    }
 }
 
 #[cfg(test)]
