@@ -270,3 +270,13 @@ mod tests {
         assert_eq!(strip_leading_non_ascii("Movement"), "Movement");
     }
 }
+
+/// The client's stat labels as a [`crate::calc::bonuses::StatLabelSource`] (C# passed `StatLabels.Of` around).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct GameStatLabels;
+
+impl crate::calc::bonuses::StatLabelSource for GameStatLabels {
+    fn of(&self, id: &str) -> Option<String> {
+        of(id).map(str::to_string)
+    }
+}
