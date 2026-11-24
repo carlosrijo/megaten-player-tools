@@ -218,6 +218,36 @@ fn store_files_like_csharp() {
 }
 
 #[test]
+fn snapshot_keeps_item_records_while_the_same_items_are_worn() {
+    let dir = temp("keepdet");
+    let st = Store::new(&dir);
+    let ids: Vec<i32> = (0..15).map(|i| if i == 3 { 0 } else { 100 + i }).collect();
+    let tarot: Vec<i32> = (0..15).map(|i| i * 2).collect();
+    let soul: Vec<i32> = (0..15).map(|i| i * 3).collect();
+    let det: Vec<Option<WornItem>> = (0..15)
+        .map(|k| (ids[k] > 0).then(|| WornItem { id: ids[k], tarot: tarot[k], soul: soul[k], basic: 7, special: 8, mods: vec![1, 2, 3, 4, 5], fuse: vec![0, 0, 0], durability: 9, max_durability: 10 }))
+        .collect();
+    let texts = vec![String::new(); 15];
+    st.save_tooltips(&ids, &texts, Some(&tarot), Some(&soul), Some(&det), 95).unwrap();
+    let prev = st.load_tooltips().unwrap();
+
+    // same items: kept, with or without the enchants read now
+    assert_eq!(Store::keep_details(&prev, &ids, Some(&tarot), Some(&soul)), Some(det.clone()));
+    assert_eq!(Store::keep_details(&prev, &ids, None, None), Some(det.clone()));
+    // another item in a slot, or a re-enchanted one: not kept
+    let mut other = ids.clone();
+    other[5] = 999;
+    assert_eq!(Store::keep_details(&prev, &other, None, None), None);
+    let mut t2 = tarot.clone();
+    t2[0] = 77;
+    assert_eq!(Store::keep_details(&prev, &ids, Some(&t2), Some(&soul)), None);
+    // an earlier snapshot without records has nothing to keep
+    st.save_tooltips(&ids, &texts, None, None, None, 95).unwrap();
+    assert_eq!(Store::keep_details(&st.load_tooltips().unwrap(), &ids, None, None), None);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn expertise_files_like_csharp() {
     let dir = temp("exp");
     let st = Store::new(&dir);
