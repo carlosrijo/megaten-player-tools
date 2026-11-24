@@ -1069,7 +1069,7 @@ dependencies = [
 
 [[package]]
 name = "imagine"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1090,7 +1090,7 @@ dependencies = [
 
 [[package]]
 name = "imagine-reader"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "imagine",
@@ -1100,7 +1100,7 @@ dependencies = [
 
 [[package]]
 name = "imagine-tracker"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "base64",
