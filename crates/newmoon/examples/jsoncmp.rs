@@ -31,6 +31,13 @@ fn split(t: &str) -> (&str, &str, &str) {
 }
 
 fn main() {
+    if std::env::args().nth(1).as_deref() == Some("hash") {
+        for f in std::env::args().skip(2) {
+            let (h, pix) = fingerprint(&std::fs::read_to_string(&f).unwrap());
+            println!("{f} {h:#018x} {:#018x?}", pix);
+        }
+        return;
+    }
     let a: Vec<String> = std::env::args().skip(1).collect();
     let ta = std::fs::read_to_string(&a[0]).unwrap();
     let tb = std::fs::read_to_string(&a[1]).unwrap();
@@ -56,4 +63,29 @@ fn main() {
             x == y
         );
     }
+}
+
+/// FNV-1a 64 of the JSON with the textures cut out, and of each texture's decoded pixels (what tests/model_golden.rs pins).
+pub fn fingerprint(t: &str) -> (u64, Vec<u64>) {
+    fn fnv(bytes: &[u8]) -> u64 {
+        let mut h = 0xcbf29ce484222325u64;
+        for b in bytes {
+            h ^= *b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
+    let (p, x, s) = split(t);
+    let plus = format!("{}u002B", '\u{5c}');
+    let pix = if x.is_empty() {
+        vec![]
+    } else {
+        x.split("\",\"")
+            .map(|y| {
+                let st = y.trim_matches('"').replace(&plus, "+").replace("data:image/png;base64,", "");
+                fnv(image::load_from_memory(&b64(&st)).unwrap().to_rgba8().as_raw())
+            })
+            .collect()
+    };
+    (fnv(format!("{p}{s}").as_bytes()), pix)
 }

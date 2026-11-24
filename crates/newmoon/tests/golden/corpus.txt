@@ -1,0 +1,84 @@
+Test Set Item♂
+  Type: Armor          Affinity: -
+  Sex: Male
+[Characteristics]
+* Max HP +100
+Set Bonus 1
+[Set Pieces]
+* Test Set Item♂
+* Other Set Piece♀
+[Activation Effects]
+* STR +5, MAG +5
+* If Player is CHAOS: Critical +3%
+Set Bonus 2
+[Set Pieces]
+* Test Set Item♂
+[Activation Effects]
+Partner's
+Close-Range +10
+=====TIP=====
+Crystal Thing
+  Type: Accessory          Affinity: -
+[Characteristics]
+* With Orthrus's Crystal: Spell Damage +5%
+* If all items obtained by using Soul Stone Fusion on
+the Soul Stones of
+the Great Winter Triangle are equipped:
+  Max HP +300
+* When Partner's Friendship is 50 or higher, Partner's Critical +4
+* Against Demon enemies Damage +10%
+* Player's Damage to Beast enemies +15%
+* Fire Resistance +50%
+* Nulls Charm
+* Expertise Points earned +10%
+* Reflect Physical
+* Weird text with 5% somewhere
+* While Digitalized, Player/Demon's Final Critical rate correction +5%,
+  Limit Break chance +5%, Limit Break power +5%
+=====TIP=====
+Class Ring
+Sex: Female
+Tarot Card: The Fool
+[Characteristics]
+* If player has Class 4 Rapid or more, Rapid Power +10%, Shot Power +5%
+* If player has Class 6 Spin or more, Spin Power +10%
+* If Player is LAW, NEUTRAL: Critical +1
+* If Player is law or chaos: Pursuit Rate +2%
+* Close-range, Long-range, Spell damage suffered -10%
+* Fire, Ice Affinity +5%
+* Critical + 5
+* STR - 3
+[Modification Slot]
+  Slot 1: LNG-R 10
+  Slot 2: Rapid Power +3
+  Slot 3: Fire 5 %
+  Slot 4: -
+  Slot 5: Spin Skill Boost 2.5
+
+[Tarot Fusion]
+  The Fool Crystal
+  Rapid damage +4%
+  With Hecatonchires's Crystal: Cooldown -5%
+
+[Soul Fusion]
+  Some Soul
+  * Max MP +50 ※ note here
+　Nested line　 Support +7
+[Expiration Date]
+  Until 2030
+  STR +999
+=====TIP=====
+Hecatonchires's Crystal
+[Characteristics]
+* Cooldown -3%
+* Movement Speed +4%
+* Limit Break Cap +100
+* LB Damage Cap +50
+* Ice Affinity Cap +10%
+* Slash Boost +2%
+* Elec Affinity +3%
+* Words of Power Boost +4%
+* HP Regeneration +10%
+* Cast time -5%
+=====TIP=====
+Simple

@@ -1,0 +1,8 @@
+{
+  "1": {"id": 1, "correctTbl": [{"id": "MP_MAX", "type": 1, "value": -10}, {"id": "HP_MAX", "type": 1, "value": 5.5}]},
+  "2": {"id": 2, "correctTbl": [{"id": "MP_MAX", "type": 1, "value": "-10"}, {"id": "MP_MAX", "type": 2, "value": -99}, null, {"id": "MP_MAX", "type": 1, "value": true}]},
+  "3": {"id": 3, "correctTbl": [{"id": "HP_MAX", "type": 1.9, "value": -2.5}, {"id": "MP_MAX", "type": "1", "value": -7}]},
+  "4": {"id": 4, "tokuseiIds": [1]},
+  "5": {"id": 5, "correctTbl": [{"id": 12, "type": 1, "value": 3}, {"id": "MP_MAX", "value": 3}]},
+  "6": {"id": 6, "correctTbl": [{"id": "MP_MAX", "type": 1, "value": -10}]}
+}
