@@ -171,7 +171,7 @@ impl Config {
         } else {
             // Written for the portable release too, so its user has a file beside the exe to point the paths elsewhere
             json::create_parent(file)?;
-            std::fs::write(file, json::serialize(&self.to_json(), Escape::Default, true))?;
+            json::write_atomic(file, json::serialize(&self.to_json(), Escape::Default, true))?;
         }
         Ok(())
     }

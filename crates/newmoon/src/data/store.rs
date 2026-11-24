@@ -399,7 +399,7 @@ impl Store {
             }
         }
         std::fs::create_dir_all(&self.dir)?;
-        std::fs::write(self.tooltips_path(), sb)?;
+        crate::data::json::write_atomic(self.tooltips_path(), sb)?;
         Ok(())
     }
 

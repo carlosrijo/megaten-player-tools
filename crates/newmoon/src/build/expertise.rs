@@ -106,6 +106,13 @@ fn label_of(id: Option<&str>) -> String {
     stat_labels::name_opt(id, 0).unwrap_or_default()
 }
 
+/// Percent or flat, the way gear decides it (item_effects::correct_effect): type 1, a skill boost, or a stat the server
+/// always treats as a percent whatever the type. Limit Break Chance Up Improvement 1 is "LB_CHANCE:0:5": +5% in the
+/// game's own text, so a type-0 LB_CHANCE is a percent too.
+fn correct_is_pct(id: &str, typ: i32) -> bool {
+    typ == 1 || id.starts_with("BOOST_") || crate::calc::gear_effects::is_pct_correct(id)
+}
+
 fn fmt_correct(c: &Value, who: &str) -> String {
     let v = json::num(c.at("value")).unwrap_or(0.0);
     format!(
@@ -114,7 +121,7 @@ fn fmt_correct(c: &Value, who: &str) -> String {
         label_of(json::str(c.at("id")).as_deref()),
         if v >= 0.0 { "+" } else { "" },
         n(v),
-        if json::int(c.at("type")) == 1 { "%" } else { "" }
+        if correct_is_pct(&json::str(c.at("id")).unwrap_or_default(), json::int(c.at("type"))) { "%" } else { "" }
     )
 }
 
@@ -769,7 +776,7 @@ impl Expertise {
             fx.push(fmt_correct(cc, ""));
             let cid = json::str(cc.at("id"));
             let v = json::num(cc.at("value")).unwrap_or(0.0);
-            sfx.push(obj(json!({ "label": label_of(cid.as_deref()), "value": v, "pct": json::int(cc.at("type")) == 1, "target": "self", "cond": "always" })));
+            sfx.push(obj(json!({ "label": label_of(cid.as_deref()), "value": v, "pct": correct_is_pct(cid.as_deref().unwrap_or(""), json::int(cc.at("type"))), "target": "self", "cond": "always" })));
             if let Some(col) = cid.as_deref().and_then(correct_to_col) {
                 sums.add(col, v);
             }
@@ -797,7 +804,7 @@ impl Expertise {
                     fx.push(fmt_correct(cc, who) + cond);
                     let cid = json::str(cc.at("id"));
                     let v = json::num(cc.at("value")).unwrap_or(0.0);
-                    let pct = json::int(cc.at("type")) == 1;
+                    let pct = correct_is_pct(cid.as_deref().unwrap_or(""), json::int(cc.at("type")));
                     sfx.push(obj(json!({
                         "label": label_of(cid.as_deref()), "value": v, "pct": pct, "target": if who.is_empty() { "self" } else { "partner" },
                         "cond": if cond.is_empty() { "always" } else { "situational" }, "note": trim_cond(cond),
@@ -905,16 +912,20 @@ impl Expertise {
                         for cc in &full.correct {
                             let v = if cc.precision > 0 { cc.value / 10f64.powf(cc.precision as f64) } else { cc.value };
                             let cid = cc.id.as_deref().unwrap_or("");
-                            let pct = cc.r#type == 1 || cid.starts_with("BOOST_") || cid.starts_with("RATE_");
+                            // Percent the same way gear decides it (item_effects::correct_effect): type 1, a skill
+                            // boost, or a stat the server always treats as a percent whatever the type (LB_CHANCE...).
+                            // Limit Break Chance Up Improvement 1 is "LB_CHANCE:0:5", +5% in the game's own text.
+                            let pct_fx = correct_is_pct(cid, cc.r#type);
+                            let pct = pct_fx || cid.starts_with("RATE_");
                             fx.push(format!("{who2_text}{} {}{}{}{src}", label_of(cc.id.as_deref()), sign(v), n(v), if pct { "%" } else { "" }));
                             sfx.push(obj(json!({
-                                "label": label_of(cc.id.as_deref()), "value": v, "pct": cc.r#type == 1, "target": if who2.is_empty() { "self" } else { "partner" },
+                                "label": label_of(cc.id.as_deref()), "value": v, "pct": pct_fx, "target": if who2.is_empty() { "self" } else { "partner" },
                                 "cond": if situational { "situational" } else { "always" }, "note": trim_cond(src),
                             })));
                             // The party is the character and the partner: a party effect counts for both
                             if who2 == "Party's" {
                                 sfx.push(obj(json!({
-                                    "label": label_of(cc.id.as_deref()), "value": v, "pct": cc.r#type == 1, "target": "self",
+                                    "label": label_of(cc.id.as_deref()), "value": v, "pct": pct_fx, "target": "self",
                                     "cond": if situational { "situational" } else { "always" }, "note": trim_cond(src),
                                 })));
                             }

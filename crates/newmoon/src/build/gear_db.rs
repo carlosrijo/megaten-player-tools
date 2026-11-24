@@ -594,7 +594,8 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                     o.insert("affinity".into(), json!(aff));
                 }
             }
-            let mods = int(m(Some(it), "modSlots").or_else(|| m(basic, "modSlots")).as_deref());
+            // ItemData keeps modSlots in the use restrictions (MiUseRestrictionsData), not on the record or its basic data
+            let mods = int(m(restr, "modSlots").or_else(|| m(Some(it), "modSlots")).or_else(|| m(basic, "modSlots")).as_deref());
             if mods > 0 {
                 o.insert("mods".into(), json!(mods));
             }

@@ -383,7 +383,9 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
         }
         enchants
             .entry((int(Some(p[1])), p[3].to_string()))
-            .or_insert_with(|| (int(Some(p[2])), p[4].to_string(), int(Some(p[5])), int(Some(p[6])), p[9].to_string()));
+            // the description is the rest of the line: a few hold tabs (indented lines in the game's text, e.g. Alciel's
+            // tarot "While Digitalized: / <tab>Demon Partner's Pursuit..."), which split it into more columns
+            .or_insert_with(|| (int(Some(p[2])), p[4].to_string(), int(Some(p[5])), int(Some(p[6])), p[9..].concat()));
     }
     let does_nothing = Regex::new("(?i)does nothing").expect("does nothing");
     let enchant = |demon: i32, side: &str| -> Result<Value> {

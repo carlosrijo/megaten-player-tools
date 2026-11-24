@@ -234,11 +234,13 @@ fn gear_database_matches_the_csharp_file() {
     let text = String::from_utf8(bytes).unwrap();
     // the C# CLI wrote 3736521 bytes for the same inputs; since 2026-11-24 every CorrectTbl line is in "stats" (the Gear
     // page tooltip's Basic Features) instead of only the base stats, which moves lines and adds 6,028 commas. The file
-    // starts with the day it ran.
+    // starts with the day it ran. Since 2026-11-24 night, the 872 pieces with mod slots carry "mods" (read from the
+    // record's use restrictions; the C# looked on the record itself and never found them): +7,848 bytes, nothing else.
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (3742549, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (3750397, GEARDB_FNV));
 }
 
-/// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats") after its `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 7080139912481597827;
+/// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods") after its
+/// `{"generatedAt":"yyyy-mm-dd"` start.
+const GEARDB_FNV: u64 = 16974497132224511461;

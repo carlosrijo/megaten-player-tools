@@ -56,7 +56,7 @@ impl CsvTable {
             sb.push_str("\r\n");
         }
         json::create_parent(path)?;
-        std::fs::write(path, sb)?;
+        json::write_atomic(path, sb)?;
         Ok(())
     }
 }

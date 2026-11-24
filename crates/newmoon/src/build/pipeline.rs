@@ -244,7 +244,7 @@ fn write_seen(store: &Store, seen: &IndexMap<String, SeenDemon>) -> Result<()> {
         }
         v
     });
-    std::fs::write(store.comp_demons_path(), compact(&Value::Array(list.collect())))?;
+    crate::data::json::write_atomic(store.comp_demons_path(), compact(&Value::Array(list.collect())))?;
     Ok(())
 }
 
@@ -389,6 +389,11 @@ impl Pipeline {
 
     /// Read-only snapshot of the running client: appends a CSV row and refreshes the expertise ranks.
     pub fn take_snapshot(&self, name: &str, csv: &str, ignore_window: bool) -> Result<(SnapshotResult, usize)> {
+        // The CSV is written last; check it first, so a CSV open in Excel stops the snapshot before anything is saved
+        // (else the caches and the gear page would move on to a snapshot that has no CSV row).
+        if !csv.is_empty() {
+            json::ensure_writable(csv)?;
+        }
         // Expertise first: gear lines like "If player has Class 4 Rapid or more" are decided from the ranks, so the
         // snapshot must see this moment's ranks (a new character has none saved yet), not the previous snapshot's.
         // Alignment from the game (LAW/NEUTRAL/CHAOS conditions on gear); a change recalculates the saved rows
@@ -527,7 +532,7 @@ impl Pipeline {
         let store = self.store();
         std::fs::create_dir_all(store.dash_dir())?;
         let v = d.map(CompDemon::to_value).unwrap_or(Value::Null);
-        std::fs::write(store.dash_dir().join("summoned.json"), compact(&v))?;
+        crate::data::json::write_atomic(store.dash_dir().join("summoned.json"), compact(&v))?;
         Ok(())
     }
 
