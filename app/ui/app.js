@@ -3236,6 +3236,16 @@
   }
   const simLines = (list, none) => (list && list.length ? h('ul', { class: 'sim-lines' }, list.map(simLine)) : (none ? h('p', { class: 'sim-none', text: none }) : null));
   const simLineText = (l) => l.t + (l.c === 'digitalized' ? ' (digitalized)' : l.c === 'inactive' ? ' (not active)' : '');
+  // The stats as the pieces' lines name them ("Strength +19"), with the names the page shows for them (STR, CLS-R, P.Def)
+  // and short forms. Searching one of these in the piece picker finds the pieces that raise that stat itself, most
+  // first: "mag" is the Magic stat, not Magic Damage; "cls-r" is Close-Range, not Close-Range Damage.
+  const SIM_STAT_NAMES = [['Strength', 'str'], ['Magic', 'mag'], ['Vitality', 'vit'], ['Intelligence', 'int'], ['Speed', 'spd'], ['Luck', 'luk'],
+    ['Close-Range', 'cls-r', 'cls', 'close range'], ['Long-Range', 'lng-r', 'lng', 'long range'], ['Spell'], ['Support', 'supp'],
+    ['Physical Defense', 'p.def', 'phys def'], ['Magic Defense', 'm.def', 'mag def'], ['Max HP', 'hp'], ['Max MP', 'mp'], ['Critical', 'crit']];
+  const simStatKey = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const SIM_STAT_OF = new Map(SIM_STAT_NAMES.flatMap((names) => names.map((n) => [simStatKey(n), names[0]])));
+  /** The stat a line gives ("Strength +19" or "Max HP +10%": "strength", "max hp"); null for any other line. */
+  const simLineStat = (t) => { const m = /^(.+?)\s*[+−-]\s?\d+(?:\.\d+)?%?$/.exec(t); return m ? m[1].toLowerCase() : null; };
 
   function simApply(build, k, part, id) {
     const s = build.slots[k];
@@ -3332,32 +3342,40 @@
       showPreview(st.rows[st.active]);
     };
     // Searching an effect ("rapid", "limit break power") puts the pieces that give the most of it first: the number on
-    // the line that has every searched word (the lowest first where less is better: damage taken, cooldown).
-    const amount = (o, words) => {
-      let best = null;
-      [...o.lines, ...o.sets.flatMap((s) => s.lines)].forEach((l) => {
-        if (l.c === 'inactive' || l.c === 'unknown') return;
-        const t = l.t.toLowerCase();
-        if (!words.every((w) => t.includes(w))) return;
+    // the line `hit` picks (the lowest first where less is better: damage taken, cooldown). The piece's own lines, or
+    // with `sets` its set bonuses' (which need the other pieces too, so they come after). Lines of the same effect add
+    // up (two "Close-Range +12" / "+10" lines give 22); different effects (Limit Break Power, Limit Break Cap) do not.
+    const amount = (o, hit, sets) => {
+      const sum = new Map();
+      (sets ? o.sets.flatMap((s) => s.lines) : o.lines).forEach((l) => {
+        if (l.c === 'inactive' || l.c === 'unknown' || !hit(l.t)) return;
         const m = /([+−-])\s?(\d+(?:\.\d+)?)/.exec(l.t);
         if (!m) return;
         const v = Number(m[2]) * (m[1] === '+' ? 1 : -1) * (lowIsGood(l.t) ? -1 : 1);
-        if (best === null || v > best) best = v;
+        const key = l.t.replace(/[+−-]\s?\d+(?:\.\d+)?/, '#');
+        sum.set(key, (sum.get(key) || 0) + v);
       });
-      return best;
+      return sum.size ? Math.max(...sum.values()) : null;
     };
     const draw = () => {
       const words = st.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      st.rows = opts.filter((o) => pass(o) && words.every((w) => o.hay.includes(w)));
-      st.byAmount = false;
-      if (words.length) {
-        const score = new Map(st.rows.map((o) => [o, amount(o, words)]));
-        if ([...score.values()].some((v) => v !== null)) {
-          st.byAmount = true;
-          st.rows.sort((a, b) => (a.rank < 4 ? a.rank : 4) - (b.rank < 4 ? b.rank : 4) || (score.get(a) === null) - (score.get(b) === null) || n0(score.get(b)) - n0(score.get(a)) || a.name.localeCompare(b.name));
-        }
+      // A stat's name (STR, CLS-R, P.Def, Strength ...): the pieces with a line of that stat, then any other piece whose
+      // text has the words. Otherwise the lines that have every searched word.
+      const stat = words.length ? SIM_STAT_OF.get(simStatKey(st.q)) : undefined;
+      st.hit = !words.length ? null : stat ? (t) => simLineStat(t) === stat.toLowerCase() : (t) => { const s = t.toLowerCase(); return words.every((w) => s.includes(w)); };
+      const score = new Map();   // piece -> [0 its own line, 1 a set bonus; the amount]
+      if (st.hit) opts.forEach((o) => {
+        if (!pass(o)) return;
+        const own = amount(o, st.hit, false), set = own === null ? amount(o, st.hit, true) : null;
+        if (own !== null) score.set(o, [0, own]); else if (set !== null) score.set(o, [1, set]);
+      });
+      st.rows = opts.filter((o) => pass(o) && (score.has(o) || words.every((w) => o.hay.includes(w))));
+      st.byAmount = score.size > 0;
+      if (st.byAmount) {
+        const tier = (o) => (score.has(o) ? score.get(o)[0] : 2), val = (o) => (score.has(o) ? score.get(o)[1] : 0);
+        st.rows.sort((a, b) => (a.rank < 4 ? a.rank : 4) - (b.rank < 4 ? b.rank : 4) || tier(a) - tier(b) || val(b) - val(a) || a.name.localeCompare(b.name));
       }
-      sortNote.textContent = st.byAmount ? 'Most of the searched effect first' : '';
+      sortNote.textContent = !st.byAmount ? '' : stat ? `Most ${stat} first` : 'Most of the searched effect first';
       st.active = Math.min(st.active, Math.max(0, st.rows.length - 1));
       const row = (o, i) => h('div', { class: 'sim-opt', role: 'option', 'aria-selected': String(i === st.active), 'data-i': i, onclick: () => choose(o), onpointermove: () => setActive(i) },
         h('div', { class: 'sim-opt-head' }, h('b', { text: o.name }),
@@ -3366,7 +3384,8 @@
           o.id === inUse ? h('span', { class: 'tag sim-tag-use', text: 'In use' }) : null,
           o.own ? h('span', { class: 'tag', text: 'This piece’s own' }) : null,
           o.id === asRead && o.id !== inUse ? h('span', { class: 'tag', text: 'As last read' }) : null),
-        o.lines.length ? h('div', { class: 'sim-opt-lines' }, o.lines.map((l, j) => [j ? ' · ' : null, h('span', { class: l.c ? 'is-' + l.c : null, text: simLineText(l) })])) : null,
+        o.lines.length ? h('div', { class: 'sim-opt-lines' }, o.lines.map((l, j) => [j ? ' · ' : null,
+          h('span', { class: [l.c ? 'is-' + l.c : '', st.hit && st.hit(l.t) ? 'sim-hit' : ''].join(' ').trim() || null, text: simLineText(l) })])) : null,
         o.sets.map((s) => h('div', { class: 'sim-opt-lines sim-opt-set' }, h('span', { class: 'q-key', text: `${crystal ? 'Fusion set' : 'Set'} with ${s.with.join(', ')}: ` }), s.lines.map((l) => simLineText(l)).join(' · ') || 'nothing the game data has numbers for')),
         o.gives || o.first ? null : h('div', { class: 'sim-opt-lines zero', text: 'Gives nothing here' }));
       list.replaceChildren(...st.rows.slice(0, st.shown).map(row));

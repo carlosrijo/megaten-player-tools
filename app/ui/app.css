@@ -1012,6 +1012,7 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .sim-opt-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .sim-opt-lines { color: var(--text-2); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 .sim-opt-lines .is-inactive, .sim-opt-lines .is-situational, .sim-opt-lines .is-unknown { color: var(--text-3); }
+.sim-opt-lines .sim-hit { color: var(--text); font-weight: 600; }   /* the line the search found: the list is sorted by its number */
 .sim-opt-set .q-key { font-size: 12px; }
 .sim-more { justify-self: center; margin: 8px 0; }
 .sim-preview { display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start; gap: 6px; min-height: 52px; font-size: 12px; }
