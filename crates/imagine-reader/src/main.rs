@@ -611,7 +611,7 @@ fn toggles(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Resul
                     let demons = data.demons()?;
                     let mut v: Vec<i32> = on.into_iter().filter(|id| demons.skills.get(id).is_some_and(|s| s.0 == 2)).collect();
                     v.sort();
-                    store.save_toggles(v)?;
+                    store.save_toggles_from_game(v)?;
                     from_game = true;
                     rebuild(t, pipe)?;
                     rows = toggle_rows(pipe)?;

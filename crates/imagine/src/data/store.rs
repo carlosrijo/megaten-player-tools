@@ -189,7 +189,17 @@ impl Store {
         Ok(json::arr(root.at("toggles")).map(|n| json::int(Some(n))).filter(|&i| i > 0).collect())
     }
 
+    /// Toggles set by hand (`toggles "Name, ..."`): the "read from the game" stamp no longer describes them, so it goes.
     pub fn save_toggles(&self, ids: impl IntoIterator<Item = i32>) -> Result<()> {
+        self.save_toggles_as(ids, false)
+    }
+
+    /// Toggles just read from the game's learned-skill map: saved with the time of the reading (`toggles_source`).
+    pub fn save_toggles_from_game(&self, ids: impl IntoIterator<Item = i32>) -> Result<()> {
+        self.save_toggles_as(ids, true)
+    }
+
+    fn save_toggles_as(&self, ids: impl IntoIterator<Item = i32>, from_game: bool) -> Result<()> {
         let alignment = if self.profile_path().exists() { Some(self.alignment()?) } else { None };
         let mut distinct: Vec<i32> = Vec::new();
         for i in ids {
@@ -197,7 +207,34 @@ impl Store {
                 distinct.push(i);
             }
         }
-        self.save_profile(alignment.as_deref(), &distinct)
+        self.update_profile(|o| {
+            o.insert("alignment".into(), json!(alignment));
+            o.insert("toggles".into(), json!(distinct));
+            if from_game {
+                o.insert("toggles_source".into(), json!(format!("game, {}", now_minute())));
+            } else {
+                o.remove("toggles_source");
+            }
+        })
+    }
+
+    /// When the saved toggle states were read, for the page's footnote: "game, <date time>" (read from the game), or
+    /// "saved, <date time>" for a profile that predates the stamp (the time of its last save: the toggles are no newer
+    /// than that, and may be older) or toggles set by hand. `None` when no toggles were ever saved.
+    pub fn toggles_source(&self) -> Result<Option<String>> {
+        let path = self.profile_path();
+        if !path.exists() {
+            return Ok(None);
+        }
+        let root = json::load(&path)?;
+        if let Some(s) = json::str(root.at("toggles_source")).filter(|s| !s.is_empty()) {
+            return Ok(Some(s));
+        }
+        if root.at("toggles").is_none() {
+            return Ok(None);
+        }
+        let saved = json::str(root.at("note")).and_then(|n| n.strip_prefix("Updated ").map(|r| r.chars().take(16).collect::<String>()));
+        Ok(saved.filter(|t| t.len() == 16).map(|t| format!("saved, {t}")))
     }
 
     fn save_profile(&self, alignment: Option<&str>, toggles: &[i32]) -> Result<()> {

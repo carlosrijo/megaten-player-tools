@@ -792,6 +792,8 @@ impl MainForm {
             "character": e.as_ref().and_then(|e| e.name.clone()),
             "alignment": if e.is_some() { store.alignment()? } else { String::new() },
             "alignmentKnown": e.is_some() && store.profile_path().is_file(),
+            // when the toggle (switch) skills' on/off state was read ("game, <date time>"), for the Bonuses footnote
+            "togglesSource": if e.is_some() { store.toggles_source().ok().flatten() } else { None },
             "csv": e.as_ref().and_then(|e| e.csv.clone()).unwrap_or_default(),
             "dataDir": store.dir.to_string_lossy(),
             "gameRunning": !backend::client_pids().is_empty(),
