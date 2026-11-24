@@ -1510,7 +1510,7 @@ mod tests {
     fn quaternion_of_identity_and_back() {
         let q = quat_of(&[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]);
         assert_eq!(q, [1.0, 0.0, 0.0, 0.0]);
-        let m = mat_of(&[0.0, 0.0, 1.0f64.sin().signum() * 0.0 + 1.0, 0.0]);
+        let m = mat_of(&[0.0, 0.0, 0.0, 1.0]);
         assert!((m[0] - -1.0).abs() < 1e-12 && (m[4] - -1.0).abs() < 1e-12 && (m[8] - 1.0).abs() < 1e-12);
     }
 
