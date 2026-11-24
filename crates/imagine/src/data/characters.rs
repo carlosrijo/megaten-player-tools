@@ -99,10 +99,28 @@ impl Characters {
         if let Some(i) = self.all.iter().position(|e| e.name.as_deref().is_some_and(|n| crate::text::eq_ic(n, name))) {
             return Ok(&mut self.all[i]);
         }
-        let safe: String = name.chars().map(|c| if is_invalid_file_name_char(c) || c == '.' { '_' } else { c }).collect();
         let first_csv = self.all.first().and_then(|e| e.csv.clone());
         let csv_dir = get_directory_name(first_csv.as_deref().unwrap_or(&self.default_csv))
             .unwrap_or_else(|| self.root.to_string_lossy().into_owned());
+        // The folder and file names come from the name once, here; from then on the entry's stored Dir and Csv are used,
+        // so the real name never has to be turned into a path again. Two names that turn into the same file name
+        // ("a:b" and "a_b") get a number after it, so they never share a folder.
+        let base = safe_file_name(name);
+        let mut safe = base.clone();
+        let mut n = 1;
+        loop {
+            let dir = path_combine("characters", &safe);
+            let csv = path_combine(&csv_dir, &format!("{}-stats.csv", safe.to_lowercase()));
+            let taken = self.all.iter().any(|e| {
+                e.dir.as_deref().is_some_and(|d| crate::text::eq_ic(&normalize_separators(d), &dir))
+                    || e.csv.as_deref().is_some_and(|c| crate::text::eq_ic(&normalize_separators(c), &csv))
+            });
+            if !taken {
+                break;
+            }
+            n += 1;
+            safe = format!("{base} ({n})");
+        }
         let e = CharacterEntry {
             name: Some(name.to_string()),
             dir: Some(path_combine("characters", &safe)),
@@ -137,6 +155,25 @@ impl Characters {
 }
 
 // ---------- .NET Path helpers on strings (Windows rules) ----------
+
+/// A character name as a single file or folder name that Windows keeps exactly as written. Letters, digits, spaces and
+/// symbols stay; the characters Windows forbids in a file name (`\ / : * ? " < > |` and control characters) and every
+/// full stop become `_`, which was always so (a name ending in "." would otherwise lose it on disk: "Chidori Y." is
+/// stored as "Chidori Y" and a later lookup of the exact name misses). New: a trailing space also becomes `_` (Windows
+/// drops it too), a name Windows reserves for a device (CON, PRN, AUX, NUL, COM1-9, LPT1-9) gets a `_` after it, and an
+/// empty result is `_`. A name with none of those is unchanged, so every existing folder keeps its name.
+pub fn safe_file_name(name: &str) -> String {
+    let mut s: String = name.chars().map(|c| if is_invalid_file_name_char(c) || c == '.' { '_' } else { c }).collect();
+    let kept = s.trim_end_matches(' ').len();
+    s.replace_range(kept.., &"_".repeat(s.len() - kept));
+    if s.is_empty() {
+        return "_".to_string();
+    }
+    let up = s.to_uppercase();
+    let reserved = matches!(up.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || (up.len() == 4 && (up.starts_with("COM") || up.starts_with("LPT")) && matches!(up.as_bytes()[3], b'1'..=b'9'));
+    if reserved { format!("{s}_") } else { s }
+}
 
 /// `Path.GetInvalidFileNameChars().Contains(c)` on Windows.
 pub fn is_invalid_file_name_char(c: char) -> bool {
@@ -251,6 +288,68 @@ mod tests {
         assert_eq!(path_combine(r"C:\a\", "b.csv"), r"C:\a\b.csv");
         assert_eq!(path_combine("a", r"D:\x"), r"D:\x");
         assert_eq!(path_combine("", "x"), "x");
+    }
+
+    #[test]
+    fn file_names_from_character_names() {
+        // names that were fine before keep their folder
+        for n in ["Rubito", "Roku_juu", "Accsquad5", "A B", "Chidori Y", " Lead", "O'Neil", "x,y;z", "Ünïcode", "\u{540D}\u{524D}"] {
+            assert_eq!(safe_file_name(n), n, "{n}");
+        }
+        // forbidden characters and every full stop become _ (as before)
+        assert_eq!(safe_file_name("Chidori Y."), "Chidori Y_");
+        assert_eq!(safe_file_name("Name."), "Name_");
+        assert_eq!(safe_file_name("a:b"), "a_b");
+        assert_eq!(safe_file_name(r#"a\b/c*d?e"f<g>h|i"#), "a_b_c_d_e_f_g_h_i");
+        // a trailing space is dropped by Windows: it becomes _ too; empty is _
+        assert_eq!(safe_file_name("Name "), "Name_");
+        assert_eq!(safe_file_name("Name  "), "Name__");
+        assert_eq!(safe_file_name(""), "_");
+        // device names
+        for n in ["CON", "con", "Nul", "COM1", "lpt9"] {
+            assert_eq!(safe_file_name(n), format!("{n}_"));
+        }
+        assert_eq!(safe_file_name("COM0"), "COM0");
+        assert_eq!(safe_file_name("Console"), "Console");
+    }
+
+    /// Unusual names through the whole path: made into an entry, saved, read back, found again, and their folder really
+    /// is created and found on disk under the stored name.
+    #[test]
+    fn unusual_names_get_their_own_folders() {
+        let dir = std::env::temp_dir().join(format!("imagine-oddnames-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join("cache")).unwrap();
+        let mut c = Characters::new(&dir, "Rubito", &dir.join("stats").join("rubito-stats.csv").to_string_lossy()).unwrap();
+        let names = ["Chidori Y.", "A B", "Name.", "Name ", "\u{DC}n\u{EF}code", "\u{540D}\u{524D}", "a:b", "a_b", "Con", "x.y", "x_y", "a b."];
+        for n in names {
+            c.get_or_add(n).unwrap();
+        }
+        let mut seen = std::collections::HashSet::new();
+        for n in names {
+            let e = c.find(n).unwrap_or_else(|| panic!("{n:?} not found")).clone();
+            assert_eq!(e.name.as_deref(), Some(n));
+            let d = c.data_dir(&e);
+            std::fs::create_dir_all(d.join("cache")).unwrap();
+            assert!(d.join("cache").is_dir(), "{n:?}: folder {d:?}");
+            // the stored folder name is exactly what is on disk (no trailing dot or space for Windows to strip)
+            let last = d.file_name().unwrap().to_string_lossy().into_owned();
+            assert!(!last.ends_with('.') && !last.ends_with(' '), "{last:?}");
+            assert!(std::fs::read_dir(d.parent().unwrap()).unwrap().any(|f| f.unwrap().file_name().to_string_lossy() == last), "{n:?}");
+            assert!(seen.insert(last.to_lowercase()), "{n:?} shares a folder");
+            assert!(seen.insert(e.csv.clone().unwrap().to_lowercase()), "{n:?} shares a spreadsheet");
+        }
+        assert_eq!(c.find("chidori y.").unwrap().dir.as_deref(), Some(r"characters\Chidori Y_"));
+        assert_eq!(c.find("a_b").unwrap().dir.as_deref(), Some(r"characters\a_b (2)"));
+        assert_eq!(c.find("x_y").unwrap().dir.as_deref(), Some(r"characters\x_y (2)"));
+        // saved and read back: the real names come back, with the same folders
+        let again = Characters::new(&dir, "x", "y").unwrap();
+        assert_eq!(again.all, c.all);
+        // asking again for a known name adds nothing
+        let n = c.all.len();
+        c.get_or_add("CHIDORI Y.").unwrap();
+        assert_eq!(c.all.len(), n);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

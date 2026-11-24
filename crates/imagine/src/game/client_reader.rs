@@ -77,9 +77,48 @@ pub fn sjis(bytes: &[u8]) -> String {
 }
 
 
-/// C# `Encoding.ASCII.GetBytes`: anything outside ASCII becomes '?'.
-fn ascii_bytes(s: &str) -> Vec<u8> {
-    s.encode_utf16().map(|u| if u < 0x80 { u as u8 } else { b'?' }).collect()
+/// The longest character name taken from the game, in bytes (the status object holds 64 bytes; names in game are far
+/// shorter, and 2-byte characters count double).
+const NAME_MAX_BYTES: usize = 32;
+
+/// A character name as the client stores it in a status object: up to 64 bytes, NUL-terminated. Returns the name and
+/// its length in bytes, or None when the bytes can't be a name.
+///
+/// Every printable ASCII character is allowed, the space included (2026-11-24: a player named "Chidori Y." was never
+/// found because the check took only 0x21-0x7E; the client holds demon names like "Frost Ace" with their spaces, so the
+/// space is stored as is). Bytes of 0x80 and above are read as Shift-JIS (code page 932, the encoding of every other
+/// text in the client) and only taken when the whole name decodes without a bad sequence. That part is NOT checked in
+/// game: no character with such a name was open. The name is kept as is, trailing space included (the game shows it).
+/// A name of only spaces, or one with a control character, is not a name.
+pub fn parse_name(raw: &[u8]) -> Option<(String, usize)> {
+    let len = raw.iter().position(|&b| b == 0).unwrap_or(raw.len());
+    let bytes = &raw[..len];
+    if len == 0 || len > NAME_MAX_BYTES || bytes.iter().all(|&b| b == b' ') || bytes.iter().any(|&b| b < 0x20 || b == 0x7F) {
+        return None;
+    }
+    if bytes.is_ascii() {
+        return Some((String::from_utf8_lossy(bytes).into_owned(), len));
+    }
+    encoding_rs::SHIFT_JIS.decode_without_bom_handling_and_without_replacement(bytes).map(|s| (s.into_owned(), len))
+}
+
+/// A character name as it is searched for in the client's memory: ASCII as is, anything else in Shift-JIS (see
+/// [`parse_name`]); a character Shift-JIS has no code for becomes '?', as C# `Encoding.ASCII.GetBytes` did for all of them.
+fn name_bytes(s: &str) -> Vec<u8> {
+    if s.is_ascii() {
+        return s.as_bytes().to_vec();
+    }
+    let mut out = Vec::with_capacity(s.len() * 2);
+    for c in s.chars() {
+        let mut one = [0u8; 4];
+        let (bytes, _, unmappable) = encoding_rs::SHIFT_JIS.encode(c.encode_utf8(&mut one));
+        if unmappable {
+            out.push(b'?');
+        } else {
+            out.extend_from_slice(&bytes);
+        }
+    }
+    out
 }
 
 /// C# `DateTime.MinValue`.
@@ -316,18 +355,7 @@ fn detect_by_own_record(mem: &GameMemory) -> Option<(String, i32)> {
             }
             let st = u32_at(buf, pp + 12);
             let Some(s) = (if st > 0x10000 { mem.read(st as i64, 136) } else { None }) else { continue };
-            if u32_at(&s, 0) != STATUS_VTABLE {
-                continue;
-            }
-            let len = s[8..72].iter().position(|&b| b == 0).unwrap_or(64);
-            if !(2..=20).contains(&len) || s[8..8 + len].iter().any(|&b| !(0x21..0x7F).contains(&b)) {
-                continue;
-            }
-            let lvl = s[132] as i32;
-            if !(1..=99).contains(&lvl) {
-                continue;
-            }
-            let name: String = s[8..8 + len].iter().map(|&b| b as char).collect();
+            let Some((name, lvl)) = own_name_and_level(&s) else { continue };
             match &res {
                 Some((n, _)) if *n != name => return None,
                 _ => res = Some((name, lvl)),
@@ -337,13 +365,23 @@ fn detect_by_own_record(mem: &GameMemory) -> Option<(String, i32)> {
     res
 }
 
+/// The name and level in a status object (its first 136 bytes) of an own-character record, None when it is not one.
+fn own_name_and_level(s: &[u8]) -> Option<(String, i32)> {
+    if s.len() < 136 || u32_at(s, 0) != STATUS_VTABLE {
+        return None;
+    }
+    let (name, _) = parse_name(&s[8..72])?;
+    let lvl = s[132] as i32;
+    (1..=99).contains(&lvl).then_some((name, lvl))
+}
+
 // The fallback. The client keeps many copies of status records shaped like the nameplate below: name (ASCII, zero-padded to 64
 // bytes) at H-68, level int32 at H-4, then HP, MaxHP, MP, MaxMP. Seen 2026-11-22 in two clients at once:
 //   own character   : int32 at name-8 = 0xEEA6, int32 at name-4 = 1   (Rubito x566, Rokujuu x86)
 //   partner demon   : int32 at name-8 = 0x4291, int32 at name-4 = 0   (Alilat x70)
 // Other players and NPCs did not have zero-padded records of this shape. So: the own character is the name with
 // the most records marked 1; if no record is marked (a different client build), the most frequent name overall.
-// Names with non-ASCII characters are not recognised.
+// Names are read by [`parse_name`] (spaces and punctuation allowed).
 fn detect_by_nameplate(mem: &GameMemory) -> Option<(String, i32)> {
     let mut marked: IndexMap<String, (i32, i32)> = IndexMap::new();
     let mut any: IndexMap<String, (i32, i32)> = IndexMap::new();
@@ -366,17 +404,10 @@ fn detect_by_nameplate(mem: &GameMemory) -> Option<(String, i32)> {
                 continue;
             }
             let n = h - 68;
-            let mut len = 0usize;
-            while len < 24 && buf[n + len] >= 0x21 && buf[n + len] < 0x7F {
-                len += 1;
-            }
-            if len < 2 || len > 20 {
-                continue;
-            }
+            let Some((name, len)) = parse_name(&buf[n..h - 4]) else { continue };
             if buf[n + len..h - 4].iter().any(|&b| b != 0) {
                 continue;
             }
-            let name: String = buf[n..n + len].iter().map(|&b| b as char).collect();
             let into = if i32_at(buf, n - 4) == 1 { &mut marked } else { &mut any };
             let seen = into.get(&name).copied().unwrap_or((0, 0));
             into.insert(name, (seen.0 + 1, seen.1.max(lvl)));
@@ -436,7 +467,7 @@ pub fn list_clients_with(keep_known: bool) -> Vec<ClientInfo> {
 // name (ASCII, NUL-terminated) at H-68, level int32 at H-4, then HP, MaxHP, MP, MaxMP int32 at H+0..H+12.
 // HP/MP are NOT reliable (dozens of history copies); use it for the level.
 pub fn read_nameplate(mem: &GameMemory, name: &str) -> Option<Nameplate> {
-    let mut pat = ascii_bytes(name);
+    let mut pat = name_bytes(name);
     pat.push(0);
     for (_, buf) in mem.scan() {
         let buf: &[u8] = &buf;
@@ -470,7 +501,7 @@ pub fn read_nameplate(mem: &GameMemory, name: &str) -> Option<Nameplate> {
 const REC_SIZE: usize = 2072;
 
 pub fn read_info_window(mem: &GameMemory, name: &str, is_known_item: impl Fn(i32) -> bool) -> Option<InfoWindow> {
-    let mut pat = ascii_bytes(name);
+    let mut pat = name_bytes(name);
     pat.push(0);
     for name_at in mem.find_bytes(&pat, 2000) {
         let s = name_at + 76;
@@ -1192,8 +1223,65 @@ mod tests {
     }
 
     #[test]
-    fn ascii_bytes_like_dotnet() {
-        assert_eq!(ascii_bytes("Ab\u{3042}"), vec![b'A', b'b', b'?']);
+    fn name_bytes_encode_ascii_as_is_and_the_rest_as_shift_jis() {
+        assert_eq!(name_bytes("Chidori Y."), b"Chidori Y.".to_vec());
+        assert_eq!(name_bytes("Ab\u{3042}"), vec![b'A', b'b', 0x82, 0xA0]);
+        assert_eq!(name_bytes("\u{1F600}"), vec![b'?']); // no Shift-JIS code
+    }
+
+    /// The name field of a status object: 64 bytes, zero-padded.
+    fn field(name: &[u8]) -> Vec<u8> {
+        let mut f = vec![0u8; 64];
+        f[..name.len()].copy_from_slice(name);
+        f
+    }
+
+    /// 2026-11-24: "Chidori Y." was never found because the old check took only 0x21-0x7E (no space).
+    #[test]
+    fn names_with_spaces_and_symbols_are_read() {
+        for n in ["Chidori Y.", "A B", "Name.", "a:b", "a-b_c", "O'Neil", "Ab Cd Ef", "Name ", " Name", "x,y;z", "A\\B", "a\"b"] {
+            let (got, len) = parse_name(&field(n.as_bytes())).unwrap_or_else(|| panic!("{n:?} refused"));
+            assert_eq!((got.as_str(), len), (n, n.len()));
+        }
+        // plain names still read the same
+        assert_eq!(parse_name(&field(b"Rubito")), Some(("Rubito".to_string(), 6)));
+        assert_eq!(parse_name(&field(b"Accsquad5")), Some(("Accsquad5".to_string(), 9)));
+        // a full 64-byte field with no terminator is too long to be a name
+        assert_eq!(parse_name(&[b'a'; 64]), None);
+    }
+
+    #[test]
+    fn non_ascii_names_read_as_shift_jis() {
+        // two kanji (Shift-JIS 96BC 914F), and a mixed name
+        assert_eq!(parse_name(&field(&[0x96, 0xBC, 0x91, 0x4F])), Some(("\u{540D}\u{524D}".to_string(), 4)));
+        assert_eq!(parse_name(&field(&[b'A', b' ', 0x82, 0xA0])), Some(("A \u{3042}".to_string(), 4)));
+        // what name_bytes writes, parse_name reads back
+        for n in ["\u{540D}\u{524D}", "A \u{3042}\u{30AB}.", "Chidori Y."] {
+            assert_eq!(parse_name(&field(&name_bytes(n))).map(|x| x.0).as_deref(), Some(n));
+        }
+        // a lone lead byte is a bad sequence, not a name
+        assert_eq!(parse_name(&field(&[b'A', 0x81])), None);
+    }
+
+    #[test]
+    fn things_that_are_not_names_are_refused() {
+        assert_eq!(parse_name(&field(b"")), None);
+        assert_eq!(parse_name(&field(b"   ")), None);
+        assert_eq!(parse_name(&field(b"ab\x01cd")), None);
+        assert_eq!(parse_name(&field(b"ab\x7Fcd")), None);
+        assert_eq!(parse_name(&field(&[b'a'; 40])), None);
+    }
+
+    /// The whole own-record path: a status object with a spaced name is taken as the logged-in character.
+    #[test]
+    fn own_record_with_a_spaced_name() {
+        let mut s = vec![0u8; 136];
+        s[0..4].copy_from_slice(&STATUS_VTABLE.to_le_bytes());
+        s[8..18].copy_from_slice(b"Chidori Y.");
+        s[132] = 87;
+        assert_eq!(own_name_and_level(&s), Some(("Chidori Y.".to_string(), 87)));
+        s[132] = 0;
+        assert_eq!(own_name_and_level(&s), None);
     }
 }
 

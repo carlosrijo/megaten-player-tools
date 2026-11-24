@@ -163,6 +163,11 @@ impl Redactor {
         let mut s = self.profile_paths(text);
         for (name, label) in &self.names {
             s = replace_words(&s, name, label);
+            // the folder and spreadsheet names it was turned into ("Chidori Y." is "Chidori Y_" on disk)
+            let on_disk = crate::data::characters::safe_file_name(name);
+            if on_disk != *name {
+                s = replace_words(&s, &on_disk, label);
+            }
         }
         match &self.user {
             Some(u) => replace_user_in_paths(&s, u),
@@ -235,6 +240,14 @@ mod tests {
         assert_eq!(r.text("Rubitomaniac"), "Rubitomaniac");
         // names are not hidden unless asked
         assert_eq!(joe().text("Rubito"), "Rubito");
+    }
+
+    /// A name changed to make a folder ("Chidori Y." is "Chidori Y_" on disk) is hidden there too.
+    #[test]
+    fn a_name_is_hidden_in_its_folder_name_too() {
+        let mut r = joe();
+        r.hide_names(&["Chidori Y."]);
+        assert_eq!(r.text(r"data\characters\Chidori Y_\dash, chidori y_-stats.csv, Chidori Y. logged in"), r"data\characters\Character 1\dash, Character 1-stats.csv, Character 1 logged in");
     }
 
     #[test]
