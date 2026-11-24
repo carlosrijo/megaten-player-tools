@@ -126,9 +126,22 @@ pub fn as_object(n: Option<&Value>) -> Result<&Map<String, Value>> {
 pub fn num(n: Option<&Value>) -> Option<f64> {
     match n? {
         Value::Number(x) => x.as_f64(),
-        Value::String(s) => crate::fmt::parse_f64(s),
+        Value::String(s) => parse_double(s),
         _ => None,
     }
+}
+
+/// `double.TryParse(s, NumberStyles.Float, InvariantCulture)`: white space around the number is only the ASCII kind .NET
+/// allows (9-13 and 32; not U+00A0 and the like), "NaN" parses.
+fn parse_double(s: &str) -> Option<f64> {
+    let t = s.trim_matches(|c: char| matches!(c, '\t'..='\r' | ' ' | '\0'));
+    if t.chars().next().is_none_or(char::is_whitespace) || t.chars().last().is_none_or(char::is_whitespace) {
+        return None;
+    }
+    if t.eq_ignore_ascii_case("nan") {
+        return Some(f64::NAN);
+    }
+    crate::fmt::parse_f64(t)
 }
 
 /// `Json.Int(n)` (default 0): the number truncated toward zero (saturating, NaN -> 0 like .NET 9+).
