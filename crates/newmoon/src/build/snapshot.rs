@@ -180,7 +180,11 @@ impl Snapshot {
             }
         }
         let mut tips = store.load_tooltip_cache()?;
-        let digitalized_when_taken = digi.as_ref().is_some_and(|d| d.digitalized_when_taken);
+        // Digitalized or not is the game's own flag (the progress object's digitalized demon), not whether that demon's
+        // record was found: when the record isn't loaded, the saved demon stands in and its object id doesn't match,
+        // and the demon-inflated stats would be saved as the character's own.
+        let digitalized_when_taken =
+            digi.as_ref().is_some_and(|d| d.digitalized_when_taken) || demon_reader::read_progress(&mem).is_some_and(|p| p.digitalized());
         let demons = data.demons()?;
         // The toggles switched on when the stats are read: their percent Max HP/MP is part of those numbers, so the saved
         // stats keep them (CharacterHpMp calibration).
@@ -224,8 +228,10 @@ impl Snapshot {
             while_digitalized: false,
         };
         let stats_from: NaiveDateTime;
-        if win.is_some() && digitalized_when_taken && store.last_stats_path().exists() {
-            // Item tooltips are still good; only the 12 stats and HP/MP are left alone.
+        if win.is_some() && digitalized_when_taken {
+            // Item tooltips are still good; only the 12 stats and HP/MP are left alone. With no saved stats yet, the
+            // cache branch below refuses ("take the first snapshot when not digitalized") rather than saving the
+            // window's digitalized stats as the character's own.
             let w = win.as_ref().expect("window");
             put_tip(&mut tips, &w.items, &w.texts);
             store.save_tooltip_cache(&tips)?;

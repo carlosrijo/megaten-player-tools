@@ -3499,7 +3499,8 @@
           ? [h('span', { class: 'card-sub', text: 'Delete this build?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => simDelete(M.id) }, 'Delete'),
             h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { M.confirmDel = false; drawTitle(); } }, 'Keep')]
           : [h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Duplicate this build', 'data-tip': 'Duplicate: a copy to change freely',
-              onclick: async () => { await simFlush(); simDuplicate({ name: M.name, slots: M.build.slots, points: M.build.points, cap: M.cap }, true); } }, icon('copy')),
+              // the whole build as saved (its base, level, alignment and demon too), so the copy stands where it does
+              onclick: async () => { await simFlush(); simDuplicate({ name: M.name, ...simWhole() }, true); } }, icon('copy')),
             h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Delete this build', 'data-tip': 'Delete this build', onclick: () => { M.confirmDel = true; drawTitle(); } }, icon('trash'))]);
       simStatus();
     }

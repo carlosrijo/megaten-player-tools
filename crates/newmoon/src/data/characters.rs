@@ -126,7 +126,7 @@ impl Characters {
     pub fn save(&self) -> Result<()> {
         std::fs::create_dir_all(&self.root)?;
         let list = Value::Array(self.all.iter().map(CharacterEntry::to_json).collect());
-        std::fs::write(self.file_path(), json::serialize(&list, Escape::Default, true))?;
+        json::write_atomic(self.file_path(), json::serialize(&list, Escape::Default, true))?;
         Ok(())
     }
 

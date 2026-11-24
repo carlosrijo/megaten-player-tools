@@ -202,8 +202,58 @@ pub fn to_string(value: &Value) -> String {
 pub fn save(path: impl AsRef<Path>, value: &Value) -> Result<()> {
     let path = path.as_ref();
     create_parent(path)?;
-    std::fs::write(path, to_string(value))?;
+    write_atomic(path, to_string(value))?;
     Ok(())
+}
+
+/// Write a whole file safely: into `<name>.tmp` beside it first, then swap it in. A program killed halfway leaves
+/// the old file as it was (a plain write empties the file first, so a kill there lost it). A file another program holds
+/// open (the CSV in Excel) gives a message for the person instead of an OS error.
+pub fn write_atomic(path: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> Result<()> {
+    let path = path.as_ref();
+    let mut tmp_name = path.file_name().map(|n| n.to_os_string()).unwrap_or_default();
+    tmp_name.push(".tmp");
+    let tmp = path.with_file_name(tmp_name);
+    if let Err(e) = std::fs::write(&tmp, contents) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(explain_write_error(path, e));
+    }
+    if let Err(e) = std::fs::rename(&tmp, path) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(explain_write_error(path, e));
+    }
+    Ok(())
+}
+
+/// True when another program holds the file so it can't be written (Excel keeps an open CSV locked).
+pub fn is_locked_error(e: &std::io::Error) -> bool {
+    // 32 ERROR_SHARING_VIOLATION, 33 ERROR_LOCK_VIOLATION, 5 ERROR_ACCESS_DENIED (replacing a file that is open)
+    matches!(e.raw_os_error(), Some(32) | Some(33) | Some(5))
+}
+
+/// The error for a failed write: a plain message when the file is held by another program, else the OS error.
+pub fn explain_write_error(path: &Path, e: std::io::Error) -> anyhow::Error {
+    if is_locked_error(&e) && path.exists() {
+        crate::error::user_error(format!(
+            "{} is open in another program (Excel?), so it can't be saved. Close it there, then try again.",
+            path.display()
+        ))
+    } else {
+        anyhow::Error::new(e).context(format!("writing {}", path.display()))
+    }
+}
+
+/// Check up front that an existing file can be written, before anything else is changed (a snapshot checks its CSV
+/// first, so a CSV open in Excel stops it before the caches move on). A missing file is fine: it will be created.
+pub fn ensure_writable(path: impl AsRef<Path>) -> Result<()> {
+    let path = path.as_ref();
+    if !path.exists() {
+        return Ok(());
+    }
+    match std::fs::OpenOptions::new().append(true).open(path) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(explain_write_error(path, e)),
+    }
 }
 
 /// `Json.SaveIfChanged`: save, but leave the file alone when it already holds exactly this (see the C# comment: rewriting a
@@ -220,7 +270,7 @@ pub fn save_if_changed(path: impl AsRef<Path>, value: &Value) -> Result<()> {
         }
     }
     create_parent(path)?;
-    std::fs::write(path, text)?;
+    write_atomic(path, text)?;
     Ok(())
 }
 
@@ -462,5 +512,32 @@ mod tests {
         assert_eq!(lines("a\r\nb\nc\rd"), vec!["a", "b", "c", "d"]);
         assert_eq!(lines("a\n\nb\n"), vec!["a", "", "b"]);
         assert!(lines("").is_empty());
+    }
+
+    #[test]
+    fn safe_write_replaces_the_file_and_a_locked_file_gives_a_message() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = std::env::temp_dir().join(format!("nm-json-atomic-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("stats.csv");
+        write_atomic(&f, "one").unwrap();
+        write_atomic(&f, "two").unwrap();
+        assert_eq!(std::fs::read_to_string(&f).unwrap(), "two");
+        assert!(!dir.join("stats.csv.tmp").exists(), "the temp file is gone");
+        ensure_writable(dir.join("missing.csv")).unwrap();
+        ensure_writable(&f).unwrap();
+        {
+            // like Excel: open, and let others read but not write (FILE_SHARE_READ)
+            let _held = std::fs::OpenOptions::new().read(true).write(true).share_mode(1).open(&f).unwrap();
+            let e = ensure_writable(&f).unwrap_err();
+            assert!(crate::error::is_user_error(&e), "{e}");
+            assert!(e.to_string().contains("open in another program"), "{e}");
+            let e = write_atomic(&f, "three").unwrap_err();
+            assert!(crate::error::is_user_error(&e), "{e}");
+            assert!(!dir.join("stats.csv.tmp").exists(), "no temp file is left behind");
+        }
+        assert_eq!(std::fs::read_to_string(&f).unwrap(), "two", "the old content is kept");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -227,7 +227,7 @@ impl DigitalizeSave {
 
     pub fn save(&self, store: &Store) -> Result<()> {
         std::fs::create_dir_all(store.cache_dir())?;
-        std::fs::write(store.digitalize_path(), self.pack())?;
+        crate::data::json::write_atomic(store.digitalize_path(), self.pack())?;
         Ok(())
     }
 
