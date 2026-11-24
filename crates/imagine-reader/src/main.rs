@@ -16,7 +16,7 @@
 //!
 //! Without --name, the character is read from the running client (or is the only one with saved data).
 //! Each character keeps its own folder and CSV, listed in data\characters.json.
-//! --data <dir> uses that folder as-is instead (for tests on copies).
+//! --data <dir> uses that folder as-is instead (for tests on copies): its config.json and characters.json decide the CSV, never the program's own.
 //! The desktop app (app\) runs the same steps through Build\Pipeline.cs.
 //!
 //! Commands ported: everything except `simulate` and `serve` (wave 4: they need the Simulator and the PreviewServer).
@@ -35,7 +35,7 @@ use imagine::calc::effect::Effect;
 use imagine::calc::item_effects::ItemEffects;
 use imagine::console;
 use imagine::diag::{about, crash, log};
-use imagine::data::characters::{Characters, get_directory_name, path_combine};
+use imagine::data::characters::{Characters, get_directory_name, path_combine, safe_file_name};
 use imagine::data::config;
 use imagine::data::demon_tables::Assist;
 use imagine::data::game_data::GameData;
@@ -99,6 +99,14 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     let cmd = opts.get("_cmd").map(String::as_str).unwrap_or("help");
     let get = |k: &str| opts.get(k).map(String::as_str);
     let get_or = |k: &str, d: String| opts.get(k).cloned().unwrap_or(d);
+
+    // --data <folder>: that folder is the data folder for the whole run. Its config.json (stats folder, paths) replaces the
+    // program's own, before anything reads the settings, so no read or write falls back to the program's own data.
+    if let Some(d) = opts.get("data") {
+        if !config::use_data_dir(Path::new(d)) {
+            return Err(user_error("--data could not be applied: the settings were already loaded. Nothing was read or written."));
+        }
+    }
 
     // The local log (<data folder>\logs): for the commands that touch a character's data or the game, not for the database builders.
     // --log-level debug|info|warn (default info).
@@ -485,7 +493,10 @@ fn logged_in() -> Vec<client_reader::ClientInfo> {
 /// The shared block of Program.cs (lines 146-177) that picks the character.
 fn resolve_character(cmd: &str, opts: &HashMap<String, String>) -> Result<Target> {
     let root = opts.get("data").cloned().unwrap_or_else(|| find_data_dir().to_string_lossy().into_owned());
-    let mut known = if opts.contains_key("data") { None } else { Some(Characters::new(&root, &default_name(), &default_csv()?)?) };
+    // With --data the folder is used as it is: its characters.json (read, never written or added to) says who is in it and
+    // where each one's CSV is, and its config.json (see `config::use_data_dir`) says where a CSV that nothing names goes.
+    let with_data = opts.contains_key("data");
+    let mut known = if with_data { Some(Characters::read_only(&root)) } else { Some(Characters::new(&root, &default_name(), &default_csv()?)?) };
     let mut name = opts.get("name").cloned();
     if name.is_none() && matches!(cmd, "snapshot" | "sets" | "demon" | "expertise") {
         let in_game = logged_in();
@@ -517,6 +528,13 @@ fn resolve_character(cmd: &str, opts: &HashMap<String, String>) -> Result<Target
         },
     };
     let (name, entry_csv, data_dir) = match known.as_mut() {
+        Some(k) if with_data => match k.find(&name).cloned() {
+            Some(e) => {
+                let dir = k.data_dir(&e);
+                (e.name.clone().unwrap_or(name), e.csv.clone(), dir)
+            }
+            None => (name, None, PathBuf::from(&root)),
+        },
         Some(k) => {
             let e = k.get_or_add(&name)?.clone();
             let dir = k.data_dir(&e);
@@ -528,6 +546,11 @@ fn resolve_character(cmd: &str, opts: &HashMap<String, String>) -> Result<Target
         Some(c) => c.clone(),
         None => match entry_csv {
             Some(c) => c,
+            // the folder's own stats folder (its config.json), never the program's
+            None if with_data => {
+                let stats = config::current().stats_folder.clone().ok_or_else(null_path)?;
+                path_combine(&stats, &format!("{}-stats.csv", safe_file_name(&name).to_lowercase()))
+            }
             None => default_csv()?,
         },
     };
@@ -1586,6 +1609,55 @@ mod tests {
         assert_eq!(args(&["--n", "-5"])["n"], "-5");
         // "--" alone is an option with an empty name
         assert_eq!(args(&["--", "x"])[""], "x");
+    }
+
+    /// `--data <folder>`: the folder's characters.json and config.json decide the CSV, never the program's own data folder
+    /// (the bug: a snapshot taken with `--data <copy>` was appended to the real CSV, named by the program's own config.json).
+    /// One test, because the settings are loaded once per process.
+    #[test]
+    fn data_flag_decides_the_csv() {
+        let root = std::env::temp_dir().join(format!("imagine-data-flag-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let data = root.join("copy");
+        let stats = root.join("copy-stats");
+        std::fs::create_dir_all(&data).unwrap();
+        std::fs::create_dir_all(data.join("dash")).unwrap(); // what makes Characters::new want to write a list
+        let js = |p: &Path| serde_json::to_string(&p.to_string_lossy()).unwrap();
+        std::fs::write(data.join("config.json"), format!("{{\"statsFolder\": {}}}", js(&stats))).unwrap();
+        let listed = stats.join("listed.csv");
+        let list = format!("[{{\"Name\":\"Tester\",\"Dir\":\".\",\"Csv\":{}}},{{\"Name\":\"Sub\",\"Dir\":\"characters\\\\Sub\",\"Csv\":{}}}]", js(&listed), js(&stats.join("sub.csv")));
+        std::fs::write(data.join("characters.json"), &list).unwrap();
+        let o = |extra: &[&str]| {
+            let mut a = vec!["rebuild", "--data", data.to_str().unwrap()];
+            a.extend_from_slice(extra);
+            args(&a)
+        };
+        assert!(config::use_data_dir(&data), "the settings were loaded before --data was applied");
+        assert_eq!(config::current().stats_folder.as_deref(), stats.to_str());
+        assert_eq!(config::file_path(), data.join("config.json"));
+
+        // a listed character: its own CSV and folder, from the folder's list
+        let t = resolve_character("rebuild", &o(&["--name", "Tester"])).unwrap();
+        assert_eq!((t.name.as_str(), t.csv.as_str(), t.data_dir.as_path()), ("Tester", listed.to_str().unwrap(), data.as_path()));
+        let t = resolve_character("rebuild", &o(&["--name", "sub"])).unwrap();
+        assert_eq!((t.name.as_str(), t.csv.as_str(), t.data_dir), ("Sub", stats.join("sub.csv").to_str().unwrap(), data.join("characters\\Sub")));
+        // an unlisted name: the folder is used as it is, the CSV goes to the folder's stats folder
+        let t = resolve_character("rebuild", &o(&["--name", "Nobody"])).unwrap();
+        assert_eq!((t.csv.as_str(), t.data_dir.as_path()), (stats.join("nobody-stats.csv").to_str().unwrap(), data.as_path()));
+        // --csv still wins
+        let t = resolve_character("rebuild", &o(&["--name", "Tester", "--csv", "x.csv"])).unwrap();
+        assert_eq!(t.csv, "x.csv");
+        // no name: several are listed, so it asks
+        assert!(resolve_character("rebuild", &o(&[])).is_err());
+        // nothing was added to the list or created
+        assert_eq!(std::fs::read_to_string(data.join("characters.json")).unwrap(), list);
+        assert!(!stats.exists());
+        // without a list, the folder's config.json still decides, and the program's own default CSV is never used
+        std::fs::remove_file(data.join("characters.json")).unwrap();
+        let t = resolve_character("rebuild", &o(&["--name", "Tester"])).unwrap();
+        assert_eq!(t.csv, stats.join("tester-stats.csv").to_str().unwrap());
+        assert!(!data.join("characters.json").exists(), "--data must not create a character list");
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

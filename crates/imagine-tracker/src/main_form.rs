@@ -67,14 +67,18 @@ impl MainForm {
     /// C# `new MainForm(opt)`; an error (the characters list could not be saved) is what the C# constructor threw.
     pub fn new(opt: AppOptions, ui: Ui) -> Result<MainForm> {
         let data_dir = Self::data_dir_for(&opt);
+        // With its own data folder (--data), that folder's config.json replaces the program's own settings before anything
+        // reads them, so no spreadsheet path ever comes from the real data folder.
+        if opt.data.is_some() && !imagine::data::config::use_data_dir(&data_dir) {
+            return Err(anyhow::anyhow!("--data could not be applied: the settings were already loaded."));
+        }
         let level_name = imagine::diag::log::Level::parse(opt.log_level.as_deref().unwrap_or("info")).map(|l| l.name()).unwrap_or("info").to_string();
         let mut set = AppSettings::load();
         set.read_only = opt.capture.is_some(); // a capture or tour run never changes the saved preferences
-        // With its own data folder (--data), a run keeps its spreadsheets beside that folder too, never in the real place.
+        // With its own data folder (--data), a run keeps its spreadsheets where that folder's config.json says (else in its
+        // own stats folder), never in the real place; the saved preference of the real data is not used.
         let first_csv = if opt.data.is_some() {
-            let parent = data_dir.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| data_dir.clone());
-            let file = backend::default_csv().file_name().map(|f| f.to_os_string()).unwrap_or_default();
-            parent.join("smt-stats").join(file).to_string_lossy().into_owned()
+            backend::default_csv().to_string_lossy().into_owned()
         } else {
             set.csv.clone().unwrap_or_else(|| backend::default_csv().to_string_lossy().into_owned())
         };

@@ -407,6 +407,9 @@ while digitalized doesn't take the window's 12 stats/HP/MP (they include the dem
 
 Options: `--name <character>` (default: whoever is logged in, or the only character with saved data),
 `--csv <path>` and `--data <dir>` (default: that character's own, from `data\characters.json`), `--ignore-window`.
+`--data <dir>` makes that folder the data folder for the whole run: its `config.json` and `characters.json` decide where
+the CSV is (a character it does not list gets `<statsFolder>\<name>-stats.csv`, else `<dir>\stats`), never those of the
+program's own data folder; `--csv` still wins.
 
 The quest bonus and the Demonic Compendium bonus need two counts, which the game only has once their windows have
 been opened: Quest Completion Bonuses (its completed-quest list) and Demonic Compendium (its "Demons: 60/339" text).

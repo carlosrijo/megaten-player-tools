@@ -71,6 +71,18 @@ impl Characters {
         Ok(c)
     }
 
+    /// The list in `data_root\characters.json` as it is, for a run on a folder it was told to use (`--data`): nothing is
+    /// created or written, a missing or broken file is an empty list.
+    pub fn read_only(data_root: impl Into<PathBuf>) -> Characters {
+        let mut c = Characters { root: data_root.into(), default_csv: String::new(), all: Vec::new() };
+        if let Ok(text) = json::read_all_text(&c.file_path()) {
+            if let Ok(Some(list)) = serde_json::from_str::<Option<Vec<Option<CharacterEntry>>>>(&text) {
+                c.all = list.into_iter().map(|e| e.unwrap_or_default()).filter(|e| !is_blank(e.name.as_deref())).collect();
+            }
+        }
+        c
+    }
+
     fn file_path(&self) -> PathBuf {
         self.root.join("characters.json")
     }

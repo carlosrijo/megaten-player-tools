@@ -26,6 +26,8 @@ pub struct Config {
 }
 
 static CURRENT: OnceLock<Config> = OnceLock::new();
+/// The folder a run was told to use as its data folder (`--data`), once [`use_data_dir`] has set it.
+static DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 /// `Config.Current`: loaded on first use (created with defaults when data\config.json is missing).
 pub fn current() -> &'static Config {
@@ -72,9 +74,22 @@ pub fn program_dir() -> PathBuf {
     base_directory().or_else(|| std::env::current_dir().ok()).unwrap_or_default()
 }
 
-/// data\config.json
+/// Make a run use `dir` (`--data <dir>`) as its data folder: [`current`] then comes from `dir\config.json` and never
+/// from the program's own data folder, so the stats folder, and with it every CSV a command writes, is the one that
+/// folder says. Call it before anything reads the config. False when the config was already loaded or a folder was
+/// already set: the run must then stop, or it would read and write the program's own data. Writes nothing.
+pub fn use_data_dir(dir: &Path) -> bool {
+    let own = home_dir().join("data").join("config.json");
+    let c = Config::for_data_dir(dir, repo_root().as_deref(), &own, &user_profile(), &my_documents());
+    DATA_DIR.set(dir.to_path_buf()).is_ok() && CURRENT.set(c).is_ok()
+}
+
+/// data\config.json (of the folder given to [`use_data_dir`], else of the program's own data folder)
 pub fn file_path() -> PathBuf {
-    home_dir().join("data").join("config.json")
+    match DATA_DIR.get() {
+        Some(d) => d.join("config.json"),
+        None => home_dir().join("data").join("config.json"),
+    }
 }
 
 /// `Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)`.
@@ -144,19 +159,40 @@ impl Config {
 
     /// `load` with the places given (so tests can use a temp folder).
     pub fn load_from(root: Option<&Path>, file: &Path, home: &Path, documents: &Path) -> Config {
+        let mut c = Config::defaults(root, home, documents);
+        let _ = c.read_or_create(file);
+        c
+    }
+
+    /// The settings of a run that was given its own data folder (`--data <dir>`), read only (nothing is created):
+    /// `dir\config.json` decides, and the spreadsheets go to `dir\stats` unless that file says otherwise, never to the
+    /// program's own stats folder. The paths the folder's file leaves out (website, tokusei XML, server constants) come
+    /// from the program's own config file when `dir` has none, else from the detected defaults; those are only read.
+    pub fn for_data_dir(dir: &Path, root: Option<&Path>, own_file: &Path, home: &Path, documents: &Path) -> Config {
+        let mut c = Config::defaults(root, home, documents);
+        c.stats_folder = None; // the program's own default stats folder is never a fallback here
+        let file = dir.join("config.json");
+        let _ = c.read(if file.is_file() { &file } else { own_file });
+        if !file.is_file() {
+            c.stats_folder = None; // the program's own file does not decide where this folder's spreadsheets go
+        }
+        c.stats_folder.get_or_insert_with(|| path_string(dir.join("stats")));
+        c
+    }
+
+    fn defaults(root: Option<&Path>, home: &Path, documents: &Path) -> Config {
         let repos = root.and_then(Path::parent);
-        let mut c = Config {
+        Config {
             website_content: repos.map(|r| path_string(r.join("ai-custom-smt-server").join("website").join("content"))),
             tokusei_xml: repos.map(|r| path_string(r.join("comp_hack").join("datastore").join("data").join("tokusei"))),
             server_constants: Some(path_string(home.join("smt").join("deploy").join("data").join("config").join("constants.xml"))),
             stats_folder: Some(path_string(documents.join("smt-stats"))),
             default_character: None,
-        };
-        let _ = c.read_or_create(file);
-        c
+        }
     }
 
-    fn read_or_create(&mut self, file: &Path) -> crate::Result<()> {
+    /// Read `file` over the settings, if it can be read.
+    fn read(&mut self, file: &Path) -> crate::Result<()> {
         if file.exists() {
             let j = json::load(file)?;
             let s = |k: &str, d: &Option<String>| match json::str(j.at(k)) {
@@ -168,6 +204,13 @@ impl Config {
             self.server_constants = s("serverConstants", &self.server_constants);
             self.stats_folder = s("statsFolder", &self.stats_folder);
             self.default_character = s("defaultCharacter", &None);
+        }
+        Ok(())
+    }
+
+    fn read_or_create(&mut self, file: &Path) -> crate::Result<()> {
+        if file.exists() {
+            self.read(file)?;
         } else {
             // Written for the portable release too, so its user has a file beside the exe to point the paths elsewhere
             json::create_parent(file)?;
@@ -213,6 +256,36 @@ mod tests {
         assert_eq!(c2.stats_folder.as_deref(), Some("D:\\x"));
         assert_eq!(c2.default_character.as_deref(), Some("Zed"));
         assert_eq!(c2.tokusei_xml, c.tokusei_xml);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_data_folder_decides_the_stats_folder() {
+        let dir = std::env::temp_dir().join(format!("imagine-config-datadir-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let data = dir.join("copy");
+        std::fs::create_dir_all(&data).unwrap();
+        let own = dir.join("own-config.json");
+        std::fs::write(&own, "{\"statsFolder\": \"D:\\\\real\", \"websiteContent\": \"D:\\\\site\", \"defaultCharacter\": \"Real\"}").unwrap();
+        let (home, docs) = (dir.join("home"), dir.join("docs"));
+        let for_dir = || Config::for_data_dir(&data, None, &own, &home, &docs);
+        // no config.json in the folder: the program's own paths are read, but never its stats folder
+        let c = for_dir();
+        assert_eq!(c.stats_folder.as_deref(), Some(data.join("stats").to_string_lossy().as_ref()));
+        assert_eq!(c.website_content.as_deref(), Some("D:\\site"));
+        // a config.json without statsFolder: still not the default Documents\smt-stats
+        std::fs::write(data.join("config.json"), "{\"websiteContent\": \"D:\\\\copy-site\"}").unwrap();
+        let c = for_dir();
+        assert_eq!(c.stats_folder.as_deref(), Some(data.join("stats").to_string_lossy().as_ref()));
+        assert_eq!(c.website_content.as_deref(), Some("D:\\copy-site"));
+        assert_eq!(c.default_character, None);
+        // a config.json with statsFolder wins; a broken one falls back to the folder's own stats
+        std::fs::write(data.join("config.json"), "{\"statsFolder\": \"E:\\\\copy-stats\"}").unwrap();
+        assert_eq!(for_dir().stats_folder.as_deref(), Some("E:\\copy-stats"));
+        std::fs::write(data.join("config.json"), "not json").unwrap();
+        assert_eq!(for_dir().stats_folder.as_deref(), Some(data.join("stats").to_string_lossy().as_ref()));
+        // nothing is created
+        assert!(!data.join("stats").exists());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
