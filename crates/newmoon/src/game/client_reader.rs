@@ -824,9 +824,13 @@ fn walk_equip_map(mem: &GameMemory, head: i64, size: i32) -> Option<Vec<i32>> {
 // ---------- Tarot / soul enchant ids of the worn items: always present ----------
 // Found 2026-11-23, after a gear change left the 56-byte gear grid showing two old items (state byte 01) while the
 // new ones were worn, so no grid matched and enchant ids went missing.
-//   equipment object +60 / +64: a fourth map {head, size} of the worn item objects. Node: +0 left, +4 parent,
-//       +8 right, +16 key = equip type 0..14, +20 item object (vtable 0x158EE68), +24 that item's object id
-//       (0 = a slot that was emptied; never-used empty slots have no node).
+//   equipment object +60 / +64: a fourth map {head, size} of the worn items' object ids (std::map<int, int64>: the
+//       pair is 8-aligned, so +12 and +20 are padding). Node: +0 left, +4 parent, +8 right, +16 key = equip type
+//       0..14, +24 that item's object id (int64; 0 = a slot that was emptied; never-used empty slots have no node),
+//       +32 color (0 red, 1 black), +33 "is head" (1 only in the head node).
+//       Fixed 2026-11-24: +20 was first read as an embedded item object's vtable (0x158EE68), but that address is code
+//       (a jmp) and the word is padding left from the stack: nodes inserted later held the equipment object's address
+//       there instead (Rubito, 4 of 15 nodes), so the walk gave up. The walk now checks the node's own color/head bytes.
 //   item record (found by item id + object id; two copies, they agree from +20 on): the fields of comp_hack's
 //       objects::Item (libcomp schema item.xml) in order:
 //       +0 item id, +4 object id, +8 0, +12 flags (0x00000001 or 0x01010001),
@@ -838,8 +842,6 @@ fn walk_equip_map(mem: &GameMemory, head: i64, size: i32) -> Option<Vec<i32>> {
 // Checked on Rubito: all 15 slots equal the enchants named in the item tooltips, including the two the grid had wrong;
 // and on Rokujuu (6 empty slots, no gear grid in that client). Sources, mods and fuse bonuses checked against Rubito's
 // tooltips (Spiral Ring License = Christmas Citrine Ring+5's stats; Levi Blaster fuse 50/50/50 = +45 LNG-R/Spell/Support).
-const ITEM_OBJECT_VTABLE: u32 = 0x158EE68;
-
 /// The full record of each worn item, in SLOT_NAMES order (None for empty slots), or None when any worn slot can't
 /// be read unambiguously.
 fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Option<Vec<Option<WornItem>>> {
@@ -852,7 +854,10 @@ fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Opt
     if head < 0x10000 || !(0..=15).contains(&size) {
         return None;
     }
-    let hb = mem.read(head, 8)?;
+    let hb = mem.read(head, 34)?;
+    if hb[33] != 1 {
+        return None; // not a map head
+    }
     let mut obj_of: std::collections::HashMap<(i32, u32), usize> = std::collections::HashMap::new(); // (item id, object id) -> slot
     let mut seen: IndexSet<i64> = IndexSet::new();
     let mut stack: Vec<i64> = vec![u32_at(&hb, 4) as i64];
@@ -860,8 +865,9 @@ fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Opt
         if n == 0 || n == head || !seen.insert(n) {
             continue;
         }
-        let nb = mem.read(n, 28)?;
-        if seen.len() > 16 || u32_at(&nb, 20) != ITEM_OBJECT_VTABLE {
+        let nb = mem.read(n, 34)?;
+        // a real node: not the head, red or black, an object id that fits the item record's 32-bit field
+        if seen.len() > 16 || nb[33] != 0 || nb[32] > 1 || u32_at(&nb, 28) != 0 {
             return None;
         }
         let key = i32_at(&nb, 16);
