@@ -428,6 +428,9 @@ impl Snapshot {
                 last_read = Some(recs.iter().map(|r| r.id).collect());
             }
         }
+        // One gear calculator for every row: building it reads the set table (client-sets.json, ~720 KB) and the
+        // expertise files, none of which change during the loop.
+        let gear = self.ctx.gear()?;
         for ri in 0..t.rows.len() {
             let mut changes: Vec<String> = Vec::new();
             // Newer rows carry the item ids; older ones only the names, which are looked up (an unlisted item is lost there).
@@ -478,7 +481,7 @@ impl Snapshot {
                 }
             }
             let row_level = fmt::parse_i32(&t.get(&t.rows[ri], "Level")).unwrap_or(0);
-            let combat = bonuses::combat_summary(&self.ctx.gear()?.compute(&texts, Some(&ids), None, None, details.as_deref(), row_level, None)?.effects);
+            let combat = bonuses::combat_summary(&gear.compute(&texts, Some(&ids), None, None, details.as_deref(), row_level, None)?.effects);
             for c in &combat {
                 for (col, v) in [(format!("{} (gear)", c.stat), c.always), (format!("{} (gear, digitalized)", c.stat), c.digi)] {
                     if !t.columns.contains(&col) {

@@ -8,7 +8,8 @@ edition = "2024"
 license = "MIT"
 
 [profile.release]
-opt-level = 3
+# "z" (smallest code) instead of 3: the tracker exe goes from 10.3 MB to 8.4 MB.
+opt-level = "z"
 lto = "fat"
 codegen-units = 1
 # Symbols stay in the build, and on MSVC that means a separate .pdb beside the exe: the exe itself only carries the

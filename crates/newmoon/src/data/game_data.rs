@@ -31,6 +31,7 @@ use crate::Result;
 
 #[derive(RustEmbed)]
 #[folder = "../../reference"]
+#[compression = "zstd"]
 #[include = "*.tsv"]
 struct EmbeddedReference;
 

@@ -175,6 +175,15 @@ pub fn key_of(d: &DemonRecord) -> String {
     format!("{}:{}:{}", d.r#type, d.name, d.level)
 }
 
+/// Whether two records of one key are the same demon, not two demons of one kind and level (a level 90 Specter in the
+/// COMP and another one in storage, or a stale copy the client still holds). The same object id within a session; across
+/// sessions (object ids change) the same skill slots, learned skills, growth and Mitama.
+pub fn same_demon(a: &DemonRecord, b: &DemonRecord) -> bool {
+    key_of(a) == key_of(b)
+        && (a.object_id == b.object_id
+            || (a.skills == b.skills && a.acquired == b.acquired && a.growth_type == b.growth_type && a.mitama_type == b.mitama_type))
+}
+
 /// The seen list as saved (cache\comp-demons.json), keyed by [`key_of`]: an unreadable file is an empty list.
 pub fn load_seen(store: &Store) -> Result<IndexMap<String, SeenDemon>> {
     let mut res: IndexMap<String, SeenDemon> = IndexMap::new();
@@ -203,11 +212,21 @@ fn write_seen(store: &Store, seen: &IndexMap<String, SeenDemon>) -> Result<()> {
 /// mark at this read: a demon seen before that is not in this read can't be the summoned one any more (the summoned
 /// demon is always in memory, with its details), so its mark is taken off. Called by a snapshot, which reads the
 /// demons too; the picker's "Load demons from the game" (`comp_demons`) does its own merge, with the same rule.
-pub fn note_demons(store: &Store, demons: &[DemonRecord], now: NaiveDateTime) -> Result<()> {
+/// Two records of one key in one read (two demons of one kind and level, or a stale copy): the list keeps one, so the
+/// digitalize demon's own record (`prefer`, its object id) wins, then the summoned one, then the one seen before.
+pub fn note_demons(store: &Store, demons: &[DemonRecord], prefer: Option<u32>, now: NaiveDateTime) -> Result<()> {
     let mut seen = load_seen(store)?;
+    let before: HashMap<String, u32> = seen.iter().map(|(k, s)| (k.clone(), s.demon.object_id)).collect();
     let read: Vec<&DemonRecord> = demons.iter().filter(|d| d.loaded()).collect();
+    let rank = |d: &DemonRecord, k: &str| (prefer == Some(d.object_id), d.summoned(), before.get(k) == Some(&d.object_id));
+    let mut placed: HashSet<String> = HashSet::new();
     for d in &read {
-        seen.insert(key_of(d), SeenDemon { seen_at: Some(iso_s(now)), demon: (*d).clone(), in_comp: None });
+        let k = key_of(d);
+        if placed.contains(&k) && rank(d, &k) <= rank(&seen[&k].demon, &k) {
+            continue;
+        }
+        seen.insert(k.clone(), SeenDemon { seen_at: Some(iso_s(now)), demon: (*d).clone(), in_comp: None });
+        placed.insert(k);
     }
     only_summoned(&mut seen, &read);
     write_seen(store, &seen)
@@ -469,10 +488,15 @@ impl Pipeline {
             write_seen(store, &seen)?;
         }
         // The saved digitalize demon when it is not one of them (never read into the list): listed, not saved with the rest.
+        // Also when the list has another demon under its key (same kind and level, other skills: one in storage, or a
+        // stale copy the client held): that one is listed as it is, not as the one in use.
         const SAVED_KEY: &str = "|saved";
-        let saved_listed = current.as_ref().is_some_and(|c| seen.contains_key(&key_of(c)));
+        let under_key = current.as_ref().and_then(|c| seen.get(&key_of(c)));
+        let saved_listed = current.as_ref().zip(under_key).is_some_and(|(c, s)| same_demon(c, &s.demon));
         if let Some(c) = current.as_ref().filter(|_| !saved_listed) {
-            seen.insert(format!("{}{SAVED_KEY}", key_of(c)), SeenDemon { seen_at: None, demon: c.clone(), in_comp: Some(false) });
+            // not read into the list: not in the COMP. Another demon under its key: the list says nothing about this one.
+            let in_comp = if under_key.is_some() { None } else { Some(false) };
+            seen.insert(format!("{}{SAVED_KEY}", key_of(c)), SeenDemon { seen_at: None, demon: c.clone(), in_comp });
         }
 
         let t = data.demons()?;
@@ -497,7 +521,7 @@ impl Pipeline {
                 level: d.level,
                 race: devil.map(|v| title(&v.race)).unwrap_or_default(),
                 mitama: if d.mitama_type > 0 && (d.mitama_type as usize) < MITAMA_NAMES.len() { MITAMA_NAMES[d.mitama_type as usize].to_string() } else { String::new() },
-                current: current.as_ref().is_some_and(|c| k.ends_with(SAVED_KEY) || *k == key_of(c)),
+                current: current.as_ref().is_some_and(|c| k.ends_with(SAVED_KEY) || (saved_listed && *k == key_of(c))),
                 in_game: live.contains(k),
                 seen_at: s.seen_at.clone(),
                 force_stack: d.force_stack.as_ref().map_or(0, |f| f.iter().filter(|&&x| x > 0).count()),
@@ -662,11 +686,34 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         let store = Store::new(&dir);
         let now = chrono::NaiveDate::from_ymd_opt(2026, 11, 24).unwrap().and_hms_opt(1, 2, 3).unwrap();
-        note_demons(&store, &[demon("Pixie", 0x33), DemonRecord { name: "Not loaded".into(), ..Default::default() }], now).unwrap();
+        note_demons(&store, &[demon("Pixie", 0x33), DemonRecord { name: "Not loaded".into(), ..Default::default() }], None, now).unwrap();
         let text = std::fs::read_to_string(store.comp_demons_path()).unwrap();
         assert!(text.starts_with(r#"[{"SeenAt":"2026-11-24T01:02:03","Demon":{"Address":0,"Flags":51,"Name":"Pixie""#), "{text}");
         let seen = load_seen(&store).unwrap();
         assert_eq!(seen.len(), 1); // a demon the game only lists is not kept
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Two Specters of one level in one read (2026-11-24: the digitalize demon, object 2181063, and another with other
+    /// skills, 2181058): the list keeps the digitalize demon's record whatever the read order.
+    #[test]
+    fn same_key_keeps_the_digitalize_demon() {
+        let dir = std::env::temp_dir().join(format!("newmoon-seen-dup-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let store = Store::new(&dir);
+        let now = chrono::NaiveDate::from_ymd_opt(2026, 11, 24).unwrap().and_hms_opt(4, 0, 9).unwrap();
+        let mine = DemonRecord { object_id: 2181063, skills: vec![2, 3, 4], ..demon("Specter", 0x31) };
+        let other = DemonRecord { object_id: 2181058, skills: vec![48, 49, 586], ..demon("Specter", 0x31) };
+        assert!(!same_demon(&mine, &other));
+        assert!(same_demon(&mine, &DemonRecord { object_id: 99, ..mine.clone() })); // another session, same demon
+        for order in [[&mine, &other], [&other, &mine]] {
+            let _ = std::fs::remove_file(store.comp_demons_path());
+            note_demons(&store, &[order[0].clone(), order[1].clone()], Some(2181063), now).unwrap();
+            assert_eq!(load_seen(&store).unwrap()[&key_of(&mine)].demon.object_id, 2181063);
+        }
+        // nothing preferred: the one seen before stays
+        note_demons(&store, &[other.clone(), mine.clone()], None, now).unwrap();
+        assert_eq!(load_seen(&store).unwrap()[&key_of(&mine)].demon.object_id, 2181063);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

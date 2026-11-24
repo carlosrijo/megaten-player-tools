@@ -21,6 +21,7 @@ pub const DATA_HOST: &str = "data.newmoon.app";
 /// The page (app\ui), compressed into the exe. The folders of game art made locally (*-icons) are never embedded.
 #[derive(RustEmbed)]
 #[folder = "../../app/ui"]
+#[compression = "zstd"]
 #[exclude = "*-icons/*"]
 #[exclude = "*-icons"]
 pub struct UiFiles;
@@ -28,6 +29,7 @@ pub struct UiFiles;
 /// The pictures CharacterPicture compares the game window with (app\assets).
 #[derive(RustEmbed)]
 #[folder = "../../app/assets"]
+#[compression = "zstd"]
 #[include = "*.png"]
 pub struct AssetFiles;
 

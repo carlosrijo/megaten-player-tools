@@ -926,7 +926,9 @@
     if (missing) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
       h('b', { text: `No saved bonuses for ${missing}. ` }), 'They are not in the totals yet. Open the Information window in game once, then take a snapshot.')));
     else if (!isTrue(L.stats_live)) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
-      h('b', { text: `The 12 stats and HP/MP are from ${when(L.stats_from)}. ` }), 'Gear and expertise are current. The stats are kept from then because you were digitalized (the game then shows the demon’s share too). Take a snapshot when not digitalized to refresh them.')));
+      h('b', { text: `The 12 stats and HP/MP are from ${when(L.stats_from)}. ` }), isTrue(L.stats_digitalized)
+        ? 'Gear and expertise are current. The stats are kept from then because you were digitalized (the game then shows the demon’s share too). Take a snapshot when not digitalized to refresh them.'
+        : 'Gear and expertise are current. The 12 stats couldn’t be read from the game at the last snapshot, so the saved ones are shown. Take another snapshot to refresh them.')));
 
     // Key stats: one line each (name, how close to its cap when it has one, total). Where the total comes from is a
     // click away, under the line; every single source is on the Bonuses page.
@@ -2061,6 +2063,7 @@
   // ---------- Tools: Gear Database ----------
   // gear-db.json is made by "newmoon-reader geardb": what each piece gives is read from the NewMoon client's current
   // tables; where it comes from is what the community spreadsheets say. It sits beside this file.
+  // Item pictures are in gear-db-icons\ beside it (the game's own art, made locally with geardb --client, not in git).
   const GDB_SLOTS = ['Weapon', 'Head', 'Face', 'Neck', 'Top', 'Arms', 'Bottom', 'Feet', 'Ring', 'Earring', 'Extra', 'Back', 'Talisman', 'COMP', 'Bullets'];
   function loadGearDb() {
     if (S.gdb.state !== 'idle') return;
@@ -2089,16 +2092,18 @@
   function gearDbDetail(it) {
     const box = h('div', { class: 'q-detail' });
     const block = (label, list) => (list && list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('ul', { class: 'gdb-list' }, list.map((x) => h('li', { text: x })))) : null);
-    const facts = [it.slot, it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : '', it.weapon || '', it.affinity ? it.affinity + ' affinity' : '',
-      it.mods ? `${it.mods} mod slot${it.mods === 1 ? '' : 's'}` : ''].filter(Boolean);
+    const facts = [it.slot, it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : '', it.weapon || '', it.affinity ? it.affinity + ' affinity' : ''].filter(Boolean);
     box.append(h('div', { class: 'detail-meta' }, facts.map((x) => h('span', { class: 'tag', text: x }))));
     if (it.sheetOnly) box.append(h('p', { class: 'note', text: 'This row is from the spreadsheet only: its name matched no item in the game data, so the effects below are the sheet\'s own text.' }));
-    [block('Stats', it.stats), block('Effects', it.effects), block('Appearance bonus', it.appearance)].filter(Boolean).forEach((b) => box.append(b));
+    // The sections are named and ordered as in a worn piece's tooltip on the Gear page: set bonus, then TIP_ORDER.
     // s.any: the bonus needs one of the listed pieces; otherwise it needs all of them
-    (it.sets || []).forEach((s) => { const many = s.with.length > 1;
-      const b = block(!many ? 'Set with ' + s.with[0] : s.any ? 'Set with any one of' : 'Set with all of', s.effects); if (!b) return;
-      if (many) b.lastChild.prepend(h('li', { class: 'gdb-with', text: s.with.join(', ') }));
+    (it.sets || []).forEach((s) => {
+      const b = block('Set bonus', s.effects); if (!b) return;
+      b.lastChild.prepend(h('li', { class: 'gdb-with', text: s.any && s.with.length > 1 ? `Pieces: this and any one of ${s.with.join(', ')}` : `Pieces: this, ${s.with.join(', ')}` }));
       box.append(b); });
+    // sheet-only rows: "effects" is the sheet's slot text, not the game's characteristics
+    [block('Appearance Bonus', it.appearance), block('Basic Features', it.stats), block(it.sheetOnly ? 'Effects' : 'Characteristics', it.effects),
+      it.mods ? block('Modification Slot', [`${it.mods} slot${it.mods === 1 ? '' : 's'}`]) : null].filter(Boolean).forEach((b) => box.append(b));
     if (!it.all.length && !it.sheetOnly) box.append(h('p', { class: 'note', text: 'This piece gives no stats or effects in the game data.' }));
     // Where to get it, in the game: what the game data says about the piece itself, then about the ticket it comes in.
     // g.d: how deep the line sits under the one before it ("Open X", then where X comes from)
@@ -2153,7 +2158,7 @@
           : it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') : '';
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
-            h('span', { class: 'chev' }, icon('chevron')), h('span', null, it.name, it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null))),
+            h('span', { class: 'chev' }, icon('chevron')), ddbImg(it.icon, 28, 'dcm-icon gdb-icon'), h('span', null, it.name, it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null))),
           h('td', null, it.slot || h('span', { class: 'zero', text: '—' })),
           h('td', { class: gives ? 'gdb-gives' : 'zero', text: gives || '—' }),
           h('td', { class: src ? '' : 'zero', text: src || 'Not known' })));
@@ -4661,7 +4666,8 @@
       assistantReact('ok');
       if (r.missing) toast('warn', 'Snapshot saved, with gaps', `No saved bonuses for ${r.missing}. Open the Information window in game and take another snapshot.`, 0);
       else if (r.source === 'window' || r.source === 'status') toast('ok', 'Snapshot saved', 'Stats, gear and expertise were all read live.' + (r.picture ? ' The picture was updated from the Information window.' : ''));
-      else toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP are the saved ones, because you were digitalized (the game then counts the demon in them). Snapshot again when not digitalized to refresh them.', 12000);
+      else if (/\(digitalized/.test(r.statsNote || '')) toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP are the saved ones, because you were digitalized (the game then counts the demon in them). Snapshot again when not digitalized to refresh them.', 12000);
+      else toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP couldn’t be read from the game this time, so the saved ones were kept. Take another snapshot to refresh them.', 12000);
     } catch (e) {
       assistantReact('fail');
       const [title, text] = explain(String(e && e.message || e));

@@ -282,7 +282,9 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 /* the rest of the band: the skills' icons in one run */
 .exp-icons-run { gap: 3px; align-content: start; }
 .exp-icons-run .skill-ico.off { opacity: .35; }
-.exp-icons-run .skill-ico.first:not(:first-child) { margin-left: 8px; }
+/* the air between groups sits after a group's last icon, not before the next one's first: when a group starts a new
+   line, the space stays at the end of the line above and every line starts flush left */
+.exp-icons-run .skill-ico:has(+ .skill-ico.first) { margin-right: 8px; }
 @media (max-width: 1100px) { .exp-ranks { grid-template-rows: none; grid-auto-flow: row; } }   /* one column of chains, more room for icons */
 /* gear: each worn piece is its game icon in a slot-like tile, then the complete sets. Names and numbers are the Gear
    page's: a tile's tooltip is the game's, a click opens the piece there. */
@@ -1177,6 +1179,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-tt-row { display: flex; justify-content: space-between; gap: 14px; }
 .tt-head .dun-item-pic { flex: none; }
 .dun-warn { padding: 7px 10px; font-size: 12px; }
+.gdb-icon img { object-position: 50% 50%; }
 
 /* ---------- settings: About this version, When something goes wrong (Check my setup) ---------- */
 #settings { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; }

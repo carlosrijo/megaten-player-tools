@@ -318,8 +318,7 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
             let sk = read_skill_map(mem, u32_at(&b, 412) as i64, i32_at(&b, 416));
             skills = sk.as_ref().map(|m| m.keys().copied().collect());
             on = sk.as_ref().map(|m| m.iter().filter(|(_, v)| **v).map(|(k, _)| *k).collect());
-            let obj = u32_at(&b, 104);
-            digi = if i32_at(&b, 96) == 1 && obj != 0 && obj != u32::MAX { obj } else { 0 };
+            digi = digitalized_demon_of(&b);
             (levels, points) = read_levels(mem, u32_at(&b, 128) as i64, i32_at(&b, 132));
             quests = read_quests(mem, u32_at(&b, 0x624) as i64, i32_at(&b, 0x628));
             let e = b[456] as i8 as i32; // one signed byte (-1 = no cap): Rokujuu had 0x00190016 here for 22
@@ -342,6 +341,16 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
         level,
         expertise_extension: ext,
     })
+}
+
+/// The object id of the demon the character is digitalized with, from the progress object's bytes (0 = not digitalized):
+/// +96 is a flag, +104 the demon's object id (0xFFFFFFFF when none). The flag is ONE byte with leftovers above it
+/// (Rubito's client, not digitalized: +96 = 0x55555500, +112 = 0x55555500 for the race, +104 = 0xFFFFFFFF), like the
+/// level and the expertise extension, so it is read at its real width: an int32 compare with 1 would miss a
+/// digitalized 0x55555501.
+fn digitalized_demon_of(b: &[u8]) -> u32 {
+    let obj = u32_at(b, 104);
+    if b[96] == 1 && obj != 0 && obj != u32::MAX { obj } else { 0 }
 }
 
 /// Completed quests: a std::map {head, size} at progress +0x624, keyed by quest id (node +12 u16; the 2 bytes after
@@ -482,6 +491,26 @@ fn map_entries(mem: &GameMemory, head: i64, size: i32, max_size: i32) -> Vec<(i3
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A progress object's first 112 bytes with the digitalize fields set the way Rubito's client holds them.
+    fn progress_head(flag_word: u32, demon: u32) -> Vec<u8> {
+        let mut b = vec![0u8; 0x630];
+        b[96..100].copy_from_slice(&flag_word.to_le_bytes());
+        b[104..108].copy_from_slice(&demon.to_le_bytes());
+        b
+    }
+
+    /// Rubito, 2026-11-24, not digitalized: +96 = 0x55555500 (a zero flag byte, filler above), +104 = 0xFFFFFFFF.
+    /// A digitalized character has the flag byte 1 and the demon's object id; the filler above the flag must not matter.
+    #[test]
+    fn digitalized_flag_is_one_byte() {
+        assert_eq!(digitalized_demon_of(&progress_head(0x5555_5500, u32::MAX)), 0);
+        assert_eq!(digitalized_demon_of(&progress_head(0x5555_5500, 2181063)), 0, "flag byte 0: not digitalized");
+        assert_eq!(digitalized_demon_of(&progress_head(0x5555_5501, 2181063)), 2181063, "filler above the flag byte");
+        assert_eq!(digitalized_demon_of(&progress_head(1, 2181063)), 2181063, "clean upper bytes");
+        assert_eq!(digitalized_demon_of(&progress_head(1, u32::MAX)), 0, "flag set but no demon");
+        assert_eq!(digitalized_demon_of(&progress_head(1, 0)), 0);
+    }
 
     fn mask_with(ids: &[usize]) -> Vec<u8> {
         let mut m = vec![0u8; 256];

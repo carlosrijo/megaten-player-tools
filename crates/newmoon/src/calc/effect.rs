@@ -59,16 +59,21 @@ pub mod rx {
     use std::collections::HashMap;
     use std::sync::{LazyLock, RwLock};
 
-    static CACHE: LazyLock<RwLock<HashMap<String, Regex>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+    // The cache hands out shared references, not clones: a cloned `Regex` starts with an empty search cache (a new
+    // pool in regex 1.9+), which made every call rebuild its matcher state (recalc ran ~5x slower). Compiled
+    // regexes live for the whole process, as before (the cache never evicted); the patterns are literals plus one
+    // per distinct tarot name.
+    static CACHE: LazyLock<RwLock<HashMap<String, &'static Regex>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
     /// C# `Rx.R`: the compiled, case-insensitive regex of a pattern (compiled once).
-    pub fn r(p: &str) -> Regex {
+    pub fn r(p: &str) -> &'static Regex {
         if let Some(re) = CACHE.read().expect("regex cache").get(p) {
-            return re.clone();
+            return *re;
         }
-        let re = RegexBuilder::new(p).case_insensitive(true).build().unwrap_or_else(|e| panic!("bad pattern {p:?}: {e}"));
-        CACHE.write().expect("regex cache").insert(p.to_string(), re.clone());
-        re
+        let mut cache = CACHE.write().expect("regex cache");
+        *cache.entry(p.to_string()).or_insert_with(|| {
+            Box::leak(Box::new(RegexBuilder::new(p).case_insensitive(true).build().unwrap_or_else(|e| panic!("bad pattern {p:?}: {e}"))))
+        })
     }
 
     /// C# `Rx.M`: the first match of the pattern in `s`.
