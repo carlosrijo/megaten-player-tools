@@ -199,6 +199,20 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
         skill_db::build(&GameData::new(), Path::new(decoded), client.as_deref(), Path::new(&out))?;
         return Ok(0);
     }
+    if cmd == "page-icons" {
+        // reference\page-icons.tsv: which client picture each Tools page picture (app\ui\*-icons) is, by pixels, so a
+        // player's app can make them from their own game folder (no game, no character).
+        //   page-icons [--client <game folder>] [--ui app\ui] [--out reference\page-icons.tsv]
+        let client = client_arg(get("client"))?.ok_or_else(|| user_error("page-icons needs --client <game folder> (or a saved one in data\\cache\\client-dir.txt)."))?;
+        let ui = get_or("ui", path_combine("app", "ui"));
+        let out = get_or("out", path_combine("reference", imagine::build::page_icons::LIST));
+        let r = imagine::build::page_icons::build_list(Path::new(&ui), &client, Path::new(&out))?;
+        println!("{} pictures listed in {out}; {} without a matching client picture", r.listed, r.unmatched.len());
+        for u in r.unmatched.iter().take(30) {
+            println!("  {u}");
+        }
+        return Ok(0);
+    }
     if cmd == "model" && opts.contains_key("check") {
         return model_check(opts);
     }
