@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 use newmoon::build::pipeline::{self, Pipeline, default_csv, default_name, find_data_dir};
 use newmoon::build::snapshot::SnapshotResult;
-use newmoon::build::{demon_db, demon_model, dungeons, gear_db, item_icons, skill_db};
+use newmoon::build::{demon_db, demon_model, dungeons, gear_db, item_icons, preview_server, skill_db};
 use newmoon::calc::character_extras;
 use newmoon::calc::character_hp_mp::{self, Calibration};
 use newmoon::calc::digitalize::{Digitalize, MITAMA_NAMES, RUNE_NAMES, set_name};
@@ -202,12 +202,12 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             Ok(0)
         }
         "simulate" => {
-            // WAVE4 (was WAVE3): Program.cs lines 252-275: the Simulator tool from the command line (--spec / --init / --catalog N / self check).
-            Err(not_ported(cmd))
+            let (_, pipe) = need(&chosen)?;
+            simulate(opts, pipe)
         }
         "serve" => {
-            // WAVE4 (was WAVE3): Program.cs lines 276-289: the page in a plain browser with a working Simulator: PreviewServer.Run(...).
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            serve(opts, t, pipe)
         }
         "recalc" => {
             let (t, pipe) = need(&chosen)?;
@@ -253,8 +253,77 @@ fn need(chosen: &Option<(Target, Pipeline)>) -> Result<(&Target, &Pipeline)> {
     chosen.as_ref().map(|(t, p)| (t, p)).ok_or_else(|| anyhow::anyhow!("Object reference not set to an instance of an object."))
 }
 
-fn not_ported(cmd: &str) -> anyhow::Error {
-    user_error(format!("not ported yet: {cmd}"))
+/// The Simulator tool from the command line (no game, nothing written):
+///   simulate                      check: the build as read must give back the saved page data and the readings
+///   simulate --spec build.json    the result of that build (the page's format, Simulator.Parse), as JSON
+///   simulate --catalog N          what can go in slot N (0 Weapon ... 14 Extra), as JSON
+///   simulate --init               the build as read, the expertise list and its result, as JSON (what the page starts from)
+fn simulate(opts: &HashMap<String, String>, pipe: &Pipeline) -> Result<i32> {
+    if let Some(spec_file) = opts.get("spec") {
+        let text = json::read_all_text(Path::new(spec_file))?;
+        let spec = json::parse(&text)?;
+        console::write_line(&pipe.sim.run(Some(&spec))?);
+        return Ok(0);
+    }
+    if opts.contains_key("init") {
+        console::write_line(&pipe.sim.init(None)?);
+        return Ok(0);
+    }
+    if let Some(slot_text) = opts.get("catalog") {
+        let slot = fmt::parse_i32(slot_text).ok_or_else(|| anyhow::anyhow!("The input string '{slot_text}' was not in a correct format."))?;
+        console::write_line(&pipe.sim.catalog(slot, None)?);
+        return Ok(0);
+    }
+    let watch = std::time::Instant::now();
+    let diffs = pipe.sim.self_check()?;
+    if diffs.is_empty() {
+        console::write_line(&format!("Simulator: the build as read gives back the readings and the saved bonus list ({} ms).", watch.elapsed().as_millis()));
+    } else {
+        console::write_line(&format!("Simulator differs from the saved data:\n  {}", diffs.join("\n  ")));
+    }
+    let watch = std::time::Instant::now();
+    pipe.sim.init(None)?;
+    console::write_line(&format!("A second run: {} ms.", watch.elapsed().as_millis()));
+    Ok(if diffs.is_empty() { 0 } else { 1 })
+}
+
+/// The page in a plain browser with a working Simulator: PreviewServer (for testing; see its notes).
+/// --also "Name=folder": a second character to base builds on (for testing; the app has every saved character).
+fn serve(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<i32> {
+    let data = Arc::clone(pipe.data());
+    let dir = pipe.store().dir.to_string_lossy().into_owned();
+    // a build with no base: no character behind it; the set table comes from this character's saved snapshot
+    let sets_store = Store::new(&dir);
+    let blank_sets: pipeline::BlankSets = Box::new(move || if sets_store.set_table_path().exists() { sets_store.load_set_table() } else { Ok(None) });
+    let blank = Arc::new(Pipeline::new(path_combine(&path_combine(&dir, "characters"), "_blank"), Some(Arc::clone(&data)), Some(blank_sets), Some(Store::new(&dir))));
+    let mut also: Option<(String, Arc<Pipeline>)> = None;
+    if let Some(a) = opts.get("also") {
+        if let Some(eq) = a.find('=') {
+            also = Some((a[..eq].to_string(), Arc::new(Pipeline::new(a[eq + 1..].to_string(), Some(Arc::clone(&data)), None, None))));
+        }
+    }
+    let main_pipe = Arc::new(Pipeline::new(t.data_dir.clone(), Some(Arc::clone(&data)), None, None));
+    let pipe_of = |who: &str| -> Result<Arc<Pipeline>> {
+        if who.is_empty() {
+            Ok(Arc::clone(&blank))
+        } else if eq_ic(who, &t.name) {
+            Ok(Arc::clone(&main_pipe))
+        } else if let Some((n, p)) = also.as_ref().filter(|(n, _)| eq_ic(who, n)) {
+            let _ = n;
+            Ok(Arc::clone(p))
+        } else {
+            Err(user_error(format!("This preview has no saved character called {who}.")))
+        }
+    };
+    let root = match opts.get("root") {
+        Some(r) => r.clone(),
+        None => get_directory_name(&find_data_dir().to_string_lossy()).ok_or_else(null_path)?,
+    };
+    let port_text = opts.get("port").map(String::as_str).unwrap_or("18770");
+    let port = fmt::parse_i32(port_text).ok_or_else(|| anyhow::anyhow!("The input string '{port_text}' was not in a correct format."))?;
+    let port = u16::try_from(port).map_err(|_| anyhow::anyhow!("Value was either too large or too small for a port."))?;
+    preview_server::run(&pipe_of, &t.name, Path::new(&path_combine(&dir, "sim-builds.json")), &root, port, &dir)?;
+    Ok(0)
 }
 
 /// `Path.Combine(null, ...)` / `Path.GetDirectoryName(null)` on a setting data\config.json does not have.
@@ -1424,9 +1493,7 @@ mod tests {
     }
 
     #[test]
-    fn unported_commands_say_so() {
-        let e = run(&args(&["simulate", "--name", "X", "--data", "C:/nonexistent-newmoon-test", "--csv", "C:/nonexistent-newmoon-test/x.csv"])).unwrap_err();
-        assert_eq!(e.downcast_ref::<UserError>().unwrap().0, "not ported yet: simulate");
+    fn commands_without_input_say_so() {
         let e = run(&args(&["dungeons"])).unwrap_err();
         assert_eq!(e.downcast_ref::<UserError>().unwrap().0, "dungeons needs --decoded <folder with the decoded client tables>.");
     }
