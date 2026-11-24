@@ -175,16 +175,47 @@ pub fn key_of(d: &DemonRecord) -> String {
     format!("{}:{}:{}", d.r#type, d.name, d.level)
 }
 
-/// Whether two records of one key are the same demon, not two demons of one kind and level (a level 90 Specter in the
-/// COMP and another one in storage, or a stale copy the client still holds). The same object id within a session; across
-/// sessions (object ids change) the same skill slots, learned skills, growth and Mitama.
-pub fn same_demon(a: &DemonRecord, b: &DemonRecord) -> bool {
-    key_of(a) == key_of(b)
-        && (a.object_id == b.object_id
-            || (a.skills == b.skills && a.acquired == b.acquired && a.growth_type == b.growth_type && a.mitama_type == b.mitama_type))
+/// The same details: skill slots, learned skills, growth and Mitama (what tells two demons of one kind and level apart
+/// when object ids can't, across sessions).
+fn same_details(a: &DemonRecord, b: &DemonRecord) -> bool {
+    a.skills == b.skills && a.acquired == b.acquired && a.growth_type == b.growth_type && a.mitama_type == b.mitama_type
 }
 
-/// The seen list as saved (cache\comp-demons.json), keyed by [`key_of`]: an unreadable file is an empty list.
+/// Whether two records of one kind and level are the same demon, not two demons of one kind and level (Rubito's COMP
+/// holds two Specter Lv 90s, 2026-11-24) or a stale copy the client still holds. The same object id within a session;
+/// across sessions (object ids change) the same details ([`same_details`]).
+pub fn same_demon(a: &DemonRecord, b: &DemonRecord) -> bool {
+    key_of(a) == key_of(b) && (a.object_id == b.object_id || same_details(a, b))
+}
+
+/// The list key a demon was stored under, without the "#2" a second demon of one kind and level gets (and without the
+/// "|saved" mark): what [`key_of`] gives for it.
+pub fn base_key(k: &str) -> &str {
+    let k = k.strip_suffix("|saved").unwrap_or(k);
+    match k.rsplit_once('#') {
+        Some((b, n)) if !n.is_empty() && n.bytes().all(|c| c.is_ascii_digit()) => b,
+        _ => k,
+    }
+}
+
+/// A key for one more demon of this kind and level: [`key_of`], or "<key>#2", "#3"... when the list already has one
+/// (two Specter Lv 90s in one COMP are two demons; the list must keep both).
+fn free_key(seen: &IndexMap<String, SeenDemon>, base: &str) -> String {
+    if !seen.contains_key(base) {
+        return base.to_string();
+    }
+    (2..).map(|n| format!("{base}#{n}")).find(|k| !seen.contains_key(k)).unwrap_or_default()
+}
+
+/// The key a demon has in a list (`entries`: key and record): of the ones of its kind and level, the same object (this
+/// session), else the first with the same details. None when it isn't in the list.
+pub fn find_key<'a>(entries: impl Iterator<Item = (&'a String, &'a DemonRecord)>, d: &DemonRecord) -> Option<String> {
+    let kind: Vec<(&String, &DemonRecord)> = entries.filter(|(_, x)| key_of(x) == key_of(d)).collect();
+    kind.iter().find(|(_, x)| x.object_id == d.object_id).or_else(|| kind.iter().find(|(_, x)| same_details(x, d))).map(|(k, _)| (*k).clone())
+}
+
+/// The seen list as saved (cache\comp-demons.json), by the key each was saved under ("Key"; lists saved before
+/// 2026-11-24 have none: [`key_of`], one per kind and level, the last of each). An unreadable file is an empty list.
 pub fn load_seen(store: &Store) -> Result<IndexMap<String, SeenDemon>> {
     let mut res: IndexMap<String, SeenDemon> = IndexMap::new();
     let path = store.comp_demons_path();
@@ -194,7 +225,9 @@ pub fn load_seen(store: &Store) -> Result<IndexMap<String, SeenDemon>> {
         if let Ok(Value::Array(a)) = serde_json::from_str::<Value>(text.trim_start_matches('\u{feff}')) {
             for e in &a {
                 if let Some(s) = SeenDemon::from_value(e) {
-                    res.insert(key_of(&s.demon), s); // GroupBy(KeyOf), the last of each group
+                    // a saved key only counts when it is this demon's kind and level
+                    let k = json::str(e.at("Key")).filter(|k| base_key(k) == key_of(&s.demon)).unwrap_or_else(|| key_of(&s.demon));
+                    res.insert(k, s);
                 }
             }
         }
@@ -204,40 +237,110 @@ pub fn load_seen(store: &Store) -> Result<IndexMap<String, SeenDemon>> {
 
 fn write_seen(store: &Store, seen: &IndexMap<String, SeenDemon>) -> Result<()> {
     std::fs::create_dir_all(store.cache_dir())?;
-    std::fs::write(store.comp_demons_path(), compact(&Value::Array(seen.values().map(SeenDemon::to_value).collect())))?;
+    let list = seen.iter().map(|(k, s)| {
+        let mut v = s.to_value();
+        if let Value::Object(m) = &mut v {
+            m.insert("Key".into(), json!(k));
+        }
+        v
+    });
+    std::fs::write(store.comp_demons_path(), compact(&Value::Array(list.collect())))?;
     Ok(())
 }
 
-/// Add the demons just read from the game to the ones seen before (cache\comp-demons.json). "Summoned" is the game's
-/// mark at this read: a demon seen before that is not in this read can't be the summoned one any more (the summoned
-/// demon is always in memory, with its details), so its mark is taken off. Called by a snapshot, which reads the
-/// demons too; the picker's "Load demons from the game" (`comp_demons`) does its own merge, with the same rule.
-/// Two records of one key in one read (two demons of one kind and level, or a stale copy): the list keeps one, so the
-/// digitalize demon's own record (`prefer`, its object id) wins, then the summoned one, then the one seen before.
-pub fn note_demons(store: &Store, demons: &[DemonRecord], prefer: Option<u32>, now: NaiveDateTime) -> Result<()> {
+/// Add the demons just read from the game to the ones seen before (cache\comp-demons.json). Called by a snapshot, which
+/// reads the demons too; the picker's "Load demons from the game" (`comp_demons`) does the same merge ([`merge_read`]).
+pub fn note_demons(store: &Store, all: &[DemonRecord], comp: Option<&[DemonRecord]>, now: NaiveDateTime) -> Result<()> {
     let mut seen = load_seen(store)?;
-    let before: HashMap<String, u32> = seen.iter().map(|(k, s)| (k.clone(), s.demon.object_id)).collect();
-    let read: Vec<&DemonRecord> = demons.iter().filter(|d| d.loaded()).collect();
-    let rank = |d: &DemonRecord, k: &str| (prefer == Some(d.object_id), d.summoned(), before.get(k) == Some(&d.object_id));
-    let mut placed: HashSet<String> = HashSet::new();
-    for d in &read {
-        let k = key_of(d);
-        if placed.contains(&k) && rank(d, &k) <= rank(&seen[&k].demon, &k) {
-            continue;
-        }
-        seen.insert(k.clone(), SeenDemon { seen_at: Some(iso_s(now)), demon: (*d).clone(), in_comp: None });
-        placed.insert(k);
-    }
-    only_summoned(&mut seen, &read);
+    merge_read(&mut seen, all, comp, &iso_s(now));
     write_seen(store, &seen)
+}
+
+/// Merge one read of the game into the seen list. `all`: every demon record in memory (with or without details);
+/// `comp`: the game's COMP slots ([`demon_reader::read_comp`]) when found. Returns the keys of the demons in this read.
+///
+/// With the COMP's slots the list is the COMP as it is now, one entry per slot: two demons of one kind and level are two
+/// entries ("#2", [`free_key`]). Memory also holds stale copies and stored demons (on 2026-11-24 seven Specter records
+/// for the two Specter Lv 90s in Rubito's COMP: copies with older object ids, and two other Specter Lv 90s that are not
+/// in it); only the slots count. Most slots come without details (the game only lists them: DemonRecord.Loaded); for
+/// those the details read earlier are kept when it is still the same demon (same object, else same kind and level, in
+/// slot order). A demon read in full before that is not in the COMP now stays, marked as not in it (the user asked not
+/// to lose what was read: it was moved to storage, and its numbers are still worth seeing), unless the COMP has one of
+/// its kind and level.
+///
+/// Without them (the game holds only the summoned demon and stale copies) the demons with details update the entry that
+/// is the same demon; one that matches none is added only when the list has none of its kind and level (or it is the
+/// summoned one): with two of a kind listed, an unknown record can't be told from a stale copy.
+///
+/// Either way "summoned" is the game's mark at this read: a demon seen before that is not summoned in this read loses
+/// it (the summoned demon is always in memory, with its details).
+pub fn merge_read(seen: &mut IndexMap<String, SeenDemon>, all: &[DemonRecord], comp: Option<&[DemonRecord]>, now: &str) -> HashSet<String> {
+    let mut live: HashSet<String> = HashSet::new();
+    let fresh = |d: &DemonRecord, in_comp: Option<bool>| SeenDemon { seen_at: Some(now.to_string()), demon: d.clone(), in_comp };
+    if let Some(comp) = comp {
+        let before = std::mem::take(seen);
+        let mut used: HashSet<String> = HashSet::new();
+        for d in comp {
+            let base = key_of(d);
+            // the entry seen before for this slot: the same object, else the same details, else the next of its kind and level
+            let old = before
+                .iter()
+                .filter(|(k, s)| !used.contains(*k) && key_of(&s.demon) == base)
+                .min_by_key(|(_, s)| if s.demon.object_id == d.object_id { 0 } else if same_details(&s.demon, d) { 1 } else { 2 });
+            let keep = !d.loaded() && old.is_some_and(|(_, s)| s.demon.loaded());
+            let v = match old.filter(|_| keep) {
+                Some((_, s)) => SeenDemon { in_comp: Some(true), ..s.clone() },
+                None => fresh(d, Some(true)),
+            };
+            if let Some((k, _)) = old {
+                used.insert(k.clone());
+            }
+            let k = free_key(seen, &base);
+            seen.insert(k.clone(), v);
+            live.insert(k);
+        }
+        let in_comp_now: HashSet<String> = comp.iter().map(key_of).collect();
+        for (k, v) in &before {
+            if !used.contains(k) && v.demon.loaded() && !in_comp_now.contains(&key_of(&v.demon)) {
+                let nk = free_key(seen, &key_of(&v.demon));
+                seen.insert(nk, SeenDemon { in_comp: Some(false), ..v.clone() });
+            }
+        }
+    } else {
+        let read: Vec<&DemonRecord> = all.iter().filter(|d| d.loaded()).collect();
+        for d in &read {
+            let base = key_of(d);
+            let kind: Vec<String> = seen.keys().filter(|k| key_of(&seen[*k].demon) == base).cloned().collect();
+            // demons of this kind and level in this read with different details (stale copies of one demon are one)
+            let mut distinct: Vec<&DemonRecord> = Vec::new();
+            for x in read.iter().filter(|x| key_of(x) == base) {
+                if !distinct.iter().any(|y| same_details(x, y)) {
+                    distinct.push(x);
+                }
+            }
+            let hit = find_key(kind.iter().map(|k| (k, &seen[k].demon)), d)
+                // one of its kind listed and one read: the same demon, its skills changed since
+                .or_else(|| (kind.len() == 1 && distinct.len() == 1).then(|| kind[0].clone()));
+            let k = match hit {
+                Some(k) if live.contains(&k) && !d.summoned() => continue, // a stale copy of a demon already updated
+                Some(k) => k,
+                None if kind.is_empty() || d.summoned() => free_key(seen, &base),
+                None => continue,
+            };
+            let in_comp = if d.summoned() { Some(true) } else { seen.get(&k).and_then(|s| s.in_comp) };
+            seen.insert(k.clone(), fresh(d, in_comp));
+            live.insert(k);
+        }
+    }
+    let read: Vec<&DemonRecord> = all.iter().filter(|d| d.loaded()).collect();
+    only_summoned(seen, &read);
+    live
 }
 
 /// Take the summoned mark off every demon seen that this read of the game doesn't have as summoned.
 fn only_summoned(seen: &mut IndexMap<String, SeenDemon>, read: &[&DemonRecord]) {
-    let now: HashSet<String> = read.iter().filter(|d| d.loaded() && d.summoned()).map(|d| key_of(d)).collect();
-    let keys: Vec<String> = seen.iter().filter(|(k, s)| s.demon.summoned() && !now.contains(*k)).map(|(k, _)| k.clone()).collect();
-    for k in keys {
-        if let Some(s) = seen.get_mut(&k) {
+    for s in seen.values_mut() {
+        if s.demon.summoned() && !read.iter().any(|d| d.loaded() && d.summoned() && same_demon(d, &s.demon)) {
             s.demon.flags &= !0x02;
         }
     }
@@ -446,39 +549,9 @@ impl Pipeline {
                 let _shared = memory::share_sweeps(); // demons, COMP slots and progress from one copy of memory
                 let mem = GameMemory::new(proc.id())?;
                 let all = demon_reader::read_demons(&mem, true);
-                // The game's own list of COMP slots, when it is in memory: then the list is the COMP as it is now. A demon
-                // seen before that is not in it was removed, fused or replaced, and goes. Most COMP demons come without
-                // details (the game only lists them: DemonRecord.Loaded); for those the details read earlier are kept when
-                // it is still the same demon (same type, name and level), else it is listed without them.
-                if let Some(comp) = demon_reader::read_comp(&mem, &all) {
-                    let before = seen.clone();
-                    seen.clear();
-                    for d in &comp {
-                        let k = key_of(d);
-                        let keep = !d.loaded() && before.get(&k).is_some_and(|old| old.demon.loaded());
-                        let v = if keep { SeenDemon { in_comp: Some(true), ..before[&k].clone() } } else { SeenDemon { seen_at: Some(now.clone()), demon: d.clone(), in_comp: Some(true) } };
-                        seen.insert(k.clone(), v);
-                        live.insert(k);
-                    }
-                    // A demon read in full before that is not in the COMP now stays in the list, marked as not in it (the
-                    // user asked not to lose what was read: it was moved to storage, and its numbers are still worth
-                    // seeing). One that was only ever listed, without details, has nothing to keep and goes.
-                    for (k, v) in &before {
-                        if !seen.contains_key(k) && v.demon.loaded() {
-                            seen.insert(k.clone(), SeenDemon { in_comp: Some(false), ..v.clone() });
-                        }
-                    }
-                } else {
-                    // no slot list (the game holds only the summoned demon): the demons with details, added to what was seen
-                    for d in all.iter().filter(|d| d.loaded()) {
-                        let k = key_of(d);
-                        let in_comp = if d.summoned() { Some(true) } else { seen.get(&k).and_then(|s| s.in_comp) };
-                        seen.insert(k.clone(), SeenDemon { seen_at: Some(now.clone()), demon: d.clone(), in_comp });
-                        live.insert(k);
-                    }
-                }
-                let all_refs: Vec<&DemonRecord> = all.iter().collect();
-                only_summoned(&mut seen, &all_refs); // details kept from an earlier read may carry the mark of then
+                // the COMP as the game lists its slots when that list is in memory, else the demons with details (merge_read)
+                let comp = demon_reader::read_comp(&mem, &all);
+                live = merge_read(&mut seen, &all, comp.as_deref(), &now);
                 // the learned assists and the Mitama boost too, so switching demons afterwards needs nothing from the game
                 DigitalizeSave::save_progress(store, data, demon_reader::read_progress(&mem).as_ref(), Local::now().naive_local())?;
             }
@@ -487,15 +560,14 @@ impl Pipeline {
         if scan {
             write_seen(store, &seen)?;
         }
-        // The saved digitalize demon when it is not one of them (never read into the list): listed, not saved with the rest.
-        // Also when the list has another demon under its key (same kind and level, other skills: one in storage, or a
-        // stale copy the client held): that one is listed as it is, not as the one in use.
+        // The saved digitalize demon is the entry that is the same demon (find_key: same object, else same details), not
+        // any of its kind and level: with two Specter Lv 90s in the COMP the other one is not in use. When none is (never
+        // read into the list): listed, not saved with the rest.
         const SAVED_KEY: &str = "|saved";
-        let under_key = current.as_ref().and_then(|c| seen.get(&key_of(c)));
-        let saved_listed = current.as_ref().zip(under_key).is_some_and(|(c, s)| same_demon(c, &s.demon));
-        if let Some(c) = current.as_ref().filter(|_| !saved_listed) {
-            // not read into the list: not in the COMP. Another demon under its key: the list says nothing about this one.
-            let in_comp = if under_key.is_some() { None } else { Some(false) };
+        let current_key = current.as_ref().and_then(|c| find_key(seen.iter().map(|(k, s)| (k, &s.demon)), c));
+        if let Some(c) = current.as_ref().filter(|_| current_key.is_none()) {
+            // not read into the list: not in the COMP. Others of its kind listed: the list says nothing about this one.
+            let in_comp = if seen.values().any(|s| key_of(&s.demon) == key_of(c)) { None } else { Some(false) };
             seen.insert(format!("{}{SAVED_KEY}", key_of(c)), SeenDemon { seen_at: None, demon: c.clone(), in_comp });
         }
 
@@ -521,7 +593,7 @@ impl Pipeline {
                 level: d.level,
                 race: devil.map(|v| title(&v.race)).unwrap_or_default(),
                 mitama: if d.mitama_type > 0 && (d.mitama_type as usize) < MITAMA_NAMES.len() { MITAMA_NAMES[d.mitama_type as usize].to_string() } else { String::new() },
-                current: current.as_ref().is_some_and(|c| k.ends_with(SAVED_KEY) || (saved_listed && *k == key_of(c))),
+                current: k.ends_with(SAVED_KEY) || current_key.as_ref() == Some(k),
                 in_game: live.contains(k),
                 seen_at: s.seen_at.clone(),
                 force_stack: d.force_stack.as_ref().map_or(0, |f| f.iter().filter(|&&x| x > 0).count()),
@@ -577,9 +649,15 @@ impl Pipeline {
                     pid = proc.id();
                     let _shared = memory::share_sweeps(); // demons and progress from one copy of memory
                     let mem = GameMemory::new(proc.id())?;
-                    let matches: Vec<DemonRecord> = demon_reader::read_demons(&mem, false).into_iter().filter(|d| key_of(d) == key).collect();
-                    // OrderByDescending(ObjectId == s.Demon.ObjectId).FirstOrDefault(): a stable sort, so the first match
-                    if let Some(d) = matches.iter().find(|d| d.object_id == s.demon.object_id).or(matches.first()) {
+                    let matches: Vec<DemonRecord> = demon_reader::read_demons(&mem, false).into_iter().filter(|d| key_of(d) == base_key(key)).collect();
+                    // the same object, else the same details; any other of its kind and level only when it is the only one
+                    // (two Specter Lv 90s in one COMP are two demons, and memory holds stale copies)
+                    let pick = matches
+                        .iter()
+                        .find(|d| d.object_id == s.demon.object_id)
+                        .or_else(|| matches.iter().find(|d| same_details(d, &s.demon)))
+                        .or_else(|| (matches.len() == 1).then(|| &matches[0]));
+                    if let Some(d) = pick {
                         demon = d.clone();
                     }
                     let progress = demon_reader::read_progress(&mem);
@@ -599,7 +677,7 @@ impl Pipeline {
         if !demon.loaded() {
             return Err(user_error("That demon hasn't been read yet: the game only loads a demon's stats and skills when you look at it. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (it loads the whole COMP), then load the demons again."));
         }
-        let changed = saved.as_ref().and_then(|s| s.demon.as_ref()).is_none_or(|d| key_of(d) != key);
+        let changed = saved.as_ref().and_then(|s| s.demon.as_ref()).is_none_or(|d| !same_demon(d, &demon));
         let save = DigitalizeSave::new(Some(iso_s(Local::now().naive_local())), active, demon.clone(), assists, boost);
         save.save(store)?;
         if let Some(png) = DigitalizeSave::icon(store, data, pid, demon.r#type)? {
@@ -694,26 +772,61 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// Two Specters of one level in one read (2026-11-24: the digitalize demon, object 2181063, and another with other
-    /// skills, 2181058): the list keeps the digitalize demon's record whatever the read order.
+    fn rec(obj: u32, skills: &[i32], flags: i32) -> DemonRecord {
+        DemonRecord { object_id: obj, skills: skills.to_vec(), ..demon("Specter", flags) }
+    }
+
+    fn only_listed(d: &DemonRecord) -> DemonRecord {
+        DemonRecord { live_value: vec![0; 21], acquired: vec![], skills: vec![], ..d.clone() }
+    }
+
+    /// Rubito's COMP on 2026-11-24: two Specter Lv 90s (2181060 with Shot Booster, 2181061 with Secret of
+    /// Shock・Deathblow), a stale copy of 2181060 (2181056) and another Specter Lv 90 not in the COMP (2181058).
     #[test]
-    fn same_key_keeps_the_digitalize_demon() {
-        let dir = std::env::temp_dir().join(format!("newmoon-seen-dup-test-{}", std::process::id()));
+    fn two_of_a_kind_in_the_comp_are_two_entries() {
+        let shot = rec(2181060, &[2, 3, 4, 585], 0x31);
+        let shock = rec(2181061, &[2, 3, 4, 740], 0x31);
+        let copy = rec(2181056, &[2, 3, 4, 585], 0x31);
+        let other = rec(2181058, &[48, 49, 586], 0x31);
+        let all = vec![copy.clone(), other.clone(), shot.clone(), shock.clone()];
+        let mut seen: IndexMap<String, SeenDemon> = IndexMap::new();
+        let live = merge_read(&mut seen, &all, Some(&[shot.clone(), shock.clone()]), "now");
+        assert_eq!(seen.keys().cloned().collect::<Vec<_>>(), ["12:Specter:5", "12:Specter:5#2"]);
+        assert_eq!(live.len(), 2);
+        assert_eq!(seen["12:Specter:5"].demon.object_id, 2181060);
+        assert_eq!(seen["12:Specter:5#2"].demon.object_id, 2181061);
+        assert_eq!(base_key("12:Specter:5#2"), "12:Specter:5");
+        assert_eq!(base_key("12:Specter:5#2|saved"), "12:Specter:5");
+        // the saved demon is found by what it is, not by its kind and level
+        let entries = || seen.iter().map(|(k, s)| (k, &s.demon));
+        assert_eq!(find_key(entries(), &shock).as_deref(), Some("12:Specter:5#2"));
+        assert_eq!(find_key(entries(), &DemonRecord { object_id: 7, ..shock.clone() }).as_deref(), Some("12:Specter:5#2")); // next session
+        assert_eq!(find_key(entries(), &other), None);
+
+        // the COMP listed again without details: each slot keeps its own details
+        let live = merge_read(&mut seen, &all, Some(&[only_listed(&shot), only_listed(&shock)]), "later");
+        assert_eq!(live.len(), 2);
+        assert_eq!(seen["12:Specter:5"].demon.skills, shot.skills);
+        assert_eq!(seen["12:Specter:5#2"].demon.skills, shock.skills);
+
+        // no slot list (only stale copies and the summoned one in memory): nothing is added or mixed up
+        merge_read(&mut seen, &[copy.clone(), other.clone()], None, "after");
+        assert_eq!(seen.len(), 2);
+        assert_eq!(seen["12:Specter:5"].demon.skills, shot.skills);
+        assert_eq!(seen["12:Specter:5#2"].demon.skills, shock.skills);
+    }
+
+    #[test]
+    fn keys_survive_the_file() {
+        let dir = std::env::temp_dir().join(format!("newmoon-seen-keys-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let store = Store::new(&dir);
         let now = chrono::NaiveDate::from_ymd_opt(2026, 11, 24).unwrap().and_hms_opt(4, 0, 9).unwrap();
-        let mine = DemonRecord { object_id: 2181063, skills: vec![2, 3, 4], ..demon("Specter", 0x31) };
-        let other = DemonRecord { object_id: 2181058, skills: vec![48, 49, 586], ..demon("Specter", 0x31) };
-        assert!(!same_demon(&mine, &other));
-        assert!(same_demon(&mine, &DemonRecord { object_id: 99, ..mine.clone() })); // another session, same demon
-        for order in [[&mine, &other], [&other, &mine]] {
-            let _ = std::fs::remove_file(store.comp_demons_path());
-            note_demons(&store, &[order[0].clone(), order[1].clone()], Some(2181063), now).unwrap();
-            assert_eq!(load_seen(&store).unwrap()[&key_of(&mine)].demon.object_id, 2181063);
-        }
-        // nothing preferred: the one seen before stays
-        note_demons(&store, &[other.clone(), mine.clone()], None, now).unwrap();
-        assert_eq!(load_seen(&store).unwrap()[&key_of(&mine)].demon.object_id, 2181063);
+        let (a, b) = (rec(1, &[1], 0x31), rec(2, &[2], 0x31));
+        note_demons(&store, &[a.clone(), b.clone()], Some(&[a.clone(), b.clone()]), now).unwrap();
+        let seen = load_seen(&store).unwrap();
+        assert_eq!(seen["12:Specter:5"].demon.object_id, 1);
+        assert_eq!(seen["12:Specter:5#2"].demon.object_id, 2);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

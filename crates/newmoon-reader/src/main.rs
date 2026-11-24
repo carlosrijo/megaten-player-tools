@@ -901,6 +901,11 @@ fn demon(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<
                 },
                 if c.in_comp == Some(false) { "  [not in COMP]" } else { "" }
             ));
+            // its key, and the skills in its slots (two demons of one kind and level differ there)
+            let slots: Vec<String> = c.offer.as_ref().map_or(Vec::new(), |o| {
+                o.skills.iter().filter(|s| !matches!(json::str(s.get("kind")).as_deref(), Some("Feature" | "Equipment"))).filter_map(|s| json::str(s.get("name"))).collect()
+            });
+            console::write_line(&format!("    {}  {}", c.key, slots.join(", ")));
         }
         return Ok(0);
     }
@@ -1032,7 +1037,10 @@ fn demon(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<
         }
         // Same as the app's demon picker: saved demon, the latest CSV row's demon columns (CSV copied first), page data
         pipe.comp_demons(name, true)?;
-        let sw = pipe.use_demon(name, &t.csv, Some(&pipeline::key_of(picked[0])), true)?;
+        // its key in the list (a second demon of its kind and level has "#2")
+        let seen = pipeline::load_seen(store)?;
+        let key = pipeline::find_key(seen.iter().map(|(k, s)| (k, &s.demon)), picked[0]).unwrap_or_else(|| pipeline::key_of(picked[0]));
+        let sw = pipe.use_demon(name, &t.csv, Some(&key), true)?;
         console::write_line(&format!(
             "{} is now the digitalize demon.{}",
             sw.name,
