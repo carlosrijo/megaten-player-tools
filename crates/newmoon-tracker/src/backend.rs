@@ -1,19 +1,22 @@
 //! Everything MainForm.cs needs from the reader library, behind one module.
 //!
 //! Section 1: the app's own helpers (the `ClientPids` of MainForm.cs).
-//! Section 2: the library, re-exported under the names the app uses (data::characters, data::config, data::store,
-//!            game::client_reader) and the thin helpers the C# `Pipeline` statics gave MainForm.
-//! Section 3: the library calls that need the Pipeline / Snapshot / Dashboard / Expertise / Simulator / PreviewServer
-//!            (not ported yet): stubs that return `Err("not ported yet: <C# call>")`, each marked `// WAVE4:` with the
-//!            call it will make. `WIRING.md` (next to Cargo.toml) lists them.
+//! Section 2: the library, re-exported under the names the app uses (data::characters, data::store,
+//!            game::client_reader) and the thin helpers the C# `Pipeline` statics gave MainForm (now build::pipeline's).
+//! Section 3: the library calls: `Backend` keeps what MainForm kept (`_gameData`, `_pipes`, `_blank`) and wires the
+//!            Pipeline commands (snapshot, rebuild, setAlignment, compDemons, useDemon). The one PreviewServer call
+//!            (`sim_command`) is still a stub marked `// WAVE4:`; everything it needs (`sim_pipe`) is ready.
+//!            `WIRING.md` (next to Cargo.toml) lists what is where.
 
 use anyhow::{anyhow, Result};
+use newmoon::build::pipeline::{self, Pipeline};
 use newmoon::build::{demon_model, item_icons};
-use newmoon::data::config;
 use newmoon::data::game_data::GameData;
-use serde_json::Value;
+use newmoon::game::SetRecord;
+use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
 pub use newmoon::data::characters::{CharacterEntry, Characters};
 pub use newmoon::data::store::Store;
@@ -37,22 +40,21 @@ pub fn process_exe_dir(pid: u32) -> Option<PathBuf> {
 // 2. The library under the app's names
 // ====================================================================================================================
 
-/// `Pipeline.FindDataDir()` = `Path.Combine(Config.HomeDir(), "data")`.
-// WAVE4: use build::pipeline::{find_data_dir, default_name, default_csv}
+/// `Pipeline.FindDataDir()`.
 pub fn find_data_dir() -> PathBuf {
-    config::home_dir().join("data")
+    pipeline::find_data_dir()
 }
 
-/// `Pipeline.DefaultName` = `Config.Current.DefaultCharacter ?? "Character"`.
-// WAVE4: use build::pipeline::{find_data_dir, default_name, default_csv}
+/// `Pipeline.DefaultName`.
 pub fn default_name() -> String {
-    config::current().default_character.clone().unwrap_or_else(|| "Character".to_string())
+    pipeline::default_name()
 }
 
-/// `Pipeline.DefaultCsv` = `Path.Combine(Config.Current.StatsFolder, DefaultName.ToLowerInvariant() + "-stats.csv")`.
-// WAVE4: use build::pipeline::{find_data_dir, default_name, default_csv}
+/// `Pipeline.DefaultCsv`. The C# throws (ArgumentNullException from `Path.Combine`) when data\config.json has no
+/// statsFolder; the config always fills it in, so the library's error can only mean a null written by hand: an empty
+/// path then (the first character's CSV is then simply not found, never a crash on start).
 pub fn default_csv() -> PathBuf {
-    PathBuf::from(config::current().stats_folder.clone().unwrap_or_default()).join(format!("{}-stats.csv", default_name().to_lowercase()))
+    PathBuf::from(pipeline::default_csv().unwrap_or_default())
 }
 
 /// `CharacterEntry.Name` is never blank for an entry in a `Characters` list (`new` drops blank names, `get_or_add`
@@ -68,13 +70,12 @@ impl EntryExt for CharacterEntry {
 }
 
 // ====================================================================================================================
-// 3. Library calls: wired where the library has the piece, stubs (`// WAVE4:`) for the Pipeline / PreviewServer ones
+// 3. Library calls: the Pipeline ones are wired; the PreviewServer one (`sim_command`) is a stub (`// WAVE4:`)
 // ====================================================================================================================
 
 fn not_ported<T>(what: &str) -> Result<T> {
     Err(anyhow!("not ported yet: {what}"))
 }
-
 
 /// `Snapshot.Result` as MainForm.snapshot sends it, plus the expertise ranks count of `Pipeline.TakeSnapshot`.
 #[derive(Debug, Clone)]
@@ -97,7 +98,7 @@ pub struct AlignmentOutcome {
 }
 
 /// What `MainForm.SimPipe` needs to find or make a Pipeline: the characters (name -> folder) and the data folder.
-#[allow(dead_code)] // read by the real implementation
+#[allow(dead_code)] // WAVE4: read by `sim_command` once PreviewServer is ported
 pub struct SimRequest<'a> {
     /// `e.Name` of the active character (the default "base")
     pub default_base: &'a str,
@@ -116,13 +117,26 @@ pub struct SimRequest<'a> {
     pub skill_icons: &'a (dyn Fn(&str) -> Option<String> + Sync),
 }
 
+/// `_pipes` and `_blank`, together under one lock (C# `lock (_pipes)`).
+#[derive(Default)]
+struct Pipes {
+    /// one Pipeline per character folder (C# keys by character name, case-insensitively; a folder belongs to one name)
+    by_dir: HashMap<String, Arc<Pipeline>>,
+    /// the Simulator's "no base": a pipeline with no character behind it
+    blank: Option<Arc<Pipeline>>,
+}
 
 /// The reader. In C# this is MainForm's `_pipes` (one `Pipeline` per character folder), `_gameData` (the reference
-/// data shared by all of them) and `_blank`. The shared `GameData` is kept here; the pipelines come with the Pipeline port.
+/// data shared by all of them) and `_blank`.
 #[derive(Default)]
 pub struct Backend {
     /// `_gameData ??= new GameData()`: the reference data, loaded on first use (it fills its tables lazily) and shared.
     game_data: OnceLock<Arc<GameData>>,
+    pipes: Mutex<Pipes>,
+    /// The data folders of every saved character as of the last Simulator request: what the blank pipeline's
+    /// `blank_sets` reads (the C# closure reads `_chars.All` each time it runs; the characters are only handed to the
+    /// backend with a request).
+    char_dirs: Arc<Mutex<Vec<PathBuf>>>,
 }
 
 impl Backend {
@@ -131,9 +145,64 @@ impl Backend {
     }
 
     /// C# `_gameData ??= new GameData()`: the one reference data every pipeline shares.
-    #[allow(dead_code)] // WAVE4: handed to every `Pipeline::new(dir, game_data)` and to the blank (Simulator) pipeline
     pub fn game_data(&self) -> Arc<GameData> {
         self.game_data.get_or_init(|| Arc::new(GameData::new())).clone()
+    }
+
+    fn pipes(&self) -> MutexGuard<'_, Pipes> {
+        self.pipes.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    /// C# `Pipe(e)`: the reader for one character's folder, made on first use and kept. The reference data is shared.
+    fn pipe(&self, character_dir: &Path) -> Arc<Pipeline> {
+        let key = character_dir.to_string_lossy().to_lowercase();
+        let mut p = self.pipes();
+        p.by_dir.entry(key).or_insert_with(|| Arc::new(Pipeline::new(character_dir, Some(self.game_data()), None, None))).clone()
+    }
+
+    /// C# `SimPipe(who)` of MainForm.Dispatch (the `pipeOf` PreviewServer.SimCommand is given): the pipeline of the
+    /// character a build stands on, or for `who == ""` the "_blank" one: a pipeline with no character behind it
+    /// (folder `<data>\characters\_blank`), whose set table is the first saved character's that has one and whose
+    /// icon cache is the active character's. Throws a UserError for a name that is not a saved character.
+    #[allow(dead_code)] // WAVE4: called by `sim_command`
+    pub fn sim_pipe(&self, req: &SimRequest, who: &str) -> Result<Arc<Pipeline>> {
+        // what the blank pipeline's closure reads (C# reads `_chars.All` live)
+        *self.char_dirs.lock().unwrap_or_else(|p| p.into_inner()) = req.characters.iter().map(|(_, d)| d.clone()).collect();
+        if !who.is_empty() {
+            let dir = req
+                .characters
+                .iter()
+                .find(|(n, _)| newmoon::text::eq_ic(n, who))
+                .map(|(_, d)| d.clone())
+                .ok_or_else(|| newmoon::user_error(format!("There is no saved character called {who}.")))?;
+            return Ok(self.pipe(&dir));
+        }
+        let mut p = self.pipes();
+        if p.blank.is_none() {
+            let dirs = self.char_dirs.clone();
+            // `_chars.All.Select(c => new Store(DataDir(c))).Where(s => File.Exists(s.SetTablePath)).Select(s => s.LoadSetTable())
+            //  .FirstOrDefault(t => t is { Count: > 0 })`: lazily, the first one that has sets
+            let blank_sets: pipeline::BlankSets = Box::new(move || -> Result<Option<Vec<SetRecord>>> {
+                let dirs = dirs.lock().unwrap_or_else(|p| p.into_inner()).clone();
+                for d in dirs {
+                    let store = Store::new(d);
+                    if !store.set_table_path().is_file() {
+                        continue;
+                    }
+                    if let Some(t) = store.load_set_table()?.filter(|t| !t.is_empty()) {
+                        return Ok(Some(t));
+                    }
+                }
+                Ok(None)
+            });
+            p.blank = Some(Arc::new(Pipeline::new(
+                req.data_dir.join("characters").join("_blank"),
+                Some(self.game_data()),
+                Some(blank_sets),
+                Some(Store::new(req.active_dir)),
+            )));
+        }
+        Ok(p.blank.clone().expect("just made"))
     }
 
     /// C# `ClientReader.ListClients()` (Task.Run'd by the "clients" command). Read-only look at every running client:
@@ -150,44 +219,46 @@ impl Backend {
 
     /// C# `Pipe(e).TakeSnapshot(e.Name, e.Csv, false)` (src\Build\Pipeline.cs:44): expertise first, then the snapshot
     /// into the character's CSV. `character_dir` = `_chars.DataDir(e)` (the Pipeline is created per folder and kept).
-    pub fn take_snapshot(&self, _name: &str, _character_dir: &Path, _csv: &str) -> Result<SnapshotOutcome> {
-        // WAVE4: pipe(character_dir).take_snapshot(name, csv, false) -> ((Snapshot.Result), ranks) (build::pipeline::Pipeline, shared self.game_data())
-        not_ported("Pipeline.TakeSnapshot")
+    pub fn take_snapshot(&self, name: &str, character_dir: &Path, csv: &str) -> Result<SnapshotOutcome> {
+        let (r, ranks) = self.pipe(character_dir).take_snapshot(name, csv, false)?;
+        Ok(SnapshotOutcome { source: r.source, stats_note: r.stats_note, missing: Some(r.missing), level: r.level, ranks: ranks as i32 })
     }
 
     /// C# `Pipe(e).Rebuild(e.Csv).Snapshots` (src\Build\Pipeline.cs:348): rebuilds the dash\*.json files from the CSV;
     /// returns the number of snapshots (`Counts.Snapshots`).
-    pub fn rebuild(&self, _character_dir: &Path, _csv: &str) -> Result<i32> {
-        // WAVE4: pipe(character_dir).rebuild(csv)?.snapshots (build::pipeline::Pipeline::rebuild)
-        not_ported("Pipeline.Rebuild")
+    pub fn rebuild(&self, character_dir: &Path, csv: &str) -> Result<i32> {
+        Ok(self.pipe(character_dir).rebuild(csv)?.snapshots as i32)
     }
 
     /// C# `Pipe(e).SetAlignment(e.Csv, value)` (src\Build\Pipeline.cs:78). `value` may be null; throws UserError
     /// "Alignment must be LAW, NEUTRAL or CHAOS." for anything else.
-    pub fn set_alignment(&self, _character_dir: &Path, _csv: &str, _value: Option<&str>) -> Result<AlignmentOutcome> {
-        // WAVE4: pipe(character_dir).set_alignment(csv, value) (build::pipeline::Pipeline::set_alignment)
-        not_ported("Pipeline.SetAlignment")
+    pub fn set_alignment(&self, character_dir: &Path, csv: &str, value: Option<&str>) -> Result<AlignmentOutcome> {
+        let r = self.pipe(character_dir).set_alignment(csv, value.unwrap_or(""))?;
+        Ok(AlignmentOutcome { changed: r.changed, rows: r.rows as i32, changed_rows: r.changed_rows as i32, backup: r.backup.map(PathBuf::from) })
     }
 
     /// C# `Pipe(e).CompDemons(e.Name, scan)` (src\Build\Pipeline.cs:200), serialized with camelCase property names.
-    /// Returns the JSON array text/value the page shows (`[CompDemon...]`).
-    pub fn comp_demons(&self, _name: &str, _character_dir: &Path, _scan: bool) -> Result<Value> {
-        // WAVE4: pipe(character_dir).comp_demons(name, scan) -> camelCase JSON array (build::pipeline::Pipeline::comp_demons)
-        not_ported("Pipeline.CompDemons")
+    /// Returns the JSON array the page shows (`[CompDemon...]`).
+    pub fn comp_demons(&self, name: &str, character_dir: &Path, scan: bool) -> Result<Value> {
+        let list = self.pipe(character_dir).comp_demons(name, scan)?;
+        Ok(Value::Array(list.iter().map(|d| d.to_value()).collect()))
     }
 
     /// C# `Pipe(e).UseDemon(e.Name, e.Csv, key, scan: false)` (src\Build\Pipeline.cs:305): the `DemonSwitch` record as camelCase JSON.
-    pub fn use_demon(&self, _name: &str, _character_dir: &Path, _csv: &str, _key: Option<&str>) -> Result<Value> {
-        // WAVE4: pipe(character_dir).use_demon(name, csv, key, false) -> camelCase JSON object (build::pipeline::Pipeline::use_demon)
-        not_ported("Pipeline.UseDemon")
+    pub fn use_demon(&self, name: &str, character_dir: &Path, csv: &str, key: Option<&str>) -> Result<Value> {
+        let r = self.pipe(character_dir).use_demon(name, csv, key, false)?;
+        Ok(json!({ "name": r.name, "changed": r.changed, "rowUpdated": r.row_updated, "backup": r.backup }))
     }
 
     /// C# `PreviewServer.SimCommand(SimPipe, e.Name, <data>\sim-builds.json, cmd, args, owner, SkillIcons)`
     /// (src\Build\PreviewServer.cs:35) for simInit/simulate/simCatalog/simDemons/simBuilds/simSaveBuild/simDeleteBuild.
     /// Returns the JSON text for the page. See `SimRequest` for how `SimPipe` is expressed.
     pub fn sim_command(&self, _req: &SimRequest) -> Result<String> {
-        // WAVE4: build::preview_server::sim_command(sim_pipe, default_base, builds_path, cmd, args, owner, skill_icons)
-        // with sim_pipe(who) = pipe(characters.find(who)) or the "_blank" pipeline (see SimRequest)
+        // WAVE4: once PreviewServer::sim_command lands, this is the whole body (the lookups are ready: `sim_pipe`,
+        // `req.owner`, `req.skill_icons`, `req.builds_path`; MainForm holds the calc lock and checked NoWrites):
+        //     newmoon::build::preview_server::sim_command(
+        //         &|who| self.sim_pipe(req, who), req.default_base, &req.builds_path, req.cmd, req.args, Some(req.owner), Some(req.skill_icons))
+        // (adapt to its real signature; the C# returns null for a command that is not one of the Simulator's: none reach here)
         not_ported("PreviewServer.SimCommand")
     }
 
@@ -203,5 +274,49 @@ impl Backend {
     /// catches (NifException, IOException, UnauthorizedAccessException) into "null".
     pub fn demon_model_load(&self, data_root: &Path, client_dir: Option<&Path>, save: bool) -> Result<Option<String>> {
         demon_model::load(data_root, client_dir, demon_model::ASSISTANT, save)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn request<'a>(data: &'a Path, characters: &'a [(String, PathBuf)], args: &'a Value, icons: &'a (dyn Fn(&str) -> Option<String> + Sync)) -> SimRequest<'a> {
+        SimRequest {
+            default_base: "Rubito",
+            data_dir: data,
+            characters,
+            active_dir: data,
+            builds_path: data.join("sim-builds.json"),
+            cmd: "simInit",
+            args,
+            owner: "Rubito",
+            skill_icons: icons,
+        }
+    }
+
+    #[test]
+    fn sim_pipe_finds_characters_and_keeps_pipelines() {
+        let data = std::env::temp_dir().join(format!("newmoon-simpipe-test-{}", std::process::id()));
+        let chars = vec![("Rubito".to_string(), data.clone()), ("Rokujuu".to_string(), data.join("characters").join("Rokujuu"))];
+        let args = Value::Null;
+        let icons = |_: &str| None;
+        let req = request(&data, &chars, &args, &icons);
+        let b = Backend::new();
+        // a name is found case-insensitively and its pipeline is made once
+        let a1 = b.sim_pipe(&req, "rokujuu").unwrap();
+        let a2 = b.sim_pipe(&req, "Rokujuu").unwrap();
+        assert!(Arc::ptr_eq(&a1, &a2));
+        assert!(Arc::ptr_eq(&a1, &b.pipe(&chars[1].1)));
+        // the blank pipeline is its own, made once, in <data>\characters\_blank
+        let blank = b.sim_pipe(&req, "").unwrap();
+        assert!(Arc::ptr_eq(&blank, &b.sim_pipe(&req, "").unwrap()));
+        assert!(!Arc::ptr_eq(&blank, &a1));
+        assert_eq!(blank.store().dir, data.join("characters").join("_blank"));
+        // an unknown name is a UserError
+        let e = b.sim_pipe(&req, "Nobody").err().unwrap();
+        assert!(newmoon::error::is_user_error(&e));
+        assert_eq!(e.to_string(), "There is no saved character called Nobody.");
+        assert!(!data.exists()); // nothing was written
     }
 }
