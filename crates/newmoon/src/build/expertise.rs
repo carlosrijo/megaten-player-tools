@@ -128,15 +128,15 @@ fn trim_cond(s: &str) -> String {
 
 // ---------- case-sensitive regexes (System.Text.RegularExpressions.Regex.Match, as ParseDescription used them) ----------
 
-static CS_CACHE: LazyLock<RwLock<HashMap<String, Regex>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+// Shared references, not clones (a cloned Regex starts with an empty search cache; see `rx::r`).
+static CS_CACHE: LazyLock<RwLock<HashMap<String, &'static Regex>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
-fn re(p: &str) -> Regex {
+fn re(p: &str) -> &'static Regex {
     if let Some(r) = CS_CACHE.read().expect("regex cache").get(p) {
-        return r.clone();
+        return *r;
     }
-    let r = Regex::new(p).unwrap_or_else(|e| panic!("bad pattern {p:?}: {e}"));
-    CS_CACHE.write().expect("regex cache").insert(p.to_string(), r.clone());
-    r
+    let mut cache = CS_CACHE.write().expect("regex cache");
+    *cache.entry(p.to_string()).or_insert_with(|| Box::leak(Box::new(Regex::new(p).unwrap_or_else(|e| panic!("bad pattern {p:?}: {e}")))))
 }
 
 /// How a description names a stat for the server's stat id ("long range" -> LNGR; with rate: "lng-r" -> RATE_LNGR).
