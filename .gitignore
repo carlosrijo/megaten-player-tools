@@ -45,4 +45,5 @@ dist-symbols/
 /tools/*.ps1
 !/tools/publish-portable.ps1
 !/tools/rebuild-app.ps1
+!/tools/refresh-bundled-data.ps1
 /reference/clientdata-scripts/*.ps1

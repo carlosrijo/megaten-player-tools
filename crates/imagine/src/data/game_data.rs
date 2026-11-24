@@ -35,6 +35,31 @@ use crate::Result;
 #[include = "*.tsv"]
 struct EmbeddedReference;
 
+/// reference\bundled\: copies of the server's data (tokusei XML, constants.xml) and of the website files no game table
+/// covers yet, made by tools\refresh-bundled-data.ps1. The folders set in data\config.json win when they exist; these
+/// copies are what a player with only the exe gets (without them a snapshot found 88 bonuses instead of 140).
+#[derive(RustEmbed)]
+#[folder = "../../reference/bundled"]
+#[compression = "zstd"]
+#[include = "*.xml"]
+#[include = "*.json"]
+struct EmbeddedBundled;
+
+/// A file of reference\bundled\ by its path there ("tokusei/tokusei_00010000.xml"); `None` if it is not bundled.
+pub fn bundled_text(rel: &str) -> Option<String> {
+    EmbeddedBundled::get(rel).map(|f| json::decode_text(&f.data))
+}
+
+/// The server's constants.xml: the serverConstants file when it exists, else the bundled copy.
+pub fn server_constants_text() -> Result<Option<String>> {
+    if let Some(path) = config::current().server_constants.as_deref() {
+        if Path::new(path).is_file() {
+            return Ok(Some(json::read_all_text(Path::new(path))?));
+        }
+    }
+    Ok(bundled_text("constants.xml"))
+}
+
 /// A file of the reference folder: found on disk (the repo's `reference\`, next to the program or up from it), or the copy
 /// compiled into the library.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -352,6 +377,43 @@ fn english_skill_names() {
     assert!(!is_english_game_name(""));
 }
 
+/// The portable release has no website or tokusei folder: every table still loads, from the bundled copies
+/// (reference\bundled\) and the client's own tables.
+#[cfg(test)]
+#[test]
+fn loads_without_website_folder() {
+    // the bundled copies are compiled in
+    assert!(bundled_text("constants.xml").is_some_and(|t| t.contains("DIGITALIZE_STAT_RATES")));
+    assert!(bundled_text("tokusei/tokusei_00010000.xml").is_some());
+    let d = GameData::with_paths(None, None);
+    assert_eq!(d.devil_alignment(1).unwrap(), Some("LAW"), "devils.json Law/Chaos points are bundled");
+    assert!(!d.enchant_sets().unwrap().is_empty(), "fusion sets are bundled");
+    assert!(d.tokusei_xml_text("tokusei_00010000.xml").unwrap().is_some(), "the server's tokusei XML is bundled");    for content in [None, Some(r"Z:\no\such\folder".to_string())] {
+        let d = GameData::with_paths(content, None);
+        assert!(d.items().is_ok());
+        assert!(d.tokusei().is_ok());
+        assert!(d.expertises().is_ok());
+        assert!(d.rank_skills().is_ok());
+        assert!(d.passives().is_ok());
+        assert!(d.skill_names().is_ok());
+        assert!(d.skill_icon_asset(1).is_ok());
+        assert!(d.enchants().is_ok());
+        assert!(d.enchant_sets().is_ok());
+        assert!(d.fusion_icon_items().is_ok());
+        assert!(d.enchant_sides().is_ok());
+        assert!(d.item_sub_category(1).is_ok());
+        assert!(d.sitem_tokusei(1).is_ok());
+        assert!(d.mod_tokusei(true, 0, 0, 1).is_ok());
+        assert!(d.devil_icon_file(1).is_ok());
+        assert!(d.devil_alignment(1).is_ok());
+        assert!(d.tokusei_full(1).is_ok());
+        assert!(d.raw_tokusei_xml(1).is_ok());
+        if reference_file("items-game.tsv").is_some() {
+            assert!(!d.items().unwrap().is_empty(), "the client's item table fills the list");
+        }
+    }
+}
+
 static RE_MEMBERS_STAT: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^members' (strength|magic|vitality|intelligence|speed|luck) \+(\d+),?$").unwrap());
 static RE_PARTY_SEG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(all party( members)?|by the power of [a-z ]+)$").unwrap());
@@ -453,18 +515,37 @@ impl GameData {
         }
     }
 
-    /// `Path.Combine(Content, rel...)`: an error when no website content folder is configured (ArgumentNullException).
-    fn content_path(&self, rel: &[&str]) -> Result<PathBuf> {
-        let c = self.content.as_deref().ok_or_else(|| anyhow::anyhow!("Value cannot be null. (Parameter 'path1')"))?;
-        let mut p = PathBuf::from(c);
-        for r in rel {
-            p.push(r);
-        }
-        Ok(p)
+    /// The website content folder, when one is set and exists. The portable release has none (no server repo beside
+    /// it). (The C# threw ArgumentNullException here, and the first port copied that, so a snapshot in the portable app
+    /// failed with "Value cannot be null. (Parameter 'path1')".)
+    fn content_dir(&self) -> Option<PathBuf> {
+        self.content.as_deref().map(PathBuf::from).filter(|p| p.is_dir())
     }
 
-    fn load_content_json(&self, rel: &[&str]) -> Result<Value> {
-        json::load(self.content_path(rel)?)
+    /// A website JSON file: from the website folder when there is one, else the bundled copy (reference\bundled\website),
+    /// else `empty` (the file's shape with nothing in it): the files not bundled are only a base under the client's
+    /// own tables (reference\*.tsv).
+    fn load_content_json(&self, rel: &[&str], empty: Value) -> Result<Value> {
+        if let Some(mut p) = self.content_dir() {
+            for r in rel {
+                p.push(r);
+            }
+            return json::load(p);
+        }
+        match bundled_text(&format!("website/{}", rel.join("/"))) {
+            Some(text) => json::parse(&text),
+            None => Ok(empty),
+        }
+    }
+
+    /// The text of one of comp_hack's tokusei XML files ("tokusei_00010000.xml"): from the tokuseiXml folder when it
+    /// exists, else the bundled copy; `None` when neither has it.
+    pub fn tokusei_xml_text(&self, file: &str) -> Result<Option<String>> {
+        if let Some(dir) = self.tokusei_xml_dir.as_deref().map(Path::new).filter(|d| d.is_dir()) {
+            let p = dir.join(file);
+            return if p.is_file() { Ok(Some(json::read_all_text(&p)?)) } else { Ok(None) };
+        }
+        Ok(bundled_text(&format!("tokusei/{file}")))
     }
 
     /// `GameData.ReferenceFile` (also available as the free function [`reference_file`]).
@@ -506,18 +587,16 @@ impl GameData {
     }
 
     /// A constant from the local server's config\constants.xml (data\config.json "serverConstants"), e.g.
-    /// DIGITALIZE_STAT_RATES = "10,30", MITAMA_SET_BOOST = "5133"; `None` when the file or constant is missing.
+    /// DIGITALIZE_STAT_RATES = "10,30", MITAMA_SET_BOOST = "5133" (the bundled copy when that file is missing);
+    /// `None` when the constant is missing.
     pub fn server_constant(&self, name: &str) -> Result<Option<String>> {
         let c = once(&self.constants, || {
             let mut m = HashMap::new();
-            if let Some(path) = config::current().server_constants.as_deref() {
-                if Path::new(path).is_file() {
-                    let text = json::read_all_text(Path::new(path))?;
-                    let doc = parse_xml(&text)?;
-                    for c in doc.descendants().filter(|n| n.is_element() && n.tag_name().name() == "constant") {
-                        if let Some(n) = c.attribute("name") {
-                            m.insert(n.to_string(), xml_value(c).trim().to_string());
-                        }
+            if let Some(text) = server_constants_text()? {
+                let doc = parse_xml(&text)?;
+                for c in doc.descendants().filter(|n| n.is_element() && n.tag_name().name() == "constant") {
+                    if let Some(n) = c.attribute("name") {
+                        m.insert(n.to_string(), xml_value(c).trim().to_string());
                     }
                 }
             }
@@ -539,7 +618,7 @@ impl GameData {
 
     fn items_data(&self) -> Result<&ItemsData> {
         once(&self.items, || {
-            let root = self.load_content_json(&["wiki", "items.json"])?;
+            let root = self.load_content_json(&["wiki", "items.json"], json!({ "items": [] }))?;
             let mut items: IndexMap<i32, Value> = IndexMap::new();
             for i in json::arr(root.at("items")) {
                 items.entry(json::int(i.at("id"))).or_insert_with(|| i.clone());
@@ -613,21 +692,21 @@ impl GameData {
     /// The website's tokusei-effects.json "tokusei" object.
     pub fn tokusei(&self) -> Result<&Value> {
         once(&self.tokusei, || {
-            let root = self.load_content_json(&["armory", "tokusei-effects.json"])?;
+            let root = self.load_content_json(&["armory", "tokusei-effects.json"], json!({ "tokusei": {} }))?;
             take_object(root, "tokusei")
         })
     }
 
     pub fn expertises(&self) -> Result<&Value> {
         once(&self.expertises, || {
-            let root = self.load_content_json(&["armory", "expertises.json"])?;
+            let root = self.load_content_json(&["armory", "expertises.json"], json!({ "expertises": {} }))?;
             take_object(root, "expertises")
         })
     }
 
     pub fn rank_skills(&self) -> Result<&Value> {
         once(&self.rank_skills, || {
-            let root = self.load_content_json(&["armory", "expertise-rank-skills.json"])?;
+            let root = self.load_content_json(&["armory", "expertise-rank-skills.json"], json!({ "expertises": {} }))?;
             take_object(root, "expertises")
         })
     }
@@ -660,7 +739,7 @@ impl GameData {
                     res.insert(r[0].to_string(), json!({ "id": id, "mainCategory": main, "correctTbl": ct, "tokuseiIds": tok, "source": "server" }));
                 }
             }
-            let root = self.load_content_json(&["armory", "passive-skills.json"])?;
+            let root = self.load_content_json(&["armory", "passive-skills.json"], json!({ "skills": {} }))?;
             for (k, v) in json::as_object(root.at("skills"))? {
                 if !res.contains_key(k) {
                     res.insert(k.clone(), v.clone());
@@ -758,7 +837,7 @@ impl GameData {
     /// IMAGINE-only skills (Quickdraw) and has no icon for many others (Sympathy skills, Gun Mastery).
     pub fn skill_icon_asset(&self, skill_id: i32) -> Result<Option<String>> {
         let icons = once(&self.skill_icons, || {
-            let root = self.load_content_json(&["wiki", "skills.json"])?;
+            let root = self.load_content_json(&["wiki", "skills.json"], json!({ "skills": [] }))?;
             let mut res: HashMap<i32, Option<String>> = HashMap::new();
             let mut seen = HashSet::new();
             for s in json::arr(root.at("skills")) {
@@ -791,7 +870,7 @@ impl GameData {
     /// shifted onto other skills (Rush Up shows as "Critical Up 3").
     pub fn skill_names(&self) -> Result<&IndexMap<i32, Option<String>>> {
         once(&self.skill_names, || {
-            let root = self.load_content_json(&["wiki", "skills.json"])?;
+            let root = self.load_content_json(&["wiki", "skills.json"], json!({ "skills": [] }))?;
             let mut res: IndexMap<i32, Option<String>> = IndexMap::new();
             for s in json::arr(root.at("skills")) {
                 res.entry(json::int(s.at("id"))).or_insert_with(|| json::str(s.at("name")));
@@ -844,7 +923,7 @@ impl GameData {
 
     pub fn enchants(&self) -> Result<&IndexMap<i32, Enchant>> {
         once(&self.enchants, || {
-            let root = self.load_content_json(&["wiki", "enchants.json"])?;
+            let root = self.load_content_json(&["wiki", "enchants.json"], json!({ "enchants": {} }))?;
             let mut res: IndexMap<i32, Enchant> = IndexMap::new();
             for (_, v) in json::as_object(root.at("enchants"))? {
                 if v.is_null() {
@@ -864,7 +943,7 @@ impl GameData {
 
     pub fn enchant_sets(&self) -> Result<&Vec<EnchantSet>> {
         once(&self.enchant_sets, || {
-            let root = self.load_content_json(&["armory", "enchant-sets.json"])?;
+            let root = self.load_content_json(&["armory", "enchant-sets.json"], json!({ "sets": {} }))?;
             let nonzero = |n: Option<&Value>| -> Vec<i32> { json::arr(n).map(|x| json::int(Some(x))).filter(|&x| x != 0).collect() };
             let mut res = Vec::new();
             for (_, v) in json::as_object(root.at("sets"))? {
@@ -887,7 +966,7 @@ impl GameData {
     /// Today those are the Tarot Card and the Soul Stone. 0 when unknown.
     pub fn fusion_icon_items(&self) -> Result<(i32, i32)> {
         Ok(*once(&self.fusion_icon_items, || {
-            let root = self.load_content_json(&["wiki", "enchants.json"])?;
+            let root = self.load_content_json(&["wiki", "enchants.json"], json!({ "enchants": {} }))?;
             let mut src: Vec<(i32, i32, i32)> = Vec::new(); // (usage, item, icon key)
             for (_, v) in json::as_object(root.at("enchants"))? {
                 if v.is_null() {
@@ -991,7 +1070,7 @@ impl GameData {
             return Ok(c);
         }
         let subcats = once(&self.subcats, || {
-            let root = self.load_content_json(&["armory", "item-subcategories.json"])?;
+            let root = self.load_content_json(&["armory", "item-subcategories.json"], json!({ "items": {} }))?;
             let mut m = HashMap::new();
             for (k, v) in json::as_object(root.at("items"))? {
                 m.insert(int_parse(k)?, json::int(Some(v)));
@@ -1024,7 +1103,7 @@ impl GameData {
                 }
                 Ok(SItemSource::Game(m))
             } else {
-                let root = self.load_content_json(&["armory", "sitem-tokusei.json"])?;
+                let root = self.load_content_json(&["armory", "sitem-tokusei.json"], json!({ "items": {} }))?;
                 Ok(SItemSource::Website(json::as_object(root.at("items"))?.clone()))
             }
         })?;
@@ -1038,7 +1117,7 @@ impl GameData {
     /// extension table by item subcategory, equip type and effect id. 0 when unknown.
     pub fn mod_tokusei(&self, weapon: bool, sub_category: i32, equip_type: i32, effect: i32) -> Result<i32> {
         let mods = once(&self.mods, || {
-            let v = self.load_content_json(&["armory", "mod-effects.json"])?;
+            let v = self.load_content_json(&["armory", "mod-effects.json"], json!({}))?;
             json::as_object(Some(&v))?;
             Ok(v)
         })?;
@@ -1075,7 +1154,7 @@ impl GameData {
             Some(h) => Some(h.clone()),
             None => {
                 let icons = once(&self.devil_icons, || {
-                    let root = self.load_content_json(&["armory", "devils.json"])?;
+                    let root = self.load_content_json(&["armory", "devils.json"], json!({}))?;
                     Ok(match root.at("iconAssets") {
                         Some(Value::Object(m)) => m.clone(),
                         _ => Map::new(),
@@ -1092,7 +1171,7 @@ impl GameData {
     /// ActiveEntityState::CalculateLNCType: 5000 or more is Chaos, -5000 or less is Law); `None` if unknown.
     pub fn devil_alignment(&self, r#type: i32) -> Result<Option<&'static str>> {
         let lncs = once(&self.devil_lnc, || {
-            let root = self.load_content_json(&["armory", "devils.json"])?;
+            let root = self.load_content_json(&["armory", "devils.json"], json!({}))?;
             Ok(match root.at("lncs") {
                 Some(Value::Object(m)) => m.clone(),
                 _ => Map::new(),
@@ -1153,7 +1232,7 @@ impl GameData {
                     );
                 }
             }
-            let root = self.load_content_json(&["wiki", "enchants.json"])?;
+            let root = self.load_content_json(&["wiki", "enchants.json"], json!({ "enchants": {} }))?;
             for (_, v) in json::as_object(root.at("enchants"))? {
                 if v.is_null() {
                     continue;
@@ -1271,9 +1350,9 @@ impl GameData {
         Ok(t.get(&id).cloned())
     }
 
-    fn tokusei_file(&self, id: i32) -> Result<String> {
-        let dir = self.tokusei_xml_dir.as_deref().ok_or_else(|| anyhow::anyhow!("Value cannot be null. (Parameter 'path1')"))?;
-        Ok(PathBuf::from(dir).join(format!("tokusei_{}.xml", d8(id.wrapping_div(10000).wrapping_mul(10000)))).to_string_lossy().into_owned())
+    /// The name of the server XML file that holds this tokusei id ("tokusei_00010000.xml"); read it with [`Self::tokusei_xml_text`].
+    fn tokusei_file(&self, id: i32) -> String {
+        format!("tokusei_{}.xml", d8(id.wrapping_div(10000).wrapping_mul(10000)))
     }
 
     /// Everything a tokusei does and needs, or `None` when neither the server XML nor the website file has it.
@@ -1282,9 +1361,8 @@ impl GameData {
         if let Some(d) = st.defs.get(&id) {
             return Ok(d.clone());
         }
-        let file = self.tokusei_file(id)?;
-        if st.files.insert(file.clone()) && Path::new(&file).is_file() {
-            let text = json::read_all_text(Path::new(&file))?;
+        let file = self.tokusei_file(id);
+        if let Some(text) = if st.files.insert(file.clone()) { self.tokusei_xml_text(&file)? } else { None } {
             let doc = parse_xml(&text)?;
             for o in doc.descendants().filter(|x| x.is_element() && x.tag_name().name() == "object" && x.attribute("name") == Some("Tokusei")) {
                 let Some(tid) = member_text(o, "ID").and_then(|s| crate::fmt::parse_i32(&s)) else { continue };
@@ -1357,12 +1435,12 @@ impl GameData {
     }
 
     fn xml_for(&self, id: i32) -> Result<Option<Arc<String>>> {
-        let file = self.tokusei_file(id)?;
+        let file = self.tokusei_file(id);
         let mut files = lock(&self.xml_files);
         if let Some(x) = files.get(&file) {
             return Ok(x.clone());
         }
-        let x = if Path::new(&file).is_file() { Some(Arc::new(json::read_all_text(Path::new(&file))?)) } else { None };
+        let x = self.tokusei_xml_text(&file)?.map(Arc::new);
         files.insert(file, x.clone());
         Ok(x)
     }
