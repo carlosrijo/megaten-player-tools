@@ -315,6 +315,9 @@ struct ItemsData {
 struct RankData {
     by_id: IndexMap<i32, Vec<(i32, Vec<i32>)>>,
     client_skill_names: IndexMap<i32, String>,
+    /// (expertise id, class*10+rank) -> how many skills the character may learn there, for the pick-one ranks only
+    /// (the ones that list more skills than that).
+    picks: HashMap<(i32, i32), i32>,
 }
 
 enum SItemSource {
@@ -787,12 +790,20 @@ impl GameData {
         Ok(&self.rank_data()?.by_id)
     }
 
+    /// How many of a rank's skills the character may learn, when the rank offers a choice (more skills listed than that):
+    /// the server's LearnSkill refuses a skill once that many of the rank's skills are learned, so the character holds
+    /// only its picks. None = every skill listed is learned (or the game data doesn't say).
+    pub fn rank_pick_count(&self, expertise: i32, rank_idx: i32) -> Result<Option<i32>> {
+        Ok(self.rank_data()?.picks.get(&(expertise, rank_idx)).copied())
+    }
+
     fn rank_data(&self) -> Result<&RankData> {
         once(&self.rank_client, || {
             let mut by_id: IndexMap<i32, Vec<(i32, Vec<i32>)>> = IndexMap::new();
             let mut client_skill_names: IndexMap<i32, String> = IndexMap::new();
+            let mut picks: HashMap<(i32, i32), i32> = HashMap::new();
             let Some(lines) = reference_lines("expertise-rank-skills.tsv")? else {
-                return Ok(RankData { by_id, client_skill_names });
+                return Ok(RankData { by_id, client_skill_names, picks });
             };
             for line in &lines {
                 if line.is_empty() || line.starts_with('#') {
@@ -801,13 +812,17 @@ impl GameData {
                 let r: Vec<&str> = line.split('\t').collect();
                 let ids = split_nonempty(col(&r, 3)?, ',').into_iter().map(int_parse).collect::<Result<Vec<i32>>>()?;
                 let rank = int_parse(col(&r, 1)?)?.wrapping_mul(10).wrapping_add(int_parse(col(&r, 2)?)?);
-                by_id.entry(int_parse(col(&r, 0)?)?).or_default().push((rank, ids.clone()));
+                let eid = int_parse(col(&r, 0)?)?;
+                if let Some(n) = r.get(5).and_then(|c| crate::fmt::parse_i32(c.trim())).filter(|n| *n > 0 && (*n as usize) < ids.len()) {
+                    picks.insert((eid, rank), n);
+                }
+                by_id.entry(eid).or_default().push((rank, ids.clone()));
                 let names: Vec<&str> = if r.len() > 4 { r[4].split(" | ").collect() } else { Vec::new() };
                 for i in 0..ids.len().min(names.len()) {
                     client_skill_names.entry(ids[i]).or_insert_with(|| names[i].trim().to_string());
                 }
             }
-            Ok(RankData { by_id, client_skill_names })
+            Ok(RankData { by_id, client_skill_names, picks })
         })
     }
 

@@ -262,6 +262,55 @@ fn expertise_files_like_csharp() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+/// Some expertise ranks list several skills and let the character learn only some of them (Pursuit class 1: Strength,
+/// Magic, Intelligence or Speed; class 7: CLS-R, LNG-R or Spell). Only the learned ones count.
+#[test]
+fn expertise_pick_one_ranks_count_only_the_pick() {
+    let gd = GameData::with_paths(None, None);
+    // the table says how many may be learned: one of four at Pursuit 1-0 and one of three at 7-0; all four of the
+    // Pursuit 3-0 Mantras and the single skill of 2-0 have no choice
+    assert_eq!(gd.rank_pick_count(35, 10).unwrap(), Some(1));
+    assert_eq!(gd.rank_pick_count(35, 70).unwrap(), Some(1));
+    assert_eq!(gd.rank_pick_count(35, 30).unwrap(), None);
+    assert_eq!(gd.rank_pick_count(35, 20).unwrap(), None);
+
+    let pursuit = |dir: &std::path::Path, learned: Option<&str>| {
+        let st = Store::new(dir);
+        std::fs::write(
+            st.expertise_ranks_path(),
+            format!("{{\"ranks\":[{{\"id\":35,\"name\":\"Pursuit\",\"class\":7,\"rank\":0}}]{}}}", learned.map(|l| format!(",\"learned_skills\":[{l}]")).unwrap_or_default()),
+        )
+        .unwrap();
+        let ctx = std::sync::Arc::new(imagine::context::Context::new(Store::new(dir), GameData::with_paths(None, None)));
+        let exp = imagine::build::expertise::Expertise::new(ctx);
+        let ranks = vec![serde_json::json!({ "id": 35, "name": "Pursuit", "class": 7, "rank": 0 })];
+        let rows = exp.rows(None, &ranks, false).unwrap();
+        let counted: Vec<i32> = rows.iter().filter(|r| r.get("counted").and_then(|c| c.as_bool()).unwrap_or(true) && r.get("skill_id").is_some()).map(|r| r["skill_id"].as_i64().unwrap() as i32).collect();
+        let prompt = rows.iter().filter(|r| r["row"].as_str().is_some_and(|id| id.contains("-pick-"))).filter_map(|r| r.get("effects").and_then(|e| e.as_str()).map(String::from)).collect::<Vec<_>>();
+        (counted, prompt)
+    };
+    let dir = temp("pick");
+    // the player's choice: Speed (class 1) and LNG-R (class 7); everything else of Pursuit is learned outright
+    let (counted, prompt) = pursuit(&dir, Some("5060,5062"));
+    assert!(counted.contains(&5060) && counted.contains(&5062), "{counted:?}");
+    for other in [5057, 5058, 5059, 5061, 5063] {
+        assert!(!counted.contains(&other), "{other} counted: {counted:?}");
+    }
+    assert!(counted.contains(&5073) && counted.contains(&5064), "ranks with no choice count as before: {counted:?}");
+    assert!(prompt.is_empty(), "{prompt:?}");
+    // nothing learned at a pick rank: nothing counts there, and the page says to learn one
+    let (counted, prompt) = pursuit(&dir, Some("5073"));
+    assert!(![5057, 5058, 5059, 5060, 5061, 5062, 5063].iter().any(|s| counted.contains(s)), "{counted:?}");
+    assert_eq!(prompt.len(), 2, "{prompt:?}");
+    assert!(prompt.iter().all(|p| p.starts_with("Nothing learned here yet.")), "{prompt:?}");
+    // never read the learned skills: no guess either, and it says which skills it needs read
+    let (counted, prompt) = pursuit(&dir, None);
+    assert!(![5057, 5058, 5059, 5060, 5061, 5062, 5063].iter().any(|s| counted.contains(s)), "{counted:?}");
+    assert_eq!(prompt.len(), 2, "{prompt:?}");
+    assert!(prompt.iter().all(|p| p.contains("isn't known yet")), "{prompt:?}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn csv_like_csharp() {
     let dir = temp("csv");

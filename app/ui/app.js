@@ -1566,7 +1566,7 @@
           h('summary', null, h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'exp-name', text: o.title ? o.title(name) : name }),
             h('span', { class: 'exp-meta', text: [rk ? `Class ${rk.class}, rank ${rk.rank}` : null,
               /^(Quest bonus|Demonic Compendium)/.test(name) ? (anyCounted ? (mine.length === 1 ? '1 bonus' : `${mine.length} bonuses`) : null)
-                : mine.length === 1 ? '1 passive' : `${mine.length} passives`].filter(Boolean).join(' · ') }),
+                : (() => { const n = mine.filter((r) => r.skill).length; return n === 1 ? '1 passive' : `${n} passives`; })()].filter(Boolean).join(' · ') }),   // (a line with no skill is a note, e.g. a rank to pick from)
             o.tag ? o.tag(name) : null,
             anyCounted ? null : h('span', { class: 'tag tag-off', text: 'Not counted' }),
             // closed: its passives as a row of small icons (hidden by the stylesheet while the group is open)
@@ -3815,7 +3815,7 @@
       };
       const unlockList = (d, rank) => h('ul', { class: 'sim-unlocks' }, d.unlocks.length ? d.unlocks.map((u) => h('li', { class: u.rank <= rank ? 'on' : '' },
         h('span', { class: 'sim-unlock-rank', text: simRank(u.rank) }),
-        h('span', null, u.skills.map((s, i) => [i ? ', ' : null, h('span', { class: s.passive ? '' : 'sim-active', 'data-tip': s.passive ? null : 'An active skill: it adds no stats by itself', text: s.name })])))) : h('li', { text: 'The game data lists no skills for its ranks.' }));
+        h('span', null, u.pick ? h('span', { class: 'sim-unlock-pick', 'data-tip': 'The game lets you learn only this many of these. Which one counts is the one you learned in game.', text: u.pick === 1 ? 'Learn one of: ' : `Learn ${u.pick} of: ` }) : null, u.skills.map((s, i) => [i ? ', ' : null, h('span', { class: s.passive ? '' : 'sim-active', 'data-tip': s.passive ? null : 'An active skill: it adds no stats by itself', text: s.name })])))) : h('li', { text: 'The game data lists no skills for its ranks.' }));
       const row = (d) => {
         const base = baseRank(d.id), open = M.expOpen.has(d.id);
         const label = h('span', { class: 'sim-exp-rank' }), was = h('span', { class: 'sim-exp-was' });

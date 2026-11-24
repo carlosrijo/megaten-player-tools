@@ -1,535 +1,535 @@
-#expertise id	class	rank	skill ids	skill names (CSkillData)
-0	0	0	5401	Basic Attack
-0	0	5	5801	Strength UP1
-0	1	0	5403	Master's Stance
-0	2	0	5402	Sword Maniac
-0	2	5	5802	Strength UP2
-0	4	5	5803	Strength UP3
-0	5	0	5419	Combo Attack
-0	6	5	5804	Strength UP4
-0	7	0	5421	Armor Break
-0	8	5	5805	Strength UP5
-0	9	0	5422	Gatling Strike
-0	10	0	5420	Cleave
-1	0	0	5404	Dragon Sweep
-1	1	0	5405,5406	Crescent Slash | Tail of the Dragon
-1	2	5	5850	Max HP Up 1
-1	3	0	5427	Shadowy Spiral Weave
-1	4	5	5851	Max HP Up 2
-1	5	0	5424	Giant Swing
-1	6	0	5425	Three Step Crescent Moon
-1	7	0	5426	Maelstrom
-2	0	0	5407	Vulcan Hit
-2	1	0	5408,5409	Asura Charge | Heaven's Gate
-2	2	0	160678	Rush Mastery
-2	2	5	5852	Max HP Up 1
-2	3	0	5435	Self-Explosion
-2	4	5	5853	Max HP Up 2
-2	5	0	5429	Tyrannical Jaw
-2	6	0	5430	Vulcan Hit (Strong)
-2	7	0	5428	Blade of the King Beast
-3	0	0	5410	Range Shot
-3	0	5	5821	Speed UP1
-3	1	0	5412	13 Snipe
-3	2	0	5411	Gun Maniac
-3	2	5	5822	Speed UP2
-3	4	5	5823	Speed UP3
-3	5	0	5436	Long-range Shot
-3	6	5	5824	Speed UP4
-3	7	0	5437	Pierce Shot
-3	8	5	5825	Speed UP5
-3	9	0	5438	Double Bullet Shot
-4	0	0	5413	Trigger Happy
-4	1	0	5414,5415	Magnificent 7 | Eraser
-4	2	5	5855	Max MP Up
-4	3	0	5442	Viper Scope
-4	4	5	5856	Max MP Up
-4	5	0	5441	Bullet-ridden Pit
-4	7	0	5440	Qi Shot
-4	8	0	5443	Trigger Happy (strong)
-4	9	0	5439	13 Shots to Hell
-4	10	0	5517	Boogie-Woogie
-8	0	1	5301	Dia
-8	0	5	5314	Posumudi
-8	1	0	5304	Media
-8	1	4	5315	Charmdi
-8	1	7	5313	Paraladi
-8	2	0	5310,160634	Patra | Curative UP I
-8	2	5	5316	Closedi
-8	3	0	5302	Diarama
-8	3	5	5307	Recarm
-8	4	0	5305,160635	Mediarama | Curative UP II
-8	4	5	5312	Petradi
-8	5	5	5317	Etnadi
-8	6	0	5303,160636	Diarahan | Curative UP III
-8	6	5	5309	Recarmdora
-8	7	0	5306	Mediarahan
-8	8	0	160637	Curative UP IV
-8	8	5	5308	Samarecarm
-8	9	5	160638	Panacea
-8	10	0	160639	Salvation
-9	0	0	5001	Agi
-9	0	1	5007,5013	Bufu | Zio
-9	0	5	5019	Zan
-9	1	0	5004,5010,5016	Maragi | Mabufu | Mazio
-9	1	5	5022	Mazan
-9	1	7	5724,5725	Agi Accel | Bufu Accel
-9	2	0	5002,5008,5014	Agilao | Bufula | Zionga
-9	2	2	5726,5727	Zio Accel | Zan Accel
-9	2	5	5020,5857	Zanma | Max MP Up
-9	2	7	5732,5733	Maragi Accel | Mabufu Accel
-9	3	0	5011,5017	Mabufula | Mazionga
-9	3	2	5734,5735	Mazio Accel | Mazan Accel
-9	3	5	5023	Mazanma
-9	3	7	5728,5729	Agilao Accel | Bufula Accel
-9	4	0	5005	Maragion
-9	4	2	5730,5731	Zionga Accel | Zanma Accel
-9	4	5	5858	Max MP Up
-9	5	0	5025	Megido
-9	5	7	5736,5737	Maragion Accel | Mabufula Accel
-9	6	0	5015,5021	Ziondyne | Zandyne
-9	6	2	5738,5739	Mazionga Accel | Mazanma Accel
-9	6	5	5003,5009	Agidyne | Bufudyne
-9	7	0	5026	Megidora
-9	8	0	5018,5024	Maziodyne | Mazandyne
-9	8	5	5006,5012	Maragidyne | Mabufudyne
-9	10	0	5027	Megidoraon
-10	0	1	5109	Rakukaja
-10	0	4	5806	Intelligence UP1
-10	0	7	5108	Sukukaja
-10	1	0	5107	Makakaja
-10	1	5	5110	Samakaja
-10	2	0	5106	Tarukaja
-10	2	5	5807	Intelligence UP2
-10	3	0	5116,5121	Tetraja | Estoma
-10	3	5	5113	Masukukaja
-10	4	0	5119	Dekunda
-10	4	5	5808	Intelligence UP3
-10	5	0	5114,5115	Marakukaja | Masamakaja
-10	5	5	5030	Hama
-10	6	0	5111,5112	Matarukaja | Mamakakaja
-10	6	5	5809,5033	Intelligence UP4 | Manma
-10	7	0	5032	Hamaon
-10	7	5	5810	Intelligence UP5
-10	8	0	5034,160619	Manmaon | Luster Candy
-11	0	1	5210	Sukunda
-11	0	4	5208,5209	Tarunda | Makanda
-11	0	7	5811	Intelligence UP1
-11	1	0	5229	Pulinpa
-11	1	4	5221	Shibaboo
-11	1	7	5231	Makajam
-11	2	0	5211,5212	Rakunda | Samanda
-11	2	5	5812	Intelligence UP2
-11	3	0	5222,5228	Dormina | Marin Karin
-11	3	5	5215,114	Masukunda | Death Touch
-11	4	0	5813	Intelligence UP3
-11	4	5	115	Soul Suck
-11	5	0	5216,5217	Marakunda | Masamanda
-11	5	5	5035	Mudo
-11	6	0	5213,5214	Matarunda | Mamakanda
-11	6	5	5814,5038	Intelligence UP4 | Mamudo
-11	7	0	5037	Mudoon
-11	7	5	5815	Intelligence UP5
-11	8	0	367,5039	Debilitate | Mamudoon
-15	1	0	5701	Summon Lesson 1
-15	2	0	50411	Summon Lesson 2
-15	3	0	160649	Protected Summon
-15	3	5	160650	Tuned Summon
-15	4	0	160652	Shielded Summon
-15	5	0	160653	Armed Summon
-15	6	0	5702	Summon Overdrive
-16	1	0	5831	Intelligence Increase
-16	2	0	5832	Intelligence Increase
-16	3	0	5833	Intelligence Increase
-16	4	0	5834	Intelligence Increase
-16	5	0	5835	Intelligence Increase
-16	6	0	5836	Intelligence Increase
-16	7	0	5837	Intelligence Increase
-17	0	2	5372,5367,5391	Fusion・Fairy | Fusion・Earth Element  | Fusion・Haunt
-17	0	7	5365,5377,5392	Fusion・Wild Bird | Fusion・Wilder | Fusion・Foul
-17	1	0	5376,5368,5388	Fusion・Beast | Fusion・Evil Demon | Fusion・Evil Dragon
-17	1	5	5378	Fusion・Elemental
-17	2	0	5363,5371,5386	Fusion・Divine | Fusion・Nocturne | Fusion・Fallen Angel
-17	3	0	5375,5361,5389	Fusion・Holy Beast | Fusion・Yoma | Fusion・Femme
-17	3	5	5379	Fusion・Mitama
-17	4	0	5359,5383,5374	Fusion・Heavenly God  | Fusion・Nation Ruler | Fusion・Godly Beast
-17	5	0	5364,5373,5382	Fusion・Avian | Fusion・Dragon King | Fusion・Guardian
-17	6	0	5390,5370,5366	Fusion・Brute | Fusion・Demigod | Fusion・Raptor
-17	7	0	5360,5369,5387	Fusion・Vile | Fusion・Reaper | Fusion・Dragon
-17	8	0	5362,5385,5358,5384	Fusion・Seraphim | Fusion・Tyrant | Fusion・Goddess | Fusion・Earth Mother
-17	9	5	5357,5381,5380	Fusion・Demon God | Fusion・Destroyer | Fusion・Fiend
-17	10	0	5356	Fusion・Entity
-18	0	5	5764,5777	Earth Element Sympathy | Foul Sympathy
-18	1	0	5763,5778	Yoma Sympathy  | Brute Sympathy
-18	1	5	5762,5779	Wild Bird Sympathy | Haunt Sympathy
-18	2	0	5768,5773	Fairy Sympathy | Wilder Sympathy
-18	2	5	5767,5774	Beast Sympathy | Dragon King Sympathy
-18	3	0	5760,5781	Divine Sympathy | Fallen Angel Sympathy
-18	3	5	5759,5782	Raptor Sympathy | Femme Sympathy
-18	4	0	5766,5775	Holy Beast Sympathy | Nocturne Sympathy
-18	4	5	5756,5785	Avian Sympathy  | Evil Dragon Sympathy
-18	5	0	5757,5784	Goddess Sympathy | Earth Mother Sympathy
-18	5	5	5761,5780	Evil Demon Sympathy | Dragon Sympathy
-18	6	0	5758,5783	Heavenly God Sympathy | Nation Ruler Sympathy
-18	7	0	5755,5772,5786	Vile Sympathy | Demigod Sympathy | Guardian Sympathy
-19	1	0	5878	Sword Mastery I
-19	2	0	5879	Sword Mastery II
-19	3	0	5880	Sword Mastery III
-19	4	0	5881	Sword Mastery IV
-19	5	0	5882	Sword Mastery V
-19	6	0	5883	Sword Mastery VI
-19	7	0	5884	Kamiizumi
-19	8	0	5885	Kojiro
-19	9	0	5886	Musashi
-20	0	0	5501,5416,5504	Tetra Counter | Basic Guard | Basic Dodge
-20	0	5	5507,5816,5826	Sword Slap | Vitality UP1 | Luck UP1
-20	1	0	5502,5503	Poison Counter | Bind Counter
-20	1	1	5417,5418	Smite Guard | Stun Guard
-20	1	2	5506,5505	Stun Dodge | Pyro Dodge
-20	1	5	5817,5827	Vitality UP2 | Luck UP2
-20	2	0	5510,5446,5512	Vamp Counter | Power Guard | Dodge Drain
-20	2	5	5818,5828	Vitality UP3 | Luck UP3
-20	3	0	5508,5444,5513	Infight Counter | Wither Guard | Petra Dodge
-20	4	0	5819,5829	Vitality UP4 | Luck UP4
-20	5	0	5511,5447,5514	Strikeback Bash | Resolution Guard | Dodge (Shot Failure)
-20	6	0	5449,5515	Strikeback (Soul) | Dodge (Grace of Feather)
-20	6	5	5830	Luck UP5
-20	7	0	50389,5448,5516,5820	Strikeback・ＷＯＲＬＤ | Speed Block | Ultrasonic Dodge | Vitality UP5
-21	0	0	5601,5622,5619	Greeting | Taunt | Threaten
-21	0	5	5605	1000 Macca Contract
-21	0	7	5608	1000 Magnetite Bribe
-21	1	0	5797	Demon Sympathy 1
-21	1	1	5611,5623,5630	Gift: 1 Magic Stone  | Mischief | Shout
-21	1	5	5614	Gift: 1 Jewel
-21	2	0	5130	Negotiation 1
-21	2	1	5617,50412	Gift: Jewels | Intimidate
-21	3	0	5128	Care 2
-21	4	0	5798	Demon Sympathy 2
-21	5	0	5131	Negotiation 2
-21	6	0	5129	Care 3
-21	7	0	5799	Demon Sympathy 3
-21	8	0	5132	Negotiation 3
-21	9	0	50395	Demon Sympathy 4
-21	10	0	50396,170000	Negotiation 4 | Demon Sympathy 5
-23	1	0	5137	Critical Up 1
-23	2	0	5138	Critical Up 2
-23	3	0	5139	Rush Up
-23	4	0	5140	Critical Up 3
-23	5	0	5141	Action Up
-23	6	0	5142	Critical Up 4
-23	7	0	5143	Final Crit Correction 1
-23	8	0	5144	Final Crit Correction 2
-23	9	0	5145	Final Crit Correction 3
-23	10	0	5146,170001,170002	Limit Break Up: Strength | Limit Break Up: Magic | Limit Break Up: Speed
-25	0	5	5076,5077	Biological Enhancement: HP | Biological Enhancement: MP
-25	1	0	5088,5089	Resistance Strengthening: Physical Resistance | Resistance Strengthening: Magic Resistance
-25	2	0	5080,5081	Ability Strengthening: Vitality  | Ability Strengthening: Intelligence
-25	3	0	5078,5079,5082	Ability Strengthening: Strength  | Ability Strengthening: Magic | Ability Strengthening: Speed
-25	4	0	5083	Ability Strengthening: Luck
-25	5	0	5084,5085,5086,5087	Skill Enhancement: Close Range | Skill Enhancement: Long Range | Skill Enhancement: Spell | Skill Enhancement: Support
-25	6	0	50393	耐性強化・状態異常
-25	7	0	50394	生体強化・自然回復量
-34	1	0	5860	Gun Mastery Uno
-34	2	0	5861	Gun Mastery Dos
-34	3	0	5862	Gun Mastery Tres
-34	4	0	5863	Gun Mastery Cuatro
-34	5	0	5864	Gun Mastery Cinco
-34	6	0	5865	Gun Mastery Seis
-34	7	0	5866	Quick Load
-34	8	0	5867	White Phazer
-34	9	0	5868	Belaya Smerch
-35	1	0	5057,5058,5059,5060	Enlightenment of Pursuit: Strength  | Enlightenment of Pursuit: Magic  | Enlightenment of Pursuit: Intelligence  | Enlightenment of Pursuit: Speed 
-35	2	0	5073	Soul of Pursuit: First Limit
-35	3	0	5064,5065,5066,5067	Mantra of Pursuit: Fire | Mantra of Pursuit: Ice | Mantra of Pursuit: Electric | Mantra of Pursuit: Force
-35	4	0	5074	Soul of Pursuit: Next Limit
-35	5	0	5068,5069	Mantra of Pursuit: Expel | Mantra of Pursuit: Death
-35	6	0	5070,5071,5072	Mantra of Pursuit: Mind | Mantra of Pursuit: Nerve | Mantra of Pursuit: Mystic 
-35	7	0	5061,5062,5063	Enlightenment of Pursuit: CLS-R | Enlightenment of Pursuit: LNG-R | Enlightenment of Pursuit: Spell
-35	8	0	5075	Soul of Pursuit: Final Limit
-35	9	0	50410	Soul of Pursuit: Extreme
-36	2	0	5532	Sorcery Circulation
-36	3	0	5535	Lord of the Frost
-36	4	0	5536	Lady of Static
-36	5	0	5533	Advanced Sorcery Circulation
-36	6	0	5537	Lord of the Storms
-36	7	0	5534	Lady of the Flames
-36	8	0	50390	Magical Amplification Technique
-36	9	0	50391	Lord and Lady of the Void
-37	1	0	5874	Blessing of Soma
-37	2	0	5875	Blessing of Surya
-37	3	0	5871,5873	Blessing of Shani | Blessing of Budha
-37	4	0	160618	Blessing of Saraswati
-37	5	0	5872,5869,5870	Blessing of Shukra | Blessing of Brihaspati | Blessing of Mangala
-37	6	0	5876,5877	Blessing of Ketu | Blessing of Rahu
-37	7	0	50392	Blessing of Navagraha
-37	8	0	160616	Blessing of Kartikeya
-37	9	0	160617	Blessing of Brahma
-39	1	0	5134	Mitama Demon Sympathy 1
-39	2	0	160644	Mitama Demon Encouragement 1
-39	3	0	5135	Mitama Demon Sympathy 2
-39	4	0	160645	Mitama Demon Encouragement 2
-39	5	0	5136	Mitama Demon Sympathy 3
-39	6	0	160646	Mitama Demon Encouragement 3
-39	6	4	160647,160648	Mitama Demon Command - Offense | Mitama Demon Command - Defense
-39	7	0	5133,160651	Mitama Demon Enhancement - Iron Man | Mitama Demon Overgrowth
-39	8	0	170013	Mitama Demon - Inner Power
-39	8	2	170014	Mitama Demon Ascension
-40	0	0	5789,5748	Blacksmith | Willow
-40	0	2	5749,5750	Ryuzu | Jikyo
-40	0	4	5912,5913	Enko | Yugi
-40	0	5	5914	 White Coat
-40	0	6	5915,5916	Renga | Takimi
-40	0	8	5917	Seyaku
-40	0	9	5918	Gyoran
-40	1	0	5919,5920,5675	Tokuo | Suigetsu | Sutra
-40	1	2	5921,5922	Ichiyo | Shokei
-40	1	4	5923,5924	Ittoku | Enmei
-40	1	6	5925,5926,5927	Shoho | Iwato | Nojo
-40	1	8	5928	Anoku
-40	2	0	5929,5930,5931,5676	Amadai | Youe | Ruri | Geyya
-40	2	2	5932,5933	Tarason | Hamaguri
-40	2	4	5934,5935,5936	Rokuji | Fuhi | Merofu
-40	2	6	5937,5938	Gassho | Ichinyo
-40	2	8	5939,5940	Funi | Jiren
-40	3	0	5941,5942	Shasui | Universe
-40	3	2	5944,5945,5946	Maitreya | Seishi | Amitabha
-40	3	4	5947,5948	KSiti garbha | Monk
-40	3	6	5949,5950	Ekadaza mukha | Sahasrabhuja aaryaavalokitezvara
-40	3	7	5951,5952	CintaamaNicakra | Hoko
-40	3	8	5953,5954	Hayagriiva | Shotoku
-40	3	9	5955	Bodhidharma
-40	4	0	5956,5957	Tendai | Zendo
-40	4	1	5958,5959	Dengyo | Kobo
-40	4	2	5960,5961	Jie | Hachiman
-40	4	3	5962,5963	Kenshin | Rissyo
-40	4	4	5964,5965	Aakaazagarbha | Yamaantaka
-40	4	5	5966,5967	Yakujo | Yakuo
-40	4	6	5968,5969	Mahaavairocana | Avalokitesvara 
-40	4	7	5970,5971	Nikko | Gekko
-40	4	8	5972,5973	Yamaraja | Ruriko
-40	4	9	5974,5975	maJjuzrii | Samanta bhadra
-40	5	0	5976	Zaakya
-40	5	2	5645,5646	Enma | Nirrti
-40	5	5	5647,5648,5649	Agni | Varuna | Vayu
-40	5	7	5650,5651	Prithivi | Brahman
-40	6	0	5652,5653	Luohan | Vajramoghasamayasattva
-40	6	2	5654,5655	Dhrtarastra | Viruudhaka
-40	6	5	5656,5657,5658	Zao | Gozu | Buddhalocanii
-40	6	8	5659,5660	ViruupaakSa  | Tamon
-40	7	0	5661,5662,5663	Issaana | Sakro Devanam Indrah | VaizravaNa
-40	7	2	5677	Gatha
-40	7	5	5678	Nidana
-40	7	7	160715,160716	Bestial | Fiery
-40	8	0	160717,160718	Vortex | Glow
-40	8	2	160719,160720	Bewitched | Elemental
-40	8	4	160721,160722	Photon | Saber
-40	8	6	160723,160724	Edge | Bonded
-40	9	0	160725	Fierce Attack Light
-40	9	2	160726	Griefing
-40	9	4	160727	King
-41	1	0	160668	Freezing Weapon
-41	2	0	160669	Thunderous Weapon
-41	3	0	160670	Flame Weapon
-41	4	0	160671	Sonic Weapon
-41	5	0	160729	Einheri
-41	6	0	160672	Aldar Rok
-41	6	5	160679	Lifraeningi
-41	7	0	5099	Attack power increase
-41	7	5	160680,5093	Undying Soul | Spellblade Stance
-41	8	0	160674	Devastate
-41	9	0	160681,160673	Ragnarok | Skuld's Respite
-41	9	4	160730	Phantom Strike
-43	2	0	130609	Magic Shot
-43	2	5	5164	Frost Blast
-43	3	0	5149	Sonic Blast
-43	4	0	160610	Dyne Accel
-43	4	5	50415	Magic Blast
-43	5	0	160614	Destructive Mind
-43	5	5	5166,5165	Thunderous Blast | Infernal Blast
-43	6	0	50424	Magic Burst
-43	7	0	160612,160781	Megi Accel | Limit Break Chance Up Improvement 1
-43	8	0	160613,170005	Concentrate | Tranquil Mind
-43	9	0	170004	Ethereal Greatsword
-43	9	3	160611	Cataclysmic Mind
-44	1	0	5330,5339	Manus Up | Slot Chance Up
-44	2	0	5331,5340	Manus Up | Slot Chance Up
-44	3	0	5332,5341	Manus Up | Slot Chance Up
-44	4	0	5333,5342	Manus Up | Slot Chance Up
-44	5	0	5334,5343	Manus Up | Slot Chance Up
-45	1	0	5538	Lord of Armor
-45	1	2	5593,5594,5595,5596	Master of Swords | Master of Guns | Master of Magic | Master of Summons
-45	1	4	5597,5598,5599,5600	Master of the Blades | Master of the Blade | Master of Chants | Master of Servants
-45	1	6	5170,5171,5172,5173	Blade of God | Shots from the Depths | Lost Grimoire | Call of the Abyss
-45	1	8	170042	Guardian Angel
-46	0	0	5790,5978	Gunsmith | Phantom
-46	0	2	5979	Tiger
-46	0	4	5980	Crusader
-46	0	6	5981,5982	Tomcat | Eagle
-46	0	8	5983	Falcon
-46	1	0	5984,5985	Hornet | Rapier
-46	1	2	5986	Raptor
-46	1	4	5987	Saber
-46	1	6	5988	Scorpion
-46	1	8	5989,5990,5991	Seahawk | Sparrow Hawk | Nighthawk
-46	2	0	5992	Strike Raptor
-46	2	2	5993,5994	Aardvark | Starfire
-46	2	5	5995,5996	Sky Night | Sky Ray
-46	2	8	5997,5998	Sky Lancer | Cougar
-46	3	0	5999,6000	Fireball | Pancake
-46	3	2	6001,6002	Harrier | Lightning
-46	3	4	6003,6004	Delta Dagger | Hell Cat
-46	3	6	6005,6006	Wild Cat | Lightning II
-46	3	8	6007,6008,6009,6010	Black Hawk | Sea Dart | Strike Eagle | Super Saber
-46	4	0	6011,6012	Curtis | Thunderbolt
-46	4	2	6013,6014	Lancer | Mustang
-46	4	4	6015,6016,6017	Black Bullet | Tiger II | Black Widow
-46	4	6	6018,6019	Harrier II | Grey Ghost
-46	4	8	6020,6021	Thunder Chief | Black Widow II
-46	5	0	6022,5679	Phantom II | Freedom
-46	5	2	5664,5665,5666	Whirlwind | Welkin | Blenheim
-46	5	5	5667,5668,5669	Beaufighter | Defiant | Spitfire
-46	5	7	5670,5671	Mosquito | Meteor
-46	6	0	5672,5673,5674	Hurricane | Typhoon | Tempest
-46	6	2	5680	Zhuravlik
-46	6	7	5681	Rafale
-46	7	0	5682	Strike
-46	7	2	5683	Gripen
-46	7	5	5684	F-2
-46	7	7	160707	Specialist
-46	8	0	160708	Professional
-46	8	2	160709	Profane
-46	8	4	160710	Accursed
-46	8	6	160711	Professional II
-46	9	0	160712	Inferno
-46	9	2	160713	Handguns
-46	9	5	160714	Modern Warfare
-47	2	0	160628	Healing Tuner
-47	3	5	5169	Affinity Shooter
-47	4	0	160629	Affinity Tuner
-47	5	0	170034	Combat Medic
-47	6	0	50405,5167	Ability Shooter | Ability Tuner
-47	8	0	170035	Break Shooter
-47	8	5	5168,160630	Critical Shooter | Critical Tuner
-48	1	0	160654	Haste
-48	2	0	160656	Spirit Transfer
-48	3	0	160655	Transfusion
-48	4	0	160657,160658	Emergency Shield | Emergency Barrier
-48	4	5	160659	Call of the Crown
-48	5	0	160660	Blood Ties
-48	5	5	160665	Wickedness
-48	6	0	160664	Cracked Chains
-48	6	5	160666	Bloody Handshake
-48	7	2	160667,160750,160751,160752	Order of the Absolute - Strength | Order of the Absolute - Magic | Order of the Absolute - Speed | Order of the Absolute - Support
-48	7	5	170036	Recall
-48	8	0	160661,160662,160663	Seal of Command - Knight | Seal of Command - Archer | Seal of Command - Magician
-49	0	4	5722	Tarot Fusion 
-49	1	0	5721	Crystallize Demon 
-49	2	0	5723	Soul Stone Fusion 
-50	2	0	160732	Thunderous Bullet
-50	2	5	160733	Freezing Bullet
-50	3	0	160734	Flame Bullet
-50	4	0	160735	Sonic Bullet
-50	5	0	160743	Gunslinger
-50	6	0	160737	Firestarter
-50	6	5	160739	Vanishing Act
-50	7	0	160738	Rolling Guard
-50	7	5	160736	Frontier Justice
-50	8	0	160744	Desperado
-50	8	5	160741	Gambler's Ruin
-50	9	0	160745	Curtain Call
-50	9	4	160742	Deadeye
-51	1	0	5434,900	Kamaitachi | Killing Wind
-51	2	0	5432,5190	Freezing Lance | Hail Assault
-51	3	0	5433,109	Sonic Through | Lightning Thrust
-51	3	5	5095	Rush Stack +1
-51	4	0	5431,112	Delorean | Heat Wave
-51	5	0	160688	Way of the Celestial Fist
-51	5	5	5101	Rush power increase
-51	6	0	50401,1158	Spell Runner | Mysterious Defense-Breaking Yaburi
-51	7	0	160689	Unrelenting Soul
-51	7	5	50402,804	Devil Heartbreaker | Final Strike
-51	8	0	160682	Close-Quarters Combat
-51	8	2	160620	Enchanted Slicer
-51	8	4	160683,160687	Iron Fist | Magic Fist
-52	1	0	5473	Erosion Hex
-52	2	0	5547	Curse of the Slow Cure
-52	3	0	5474,5475,5476	Slash Hex | Bullet Hex | Spell Hex
-52	4	0	5478	Delay Hex
-52	5	0	160631	Lord of Malevolence
-52	6	0	160632	Seductive Hex
-52	7	0	50408	Corrosion Hex
-52	8	0	50409,160633	Curse of the Four Wounds | Essence Theft
-52	8	4	5477	Damage Hex
-52	8	5	5546,170033,170044	Curse of the Broken Mirror | Ghost Form | Shadow Scythe
-53	2	0	5482,5483	Pulse of Assault | Pulse of Solid
-53	2	5	5484	Pulse of Armored
-53	3	0	5489	Clock Cut
-53	3	5	5486	Divine Blessing
-53	4	0	160640,160641	Circle of Fire | Circle of Ice
-53	5	0	5487,5488	Divine Shield | Divine Barrier
-53	5	5	160642,160643	Circle of Electric | Circle of Force
-53	6	0	5490	Clock Off
-53	6	5	50406	Sanctuary
-53	7	0	160624	Fleetfoot
-53	7	5	5485	Radiant Hands
-53	8	0	50407,160625	Impulse of Armored | Impulse of Solid Assault
-53	8	5	160626	Encouragement of a Hero
-53	8	9	160627	Doping
-54	1	0	5466	Squall Bullet Hole
-54	2	0	5467,5469	Toxic Bullet Hole | Forgetful Bullet Hole
-54	2	5	5471	Arm Snipe
-54	3	0	130214	Grand Tack (Force)
-54	3	5	5468,5470	Enchanting Bullet Hole | Spell Mute Bullet Hole
-54	4	0	5463	Scorching Bullet Hole
-54	4	5	160615	Grand Tack (Fire)
-54	4	8	5464,5465	Hailing Bullet Hole | Thunder Bullet Hole
-54	5	0	170003	Der Freischutz
-54	5	5	130607,130608	Grand Tack (Ice) | Grand Tack (Electric)
-54	6	0	50399	Blinding Bullet Hole
-54	6	5	170039,170040	Grand Tack (Nerve) | Grand Tack (Mind)
-54	7	0	50400,170038	Zamiel's Magic Bullet | Grand Tack (Mystic)
-54	7	5	160782,160623	Outlaw Marksman | Polarity Switch
-54	8	0	160621	Accursed Ranger
-55	1	0	5460	Disturbed Purgation
-55	1	5	5458	Cruel Chase
-55	2	0	5457	Ether Tear
-55	2	2	5193	Critical Up Improvement 1
-55	2	5	5456,5459	Phony Amnesty | Brith Exorcism
-55	3	0	5461,5454	Fire Revolution | Dread Distinction
-55	3	5	5462	Joint Break
-55	4	0	5148	Speed Up Improvement 1
-55	4	5	5452,5453	Guilty Pierce | San Cles Exile
-55	5	0	5455	Epic Daze
-55	5	5	5194	Critical Up Improvement 2
-55	6	0	5450,5451	Criminal Bullet | Blaspheme
-55	7	0	5195	Limit Break Chance Up Improvement 1
-55	7	5	50404,160740	Bullet Friend | Extended Scope
-55	8	0	160622	Steady Hands
-55	8	4	160757,160756	Exploit Weakness | Locked On
-56	1	0	637	Vacuum Blade
-56	2	0	67	Absolute Zero
-56	3	0	5094,5445	Spin Stack +1 | Exceed Guard
-56	3	5	71,5218	Vamp Cyclone | Liberama
-56	4	0	66	Hell Fire
-56	4	5	68	Electrical Discharge
-56	5	0	160758	Gale Form
-56	5	5	5100	Spin power increase
-56	6	0	50403	Bulwark
-56	6	4	5509	Rally
-56	7	0	50425	Heaven Shaking Sword
-56	7	5	160684	Wake of Morningstar
-56	7	6	170007,170008	Riposte | Serpent Coil
-56	7	8	5543	Improved Mass Taunt
-57	1	0	5539	Lord of Serfs
-57	2	0	5540,5545,160728	Lord of Soldiers | Lord of the Martyrs | Lord of the Stampede
-57	2	2	5196	Critical Up Improvement 1
-57	3	0	5542	Lord of the Blood Axe
-57	4	0	5544	Lord of the Beasts
-57	4	5	5147	Strength Up Improvement 1
-57	5	0	5548,5541	Lord of Fighters | Lord of Courage
-57	5	5	5197	Critical Up Improvement 2
-57	6	0	5549	Lord of Victory
-57	7	0	5198,50397,50398	Limit Break Chance Up Improvement 1 | HP Cost Reduction | Weapon based Booster
-57	8	0	160746	Excalibur
-57	8	4	170012	Lord of Immortality
-57	8	6	160675,170006	Lord of Frenzy | Lord of Execution
+#expertise id	class	rank	skill ids	skill names (CSkillData)	skills to learn (fewer than the skill ids = pick that many, the rest are other options; the server's LearnSkill checks it)
+0	0	0	5401	Basic Attack	1
+0	0	5	5801	Strength UP1	1
+0	1	0	5403	Master's Stance	1
+0	2	0	5402	Sword Maniac	1
+0	2	5	5802	Strength UP2	1
+0	4	5	5803	Strength UP3	1
+0	5	0	5419	Combo Attack	1
+0	6	5	5804	Strength UP4	1
+0	7	0	5421	Armor Break	1
+0	8	5	5805	Strength UP5	1
+0	9	0	5422	Gatling Strike	1
+0	10	0	5420	Cleave	1
+1	0	0	5404	Dragon Sweep	1
+1	1	0	5405,5406	Crescent Slash | Tail of the Dragon	1
+1	2	5	5850	Max HP Up 1	1
+1	3	0	5427	Shadowy Spiral Weave	1
+1	4	5	5851	Max HP Up 2	1
+1	5	0	5424	Giant Swing	1
+1	6	0	5425	Three Step Crescent Moon	1
+1	7	0	5426	Maelstrom	1
+2	0	0	5407	Vulcan Hit	1
+2	1	0	5408,5409	Asura Charge | Heaven's Gate	1
+2	2	0	160678	Rush Mastery	1
+2	2	5	5852	Max HP Up 1	1
+2	3	0	5435	Self-Explosion	1
+2	4	5	5853	Max HP Up 2	1
+2	5	0	5429	Tyrannical Jaw	1
+2	6	0	5430	Vulcan Hit (Strong)	1
+2	7	0	5428	Blade of the King Beast	1
+3	0	0	5410	Range Shot	1
+3	0	5	5821	Speed UP1	1
+3	1	0	5412	13 Snipe	1
+3	2	0	5411	Gun Maniac	1
+3	2	5	5822	Speed UP2	1
+3	4	5	5823	Speed UP3	1
+3	5	0	5436	Long-range Shot	1
+3	6	5	5824	Speed UP4	1
+3	7	0	5437	Pierce Shot	1
+3	8	5	5825	Speed UP5	1
+3	9	0	5438	Double Bullet Shot	1
+4	0	0	5413	Trigger Happy	1
+4	1	0	5414,5415	Magnificent 7 | Eraser	1
+4	2	5	5855	Max MP Up	1
+4	3	0	5442	Viper Scope	1
+4	4	5	5856	Max MP Up	1
+4	5	0	5441	Bullet-ridden Pit	1
+4	7	0	5440	Qi Shot	1
+4	8	0	5443	Trigger Happy (strong)	1
+4	9	0	5439	13 Shots to Hell	1
+4	10	0	5517	Boogie-Woogie	1
+8	0	1	5301	Dia	1
+8	0	5	5314	Posumudi	1
+8	1	0	5304	Media	1
+8	1	4	5315	Charmdi	1
+8	1	7	5313	Paraladi	1
+8	2	0	5310,160634	Patra | Curative UP I	2
+8	2	5	5316	Closedi	1
+8	3	0	5302	Diarama	1
+8	3	5	5307	Recarm	1
+8	4	0	5305,160635	Mediarama | Curative UP II	2
+8	4	5	5312	Petradi	1
+8	5	5	5317	Etnadi	1
+8	6	0	5303,160636	Diarahan | Curative UP III	2
+8	6	5	5309	Recarmdora	1
+8	7	0	5306	Mediarahan	1
+8	8	0	160637	Curative UP IV	1
+8	8	5	5308	Samarecarm	1
+8	9	5	160638	Panacea	1
+8	10	0	160639	Salvation	1
+9	0	0	5001	Agi	1
+9	0	1	5007,5013	Bufu | Zio	2
+9	0	5	5019	Zan	1
+9	1	0	5004,5010,5016	Maragi | Mabufu | Mazio	3
+9	1	5	5022	Mazan	1
+9	1	7	5724,5725	Agi Accel | Bufu Accel	2
+9	2	0	5002,5008,5014	Agilao | Bufula | Zionga	3
+9	2	2	5726,5727	Zio Accel | Zan Accel	2
+9	2	5	5020,5857	Zanma | Max MP Up	2
+9	2	7	5732,5733	Maragi Accel | Mabufu Accel	2
+9	3	0	5011,5017	Mabufula | Mazionga	2
+9	3	2	5734,5735	Mazio Accel | Mazan Accel	2
+9	3	5	5023	Mazanma	1
+9	3	7	5728,5729	Agilao Accel | Bufula Accel	2
+9	4	0	5005	Maragion	1
+9	4	2	5730,5731	Zionga Accel | Zanma Accel	2
+9	4	5	5858	Max MP Up	1
+9	5	0	5025	Megido	1
+9	5	7	5736,5737	Maragion Accel | Mabufula Accel	2
+9	6	0	5015,5021	Ziondyne | Zandyne	2
+9	6	2	5738,5739	Mazionga Accel | Mazanma Accel	2
+9	6	5	5003,5009	Agidyne | Bufudyne	2
+9	7	0	5026	Megidora	1
+9	8	0	5018,5024	Maziodyne | Mazandyne	2
+9	8	5	5006,5012	Maragidyne | Mabufudyne	2
+9	10	0	5027	Megidoraon	1
+10	0	1	5109	Rakukaja	1
+10	0	4	5806	Intelligence UP1	1
+10	0	7	5108	Sukukaja	1
+10	1	0	5107	Makakaja	1
+10	1	5	5110	Samakaja	1
+10	2	0	5106	Tarukaja	1
+10	2	5	5807	Intelligence UP2	1
+10	3	0	5116,5121	Tetraja | Estoma	2
+10	3	5	5113	Masukukaja	1
+10	4	0	5119	Dekunda	1
+10	4	5	5808	Intelligence UP3	1
+10	5	0	5114,5115	Marakukaja | Masamakaja	2
+10	5	5	5030	Hama	1
+10	6	0	5111,5112	Matarukaja | Mamakakaja	2
+10	6	5	5809,5033	Intelligence UP4 | Manma	2
+10	7	0	5032	Hamaon	1
+10	7	5	5810	Intelligence UP5	1
+10	8	0	5034,160619	Manmaon | Luster Candy	2
+11	0	1	5210	Sukunda	1
+11	0	4	5208,5209	Tarunda | Makanda	2
+11	0	7	5811	Intelligence UP1	1
+11	1	0	5229	Pulinpa	1
+11	1	4	5221	Shibaboo	1
+11	1	7	5231	Makajam	1
+11	2	0	5211,5212	Rakunda | Samanda	2
+11	2	5	5812	Intelligence UP2	1
+11	3	0	5222,5228	Dormina | Marin Karin	2
+11	3	5	5215,114	Masukunda | Death Touch	2
+11	4	0	5813	Intelligence UP3	1
+11	4	5	115	Soul Suck	1
+11	5	0	5216,5217	Marakunda | Masamanda	2
+11	5	5	5035	Mudo	1
+11	6	0	5213,5214	Matarunda | Mamakanda	2
+11	6	5	5814,5038	Intelligence UP4 | Mamudo	2
+11	7	0	5037	Mudoon	1
+11	7	5	5815	Intelligence UP5	1
+11	8	0	367,5039	Debilitate | Mamudoon	2
+15	1	0	5701	Summon Lesson 1	1
+15	2	0	50411	Summon Lesson 2	1
+15	3	0	160649	Protected Summon	1
+15	3	5	160650	Tuned Summon	1
+15	4	0	160652	Shielded Summon	1
+15	5	0	160653	Armed Summon	1
+15	6	0	5702	Summon Overdrive	1
+16	1	0	5831	Intelligence Increase	1
+16	2	0	5832	Intelligence Increase	1
+16	3	0	5833	Intelligence Increase	1
+16	4	0	5834	Intelligence Increase	1
+16	5	0	5835	Intelligence Increase	1
+16	6	0	5836	Intelligence Increase	1
+16	7	0	5837	Intelligence Increase	1
+17	0	2	5372,5367,5391	Fusion・Fairy | Fusion・Earth Element  | Fusion・Haunt	3
+17	0	7	5365,5377,5392	Fusion・Wild Bird | Fusion・Wilder | Fusion・Foul	3
+17	1	0	5376,5368,5388	Fusion・Beast | Fusion・Evil Demon | Fusion・Evil Dragon	3
+17	1	5	5378	Fusion・Elemental	1
+17	2	0	5363,5371,5386	Fusion・Divine | Fusion・Nocturne | Fusion・Fallen Angel	3
+17	3	0	5375,5361,5389	Fusion・Holy Beast | Fusion・Yoma | Fusion・Femme	3
+17	3	5	5379	Fusion・Mitama	1
+17	4	0	5359,5383,5374	Fusion・Heavenly God  | Fusion・Nation Ruler | Fusion・Godly Beast	3
+17	5	0	5364,5373,5382	Fusion・Avian | Fusion・Dragon King | Fusion・Guardian	3
+17	6	0	5390,5370,5366	Fusion・Brute | Fusion・Demigod | Fusion・Raptor	3
+17	7	0	5360,5369,5387	Fusion・Vile | Fusion・Reaper | Fusion・Dragon	3
+17	8	0	5362,5385,5358,5384	Fusion・Seraphim | Fusion・Tyrant | Fusion・Goddess | Fusion・Earth Mother	4
+17	9	5	5357,5381,5380	Fusion・Demon God | Fusion・Destroyer | Fusion・Fiend	3
+17	10	0	5356	Fusion・Entity	1
+18	0	5	5764,5777	Earth Element Sympathy | Foul Sympathy	2
+18	1	0	5763,5778	Yoma Sympathy  | Brute Sympathy	2
+18	1	5	5762,5779	Wild Bird Sympathy | Haunt Sympathy	2
+18	2	0	5768,5773	Fairy Sympathy | Wilder Sympathy	2
+18	2	5	5767,5774	Beast Sympathy | Dragon King Sympathy	2
+18	3	0	5760,5781	Divine Sympathy | Fallen Angel Sympathy	2
+18	3	5	5759,5782	Raptor Sympathy | Femme Sympathy	2
+18	4	0	5766,5775	Holy Beast Sympathy | Nocturne Sympathy	2
+18	4	5	5756,5785	Avian Sympathy  | Evil Dragon Sympathy	2
+18	5	0	5757,5784	Goddess Sympathy | Earth Mother Sympathy	2
+18	5	5	5761,5780	Evil Demon Sympathy | Dragon Sympathy	2
+18	6	0	5758,5783	Heavenly God Sympathy | Nation Ruler Sympathy	2
+18	7	0	5755,5772,5786	Vile Sympathy | Demigod Sympathy | Guardian Sympathy	3
+19	1	0	5878	Sword Mastery I	1
+19	2	0	5879	Sword Mastery II	1
+19	3	0	5880	Sword Mastery III	1
+19	4	0	5881	Sword Mastery IV	1
+19	5	0	5882	Sword Mastery V	1
+19	6	0	5883	Sword Mastery VI	1
+19	7	0	5884	Kamiizumi	1
+19	8	0	5885	Kojiro	1
+19	9	0	5886	Musashi	1
+20	0	0	5501,5416,5504	Tetra Counter | Basic Guard | Basic Dodge	3
+20	0	5	5507,5816,5826	Sword Slap | Vitality UP1 | Luck UP1	3
+20	1	0	5502,5503	Poison Counter | Bind Counter	2
+20	1	1	5417,5418	Smite Guard | Stun Guard	2
+20	1	2	5506,5505	Stun Dodge | Pyro Dodge	2
+20	1	5	5817,5827	Vitality UP2 | Luck UP2	2
+20	2	0	5510,5446,5512	Vamp Counter | Power Guard | Dodge Drain	3
+20	2	5	5818,5828	Vitality UP3 | Luck UP3	2
+20	3	0	5508,5444,5513	Infight Counter | Wither Guard | Petra Dodge	3
+20	4	0	5819,5829	Vitality UP4 | Luck UP4	2
+20	5	0	5511,5447,5514	Strikeback Bash | Resolution Guard | Dodge (Shot Failure)	3
+20	6	0	5449,5515	Strikeback (Soul) | Dodge (Grace of Feather)	2
+20	6	5	5830	Luck UP5	1
+20	7	0	50389,5448,5516,5820	Strikeback・ＷＯＲＬＤ | Speed Block | Ultrasonic Dodge | Vitality UP5	4
+21	0	0	5601,5622,5619	Greeting | Taunt | Threaten	3
+21	0	5	5605	1000 Macca Contract	1
+21	0	7	5608	1000 Magnetite Bribe	1
+21	1	0	5797	Demon Sympathy 1	1
+21	1	1	5611,5623,5630	Gift: 1 Magic Stone  | Mischief | Shout	3
+21	1	5	5614	Gift: 1 Jewel	1
+21	2	0	5130	Negotiation 1	1
+21	2	1	5617,50412	Gift: Jewels | Intimidate	2
+21	3	0	5128	Care 2	1
+21	4	0	5798	Demon Sympathy 2	1
+21	5	0	5131	Negotiation 2	1
+21	6	0	5129	Care 3	1
+21	7	0	5799	Demon Sympathy 3	1
+21	8	0	5132	Negotiation 3	1
+21	9	0	50395	Demon Sympathy 4	1
+21	10	0	50396,170000	Negotiation 4 | Demon Sympathy 5	2
+23	1	0	5137	Critical Up 1	1
+23	2	0	5138	Critical Up 2	1
+23	3	0	5139	Rush Up	1
+23	4	0	5140	Critical Up 3	1
+23	5	0	5141	Action Up	1
+23	6	0	5142	Critical Up 4	1
+23	7	0	5143	Final Crit Correction 1	1
+23	8	0	5144	Final Crit Correction 2	1
+23	9	0	5145	Final Crit Correction 3	1
+23	10	0	5146,170001,170002	Limit Break Up: Strength | Limit Break Up: Magic | Limit Break Up: Speed	1
+25	0	5	5076,5077	Biological Enhancement: HP | Biological Enhancement: MP	2
+25	1	0	5088,5089	Resistance Strengthening: Physical Resistance | Resistance Strengthening: Magic Resistance	2
+25	2	0	5080,5081	Ability Strengthening: Vitality  | Ability Strengthening: Intelligence	2
+25	3	0	5078,5079,5082	Ability Strengthening: Strength  | Ability Strengthening: Magic | Ability Strengthening: Speed	3
+25	4	0	5083	Ability Strengthening: Luck	1
+25	5	0	5084,5085,5086,5087	Skill Enhancement: Close Range | Skill Enhancement: Long Range | Skill Enhancement: Spell | Skill Enhancement: Support	4
+25	6	0	50393	耐性強化・状態異常	1
+25	7	0	50394	生体強化・自然回復量	1
+34	1	0	5860	Gun Mastery Uno	1
+34	2	0	5861	Gun Mastery Dos	1
+34	3	0	5862	Gun Mastery Tres	1
+34	4	0	5863	Gun Mastery Cuatro	1
+34	5	0	5864	Gun Mastery Cinco	1
+34	6	0	5865	Gun Mastery Seis	1
+34	7	0	5866	Quick Load	1
+34	8	0	5867	White Phazer	1
+34	9	0	5868	Belaya Smerch	1
+35	1	0	5057,5058,5059,5060	Enlightenment of Pursuit: Strength  | Enlightenment of Pursuit: Magic  | Enlightenment of Pursuit: Intelligence  | Enlightenment of Pursuit: Speed 	1
+35	2	0	5073	Soul of Pursuit: First Limit	1
+35	3	0	5064,5065,5066,5067	Mantra of Pursuit: Fire | Mantra of Pursuit: Ice | Mantra of Pursuit: Electric | Mantra of Pursuit: Force	4
+35	4	0	5074	Soul of Pursuit: Next Limit	1
+35	5	0	5068,5069	Mantra of Pursuit: Expel | Mantra of Pursuit: Death	2
+35	6	0	5070,5071,5072	Mantra of Pursuit: Mind | Mantra of Pursuit: Nerve | Mantra of Pursuit: Mystic 	3
+35	7	0	5061,5062,5063	Enlightenment of Pursuit: CLS-R | Enlightenment of Pursuit: LNG-R | Enlightenment of Pursuit: Spell	1
+35	8	0	5075	Soul of Pursuit: Final Limit	1
+35	9	0	50410	Soul of Pursuit: Extreme	1
+36	2	0	5532	Sorcery Circulation	1
+36	3	0	5535	Lord of the Frost	1
+36	4	0	5536	Lady of Static	1
+36	5	0	5533	Advanced Sorcery Circulation	1
+36	6	0	5537	Lord of the Storms	1
+36	7	0	5534	Lady of the Flames	1
+36	8	0	50390	Magical Amplification Technique	1
+36	9	0	50391	Lord and Lady of the Void	1
+37	1	0	5874	Blessing of Soma	1
+37	2	0	5875	Blessing of Surya	1
+37	3	0	5871,5873	Blessing of Shani | Blessing of Budha	2
+37	4	0	160618	Blessing of Saraswati	1
+37	5	0	5872,5869,5870	Blessing of Shukra | Blessing of Brihaspati | Blessing of Mangala	1
+37	6	0	5876,5877	Blessing of Ketu | Blessing of Rahu	1
+37	7	0	50392	Blessing of Navagraha	1
+37	8	0	160616	Blessing of Kartikeya	1
+37	9	0	160617	Blessing of Brahma	1
+39	1	0	5134	Mitama Demon Sympathy 1	1
+39	2	0	160644	Mitama Demon Encouragement 1	1
+39	3	0	5135	Mitama Demon Sympathy 2	1
+39	4	0	160645	Mitama Demon Encouragement 2	1
+39	5	0	5136	Mitama Demon Sympathy 3	1
+39	6	0	160646	Mitama Demon Encouragement 3	1
+39	6	4	160647,160648	Mitama Demon Command - Offense | Mitama Demon Command - Defense	2
+39	7	0	5133,160651	Mitama Demon Enhancement - Iron Man | Mitama Demon Overgrowth	2
+39	8	0	170013	Mitama Demon - Inner Power	1
+39	8	2	170014	Mitama Demon Ascension	1
+40	0	0	5789,5748	Blacksmith | Willow	2
+40	0	2	5749,5750	Ryuzu | Jikyo	1
+40	0	4	5912,5913	Enko | Yugi	1
+40	0	5	5914	 White Coat	1
+40	0	6	5915,5916	Renga | Takimi	1
+40	0	8	5917	Seyaku	1
+40	0	9	5918	Gyoran	1
+40	1	0	5919,5920,5675	Tokuo | Suigetsu | Sutra	1
+40	1	2	5921,5922	Ichiyo | Shokei	1
+40	1	4	5923,5924	Ittoku | Enmei	1
+40	1	6	5925,5926,5927	Shoho | Iwato | Nojo	1
+40	1	8	5928	Anoku	1
+40	2	0	5929,5930,5931,5676	Amadai | Youe | Ruri | Geyya	1
+40	2	2	5932,5933	Tarason | Hamaguri	1
+40	2	4	5934,5935,5936	Rokuji | Fuhi | Merofu	1
+40	2	6	5937,5938	Gassho | Ichinyo	1
+40	2	8	5939,5940	Funi | Jiren	1
+40	3	0	5941,5942	Shasui | Universe	1
+40	3	2	5944,5945,5946	Maitreya | Seishi | Amitabha	1
+40	3	4	5947,5948	KSiti garbha | Monk	1
+40	3	6	5949,5950	Ekadaza mukha | Sahasrabhuja aaryaavalokitezvara	1
+40	3	7	5951,5952	CintaamaNicakra | Hoko	1
+40	3	8	5953,5954	Hayagriiva | Shotoku	1
+40	3	9	5955	Bodhidharma	1
+40	4	0	5956,5957	Tendai | Zendo	1
+40	4	1	5958,5959	Dengyo | Kobo	1
+40	4	2	5960,5961	Jie | Hachiman	1
+40	4	3	5962,5963	Kenshin | Rissyo	1
+40	4	4	5964,5965	Aakaazagarbha | Yamaantaka	1
+40	4	5	5966,5967	Yakujo | Yakuo	1
+40	4	6	5968,5969	Mahaavairocana | Avalokitesvara 	1
+40	4	7	5970,5971	Nikko | Gekko	1
+40	4	8	5972,5973	Yamaraja | Ruriko	1
+40	4	9	5974,5975	maJjuzrii | Samanta bhadra	1
+40	5	0	5976	Zaakya	1
+40	5	2	5645,5646	Enma | Nirrti	1
+40	5	5	5647,5648,5649	Agni | Varuna | Vayu	2
+40	5	7	5650,5651	Prithivi | Brahman	1
+40	6	0	5652,5653	Luohan | Vajramoghasamayasattva	1
+40	6	2	5654,5655	Dhrtarastra | Viruudhaka	1
+40	6	5	5656,5657,5658	Zao | Gozu | Buddhalocanii	2
+40	6	8	5659,5660	ViruupaakSa  | Tamon	1
+40	7	0	5661,5662,5663	Issaana | Sakro Devanam Indrah | VaizravaNa	1
+40	7	2	5677	Gatha	1
+40	7	5	5678	Nidana	1
+40	7	7	160715,160716	Bestial | Fiery	2
+40	8	0	160717,160718	Vortex | Glow	2
+40	8	2	160719,160720	Bewitched | Elemental	2
+40	8	4	160721,160722	Photon | Saber	2
+40	8	6	160723,160724	Edge | Bonded	2
+40	9	0	160725	Fierce Attack Light	1
+40	9	2	160726	Griefing	1
+40	9	4	160727	King	1
+41	1	0	160668	Freezing Weapon	1
+41	2	0	160669	Thunderous Weapon	1
+41	3	0	160670	Flame Weapon	1
+41	4	0	160671	Sonic Weapon	1
+41	5	0	160729	Einheri	1
+41	6	0	160672	Aldar Rok	1
+41	6	5	160679	Lifraeningi	1
+41	7	0	5099	Attack power increase	1
+41	7	5	160680,5093	Undying Soul | Spellblade Stance	2
+41	8	0	160674	Devastate	1
+41	9	0	160681,160673	Ragnarok | Skuld's Respite	2
+41	9	4	160730	Phantom Strike	1
+43	2	0	130609	Magic Shot	1
+43	2	5	5164	Frost Blast	1
+43	3	0	5149	Sonic Blast	1
+43	4	0	160610	Dyne Accel	1
+43	4	5	50415	Magic Blast	1
+43	5	0	160614	Destructive Mind	1
+43	5	5	5166,5165	Thunderous Blast | Infernal Blast	2
+43	6	0	50424	Magic Burst	1
+43	7	0	160612,160781	Megi Accel | Limit Break Chance Up Improvement 1	2
+43	8	0	160613,170005	Concentrate | Tranquil Mind	2
+43	9	0	170004	Ethereal Greatsword	1
+43	9	3	160611	Cataclysmic Mind	1
+44	1	0	5330,5339	Manus Up | Slot Chance Up	1
+44	2	0	5331,5340	Manus Up | Slot Chance Up	1
+44	3	0	5332,5341	Manus Up | Slot Chance Up	1
+44	4	0	5333,5342	Manus Up | Slot Chance Up	1
+44	5	0	5334,5343	Manus Up | Slot Chance Up	1
+45	1	0	5538	Lord of Armor	1
+45	1	2	5593,5594,5595,5596	Master of Swords | Master of Guns | Master of Magic | Master of Summons	1
+45	1	4	5597,5598,5599,5600	Master of the Blades | Master of the Blade | Master of Chants | Master of Servants	1
+45	1	6	5170,5171,5172,5173	Blade of God | Shots from the Depths | Lost Grimoire | Call of the Abyss	1
+45	1	8	170042	Guardian Angel	1
+46	0	0	5790,5978	Gunsmith | Phantom	2
+46	0	2	5979	Tiger	1
+46	0	4	5980	Crusader	1
+46	0	6	5981,5982	Tomcat | Eagle	1
+46	0	8	5983	Falcon	1
+46	1	0	5984,5985	Hornet | Rapier	1
+46	1	2	5986	Raptor	1
+46	1	4	5987	Saber	1
+46	1	6	5988	Scorpion	1
+46	1	8	5989,5990,5991	Seahawk | Sparrow Hawk | Nighthawk	2
+46	2	0	5992	Strike Raptor	1
+46	2	2	5993,5994	Aardvark | Starfire	1
+46	2	5	5995,5996	Sky Night | Sky Ray	1
+46	2	8	5997,5998	Sky Lancer | Cougar	1
+46	3	0	5999,6000	Fireball | Pancake	1
+46	3	2	6001,6002	Harrier | Lightning	1
+46	3	4	6003,6004	Delta Dagger | Hell Cat	1
+46	3	6	6005,6006	Wild Cat | Lightning II	1
+46	3	8	6007,6008,6009,6010	Black Hawk | Sea Dart | Strike Eagle | Super Saber	2
+46	4	0	6011,6012	Curtis | Thunderbolt	1
+46	4	2	6013,6014	Lancer | Mustang	1
+46	4	4	6015,6016,6017	Black Bullet | Tiger II | Black Widow	1
+46	4	6	6018,6019	Harrier II | Grey Ghost	1
+46	4	8	6020,6021	Thunder Chief | Black Widow II	1
+46	5	0	6022,5679	Phantom II | Freedom	1
+46	5	2	5664,5665,5666	Whirlwind | Welkin | Blenheim	2
+46	5	5	5667,5668,5669	Beaufighter | Defiant | Spitfire	2
+46	5	7	5670,5671	Mosquito | Meteor	1
+46	6	0	5672,5673,5674	Hurricane | Typhoon | Tempest	1
+46	6	2	5680	Zhuravlik	1
+46	6	7	5681	Rafale	1
+46	7	0	5682	Strike	1
+46	7	2	5683	Gripen	1
+46	7	5	5684	F-2	1
+46	7	7	160707	Specialist	1
+46	8	0	160708	Professional	1
+46	8	2	160709	Profane	1
+46	8	4	160710	Accursed	1
+46	8	6	160711	Professional II	1
+46	9	0	160712	Inferno	1
+46	9	2	160713	Handguns	1
+46	9	5	160714	Modern Warfare	1
+47	2	0	160628	Healing Tuner	1
+47	3	5	5169	Affinity Shooter	1
+47	4	0	160629	Affinity Tuner	1
+47	5	0	170034	Combat Medic	1
+47	6	0	50405,5167	Ability Shooter | Ability Tuner	2
+47	8	0	170035	Break Shooter	1
+47	8	5	5168,160630	Critical Shooter | Critical Tuner	2
+48	1	0	160654	Haste	1
+48	2	0	160656	Spirit Transfer	1
+48	3	0	160655	Transfusion	1
+48	4	0	160657,160658	Emergency Shield | Emergency Barrier	1
+48	4	5	160659	Call of the Crown	1
+48	5	0	160660	Blood Ties	1
+48	5	5	160665	Wickedness	1
+48	6	0	160664	Cracked Chains	1
+48	6	5	160666	Bloody Handshake	1
+48	7	2	160667,160750,160751,160752	Order of the Absolute - Strength | Order of the Absolute - Magic | Order of the Absolute - Speed | Order of the Absolute - Support	4
+48	7	5	170036	Recall	1
+48	8	0	160661,160662,160663	Seal of Command - Knight | Seal of Command - Archer | Seal of Command - Magician	3
+49	0	4	5722	Tarot Fusion 	1
+49	1	0	5721	Crystallize Demon 	1
+49	2	0	5723	Soul Stone Fusion 	1
+50	2	0	160732	Thunderous Bullet	1
+50	2	5	160733	Freezing Bullet	1
+50	3	0	160734	Flame Bullet	1
+50	4	0	160735	Sonic Bullet	1
+50	5	0	160743	Gunslinger	1
+50	6	0	160737	Firestarter	1
+50	6	5	160739	Vanishing Act	1
+50	7	0	160738	Rolling Guard	1
+50	7	5	160736	Frontier Justice	1
+50	8	0	160744	Desperado	1
+50	8	5	160741	Gambler's Ruin	1
+50	9	0	160745	Curtain Call	1
+50	9	4	160742	Deadeye	1
+51	1	0	5434,900	Kamaitachi | Killing Wind	2
+51	2	0	5432,5190	Freezing Lance | Hail Assault	2
+51	3	0	5433,109	Sonic Through | Lightning Thrust	2
+51	3	5	5095	Rush Stack +1	1
+51	4	0	5431,112	Delorean | Heat Wave	2
+51	5	0	160688	Way of the Celestial Fist	1
+51	5	5	5101	Rush power increase	1
+51	6	0	50401,1158	Spell Runner | Mysterious Defense-Breaking Yaburi	2
+51	7	0	160689	Unrelenting Soul	1
+51	7	5	50402,804	Devil Heartbreaker | Final Strike	2
+51	8	0	160682	Close-Quarters Combat	1
+51	8	2	160620	Enchanted Slicer	1
+51	8	4	160683,160687	Iron Fist | Magic Fist	2
+52	1	0	5473	Erosion Hex	1
+52	2	0	5547	Curse of the Slow Cure	1
+52	3	0	5474,5475,5476	Slash Hex | Bullet Hex | Spell Hex	3
+52	4	0	5478	Delay Hex	1
+52	5	0	160631	Lord of Malevolence	1
+52	6	0	160632	Seductive Hex	1
+52	7	0	50408	Corrosion Hex	1
+52	8	0	50409,160633	Curse of the Four Wounds | Essence Theft	2
+52	8	4	5477	Damage Hex	1
+52	8	5	5546,170033,170044	Curse of the Broken Mirror | Ghost Form | Shadow Scythe	3
+53	2	0	5482,5483	Pulse of Assault | Pulse of Solid	2
+53	2	5	5484	Pulse of Armored	1
+53	3	0	5489	Clock Cut	1
+53	3	5	5486	Divine Blessing	1
+53	4	0	160640,160641	Circle of Fire | Circle of Ice	2
+53	5	0	5487,5488	Divine Shield | Divine Barrier	2
+53	5	5	160642,160643	Circle of Electric | Circle of Force	2
+53	6	0	5490	Clock Off	1
+53	6	5	50406	Sanctuary	1
+53	7	0	160624	Fleetfoot	1
+53	7	5	5485	Radiant Hands	1
+53	8	0	50407,160625	Impulse of Armored | Impulse of Solid Assault	2
+53	8	5	160626	Encouragement of a Hero	1
+53	8	9	160627	Doping	1
+54	1	0	5466	Squall Bullet Hole	1
+54	2	0	5467,5469	Toxic Bullet Hole | Forgetful Bullet Hole	2
+54	2	5	5471	Arm Snipe	1
+54	3	0	130214	Grand Tack (Force)	1
+54	3	5	5468,5470	Enchanting Bullet Hole | Spell Mute Bullet Hole	2
+54	4	0	5463	Scorching Bullet Hole	1
+54	4	5	160615	Grand Tack (Fire)	1
+54	4	8	5464,5465	Hailing Bullet Hole | Thunder Bullet Hole	2
+54	5	0	170003	Der Freischutz	1
+54	5	5	130607,130608	Grand Tack (Ice) | Grand Tack (Electric)	2
+54	6	0	50399	Blinding Bullet Hole	1
+54	6	5	170039,170040	Grand Tack (Nerve) | Grand Tack (Mind)	2
+54	7	0	50400,170038	Zamiel's Magic Bullet | Grand Tack (Mystic)	2
+54	7	5	160782,160623	Outlaw Marksman | Polarity Switch	2
+54	8	0	160621	Accursed Ranger	1
+55	1	0	5460	Disturbed Purgation	1
+55	1	5	5458	Cruel Chase	1
+55	2	0	5457	Ether Tear	1
+55	2	2	5193	Critical Up Improvement 1	1
+55	2	5	5456,5459	Phony Amnesty | Brith Exorcism	2
+55	3	0	5461,5454	Fire Revolution | Dread Distinction	2
+55	3	5	5462	Joint Break	1
+55	4	0	5148	Speed Up Improvement 1	1
+55	4	5	5452,5453	Guilty Pierce | San Cles Exile	2
+55	5	0	5455	Epic Daze	1
+55	5	5	5194	Critical Up Improvement 2	1
+55	6	0	5450,5451	Criminal Bullet | Blaspheme	2
+55	7	0	5195	Limit Break Chance Up Improvement 1	1
+55	7	5	50404,160740	Bullet Friend | Extended Scope	2
+55	8	0	160622	Steady Hands	1
+55	8	4	160757,160756	Exploit Weakness | Locked On	2
+56	1	0	637	Vacuum Blade	1
+56	2	0	67	Absolute Zero	1
+56	3	0	5094,5445	Spin Stack +1 | Exceed Guard	2
+56	3	5	71,5218	Vamp Cyclone | Liberama	2
+56	4	0	66	Hell Fire	1
+56	4	5	68	Electrical Discharge	1
+56	5	0	160758	Gale Form	1
+56	5	5	5100	Spin power increase	1
+56	6	0	50403	Bulwark	1
+56	6	4	5509	Rally	1
+56	7	0	50425	Heaven Shaking Sword	1
+56	7	5	160684	Wake of Morningstar	1
+56	7	6	170007,170008	Riposte | Serpent Coil	2
+56	7	8	5543	Improved Mass Taunt	1
+57	1	0	5539	Lord of Serfs	1
+57	2	0	5540,5545,160728	Lord of Soldiers | Lord of the Martyrs | Lord of the Stampede	3
+57	2	2	5196	Critical Up Improvement 1	1
+57	3	0	5542	Lord of the Blood Axe	1
+57	4	0	5544	Lord of the Beasts	1
+57	4	5	5147	Strength Up Improvement 1	1
+57	5	0	5548,5541	Lord of Fighters | Lord of Courage	2
+57	5	5	5197	Critical Up Improvement 2	1
+57	6	0	5549	Lord of Victory	1
+57	7	0	5198,50397,50398	Limit Break Chance Up Improvement 1 | HP Cost Reduction | Weapon based Booster	3
+57	8	0	160746	Excalibur	1
+57	8	4	170012	Lord of Immortality	1
+57	8	6	160675,170006	Lord of Frenzy | Lord of Execution	2
