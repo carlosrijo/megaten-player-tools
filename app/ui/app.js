@@ -2595,7 +2595,7 @@
   // by its action type (the game's Help names them), with element, cost, timings, power and the expertise ranks that
   // unlock it. Which demons learn it or have it as a feature comes from demon-db.json (the Demon Database), read here.
   // Icons are in skill-db-icons\ beside this file.
-  const SKL_WHO = [['get', 'Skills you can get'], ['demon', 'Learned by demons'], ['feature', 'Demon features'], ['exp', 'From expertise'], ['fusion', 'Fusion skills'], ['all', 'Every skill in the game data']];
+  const SKL_WHO = [['get', 'Skills you can get'], ['demon', 'Learned by demons'], ['feature', 'Demon features'], ['exp', 'From expertise'], ['barter', 'From barter'], ['fusion', 'Fusion skills'], ['all', 'Every skill in the game data']];
   /** Text as searchable words: lower case, each word after one space (punctuation is a space). */
   const sklWords = (s) => ' ' + String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim() + ' ';
   const SKL_NO_ICON = { none: 'The game has no picture for this skill (fusion skills and most demon features have none).',
@@ -2608,7 +2608,7 @@
     S.skl.state = 'loading';
     fetch('skill-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
       S.skl.data = d; S.skl.state = d ? 'ready' : 'failed';
-      if (d) d.skills.forEach((x) => { x.hay0 = sklWords([x.name, x.el, x.desc, ...(x.exp || []), x.fusion ? 'fusion' : ''].join(' ')); });
+      if (d) d.skills.forEach((x) => { x.hay0 = sklWords([x.name, x.el, x.desc, ...(x.exp || []), x.fusion ? 'fusion' : '', x.barter ? 'barter' : '', ...(x.barter || []).map((b) => b.cost)].join(' ')); });
       if (S.page === 'skills') render();
     });
   }
@@ -2643,6 +2643,8 @@
       h('div', { class: 'ddb-stat', 'data-tip': tip || null }, h('span', { class: 'q-key', text: k }), h('b', { text: v }))))));
     const get = h('ul', { class: 'gdb-list gdb-get' });
     (x.exp || []).forEach((e) => get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Expertise' }), h('b', { text: e }))));
+    (x.barter || []).forEach((b) => get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Barter' }), h('b', { text: b.cost }),
+      h('span', { class: 'src-count', text: b.for === 'demon' ? ' · your summoned demon learns it (Skill: Demon)' : ' · you learn it' }))));
     if (x.fusion) get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Fusion' }), h('span', null, 'A fusion skill: the game data marks it as one, it does not say which pair makes it.')));
     if (get.childNodes.length) box.append(block('How to get it', get));
     if (who && who.length) {
@@ -2651,7 +2653,7 @@
       box.append(block(`Demons (${new Set(who.map((r) => r.d.id)).size})`, h('ul', { class: 'gdb-list skl-demons' }, who.map((r) =>
         h('li', null, h('button', { type: 'button', class: 'skl-demon', 'data-tip': 'Open in the Demon Database', onclick: () => open(r.d) },
           ddbFace(r.d), h('span', null, h('b', { text: r.d.name }), h('span', { class: 'src-count', text: `${r.d.race} · Lv ${r.d.level} · ${tag(r)}` }))))))));
-    } else if (!x.exp && !x.fusion) box.append(block('How to get it', h('span', { class: 'zero', text: S.ddb.data ? 'No compendium demon and no expertise rank has it: enemies, events or unused.' : 'Loading the demons…' })));
+    } else if (!x.exp && !x.fusion && !x.barter) box.append(block('How to get it', h('span', { class: 'zero', text: S.ddb.data ? 'No compendium demon, expertise rank or NPC exchange has it: enemies, events or unused.' : 'Loading the demons…' })));
     return box;
   }
   function pageSkills() {
@@ -2672,7 +2674,8 @@
       if (k === 'feature') return w.some((r) => r.how === 'feature');
       if (k === 'exp') return !!x.exp;
       if (k === 'fusion') return !!x.fusion;
-      return w.length > 0 || !!x.exp || !!x.fusion;
+      if (k === 'barter') return !!x.barter;
+      return w.length > 0 || !!x.exp || !!x.fusion || !!x.barter;
     };
     const words = () => sklWords(D.q).trim().split(' ').filter(Boolean);   // each must start a word: "agi" finds Agi, not Magic
     const match = (x) => inWho(x, D.who) && (!D.el || x.el === D.el) && words().every((w) => (x.hay || x.hay0).includes(' ' + w));
@@ -2702,6 +2705,7 @@
       if (x.exp) parts.push(x.exp.length === 1 ? x.exp[0] : `${x.exp.length} expertise ranks`);
       if (n) parts.push(n === 1 ? w.find((r) => r.how === 'skill').d.name : `${n} demons`);
       if (f) parts.push(f === 1 ? `Feature of ${w.find((r) => r.how === 'feature').d.name}` : `Feature of ${f} demons`);
+      if (x.barter) parts.push('Barter');
       if (x.fusion) parts.push('Fusion skill');
       return parts.length ? h('span', { class: 'skl-who', text: parts.join(' · ') }) : h('span', { class: 'zero', text: '—' });
     };
@@ -2737,7 +2741,7 @@
       if (rows.length > D.shown) more.append(h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.shown += 300; draw(); } }, `Show more (${rows.length - D.shown} left)`));
       drawHelp();
       const nGet = all.filter((x) => inWho(x, 'get')).length;
-      count.textContent = `Showing ${Math.min(rows.length, D.shown)} of ${rows.length} skills (${all.length} in the game data, ${nGet} of them can be learned by a demon, come from expertise or are fusion skills). `
+      count.textContent = `Showing ${Math.min(rows.length, D.shown)} of ${rows.length} skills (${all.length} in the game data, ${nGet} of them can be learned by a demon, come from expertise or an NPC exchange (barter), or are fusion skills). `
         + (S.ddb.state === 'ready' ? '' : 'Still loading the demons: who learns each skill shows once they are in. ')
         + `${d.skipped.untranslated} skills the client only names in Japanese, item uses and debug skills are left out. Data made on ${d.generatedAt}.`;
     };

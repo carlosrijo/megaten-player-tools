@@ -12,10 +12,12 @@
 use std::path::Path;
 
 use chrono::NaiveDateTime;
+use indexmap::IndexMap;
 use serde_json::{Value, json};
 
 use crate::Result;
-use crate::calc::digitalize::DigitalizeResult;
+use crate::calc::digitalize::{DigitalizeResult, correct_id};
+use crate::calc::item_effects::NEEDS_STATS_NOTE;
 use crate::context::Context;
 use crate::data::game_data::GameData;
 use crate::data::json::{self, At, Escape};
@@ -316,7 +318,19 @@ impl DigitalizeSave {
     /// `Compute(ctx, level)`: what digitalizing with this demon gives.
     pub fn compute(&self, ctx: &Context, level: i32) -> Result<DigitalizeResult> {
         let demon = self.demon.as_ref().ok_or_else(|| anyhow::anyhow!("Value cannot be null. (Parameter 'd')"))?;
-        ctx.digitalize(level)?.compute(demon, self.assists.as_deref(), self.mitama_boost)
+        let res = ctx.digitalize(level)?.compute(demon, self.assists.as_deref(), self.mitama_boost)?;
+        // An effect that scales with a stat ("Strength +100 ÷ Luck"): worked out again with the character's stats while
+        // digitalized: the last reading's own stats (saved when not digitalized) plus what the demon adds.
+        if !res.effects.iter().any(|e| e.cond_note.contains(NEEDS_STATS_NOTE)) {
+            return Ok(res);
+        }
+        let Some(own) = own_stats(&ctx.store) else { return Ok(res) };
+        let mut stats = IndexMap::new();
+        for (i, v) in own.iter().enumerate() {
+            let add = res.stats.get(&(i as i32)).copied().unwrap_or(0);
+            stats.insert(correct_id(i), (*v + add) as f64);
+        }
+        ctx.digitalize_with_stats(level, stats)?.compute(demon, self.assists.as_deref(), self.mitama_boost)
     }
 
     /// The demon's icon for the page (dash\demon.png): the client's own 32x32 icon (Interface\tga\<icon>.tga, the icon
@@ -424,4 +438,19 @@ mod tests {
         }
         assert!(base64_decode("abc").is_none());
     }
+}
+
+/// The character's own six base stats (STR, MAG, VIT, INT, SPD, LUCK: base + bonus) from the last reading
+/// (cache\last-stats.json, saved only when not digitalized); `None` when there is none yet.
+fn own_stats(store: &Store) -> Option<[i32; 6]> {
+    let path = store.last_stats_path();
+    if !path.exists() {
+        return None;
+    }
+    let last = json::load(path).ok()?;
+    let pairs: Vec<i32> = json::arr(last.at("pairs")).map(|p| json::int(Some(p))).collect();
+    if pairs.len() < 12 {
+        return None;
+    }
+    Some(std::array::from_fn(|i| pairs[i * 2].wrapping_add(pairs[i * 2 + 1])))
 }

@@ -31,6 +31,9 @@ use crate::fmt;
 use crate::game::WornItem;
 use crate::game::client_reader;
 
+/// In the note of an effect that needs a stat the calculator wasn't given ("100 ÷ Luck: depends on your Luck").
+pub const NEEDS_STATS_NOTE: &str = ": depends on your ";
+
 static ACTION_NAMES: [&str; 12] = ["Attack", "Spin", "Rush", "Shot", "Rapid", "Guard", "Counter", "Dodge", "Talk", "Intimidate", "Taunt", "Support"];
 
 /// An affinity number (skill affinity, and the element an AFFINITY_CAP_MAX raises) as the game names it; `None` if unknown.
@@ -119,11 +122,20 @@ pub struct ItemEffects {
     expertise_ranks: IndexMap<i32, i32>,
     /// The alignment in upper case.
     lnc: String,
+    /// The final stats of whoever gets the effects (CorrectTbl id -> value, e.g. "LUCK"), for the CORRECT_TABLE(_DIVIDE)
+    /// multipliers ("Strength +100 ÷ Luck"); empty = not known here.
+    stats: IndexMap<String, f64>,
 }
 
 impl ItemEffects {
     pub fn new(data: Arc<GameData>, alignment: &str, level: i32, expertise_ranks: IndexMap<i32, i32>) -> ItemEffects {
-        ItemEffects { data, level, expertise_ranks, lnc: alignment.to_uppercase() }
+        ItemEffects { data, level, expertise_ranks, lnc: alignment.to_uppercase(), stats: IndexMap::new() }
+    }
+
+    /// The same calculator, told the final stats of whoever gets the effects (CorrectTbl id -> value).
+    pub fn with_stats(mut self, stats: IndexMap<String, f64>) -> ItemEffects {
+        self.stats = stats;
+        self
     }
 
     /// The game data this calculator reads.
@@ -577,6 +589,22 @@ impl ItemEffects {
         match v.mult.as_str() {
             "NONE" | "" => (x, String::new(), true),
             "LEVEL" => (x * self.level as f64, format!("LvL × {}", num(x)), true),
+            // TokuseiManager::CalculateAttributeValue: the value times, or divided by, one CorrectTbl value of the
+            // entity's calculated state (MultiplierValue = its index: 5 = LUCK), then cut to a whole number
+            // (ActiveEntityState casts it to int32). "Strength +100 ÷ Luck" with Luck 57 is +1; over 100 it is 0.
+            m @ ("CORRECT_TABLE" | "CORRECT_TABLE_DIVIDE") => {
+                let sid = super::digitalize::correct_id(v.mult_value.max(0) as usize);
+                let name = stat_labels::name(&sid, 0);
+                let divide = m == "CORRECT_TABLE_DIVIDE";
+                let how = if divide { format!("{} ÷ {name}", num(x)) } else { format!("{} × {name}", num(x)) };
+                match self.stats.get(&sid) {
+                    Some(&s) => {
+                        let r = if divide { if s != 0.0 { x / s } else { 0.0 } } else { x * s };
+                        (r.trunc(), format!("{how} ({name} {})", num(s)), true)
+                    }
+                    None => (x, format!("{how}{NEEDS_STATS_NOTE}{name}"), false),
+                }
+            }
             m => (x, format!("× {}", title(m)), false),
         }
     }
@@ -669,5 +697,24 @@ mod tests {
         assert_eq!(join("", "b"), "b");
         assert_eq!(join("a", ""), "a");
         assert_eq!(join("a", "b"), "a; b");
+    }
+
+    /// White Eternal Sleep's tokusei 1010001: STR 100, CORRECT_TABLE_DIVIDE by CorrectTbl 5 (LUCK), cut to a whole number.
+    #[test]
+    fn correct_table_divide_uses_the_stat() {
+        let mut v = TokValue::new(Some("STR"), 0, 100.0, "CORRECT_TABLE_DIVIDE", 0);
+        v.mult_value = 5;
+        let fx = ItemEffects::new(Arc::new(GameData::new()), "NEUTRAL", 99, IndexMap::new());
+        let (_, note, ok) = fx.scaled(&v);
+        assert!(!ok && note.contains(NEEDS_STATS_NOTE), "{note}");
+        let with = |v: &TokValue, luck: f64| fx.clone().with_stats(IndexMap::from([("LUCK".to_string(), luck)])).scaled(v);
+        assert_eq!(with(&v, 30.0).0, 3.0);
+        assert_eq!(with(&v, 57.0).0, 1.0);
+        assert_eq!(with(&v, 101.0).0, 0.0);
+        assert_eq!(with(&v, 0.0).0, 0.0);
+        assert!(with(&v, 57.0).2);
+        v.mult = "CORRECT_TABLE".into();
+        v.value = 2.0;
+        assert_eq!(with(&v, 57.0).0, 114.0);
     }
 }

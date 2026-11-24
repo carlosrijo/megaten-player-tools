@@ -216,6 +216,86 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
         Ok(res)
     };
 
+    // ---- NPC exchanges (barter) that teach a skill ----
+    // NPCBarterData (client, so NewMoon's own): resultItems SKILL_DEMON (the barter window's "Skill: Demon": your summoned
+    // demon learns it) or SKILL_CHARACTER (you learn it), for tradeItems. Only exchanges an NPC list offers count
+    // (NPCBarterGroupData entries); which NPC opens a list is in the live server's events, which the public data lacks.
+    let mut barter_of: HashMap<i32, Vec<(String, String)>> = HashMap::new();
+    let (barter_file, group_file) = (decoded.join("NPCBarterData.xml"), decoded.join("NPCBarterGroupData.xml"));
+    if barter_file.is_file() && group_file.is_file() {
+        let group_text = xml::read_text(&group_file)?;
+        let group_doc = xml::parse(&group_text)?;
+        let mut offered: std::collections::HashSet<i32> = std::collections::HashSet::new();
+        for g in xml::records(&group_doc).into_iter().filter(|o| o.attribute("name") == Some("MiNPCBarterGroupData")) {
+            if let Some(es) = mem(Some(g), "entries") {
+                for e in elements(es, "element").filter_map(|e| element(e, "object")) {
+                    let b = int_of(Some(e), "barterID");
+                    if b != 0 {
+                        offered.insert(b);
+                    }
+                }
+            }
+        }
+        // cost items by the client's own names (items-game.tsv; the website's can differ: 38194 is "Memory of a Pie Fight"
+        // in game, "Pie Throw Memory" there)
+        let mut item_names: HashMap<i32, String> = HashMap::new();
+        for line in reference("items-game.tsv")?.lines()? {
+            let p: Vec<&str> = line.split('\t').collect();
+            if let (Some(id), Some(n)) = (p.first().and_then(|s| fmt::parse_i32(s)), p.get(1)) {
+                if !n.trim().is_empty() {
+                    item_names.insert(id, n.trim().to_string());
+                }
+            }
+        }
+        let barter_text = xml::read_text(&barter_file)?;
+        let barter_doc = xml::parse(&barter_text)?;
+        let parts = |o: roxmltree::Node, member: &str| -> Vec<(String, i32, i32)> {
+            mem(Some(o), member)
+                .map(|ms| {
+                    elements(ms, "element")
+                        .filter_map(|e| element(e, "object"))
+                        .map(|p| (m(Some(p), "type").unwrap_or_default(), int_of(Some(p), "subtype"), int_of(Some(p), "amount")))
+                        .filter(|(t, _, _)| !t.is_empty() && t != "NONE")
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        for b in xml::records(&barter_doc).into_iter().filter(|o| o.attribute("name") == Some("MiNPCBarterData")) {
+            if !offered.contains(&int_of(Some(b), "ID")) {
+                continue;
+            }
+            let taught: Vec<(String, i32)> =
+                parts(b, "resultItems").into_iter().filter(|(t, _, _)| t == "SKILL_DEMON" || t == "SKILL_CHARACTER").map(|(t, s, _)| (t, s)).collect();
+            if taught.is_empty() {
+                continue;
+            }
+            let mut cost: Vec<String> = Vec::new();
+            for (t, sub, n) in parts(b, "tradeItems") {
+                cost.push(match t.as_str() {
+                    "ITEM" => {
+                        let name = match item_names.get(&sub) {
+                            Some(n) => n.clone(),
+                            None => data.item_name(sub)?.unwrap_or_else(|| "an item the data does not name".to_string()),
+                        };
+                        if n > 1 { format!("{} × {name}", fmt::n0(n as f64)) } else { name }
+                    }
+                    "SOUL_POINT" => format!("{} Soul Points", fmt::n0(n as f64)),
+                    "COIN" => format!("{} Casino Coins", fmt::n0(n as f64)),
+                    "BETHEL" => format!("{} Bethel", fmt::n0(n as f64)),
+                    _ => continue,   // event counters, cooldowns: conditions, not a price
+                });
+            }
+            let cost = if cost.is_empty() { "nothing the data names".to_string() } else { cost.join(" + ") };
+            for (t, sid) in taught {
+                let who = if t == "SKILL_DEMON" { "demon" } else { "you" }.to_string();
+                let l = barter_of.entry(sid).or_default();
+                if !l.iter().any(|(w, c)| *w == who && *c == cost) {
+                    l.push((who, cost.clone()));
+                }
+            }
+        }
+    }
+
     // ---- the skills ----
     let mut skills: Vec<Map<String, Value>> = Vec::new();
     let (mut untranslated, mut unnamed, mut items) = (0, 0, 0);
@@ -270,6 +350,9 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
         }
         if let Some(ex) = exp_of.get(&id) {
             s.insert("exp".into(), json!(ex));
+        }
+        if let Some(bs) = barter_of.get(&id) {
+            s.insert("barter".into(), Value::Array(bs.iter().map(|(who, cost)| json!({ "for": who, "cost": cost })).collect()));
         }
 
         if cat == 1 {

@@ -5,6 +5,8 @@
 
 use std::sync::Arc;
 
+use indexmap::IndexMap;
+
 use crate::Result;
 use crate::calc::digitalize::Digitalize;
 use crate::calc::gear_effects::GearEffects;
@@ -37,6 +39,13 @@ impl Context {
     /// Digitalize calculator; level = the character's (for level-scaled effects).
     pub fn digitalize(&self, level: i32) -> Result<Digitalize> {
         let fx = ItemEffects::new(Arc::clone(&self.data), &self.store.alignment()?, level, self.store.expertise_ranks()?);
+        Ok(Digitalize::new(Arc::clone(&self.data), fx))
+    }
+
+    /// Digitalize calculator that also knows the character's final stats while digitalized (CorrectTbl id -> value),
+    /// for the effects that scale with one ("Strength +100 ÷ Luck").
+    pub fn digitalize_with_stats(&self, level: i32, stats: IndexMap<String, f64>) -> Result<Digitalize> {
+        let fx = ItemEffects::new(Arc::clone(&self.data), &self.store.alignment()?, level, self.store.expertise_ranks()?).with_stats(stats);
         Ok(Digitalize::new(Arc::clone(&self.data), fx))
     }
 }
