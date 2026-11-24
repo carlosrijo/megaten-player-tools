@@ -1,7 +1,5 @@
 # newmoon-reader
 
-**[Watch the demo video](https://github.com/carlosrijo/megaten-player-tools/blob/master/demo/newmoon-build-tracker-demo.mp4)**
-
 Read-only snapshots of a NewMoon character's stats and gear from the running ImagineClient,
 plus the data files for the "Rubito Build Tracker" page.
 
