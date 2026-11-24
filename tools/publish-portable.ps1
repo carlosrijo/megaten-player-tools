@@ -1,6 +1,6 @@
 # Build the portable release: one BABEL.exe that runs on any 64-bit Windows 10/11 PC with nothing installed.
 #
-# The exe is the Rust build (crates\newmoon-tracker). It carries the page (app\ui), the decoded game tables
+# The exe is the Rust build (crates\imagine-tracker). It carries the page (app\ui), the decoded game tables
 # (reference\*.tsv), the icon and the C runtime inside itself: nothing is unpacked anywhere, and the user's own data goes
 # in a "data" folder made beside the exe. The window itself is Microsoft Edge WebView2, which comes with Windows 11 (and
 # updated Windows 10); its loader is linked in, so there is no WebView2Loader.dll either.
@@ -8,7 +8,7 @@
 #
 # The debug symbols are NOT in the exe: the build writes them to a .pdb beside it, and this script copies that to
 # dist-symbols\BABEL.pdb. Do not ship it; keep it for reading crash reports of this exact build (a crash report
-# lists the stack as BABEL.exe+0xOFFSET; `newmoon-reader symbolize` turns those into functions and lines with
+# lists the stack as BABEL.exe+0xOFFSET; `imagine-reader symbolize` turns those into functions and lines with
 # this .pdb, see HANDOVER.md "Troubleshooting"). The release workflow keeps it as a workflow artifact.
 #
 # The GitHub release workflow (.github\workflows\release.yml) runs this same script. Needs Rust (rustup, stable,
@@ -27,15 +27,15 @@ foreach ($d in $outDir, $symDir) {
   New-Item -ItemType Directory $d | Out-Null
 }
 
-# crates\newmoon-tracker\build.rs reads NEWMOON_VERSION for the exe's version resource and for the version the program
+# crates\imagine-tracker\build.rs reads IMAGINE_VERSION for the exe's version resource and for the version the program
 # reports (Settings, the log, crash reports); .cargo\config.toml links the C runtime statically (no VCRUNTIME140.dll
 # needed on the user's PC)
-$env:NEWMOON_VERSION = $Version
+$env:IMAGINE_VERSION = $Version
 Push-Location $root
 try {
-  & cargo build --release --locked -p newmoon-tracker
+  & cargo build --release --locked -p imagine-tracker
   if ($LASTEXITCODE -ne 0) { throw "cargo build failed ($LASTEXITCODE)" }
-} finally { Pop-Location; Remove-Item Env:NEWMOON_VERSION -ErrorAction SilentlyContinue }
+} finally { Pop-Location; Remove-Item Env:IMAGINE_VERSION -ErrorAction SilentlyContinue }
 
 $exe = Join-Path $outDir 'BABEL.exe'
 Copy-Item (Join-Path $root 'target\release\BABEL.exe') $exe
