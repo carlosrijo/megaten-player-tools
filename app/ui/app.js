@@ -889,7 +889,9 @@
     if (missing) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
       h('b', { text: `No saved bonuses for ${missing}. ` }), 'They are not in the totals yet. Open the Information window in game once, then take a snapshot.')));
     else if (!isTrue(L.stats_live)) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
-      h('b', { text: `The 12 stats and HP/MP are from ${when(L.stats_from)}. ` }), 'Gear and expertise are current. The stats are kept from then because you were digitalized (the game then shows the demon’s share too). Take a snapshot when not digitalized to refresh them.')));
+      h('b', { text: `The 12 stats and HP/MP are from ${when(L.stats_from)}. ` }), isTrue(L.stats_digitalized)
+        ? 'Gear and expertise are current. The stats are kept from then because you were digitalized (the game then shows the demon’s share too). Take a snapshot when not digitalized to refresh them.'
+        : 'Gear and expertise are current. The 12 stats couldn’t be read from the game at the last snapshot, so the saved ones are shown. Take another snapshot to refresh them.')));
 
     // Key stats: one line each (name, how close to its cap when it has one, total). Where the total comes from is a
     // click away, under the line; every single source is on the Bonuses page.
@@ -4624,7 +4626,8 @@
       assistantReact('ok');
       if (r.missing) toast('warn', 'Snapshot saved, with gaps', `No saved bonuses for ${r.missing}. Open the Information window in game and take another snapshot.`, 0);
       else if (r.source === 'window' || r.source === 'status') toast('ok', 'Snapshot saved', 'Stats, gear and expertise were all read live.' + (r.picture ? ' The picture was updated from the Information window.' : ''));
-      else toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP are the saved ones, because you were digitalized (the game then counts the demon in them). Snapshot again when not digitalized to refresh them.', 12000);
+      else if (/\(digitalized/.test(r.statsNote || '')) toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP are the saved ones, because you were digitalized (the game then counts the demon in them). Snapshot again when not digitalized to refresh them.', 12000);
+      else toast('warn', 'Snapshot saved', 'Gear and expertise are live. The 12 stats and HP/MP couldn’t be read from the game this time, so the saved ones were kept. Take another snapshot to refresh them.', 12000);
     } catch (e) {
       assistantReact('fail');
       const [title, text] = explain(String(e && e.message || e));
