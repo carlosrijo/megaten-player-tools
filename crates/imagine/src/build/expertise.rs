@@ -240,7 +240,7 @@ fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Ve
             continue;
         }
         let shown = re(r"^[\s.・*•·]+|\s+$").replace_all(item, "").into_owned();
-        let mut l = re(r"[\s.]+$").replace_all(&shown.to_lowercase(), "").into_owned();
+        let mut l = re(r"[\s.。]+$").replace_all(&shown.to_lowercase(), "").into_owned();
         l = re(r"^(passive|switch) skill\s*[.:-]?\s*").replace_all(&l, "").into_owned();
         if re(r"^(when|if|while|under|during|at|for) .*:$").is_match(&l) {
             conditional = true;
@@ -258,6 +258,22 @@ fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Ve
             let mut cs = w.chars();
             let first: String = cs.next().map(|c| c.to_uppercase().collect()).unwrap_or_default();
             effects.push(DescEffect { id: None, label: format!("{first}{} boost", cs.as_str()), value: dv(&a[2]), pct: false, partner: true, mitama: false });
+        } else if let Some(ac) = re(r"^(?:summoned )?partner's ([a-z]+) affinity cap \+(\d+)%$").captures(&l) {
+            // "<Element> Limit Mastery" Lv3+: the partner's cap rises with the character's (the character's own line is the
+            // server's tokusei 980000.., or a repeat of it here). Same label as `add_cap`, so the Partner group sums them.
+            let mut cs = ac[1].chars();
+            let first: String = cs.next().map(|c| c.to_uppercase().collect()).unwrap_or_default();
+            let label = format!("{first}{} Affinity Cap", cs.as_str());
+            let value = dv(&ac[2]);
+            // not twice when the skill's other tokusei already gave this partner cap
+            let given = already.iter().any(|r| {
+                r.get("target").and_then(Value::as_str) == Some("partner")
+                    && r.get("label").and_then(Value::as_str).is_some_and(|x| crate::text::eq_ic(x, &label))
+                    && (r.get("value").and_then(Value::as_f64).unwrap_or(0.0) - value).abs() < 1e-9
+            });
+            if !given {
+                effects.push(DescEffect { id: None, label, value, pct: true, partner: true, mitama: false });
+            }
         } else if let Some(b) = re(r"^(?:summoned )?partner's movement speed \+(\d+)%$").captures(&l) {
             effects.push(DescEffect { id: None, label: "Movement speed".into(), value: dv(&b[1]), pct: true, partner: true, mitama: false });
         } else if let Some(c) = re(r"^xp to summoned demon \+(\d+)%$").captures(&l) {
@@ -1103,6 +1119,29 @@ mod tests {
         assert!(effects[0].pct);
         assert_eq!(effects[1].id.as_deref(), Some("CRITICAL"));
         assert_eq!(rest, vec!["Does a special thing".to_string()]);
+    }
+
+    #[test]
+    fn limit_mastery_partner_cap() {
+        // Slash Limit Mastery Lv3: the character's own cap is the server's tokusei (already a row), the partner's is only text
+        let own = vec![obj(json!({ "label": "Slash Affinity Cap", "value": 100.0, "pct": true, "target": "self", "cond": "always" }))];
+        let text = "Passive Skill\\n    \\n・Slash Affinity Cap +100%\\n・Summoned Partner's Slash Affinity Cap +100%";
+        let (effects, rest) = parse_description(text, &own).unwrap();
+        assert_eq!(effects.len(), 1); // the self line is a repeat, not counted again
+        assert!(effects[0].partner && effects[0].pct && effects[0].id.is_none());
+        assert_eq!((effects[0].label.as_str(), effects[0].value), ("Slash Affinity Cap", 100.0));
+        assert!(rest.is_empty());
+        // a full-width full stop ends the line the same way (Fire Lv3..10), and the half-strength Lv1-2 text reads the same
+        let (fire, _) = parse_description("Passive Skill\\n\\n・Fire Affinity Cap +100%\\n・Summoned Partner's Fire Affinity Cap +100%。", &[]).unwrap();
+        assert!(fire.iter().any(|e| e.partner && e.label == "Fire Affinity Cap" && e.value == 100.0));
+        let (death, _) = parse_description("Passive Skill\\n\\n・Death Affinity Cap +50%\\n・Summoned Partner's Death Affinity Cap +50%", &[]).unwrap();
+        assert!(death.iter().any(|e| e.partner && e.label == "Death Affinity Cap" && e.value == 50.0));
+        // already given by the skill's other tokusei: not added again
+        let both = vec![
+            own[0].clone(),
+            obj(json!({ "label": "Slash Affinity Cap", "value": 100.0, "pct": true, "target": "partner", "cond": "always" })),
+        ];
+        assert!(parse_description(text, &both).is_none());
     }
 
     #[test]
