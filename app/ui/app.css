@@ -801,6 +801,21 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .dcm-icon img { width: 28px; height: 28px; display: block; object-fit: cover; object-position: 50% 20%; }
 .page-dcm .row-btn { align-items: center; }
 
+/* Demon Rank: the sorted column in the demon colour */
+.rank-tbl th, .rank-tbl td { padding-left: 6px; padding-right: 6px; }
+.rank-tbl .th-btn { white-space: nowrap; }
+.rank-tbl td.rank-on, .rank-tbl th.rank-on { color: var(--demon); }
+.rank-tbl td.rank-on { background: color-mix(in srgb, var(--demon) 7%, transparent); }
+.rank-no { color: var(--text-3); width: 1%; }
+.rank-demon { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.rank-demon .src-count { display: block; margin-left: 0; }
+.rank-at { gap: 10px; align-items: center; }
+/* the Mitama mark as on Overview's summoned demon, sized for the 28px face */
+.rank-face { position: relative; }
+.rank-face .mitama-mark { position: absolute; left: 1px; top: 1px; box-sizing: content-box; width: 8px; height: 8px; border: 1px solid #1a2b4c; background: #1a2b4c; }
+.rank-face .mitama-mark::before { content: ''; position: absolute; inset: 0; background: #7dcfff;
+  -webkit-mask: var(--mark) center / 100% 100% no-repeat; mask: var(--mark) center / 100% 100% no-repeat; }
+
 /* Quest Guide */
 .q-detail { display: grid; gap: 10px; max-width: 860px; }
 .q-needs { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; font-size: 12px; }

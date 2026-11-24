@@ -28,6 +28,7 @@
     fuse: '<circle cx="8" cy="8" r="3.5"/><circle cx="16" cy="8" r="3.5"/><path d="M8 11.5v1.5a4 4 0 0 0 4 4 4 4 0 0 0 4-4v-1.5M12 17v3.5"/>',
     horns: '<path d="M6.5 3.5c-.6 3 .4 5.4 2.6 6.6M17.5 3.5c.6 3-.4 5.4-2.6 6.6"/><circle cx="12" cy="14.5" r="6"/><path d="M9.6 14h.01M14.4 14h.01M10 17.2h4"/>',
     flask: '<path d="M9 3.5h6M10 3.5v5.2L5.2 17.6A2 2 0 0 0 7 20.5h10a2 2 0 0 0 1.8-2.9L14 8.7V3.5"/><path d="M7.6 14.5h8.8"/>',
+    podium: '<path d="M3.5 20h17M4.5 20v-5.5h5V20M9.5 20V9h5v11M14.5 20v-7.5h5V20"/><path d="M12 4.2v2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     gate: '<path d="M5 20.5V10a7 7 0 0 1 14 0v10.5"/><path d="M3 20.5h18"/><path d="M9.5 20.5v-5a2.5 2.5 0 0 1 5 0v5"/>',
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
@@ -275,7 +276,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['quests', 'Quest Guide', 'book'], ['fusion', 'Fusion Planner', 'fuse'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['quests', 'Quest Guide', 'book'], ['fusion', 'Fusion Planner', 'fuse'], ['sim', 'Simulator', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -321,6 +322,8 @@
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
+    // Demon Rank: which demons, the level they are compared at ('base', '1' or '99'), the column sorted (an index of RANK_COLS) and its direction (1 = highest first)
+    rank: { q: '', kind: 'contract', race: '', at: 'base', mt: false, sort: 0, dir: 1 },
     ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null },   // only: a demon id a link opened
     // Skill Database: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
     skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), shown: 200, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
@@ -2423,7 +2426,7 @@
         x.hay = [x.name, x.race, x.align, ...x.traits.concat(x.mt ? x.mt.traits : []).map((t) => sk(t).name), ...x.skills.map(([id]) => sk(id).name),
           ...[x.tarot, x.soul].filter(Boolean).flatMap((e) => [e.name, ...e.lines]), ...x.contract.map((c) => c.zone)].join(' ').toLowerCase();
       });
-      if (S.page === 'ddb' || S.page === 'skills') render();
+      if (S.page === 'ddb' || S.page === 'skills' || S.page === 'rank') render();
     });
     loadDcm();   // a demon's DCM, when there is one, links to the DCM Locator
   }
@@ -2588,6 +2591,79 @@
         h('th', { scope: 'col', text: 'Where to contract' }), h('th', { scope: 'col', text: 'Tarot · Soul' }))), body)));
     page.append(count);
     drawChips(); draw();
+    return page;
+  }
+  // ---------- Tools: Demon Rank ----------
+  // The Demon Database's demons side by side, sorted by any of their 12 stats or Critical. Stats come from ddbStats
+  // (the server's growth and dependent-stat rules); Critical is the demon's own value from the client (CorrectTbl
+  // CRITICAL), which does not grow with level. P.Def and M.Def are left out on purpose.
+  const RANK_KINDS = [['contract', 'Can be contracted'], ['own', 'Any way to get it'], ['all', 'All demons']];
+  /** The demon's face, with the game's Mitama mark on its top left corner (as Overview's summoned demon) when the Mitama form is shown. */
+  const rankFace = (x, mt) => { const pic = ddbFace(x); if (mt && S.data) { pic.classList.add('rank-face'); mitamaMark(pic, true); } return pic; };
+  function pageRank() {
+    const D = S.rank, page = h('div', { class: 'page page-dcm page-rank' });
+    loadDemonDb();
+    page.append(pageHead('Every demon you can own, ranked by a stat. Click a column to sort by it, click a demon to open it in the Demon Database.'));
+    if (S.ddb.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: S.ddb.state === 'failed' ? 'The demon list could not be loaded (demon-db.json is missing beside the page).' : 'Loading the demons…' }));
+      return page;
+    }
+    const d = S.ddb.data, all = d.demons;
+    const hasDcm = (x) => !!(S.dcm.data && S.dcm.data.items.some((it) => it.devilId === x.id));
+    const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : x.contract.length > 0 || x.fusion || hasDcm(x));
+    const races = [...new Set(all.map((x) => x.race))].sort();
+    const names = d.statNames.slice(0, 12).concat('Crit');
+    const tips = { 'Max HP': 'Max HP', 'Max MP': 'Max MP', 'CLS-R': 'Close-range attack', 'LNG-R': 'Long-range attack', Spell: 'Spell power', Support: 'Support power',
+      Crit: 'Critical: the demon\'s own value. It does not grow with level; a critical roll adds Luck to it.' };
+    const body = h('tbody'), head = h('thead'), count = h('p', { class: 'note' }), chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Which demons' });
+    /** One demon as a row of numbers: the form shown (Mitama-fused when asked and it has one), the level used, its 13 values. */
+    const rowOf = (x) => {
+      const v = D.mt && x.mt ? Object.assign({}, x, x.mt) : x;
+      // Level 1 is below every demon's base level: the server's formula at level 1, to compare them on equal footing
+      const L = D.at === 'base' ? v.level : D.at === '1' ? 1 : 99;
+      const s = ddbStats(v, L);
+      return { x, mt: v !== x, L, vals: s.slice(0, 12).concat(v.crit || 0) };
+    };
+    const drawChips = () => chips.replaceChildren(...RANK_KINDS.map(([id, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
+        label, h('span', { class: 'count', text: all.filter((x) => inKind(x, id) && (!D.race || x.race === D.race)).length }))));
+    const draw = () => {
+      const words = D.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const rows = all.filter((x) => inKind(x, D.kind) && (!D.race || x.race === D.race) && words.every((w) => (x.name + ' ' + x.race).toLowerCase().includes(w))).map(rowOf);
+      rows.sort((a, b) => D.dir * (b.vals[D.sort] - a.vals[D.sort]) || a.x.name.localeCompare(b.x.name));
+      head.replaceChildren(h('tr', null, h('th', { scope: 'col', class: 'num', text: '#' }), h('th', { scope: 'col', text: 'Demon' }), h('th', { scope: 'col', class: 'num', text: 'Lv' }),
+        names.map((n, i) => { const on = D.sort === i;
+          return h('th', { scope: 'col', class: 'num' + (on ? ' rank-on' : ''), 'aria-sort': on ? (D.dir === 1 ? 'descending' : 'ascending') : null },
+            h('button', { type: 'button', class: 'th-btn', 'data-tip': `${tips[n] || n}. Click to sort${on ? ' the other way' : ''}.`,
+              onclick: () => { if (on) D.dir = -D.dir; else { D.sort = i; D.dir = 1; } draw(); } },
+              h('span', { text: n }), on ? h('span', { class: 'sort-mark', text: D.dir === 1 ? '▼' : '▲' }) : null)); })));
+      // equal values share a rank (1, 2, 2, 4)
+      let rank = 0;
+      body.replaceChildren(...rows.map((r, i) => {
+        if (i === 0 || r.vals[D.sort] !== rows[i - 1].vals[D.sort]) rank = i + 1;
+        const x = r.x;
+        return h('tr', { class: 'row-click', 'data-tip': 'Open in the Demon Database', onclick: () => { S.ddb.only = x.id; S.ddb.q = ''; S.ddb.open = new Set([x.id]); if (r.mt) S.ddb.mtView.add(x.id); go('ddb'); } },
+          h('td', { class: 'num rank-no', text: rank }),
+          h('td', null, h('div', { class: 'rank-demon' }, rankFace(x, r.mt), h('span', null, x.name, h('span', { class: 'src-count', text: x.race })))),
+          h('td', { class: 'num', text: r.L }),
+          r.vals.map((v, j) => h('td', { class: 'num' + (j === D.sort ? ' emph rank-on' : ''), text: fmt(v) })));
+      }));
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 16, class: 'empty-row', text: words.length ? `Nothing matches “${D.q.trim()}”.` : 'No demon in this group.' })));
+      count.textContent = `Showing ${rows.length} of ${all.length} demons. ` + (D.at === 'base' ? 'Each at its base level, the level it has when contracted or fused.'
+        : D.at === '1' ? 'All at level 1, below where any demon starts: the server\'s formula at level 1, to compare them on equal footing.' : 'All at level 99.')
+        + ' No Demon Force, rebirth or Mitama runes: the stats of a fresh demon of that level.';
+    };
+    const atChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Compare at' });
+    const drawAt = () => { atChips.replaceChildren(...[['base', 'Base level'], ['1', 'Level 1'], ['99', 'Level 99']].map(([k, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.at === k), onclick: () => { D.at = k; drawAt(); draw(); } }, label))); };
+    const mtBox = h('label', { class: 'gdb-check', 'data-tip': 'Use the Mitama-fused form\'s stats for the demons that have one' },
+      h('input', { type: 'checkbox', checked: D.mt ? true : null, onchange: (ev) => { D.mt = ev.target.checked; draw(); } }), 'Mitama-fused');
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon or race', (v) => { D.q = v; draw(); }),
+      h('label', { class: 'gdb-check' }, 'Race', h('select', { class: 'input ddb-select', 'aria-label': 'Race', onchange: (ev) => { D.race = ev.target.value; drawChips(); draw(); } },
+        [['', 'All races']].concat(races.map((r) => [r, r])).map(([v, t]) => h('option', { value: v, selected: v === D.race ? true : null, text: t })))), mtBox));
+    page.append(h('div', { class: 'toolbar rank-at' }, h('span', { class: 'q-key', text: 'Compare at' }), atChips), chips);
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl rank-tbl' }, head, body)), count);
+    drawChips(); drawAt(); draw();
     return page;
   }
   // ---------- Tools: Skill Database ----------
@@ -4297,7 +4373,7 @@
     return box;
   }
 
-  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, ddb: pageDemonDb, skills: pageSkills };
+  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
