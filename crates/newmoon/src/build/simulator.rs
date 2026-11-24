@@ -185,6 +185,13 @@ impl Base {
             catalog: Mutex::new(HashMap::new()),
         }
     }
+
+    /// The saved digitalize demon's key in the demon list: the entry that is the same demon (two Specter Lv 90s in one
+    /// COMP have "...:90" and "...:90#2"), else its kind and level.
+    fn saved_demon_key(&self) -> Option<String> {
+        let d = self.demon.as_ref().and_then(|d| d.demon.as_ref())?;
+        Some(pipeline::find_key(self.seen.iter(), d).unwrap_or_else(|| pipeline::key_of(d)))
+    }
 }
 
 #[derive(Default)]
@@ -670,7 +677,7 @@ impl Simulator {
         // The build's digitalize demon: the one saved for the character (with the boosts saved with it: what the page
         // data uses), any other COMP demon seen (with the boosts last read, as switching demon in the app does), or none.
         let mut demon: Option<DigitalizeResult> = None;
-        let saved_key = b.demon.as_ref().and_then(|d| d.demon.as_ref()).map(pipeline::key_of);
+        let saved_key = b.saved_demon_key();
         let saved = match &s.demon {
             None => true,
             Some(d) => saved_key.as_deref() == Some(d.as_str()),
@@ -1014,7 +1021,7 @@ impl Simulator {
                 "level": b.level, "alignment": b.alignment, "stats_at": b.taken_at, "demon": b.demon.as_ref().and_then(|d| d.demon.as_ref()).map(|d| d.name.clone()),
                 "blank": b.blank, // no character behind the build: the numbers are what the build gives by itself
                 // the saved digitalize demon, as the demon list names it
-                "demon_key": b.demon.as_ref().and_then(|d| d.demon.as_ref()).map(pipeline::key_of),
+                "demon_key": b.saved_demon_key(),
                 "slots": SLOT_NAMES, "hp_known": b.cal.is_some(),
                 // the character's sex, as far as the worn gear says it (pieces made for the other one can't be worn)
                 "sex": sex,

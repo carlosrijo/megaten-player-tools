@@ -237,23 +237,34 @@ impl DigitalizeSave {
     pub fn read(mem: &GameMemory, store: &Store, data: &GameData, now: NaiveDateTime) -> Result<Option<DigitalizeSave>> {
         let saved = DigitalizeSave::load(store)?;
         let progress = log::timed("snapshot: progress", || demon_reader::read_progress(mem), |p| match p { Some(p) => format!("found, {} entries in the learned-skill list", p.skills.as_ref().map_or(0, |s| s.len())), None => "not found".into() });
-        let demons = log::timed("snapshot: demons", || demon_reader::read_demons(mem, false), |d| format!("{} demon records with details", d.len()));
+        // every record (the COMP's slot list is matched against them), and the ones with details
+        let all = log::timed("snapshot: demons", || demon_reader::read_demons(mem, true), |d| format!("{} demon records", d.len()));
+        let demons: Vec<&DemonRecord> = all.iter().filter(|d| d.loaded()).collect();
         let mut demon: Option<DemonRecord> = None;
         if let Some(p) = progress.as_ref().filter(|p| p.digitalized()) {
-            demon = demons.iter().find(|d| d.object_id == p.digitalized_demon).cloned();
+            demon = demons.iter().find(|d| d.object_id == p.digitalized_demon).map(|d| (*d).clone());
         }
         if demon.is_none() {
             if let Some(old) = saved.as_ref().and_then(|s| s.demon.as_ref()) {
-                demon = demons.iter().find(|d| d.object_id == old.object_id && d.r#type == old.r#type).cloned();
-                let same: Vec<&DemonRecord> = demons.iter().filter(|d| d.r#type == old.r#type && d.name == old.name).collect();
-                if demon.is_none() {
-                    demon = Some(if same.len() == 1 { same[0].clone() } else { old.clone() });
+                // the same object, else one with the same details; else, after a restart, the only one of its type and name
+                // (stale copies of one demon count once). Two of a kind (Rubito's two Specter Lv 90s): the saved one as it was.
+                let same: Vec<&&DemonRecord> = demons.iter().filter(|d| d.r#type == old.r#type && d.name == old.name).collect();
+                let mut distinct: Vec<&DemonRecord> = Vec::new();
+                for d in &same {
+                    if !distinct.iter().any(|x| x.skills == d.skills && x.acquired == d.acquired && x.growth_type == d.growth_type) {
+                        distinct.push(d);
+                    }
                 }
+                demon = same
+                    .iter()
+                    .find(|d| d.object_id == old.object_id)
+                    .or_else(|| same.iter().find(|d| pipeline::same_demon(d, old)))
+                    .map(|d| (**d).clone())
+                    .or_else(|| Some(if distinct.len() == 1 { distinct[0].clone() } else { old.clone() }));
             }
         }
-        // the demons seen, and which one is summoned now (the Overview shows it); of two demons of one kind and level, the
-        // list keeps this one's record
-        pipeline::note_demons(store, &demons, demon.as_ref().map(|d| d.object_id), now)?;
+        // the demons seen, and which one is summoned now (the Overview shows it): the COMP's slots when the game lists them
+        pipeline::note_demons(store, &all, demon_reader::read_comp(mem, &all).as_deref(), now)?;
         let Some(demon) = demon else { return Ok(None) };
         let active = progress.as_ref().is_some_and(|p| p.digitalized() && demon.object_id == p.digitalized_demon);
         let assists = match &progress {
