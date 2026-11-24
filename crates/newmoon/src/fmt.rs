@@ -40,8 +40,25 @@ pub fn g(x: f64) -> String {
     if x.is_infinite() {
         return if x > 0.0 { "∞".into() } else { "-∞".into() };
     }
-    let neg = x.is_sign_negative();
-    let (digits, scale) = decompose(&format!("{:e}", x.abs()));
+    shortest(x.is_sign_negative(), &format!("{:e}", x.abs()), 17)
+}
+
+/// .NET's `float.ToString()` (also System.Text.Json writing a `float`): the shortest digits that read back as the same
+/// single-precision number; scientific (`1E+09`, `1E-05`) when the exponent is >= 9 or < -4.
+pub fn g32(x: f32) -> String {
+    if x.is_nan() {
+        return "NaN".into();
+    }
+    if x.is_infinite() {
+        return if x > 0.0 { "∞".into() } else { "-∞".into() };
+    }
+    shortest(x.is_sign_negative(), &format!("{:e}", x.abs()), 9)
+}
+
+/// The shared part of [`g`] and [`g32`]: `sci` is Rust's `{:e}` of the absolute value (shortest digits), `sci_from`
+/// the exponent from which .NET switches to scientific notation (17 for a double, 9 for a float).
+fn shortest(neg: bool, sci: &str, sci_from: i32) -> String {
+    let (digits, scale) = decompose(sci);
     let mut s = String::new();
     if neg {
         s.push('-');
@@ -51,7 +68,7 @@ pub fn g(x: f64) -> String {
         return s;
     }
     let exp = scale - 1;
-    if exp >= 17 || exp < -4 {
+    if exp >= sci_from || exp < -4 {
         s.push((b'0' + digits[0]) as char);
         if digits.len() > 1 {
             s.push('.');
@@ -274,5 +291,44 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "{} mismatches:\n{}", failures.len(), failures.join("\n"));
+    }
+}
+
+#[cfg(test)]
+mod g32_tests {
+    use super::*;
+
+    /// Vectors from .NET 10: `float.ToString()` and System.Text.Json of a float (bits, text).
+    #[test]
+    fn g32_matches_dotnet_floats() {
+        let v: [(i32, &str); 24] = [
+            (1065353216, "1"),
+            (1056964608, "0.5"),
+            (925353388, "1E-05"),
+            (930850946, "1.5E-05"),
+            (953267991, "0.0001"),
+            (956396123, "0.00012345"),
+            (1290500515, "123456790"),
+            (1287568416, "100000000"),
+            (1315859240, "1E+09"),
+            (1343554297, "1E+10"),
+            (1482907561, "1E+15"),
+            (1206984805, "123456.79"),
+            (1266679808, "16777216"),
+            (2139095039, "3.4028235E+38"),
+            (8388608, "1.1754944E-38"),
+            (786163455, "1E-10"),
+            (1036831949, "0.1"),
+            (1076572979, "2.675"),
+            (-2147483648, "-0"),
+            (-1077936128, "-1.5"),
+            (1203982336, "100000"),
+            (1262248270, "12345678"),
+            (944879383, "5E-05"),
+            (953267990, "9.999999E-05"),
+        ];
+        for (bits, want) in v {
+            assert_eq!(g32(f32::from_bits(bits as u32)), want, "bits {bits}");
+        }
     }
 }
