@@ -222,6 +222,10 @@ fn summoned_partner_effects_reach_the_summoner() {
         fx.iter().filter(|e| e.label == label).map(|e| format!("{}|{}|{}|{}|{}|{}", e.value.unwrap_or(0.0), e.pct, e.cond, e.target, e.item, e.cond_note)).collect()
     };
     assert_eq!(show("Long-Range"), vec!["60|false|always|self|Alilat (summoned)|Demon Force"]);
+    // her Demon Force rows carry the item their stack entry is drawn with (DevilBoostExtraData itemID: 10283 -> 38209, 10118 -> 21838)
+    assert!(fx.iter().filter(|e| e.cond_note.starts_with("Demon Force")).all(|e| e.item_id > 0 && e.skill_id == 0 && e.picture.is_empty()));
+    assert_eq!(fx.iter().find(|e| e.tokusei == 130199).map(|e| e.item_id), Some(38209));
+    assert_eq!(fx.iter().find(|e| e.tokusei == 130138).map(|e| e.item_id), Some(21838));
     // everything is the character's own and tagged as the partner's; nothing aimed at the demon itself (the 421xxx reflects) is here
     assert!(!fx.is_empty() && fx.iter().all(|e| e.target == "self" && e.source == "summoned" && e.item == "Alilat (summoned)"));
     assert!(fx.iter().all(|e| ![421354, 421356, 421358, 421360, 360254, 730059].contains(&e.tokusei)), "{:?}", fx.iter().map(|e| e.tokusei).collect::<Vec<_>>());
@@ -244,6 +248,20 @@ fn summoned_partner_effects_reach_the_summoner() {
     assert_eq!(row["parts"][0]["kind"], "summoned");
     assert_eq!(row["parts"][0]["source"], "Alilat (summoned)");
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn summoned_parts_keep_the_picture_hints() {
+    use imagine::build::dashboard::Dashboard;
+    use imagine::calc::effect::Effect;
+    let fx = vec![
+        Effect { label: "Long-Range".into(), value: Some(60.0), cond_note: "Mitama set Saki".into(), picture: "digitalize_mitamaicon".into(), ..Default::default() },
+        Effect { label: "Spell".into(), value: Some(5.0), cond_note: "equipment Theater of Death".into(), skill_id: 1234, item_id: 5678, ..Default::default() },
+    ];
+    let parts = Dashboard::summoner_parts_of(&fx);
+    assert_eq!(parts.len(), 2);
+    assert_eq!((parts[0].picture.as_str(), parts[0].item_id, parts[0].skill_id), ("digitalize_mitamaicon", 0, 0));
+    assert_eq!((parts[1].picture.as_str(), parts[1].item_id, parts[1].skill_id), ("", 5678, 1234));
 }
 
 #[test]

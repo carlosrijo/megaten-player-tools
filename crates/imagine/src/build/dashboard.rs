@@ -272,6 +272,10 @@ pub struct Part {
     pub pct: bool,
     /// The skill whose icon stands for this part (demon skills, expertise skills), or 0; `demon`: the demon's own icon.
     pub skill_id: i32,
+    /// A summoned demon's equipment: the item (Epitaph Parts) whose picture stands in when the skill has none. picture: a
+    /// client interface picture that stands for the part (Demon Force, Mitama set).
+    pub item_id: i32,
+    pub picture: String,
     pub demon: bool,
     /// `fuse`: a fusion great-success bonus (the server adds it before a stat's percent step). `demon_stat`: one of
     /// the digitalize demon's own stats (added to the character's base stats). Both matter to the simulator only.
@@ -932,9 +936,22 @@ impl Dashboard {
                 note: e.cond_note.clone(),
                 from: e.item.clone(),
                 skill_id: e.skill_id,
+                item_id: e.item_id,
+                picture: e.picture.clone(),
                 ..Default::default()
             })
             .collect()
+    }
+
+    /// The picture of a stat-up skill ("Vitality UP1", "Speed UP1", "Intelligence UP1": what the Expertise page draws them with), found
+    /// by the skill's name in the skill list; saved beside the skill icons. None when the game has no such skill or picture.
+    fn stat_up_icon(&self, stat: &str) -> Result<Option<String>> {
+        let want = format!("{stat} UP1");
+        let id = self.data().skill_names()?.iter().filter(|(_, n)| n.as_deref() == Some(want.as_str())).map(|(&id, _)| id).min();
+        match id {
+            Some(id) => item_icons::skill_asset(self.store(), self.data(), id, 0),
+            None => Ok(None),
+        }
     }
 
     /// The first step of `bonus_rows`: each part's `group` and `bonus` (the bonus list's names). The C# `Part` is a class,
@@ -1065,6 +1082,24 @@ impl Dashboard {
                         icon = Some(format!("skill:{asset}"));
                     }
                 }
+                if icons.is_some() && icon.is_none() {
+                    // the summoned demon's equipment has no picture for its skill: the Epitaph Parts item it is made from; its Demon
+                    // Force and Mitama set: the digitalize window's picture for that boost (both saved beside the skill icons)
+                    let asset = if p.item_id > 0 { item_icons::item_asset(store, data, p.item_id, 0)? } else { item_icons::client_asset(store, &p.picture, 0) };
+                    icon = asset.map(|a| format!("skill:{a}"));
+                }
+                if icons.is_some() && icon.is_none() && p.kind == "stats" {
+                    // "Your stats": the stat-up skills' picture of the stat that mostly sets it (cooldown: VIT, incantation: INT; SPD is the second one)
+                    let stat = match p.label.as_str() {
+                        "Cooldown" => Some("Vitality"),
+                        "Incantation" => Some("Intelligence"),
+                        _ => None,
+                    };
+                    icon = match stat {
+                        Some(s) => self.stat_up_icon(s)?.map(|a| format!("skill:{a}")),
+                        None => None,
+                    };
+                }
                 if icon.is_none() && p.demon {
                     icon = Some("demon".into());
                 }
@@ -1102,10 +1137,39 @@ impl Dashboard {
                         }
                     }
                 }
+                // A summoned demon's Demon Force entry or epitaph is an item (the Demon Soul it is drawn with, the Epitaph Parts it is made from):
+                // its name goes after a Demon Force note and heads the icon's tooltip ("item_name")
+                let item_name = if p.kind == "summoned" && p.item_id > 0 { data.item_name(p.item_id)? } else { None };
+                let note = match &item_name {
+                    Some(n) if p.note == "Demon Force" => format!("{} · {n}", p.note),
+                    _ => p.note.clone(),
+                };
                 let mut part = obj(json!({
-                    "source": src, "kind": kind, "value": fmt::round(p.value, 2), "digi": p.cond == "digitalized", "note": p.note, "icon": icon,
+                    "source": src, "kind": kind, "value": fmt::round(p.value, 2), "digi": p.cond == "digitalized", "note": note, "icon": icon,
                     "tip": if p.skill_id > 0 { data.skill_text(p.skill_id)? } else { None }, // the game's description, for the hover tooltip
                 }));
+                if let Some(n) = &item_name {
+                    part.insert("item_name".into(), json!(n));
+                    // the tooltip's effects: a Demon Force stack entry lists all its tokusei in the game's words ("* " before each, as the
+                    // game's tooltip has it); an epitaph shows its skill's description without the first line (the demon's own flavour)
+                    let tables = data.demons()?;
+                    let stack = tables.force_stack_item.iter().find(|&(_, &i)| i == p.item_id).map(|(&s, _)| s);
+                    if let Some(toks) = stack.and_then(|s| tables.force_stack_tokusei.get(&s)) {
+                        let mut lines: Vec<String> = Vec::new();
+                        for &tid in toks {
+                            if let Some(text) = data.tokusei_text(tid)? {
+                                lines.extend(text.split('\n').enumerate().map(|(i, l)| if i == 0 { format!("* {l}") } else { l.to_string() }));
+                            }
+                        }
+                        if !lines.is_empty() {
+                            part.insert("item_tip".into(), json!(lines.join("\n")));
+                        }
+                    } else if let Some(text) = if p.skill_id > 0 { data.skill_text(p.skill_id)? } else { None } {
+                        if let Some((_, effects)) = text.split_once('\n') {
+                            part.insert("tip".into(), json!(effects.trim()));
+                        }
+                    }
+                }
                 if p.toggle {
                     part.insert("toggle".into(), json!(true)); // a toggle skill that is on: the page tags it, and says how much of a total the toggles give
                 }

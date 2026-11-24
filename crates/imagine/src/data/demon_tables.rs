@@ -106,6 +106,8 @@ pub struct DemonTables {
     pub levels: IndexMap<i32, Vec<GuardianLevel>>,
     /// Demon Force stack id -> its tokusei (DevilBoostExtraData; reference\devil-boost-extra.tsv).
     pub force_stack_tokusei: IndexMap<i32, Vec<i32>>,
+    /// Demon Force stack id -> the item the game draws it with (DevilBoostExtraData "itemID": the Demon Force window shows the item's icon).
+    pub force_stack_item: IndexMap<i32, i32>,
     /// Demon equipment item id -> the skill that replaces the trait of its slot (DevilEquipmentItemData).
     pub equipment_skill: IndexMap<i32, i32>,
     /// Race id -> the race:level pairs that enable it (GuardianUnlockData; all of them). A race not here starts enabled.
@@ -184,6 +186,7 @@ impl DemonTables {
             skills: IndexMap::new(),
             levels: IndexMap::new(),
             force_stack_tokusei: IndexMap::new(),
+            force_stack_item: IndexMap::new(),
             equipment_skill: IndexMap::new(),
             unlocks: IndexMap::new(),
             specials: IndexMap::new(),
@@ -273,6 +276,7 @@ impl DemonTables {
         for r in rows("devil-boost-extra.tsv")? {
             let r = refs(&r);
             t.force_stack_tokusei.insert(i(col(&r, 0)?), if r.len() > 3 { ints(r[3]) } else { Vec::new() });
+            t.force_stack_item.insert(i(col(&r, 0)?), i(col(&r, 1)?));
         }
         for r in rows("devil-equipment-items.tsv")? {
             let r = refs(&r);

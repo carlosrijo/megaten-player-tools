@@ -1394,9 +1394,13 @@
     return box;
   };
   // The hover tooltip of any other bonus source: its icon and name, and the game's description when it is a skill.
+  // A summoned demon's Demon Force entry or epitaph is headed by its item's name (the note then leaves that name out).
   const sourceTip = (p, iconOf) => () => h('div', { class: 'tt' },
-    tipHead(gearIcon(iconOf), String(p.source).replace(/ \((Other learned skills|Quest bonus[^)]*\)|Demonic Compendium[^)]*\))\)?$/, ''), KIND[p.kind] || p.kind || ''),
-    ...tipLines(p.tip), p.note ? h('div', { class: 'tt-line tt-gap', text: p.note }) : null);
+    p.item_name ? tipHead(gearIcon(iconOf), p.item_name, `${KIND[p.kind] || p.kind || ''} · ${p.source}`)
+      : tipHead(gearIcon(iconOf), String(p.source).replace(/ \((Other learned skills|Quest bonus[^)]*\)|Demonic Compendium[^)]*\))\)?$/, ''), KIND[p.kind] || p.kind || ''),
+    ...tipLines(p.item_tip), ...tipLines(p.tip),
+    // a Demon Force entry's note says only "Demon Force" once its item's name is the title: left out
+    p.note && !(p.item_name && p.note === `Demon Force · ${p.item_name}`) ? h('div', { class: 'tt-line tt-gap', text: p.item_name ? String(p.note).replace(` · ${p.item_name}`, '') : p.note }) : null);
   // A piece's icon from the game (32x32, pixel-crisp); an empty box of the same size for sets and pieces without one.
   // A set shows its pieces' icons as a cluster of small round "orbs" (up to four).
   const gearIcon = (g) => {
