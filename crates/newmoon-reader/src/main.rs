@@ -6,6 +6,7 @@
 //!   snapshot  [--name N] [--csv path] [--ignore-window]         read the game, append a CSV row, rebuild the page data
 //!   rebuild   [--name N] [--csv path]                           rebuild the page data from saved files (no game needed)
 //!   recalc    [--name N] [--csv path]                           recompute every CSV row's gear bonuses, then rebuild
+//!   gear-names [--name N] [--csv path]                          name every CSV row's gear the game's way (backup first), then rebuild
 //!   sets      [--name N]                                        show the sets/appearance bonuses for the worn gear
 //!   simulate  [--spec build.json | --init | --catalog N]        the Simulator tool: check it, or work out another build (nothing is written)
 //!   serve     [--port N] [--root dir] [--also "Name=folder"]    the app's page in a browser with a working Simulator (testing)
@@ -108,7 +109,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             _ => return Err(user_error(format!("--log-level must be debug, info or warn, not '{v}'."))),
         },
     };
-    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve" | "clients" | "digilevels" | "doctor" | "crash-test") {
+    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "gear-names" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve" | "clients" | "digilevels" | "doctor" | "crash-test") {
         let root = opts.get("data").map(PathBuf::from).unwrap_or_else(find_data_dir);
         let logs = root.join("logs");
         if log::init(&logs, level, &format!("{}, command '{cmd}'", about::build_info().line())) {
@@ -239,7 +240,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     }
     // The character a command works on, with its pipeline (the C# `name`, `csv` and `pipe`).
     let mut chosen: Option<(Target, Pipeline)> = None;
-    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve") {
+    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "gear-names" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve") {
         // Which character: --name, else the one logged in (snapshot, sets) or the only one with saved data (rebuild, recalc).
         // Each character has its own folder and CSV (data\characters.json). --data / --csv point somewhere else instead,
         // which is how tests run on copies.
@@ -282,6 +283,20 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
         "serve" => {
             let (t, pipe) = need(&chosen)?;
             serve(opts, t, pipe)
+        }
+        "gear-names" => {
+            // Rename the gear in every CSV row to the game's item names (old rows hold the website's); numbers stay.
+            let (t, pipe) = need(&chosen)?;
+            let (log, backup) = pipe.rename_gear(&t.csv)?;
+            for line in &log {
+                console::write_line(line);
+            }
+            match backup {
+                Some(b) => console::write_line(&format!("{} rows renamed. The CSV before: {}", log.len(), b.display())),
+                None => console::write_line("Every row already names its gear the game's way: nothing changed."),
+            }
+            rebuild(t, pipe)?;
+            Ok(0)
         }
         "recalc" => {
             let (t, pipe) = need(&chosen)?;

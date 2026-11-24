@@ -328,10 +328,10 @@ static RE_SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").unwrap()
 static RE_CRYSTAL_NAME_END: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s*Crystal$").unwrap());
 static RE_SKILLDATA: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"SkillData:(\d+):([^;\t]+)").unwrap());
 
-/// A client skill name that is English as the game shows it: Latin letters and no Japanese (kana, kanji, full-width
+/// A client skill or item name that is English as the game shows it: Latin letters and no Japanese (kana, kanji, full-width
 /// forms like "％" or "（"). The game's "・" (Secret of the Flame・Destruction) is allowed. "Frost窶冱 Punch" (108, a
 /// UTF-8 apostrophe the client stores garbled) counts as not English, so the website's name is used for it.
-pub fn is_english_skill_name(n: &str) -> bool {
+pub fn is_english_game_name(n: &str) -> bool {
     n.chars().any(|c| c.is_ascii_alphabetic())
         && !n.chars().any(|c| {
             c != '・' && matches!(c as u32, 0x3000..=0x30FF | 0x3400..=0x4DBF | 0x4E00..=0x9FFF | 0xF900..=0xFAFF | 0xFF00..=0xFFEF)
@@ -341,15 +341,15 @@ pub fn is_english_skill_name(n: &str) -> bool {
 #[cfg(test)]
 #[test]
 fn english_skill_names() {
-    assert!(is_english_skill_name("Talk to the Fist!"));
-    assert!(is_english_skill_name("Secret of the Flame・Destruction"));
-    assert!(is_english_skill_name("If a Demon is Cursed, Dig 4 Graves"));
-    assert!(!is_english_skill_name("Vileの牙"));
-    assert!(!is_english_skill_name("四Seraphim召喚"));
-    assert!(!is_english_skill_name("HP23％減少（敵専用）"));
-    assert!(!is_english_skill_name("Frost窶冱 Punch"));
-    assert!(!is_english_skill_name("ヤればデキる"));
-    assert!(!is_english_skill_name(""));
+    assert!(is_english_game_name("Talk to the Fist!"));
+    assert!(is_english_game_name("Secret of the Flame・Destruction"));
+    assert!(is_english_game_name("If a Demon is Cursed, Dig 4 Graves"));
+    assert!(!is_english_game_name("Vileの牙"));
+    assert!(!is_english_game_name("四Seraphim召喚"));
+    assert!(!is_english_game_name("HP23％減少（敵専用）"));
+    assert!(!is_english_game_name("Frost窶冱 Punch"));
+    assert!(!is_english_game_name("ヤればデキる"));
+    assert!(!is_english_game_name(""));
 }
 
 static RE_MEMBERS_STAT: LazyLock<Regex> =
@@ -528,9 +528,10 @@ impl GameData {
 
     // ---------- items ----------
 
-    /// Every item. The website's items.json gives the base (names, icons); reference\items-game.tsv, flattened from the
-    /// client's current ItemData / CItemData, then overrides each item's stats (its correct table), equip type and weapon
-    /// type, and adds the items the website file does not have. The website file can lag the client by months: on
+    /// Every item. The website's items.json gives the base (icons); reference\items-game.tsv, flattened from the
+    /// client's current ItemData / CItemData, then overrides each item's name (when the client's is English; the
+    /// website's is kept as "webName"), stats (its correct table), equip type and weapon type, and adds the items the
+    /// website file does not have. The website file can lag the client by months: on
     /// 2026-11-23 it had 32 items with old stats and lacked 951 (HANDOVER, section 15).
     pub fn items(&self) -> Result<&IndexMap<i32, Value>> {
         Ok(&self.items_data()?.items)
@@ -572,6 +573,18 @@ impl GameData {
                     items.insert(id, json!({ "id": id, "name": p[1], "icon": crate::fmt::parse_i32(p[2]).unwrap_or(0) }));
                 }
                 if let Some(node) = items.get_mut(&id).and_then(Value::as_object_mut) {
+                    // the client's name wins when it is an English one (the game shows it; 1,015 website names differ,
+                    // e.g. 38194 "Memory of a Pie Fight" is "Pie Throw Memory" there, 785 "Value Pack: Silver" is
+                    // "Random Box: Candy"). The website's name stays as "webName": CSV rows saved before the item ids
+                    // were written name their gear that way, and recalc_csv finds the ids from those names.
+                    let game = p[1].trim();
+                    let web = node.get("name").and_then(Value::as_str).unwrap_or("").to_string();
+                    if is_english_game_name(game) && web != game {
+                        if !web.is_empty() {
+                            node.insert("webName".into(), json!(web));
+                        }
+                        node.insert("name".into(), json!(game));
+                    }
                     node.insert("basicFeatures".into(), Value::Array(correct)); // the whole correct table; ItemCorrect reads both lists
                     node.insert("characteristics".into(), Value::Array(Vec::new()));
                     node.insert("equipType".into(), json!(p[3]));
@@ -794,7 +807,7 @@ impl GameData {
                         if let Some(id) = crate::fmt::parse_i32(r[0]) {
                             // a line break in the name ("Incense of Magic and Experience\n(Demons)", written as \n) is a space
                             let n = RE_SPACES.replace_all(&r[1].replace("\\n", " "), " ").trim().to_string();
-                            if is_english_skill_name(&n) {
+                            if is_english_game_name(&n) {
                                 res.insert(id, Some(n));
                             }
                         }

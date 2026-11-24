@@ -430,10 +430,7 @@ impl Snapshot {
         }
         let tips = store.load_tooltip_cache()?;
         let items = data.items()?;
-        let mut by_name: IndexMap<String, Vec<i32>> = IndexMap::new();
-        for (id, v) in items {
-            by_name.entry(json::str(v.at("name")).unwrap_or_default()).or_default().push(*id);
-        }
+        let by_name = item_ids_by_name(items);
         let gear_cols: Vec<String> = t.columns.iter().filter(|c| c.starts_with("Gear: ")).cloned().collect();
         // What the latest snapshot read, slot by slot: the only place an unlisted item's id survives for rows without ids.
         let mut last_read: Option<Vec<i32>> = None;
@@ -533,6 +530,83 @@ impl Snapshot {
         t.save(csv_path)?;
         Ok(log)
     }
+
+    /// Rename the gear in every CSV row ("Gear: <slot>" columns) to the item list's name, the game's own (rows saved
+    /// before 2026-11-24 hold the website's names, e.g. "Levi Blaster" for Leviathan Blaster). Only names change, no
+    /// number. Items come from the row's "Gear ids", else from its names (the website's included); a slot whose item
+    /// isn't in the item list keeps its name. The CSV is copied first (`<name>.backup-before-item-names-<time>.csv`),
+    /// and only when a name changes. Returns one line per changed row, and the backup.
+    pub fn rename_gear_csv(&self, csv_path: &str) -> Result<(Vec<String>, Option<std::path::PathBuf>)> {
+        let data = &*self.ctx.data;
+        let mut t = CsvTable::load(csv_path)?;
+        let tips = self.ctx.store.load_tooltip_cache()?;
+        let items = data.items()?;
+        let by_name = item_ids_by_name(items);
+        let gear_cols: Vec<String> = t.columns.iter().filter(|c| c.starts_with("Gear: ")).cloned().collect();
+        let mut log = Vec::new();
+        for ri in 0..t.rows.len() {
+            let ids_text = t.get(&t.rows[ri], GEAR_IDS_COLUMN);
+            let saved: Vec<i32> = ids_text.split(' ').filter(|s| !s.is_empty()).filter_map(fmt::parse_i32).collect();
+            let has_ids = saved.len() == 15 && saved.len() == gear_cols.len();
+            let mut changes = Vec::new();
+            for (k, col) in gear_cols.iter().enumerate() {
+                let old = t.get(&t.rows[ri], col);
+                if old.is_empty() || old == "(empty)" {
+                    continue;
+                }
+                let id = if has_ids {
+                    saved[k]
+                } else {
+                    match by_name.get(&old) {
+                        Some(cand) => cand.iter().copied().find(|id| tips.contains_key(id)).unwrap_or(cand[0]),
+                        None => 0,
+                    }
+                };
+                if id <= 0 {
+                    continue;
+                }
+                let Some(name) = data.item_name(id)?.filter(|n| !n.is_empty()) else { continue };
+                if name != old {
+                    changes.push(format!("{col}: {old} -> {name}"));
+                    t.rows[ri].insert(col.clone(), name);
+                }
+            }
+            if !changes.is_empty() {
+                log.push(format!("{}: {}", t.get(&t.rows[ri], "Timestamp"), changes.join("; ")));
+            }
+        }
+        if log.is_empty() {
+            return Ok((log, None));
+        }
+        let path = std::path::Path::new(csv_path);
+        let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        let dir = path.parent().map(std::path::Path::to_path_buf).unwrap_or_else(|| std::path::PathBuf::from("."));
+        let backup = dir.join(format!("{stem}.backup-before-item-names-{}.csv", Local::now().format("%Y%m%d-%H%M%S")));
+        if backup.exists() {
+            return Err(anyhow::anyhow!("The file '{}' already exists.", backup.display()));
+        }
+        std::fs::copy(csv_path, &backup)?;
+        t.save(csv_path)?;
+        Ok((log, Some(backup)))
+    }
+}
+
+/// Item name -> ids, by the item list's names (the game's) and the website's ("webName"): rows saved before 2026-11-24
+/// named their gear the website's way, which can differ from the game's.
+fn item_ids_by_name(items: &IndexMap<i32, Value>) -> IndexMap<String, Vec<i32>> {
+    let mut by_name: IndexMap<String, Vec<i32>> = IndexMap::new();
+    for (id, v) in items {
+        by_name.entry(json::str(v.at("name")).unwrap_or_default()).or_default().push(*id);
+    }
+    for (id, v) in items {
+        if let Some(web) = json::str(v.at("webName")) {
+            let l = by_name.entry(web).or_default();
+            if !l.contains(id) {
+                l.push(*id);
+            }
+        }
+    }
+    by_name
 }
 
 /// The cached tooltip text of an item id ("" when none).

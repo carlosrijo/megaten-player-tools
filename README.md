@@ -323,6 +323,7 @@ target\release\newmoon-reader.exe --version  # which build this is: version, com
 target\release\newmoon-reader.exe snapshot   # read the game, add a row to the CSV, rebuild page data
 target\release\newmoon-reader.exe rebuild    # rebuild page data from saved files (game not needed)
 target\release\newmoon-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild
+target\release\newmoon-reader.exe gear-names # name every CSV row's gear the game's way (copies the CSV first), then rebuild
 target\release\newmoon-reader.exe sets       # list set and appearance bonuses for the worn gear
 target\release\newmoon-reader.exe simulate   # check the Simulator: the build as read must give back the readings and the saved bonus list
 target\release\newmoon-reader.exe simulate --spec build.json   # the result of another build, as JSON (--init: the build as read; --catalog N: what fits slot N)

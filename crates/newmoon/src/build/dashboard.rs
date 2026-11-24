@@ -348,7 +348,10 @@ impl Dashboard {
                 },
             };
             let mut o = obj(json!({
-                "row": format!("item-{}", rec.index), "kind": "item", "slot": slot, "item": t.get(last, &format!("Gear: {slot}")),
+                // the item list's name (the game's) by id; the CSV's last row only for an item the list lacks (rows saved
+                // before 2026-11-24 hold the website's names)
+                "row": format!("item-{}", rec.index), "kind": "item", "slot": slot,
+                "item": data.item_name(rec.id)?.filter(|n| !n.is_empty()).unwrap_or_else(|| t.get(last, &format!("Gear: {slot}"))),
                 "shown_as": info.as_ref().map(|i| i.name.clone()).unwrap_or_else(|| name.clone()), "tarot": tarot_name, "soul": soul_name,
                 "item_id": rec.id, "tip": if rec.text.is_empty() { Value::Null } else { json!(rec.text) },
                 "icon": item_icons::data_uri(store, data, rec.id, 0)?,
