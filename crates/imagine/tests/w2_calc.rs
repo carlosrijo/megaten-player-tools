@@ -193,6 +193,51 @@ fn digitalizing_with_a_mitama_demon() {
 }
 
 #[test]
+fn summoned_partner_effects_reach_the_summoner() {
+    if !external_data() {
+        return;
+    }
+    // Rubito's Alilat (Lv93), summoned. Her force stack's entry 10283 is tokusei 130199 (TargetType SUMMONER: Long-Range +60),
+    // entry 10118 has 130138 (heal taken +20%), 990003 and 1000002 (HP / MP cost -10), also aimed at the summoner. The rest of the
+    // stack is aimed at her own self (reflects, Support +20...). Checked in game: LNG-R 544 = 137 + 45 + 177 + 125 + 60.
+    let demon = w2dump::demon_from_json(
+        &serde_json::from_str::<Value>(
+            r#"{"Address":468195892,"Flags":51,"Name":"Alilat","Type":10041,"Level":93,"ObjectId":2181027,"Hp":4874,"MaxHp":4874,"Mp":1779,"MaxMp":1779,"LiveValue":[143,198,117,142,124,97,0,0,0,0,0,0,178,160,219,225,0,0,0,88,53],"LiveBonus":[66,97,65,94,64,25,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"GrowthType":212,"Reunion":[4,1,4,4,4,0,4,1,4,4,0,7],"MitamaType":2,"MitamaRank":0,"MitamaReunion":"Jy4kKwAAAAAAAAAAAAAAADAiIiQAAAAAZGxvcAAAAAAMEBBGAAAAAAAAAAAAAAAAbW9oQwAAAAAAAAAAAAAAAAgODSYAAAAAJiEhQQAAAAAAAAAAAAAAAAAAAAAAAAAA","MitamaSetsShown":[false,true,false,false,false,false,false,false,false,true,false,false,false,false,false,true,false,false,true,false,false,false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false],"Skills":[5306,820,4,962,961,960,958,956],"Acquired":[305,507,508,5026,5027,5112,5114,5206,5307],"SoulPoints":2000,"ForceValues":[750684,330651,600248,575099,485786,444578,944528,203342,69288,25043,25236,10348,8604,12092,3991,71127,46417,4298,632363,10772],"ForceStack":[10144,10269,1298,10271,10283,10272,10118,10270],"Equipment":[0,0,0,0]}"#,
+        )
+        .unwrap(),
+    );
+    let d = data();
+    let calc = Digitalize::new(Arc::clone(&d), ItemEffects::new(Arc::clone(&d), "NEUTRAL", 95, IndexMap::new()));
+    let fx = calc.summoner_effects(&demon, false).unwrap();
+    let show = |label: &str| -> Vec<String> {
+        fx.iter().filter(|e| e.label == label).map(|e| format!("{}|{}|{}|{}|{}|{}", e.value.unwrap_or(0.0), e.pct, e.cond, e.target, e.item, e.cond_note)).collect()
+    };
+    assert_eq!(show("Long-Range"), vec!["60|false|always|self|Alilat (summoned)|Demon Force"]);
+    // everything is the character's own and tagged as the partner's; nothing aimed at the demon itself (the 421xxx reflects) is here
+    assert!(!fx.is_empty() && fx.iter().all(|e| e.target == "self" && e.source == "summoned" && e.item == "Alilat (summoned)"));
+    assert!(fx.iter().all(|e| ![421354, 421356, 421358, 421360, 360254, 730059].contains(&e.tokusei)), "{:?}", fx.iter().map(|e| e.tokusei).collect::<Vec<_>>());
+    // no force stack, no Long-Range +60
+    let bare = calc.summoner_effects(&imagine::game::DemonRecord { force_stack: None, ..demon.clone() }, false).unwrap();
+    assert!(bare.iter().all(|e| e.label != "Long-Range" || e.value != Some(60.0)));
+    // a demon type the tables do not have gives nothing
+    assert!(calc.summoner_effects(&imagine::game::DemonRecord { r#type: 99999999, ..demon.clone() }, false).unwrap().is_empty());
+
+    // in the bonus list: a "summoned" part, counted in the normal total and not in the digitalized one
+    let dir = std::env::temp_dir().join(format!("imagine-summoned-test-{}", std::process::id()));
+    let ctx = Arc::new(imagine::context::Context::new(imagine::data::store::Store::new(&dir), Arc::clone(&d)));
+    let dash = imagine::build::dashboard::Dashboard::new(ctx);
+    let parts = imagine::build::dashboard::Dashboard::summoner_parts_of(&fx);
+    assert!(parts.iter().all(|p| p.kind == "summoned" && p.from == "Alilat (summoned)"));
+    let rows = dash.bonus_rows(parts, None).unwrap();
+    let row = rows.iter().find(|r| r.get("bonus").and_then(Value::as_str) == Some("LNG-R") && r.get("group").and_then(Value::as_str) == Some("Stats")).unwrap_or_else(|| panic!("a Long-Range row: {:?}", rows.iter().map(|r| format!("{}/{}", r["group"], r["bonus"])).collect::<Vec<_>>()));
+    let num = |k: &str| row.get(k).and_then(Value::as_f64);
+    assert_eq!((num("gear"), num("expertise"), num("demon"), num("summoned"), num("total"), num("total_digi")), (Some(0.0), Some(0.0), Some(0.0), Some(60.0), Some(60.0), Some(0.0)));
+    assert_eq!(row["parts"][0]["kind"], "summoned");
+    assert_eq!(row["parts"][0]["source"], "Alilat (summoned)");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn quest_and_compendium_bonuses() {
     if !external_data() {
         return;

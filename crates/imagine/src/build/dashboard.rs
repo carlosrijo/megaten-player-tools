@@ -712,7 +712,16 @@ impl Dashboard {
         self.build_digitalize(dsave.as_ref(), dres.as_ref(), (gear_digi("Max HP"), gear_digi("Max MP")))?;
         let mut icons: IndexMap<String, Option<String>> = IndexMap::new(); // icons.json: "quest" / "clan" / "compendium" / "mitama" -> data: URI
         icons.insert("mitama".into(), item_icons::mitama_mark_data_uri(store, 0)); // the mark on a Mitama demon's picture (every page that shows one)
-        let parts = Dashboard::parts(&gear, &self.short_names(&recs)?, dres.as_ref(), expertise_rows);
+        let mut parts = Dashboard::parts(&gear, &self.short_names(&recs)?, dres.as_ref(), expertise_rows);
+        // The demon summoned beside the character (as last seen in the game) gives it what its tokusei aim at the summoner
+        let seen = super::pipeline::load_seen(store)?;
+        if let Some(partner) = Dashboard::summoned_demon(seen.values().map(|s| &s.demon)) {
+            let boost = match DigitalizeSave::load_progress(store) {
+                Some(p) => p.mitama_boost,
+                None => dsave.as_ref().is_some_and(|s| s.mitama_boost),
+            };
+            parts.extend(self.summoner_parts(partner, boost)?);
+        }
         let sorted = self.bonus_rows(parts, Some(&mut icons))?;
         json::save(store.dash_dir().join("bonuses.json"), &rows_value(&sorted))?;
         let icons_json: serde_json::Map<String, Value> = icons.iter().filter_map(|(k, v)| v.as_ref().map(|v| (k.clone(), json!(v)))).collect();
@@ -793,6 +802,39 @@ impl Dashboard {
         all
     }
 
+    /// The demon summoned beside the character among the demons seen: the game's mark at the last read, with its details.
+    pub fn summoned_demon<'a>(demons: impl IntoIterator<Item = &'a DemonRecord>) -> Option<&'a DemonRecord> {
+        demons.into_iter().find(|d| d.summoned() && d.loaded())
+    }
+
+    /// The bonus lines the summoned partner `demon` gives its summoner (kind "summoned", source "<name> (summoned)"): see
+    /// `Digitalize::summoner_effects`. Counted in a normal total, never in a digitalized one (no partner while digitalized).
+    /// Kept apart from [`Dashboard::parts`]: the caller adds them to a build's parts.
+    pub fn summoner_parts(&self, demon: &DemonRecord, mitama_boost: bool) -> Result<Vec<Part>> {
+        let effects = self.ctx.digitalize(self.store().tooltips_level()?)?.summoner_effects(demon, mitama_boost)?;
+        Ok(Dashboard::summoner_parts_of(&effects))
+    }
+
+    /// The parts of effects already worked out by `Digitalize::summoner_effects`.
+    pub fn summoner_parts_of(effects: &[Effect]) -> Vec<Part> {
+        effects
+            .iter()
+            .filter(|e| e.value.is_some() && !matches!(e.cond.as_str(), "inactive" | "unparsed"))
+            .map(|e| Part {
+                kind: "summoned".into(),
+                label: e.label.clone(),
+                value: e.value.unwrap_or(0.0),
+                pct: e.pct,
+                target: e.target.clone(),
+                cond: e.cond.clone(),
+                note: e.cond_note.clone(),
+                from: e.item.clone(),
+                skill_id: e.skill_id,
+                ..Default::default()
+            })
+            .collect()
+    }
+
     /// The first step of `bonus_rows`: each part's `group` and `bonus` (the bonus list's names). The C# `Part` is a class,
     /// so the Simulator sees these two fields on its own list after `BonusRows` has run; here that is a separate call
     /// (idempotent: it only reads the other fields).
@@ -854,6 +896,9 @@ impl Dashboard {
             let mut gear_d = sum("gear", &["always", "digitalized"]);
             let mut exp_a = sum("expertise", &["always"]);
             let mut demon_d = sum("demon", &["digitalized"]);
+            // what the summoned partner gives its summoner (kind "summoned"): in the normal totals, not the digitalized ones
+            let mut summoned_a = sum("summoned", &["always"]);
+            let has_summoned = list.iter().any(|p| p.kind == "summoned");
             if !counted {
                 // Fight-dependent bonuses usually exclude each other (one partner race, one enemy alignment): show the largest.
                 let best = |kind: &str| -> f64 {
@@ -869,6 +914,7 @@ impl Dashboard {
                 gear_d = gear_a;
                 exp_a = best("expertise");
                 demon_d = best("demon");
+                summoned_a = best("summoned");
             }
             let unit = if f.pct { "%" } else { "" };
             let fmt_v = |v: f64| format!("{}{}{unit}", if v > 0.0 { "+" } else { "" }, r2(v));
@@ -893,7 +939,7 @@ impl Dashboard {
                     "quest".into()
                 } else if p.kind == "expertise" && p.from.contains("(Demonic Compendium") {
                     "compendium".into()
-                } else if p.kind == "expertise" || p.kind == "demon" {
+                } else if p.kind == "expertise" || p.kind == "demon" || p.kind == "summoned" {
                     p.kind.clone()
                 } else if src.to_uppercase().starts_with("SET: ") {
                     "set".into()
@@ -956,17 +1002,21 @@ impl Dashboard {
                 })));
             }
             let id_text = rx::rep(&format!("{}-{}-{unit}", f.group, f.bonus), "[^A-Za-z0-9]+", "-");
-            let row = obj(json!({
+            let mut row = obj(json!({
                 "row": id_text.trim_matches('-').to_lowercase(),
                 "group": f.group, "bonus": f.bonus, "unit": unit, "counted": counted,
                 "gear": fmt::round(gear_a, 2), "gear_digi": fmt::round(gear_d, 2), "expertise": fmt::round(exp_a, 2), "demon": fmt::round(demon_d, 2),
-                "total": if counted { json!(fmt::round(gear_a + exp_a, 2)) } else { Value::Null },
+                "total": if counted { json!(fmt::round(gear_a + exp_a + summoned_a, 2)) } else { Value::Null },
                 "total_digi": if counted { json!(fmt::round(gear_d + exp_a + demon_d, 2)) } else { Value::Null },
                 "from": from_text, "parts": rows_value(&parts),
             }));
+            if has_summoned {
+                // only with a partner out: what it gives the character (in "total", never in "total_digi")
+                row.insert("summoned".into(), json!(fmt::round(summoned_a, 2)));
+            }
             let s2 = match combat_order.get(&f.bonus) {
                 Some(&ci) if f.group == "Combat" => ci as f64,
-                _ => 1000.0 - (gear_d + exp_a + demon_d).abs().min(999.0),
+                _ => 1000.0 - (gear_d + exp_a + demon_d + summoned_a).abs().min(999.0),
             };
             rows.push((row, group_order(&f.group), s2, f.bonus.clone()));
         }

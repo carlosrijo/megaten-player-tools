@@ -196,6 +196,8 @@ pub fn canonical(label: &str, labels: &dyn StatLabelSource) -> (String, &'static
         g("MP_REGEN", "MP Regen")
     } else if rx::is(l, "^HP/MP Regeneration$") {
         "HP/MP Regen".to_string()
+    } else if rx::is(l, "^RATE_HEAL_TAKEN$") {
+        g("RATE_HEAL_TAKEN", "Curative Received") // the client's text: "Summoner Curative Received +20%" (tokusei 130138)
     } else if rx::is(l, "^Critical defense$") {
         g("CRIT_DEF", "Critical Defense")
     } else {

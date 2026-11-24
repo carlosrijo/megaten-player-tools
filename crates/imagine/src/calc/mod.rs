@@ -7,3 +7,4 @@ pub mod item_effects;
 pub mod gear_effects;
 pub mod character_extras;
 pub mod digitalize;
+pub mod summoner;
