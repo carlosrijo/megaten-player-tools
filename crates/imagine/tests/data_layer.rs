@@ -501,22 +501,3 @@ fn a_tokusei_the_text_backs_is_not_flagged() {
     let text = gd.skill_text(5450).unwrap().expect("Criminal Bullet has a description");
     assert!(imagine::build::skill_description::stale_effects(&def, &text).is_empty(), "the text agrees with it");
 }
-
-/// reference\tokusei-newmoon.tsv: the tokusei NewMoon uses that comp_hack and the website lack (Ogami's Crystal soul fusion), read
-/// by `tokusei_full` after both, and never in place of a tokusei they do have.
-#[test]
-fn newmoon_only_tokusei_come_from_the_hand_written_table() {
-    let gd = GameData::with_paths(None, None);
-    let own = gd.tokusei_full(2000192).unwrap().expect("2000192");
-    assert_eq!((own.target.as_str(), own.conditions.len(), own.correct.len(), own.from_client_text), ("SELF", 1, 3, true));
-    assert_eq!(own.conditions[0].r#type.as_deref(), Some("DIGITALIZED"));
-    let ids: Vec<(&str, f64)> = own.correct.iter().map(|c| (c.id.as_deref().unwrap(), c.value)).collect();
-    assert_eq!(ids, vec![("FINAL_CRIT_CHANCE", 5.0), ("LB_CHANCE", 5.0), ("LB_DAMAGE", 5.0)]);
-    let demon = gd.tokusei_full(2000193).unwrap().expect("2000193");
-    assert_eq!((demon.target.as_str(), demon.correct.len()), ("PARTNER", 3));
-    let damage = gd.tokusei_full(2000194).unwrap().expect("2000194");
-    assert_eq!((damage.skill_conditions.clone(), damage.aspects.len(), damage.aspects[0].value), (vec![(Some("ENEMY_LNC".to_string()), 2)], 1, 20.0));
-    // a row never replaces the server's own tokusei: Avoiding the Light's player and partner halves stay as comp_hack has them
-    assert!(!gd.tokusei_full(1050057).unwrap().expect("1050057").from_client_text);
-    assert!(gd.tokusei_full(1_999_999_999).unwrap().is_none());
-}

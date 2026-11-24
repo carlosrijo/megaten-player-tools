@@ -486,7 +486,6 @@ pub struct GameData {
     demons: OnceLock<DemonTables>,
     client_tok_text: OnceLock<HashMap<i32, String>>,
     client_tok: OnceLock<HashMap<i32, Arc<TokuseiDef>>>,
-    newmoon_tok: OnceLock<HashMap<i32, Arc<TokuseiDef>>>,
     defs: Mutex<Defs>,
     raw: Mutex<HashMap<i32, Option<Arc<RawTokusei>>>>,
     raw_types: Mutex<HashMap<i32, Option<String>>>,
@@ -538,7 +537,6 @@ impl GameData {
             demons: OnceLock::new(),
             client_tok_text: OnceLock::new(),
             client_tok: OnceLock::new(),
-            newmoon_tok: OnceLock::new(),
             defs: Mutex::new(Defs::default()),
             raw: Mutex::new(HashMap::new()),
             raw_types: Mutex::new(HashMap::new()),
@@ -1415,70 +1413,6 @@ impl GameData {
         Ok(t.get(&id).cloned())
     }
 
-    /// A tokusei NewMoon uses that comp_hack and the website lack, from the hand-written rows of reference\tokusei-newmoon.tsv
-    /// (its header says what each column holds and how each row was worked out); None when the table has no row for it.
-    pub fn newmoon_tokusei(&self, id: i32) -> Result<Option<Arc<TokuseiDef>>> {
-        let t = once(&self.newmoon_tok, || {
-            let mut m: HashMap<i32, Arc<TokuseiDef>> = HashMap::new();
-            let Some(lines) = reference_lines("tokusei-newmoon.tsv")? else { return Ok(m) };
-            for line in &lines {
-                if line.is_empty() || line.starts_with('#') {
-                    continue;
-                }
-                let r: Vec<&str> = line.split('\t').collect();
-                let Some(tid) = r.first().and_then(|s| crate::fmt::parse_i32(s)) else { continue };
-                if r.len() < 6 {
-                    continue;
-                }
-                // "TYPE" or "TYPE=value" items, comma separated (conditions) or space separated (values)
-                let pair = |s: &str| -> (String, Option<f64>) {
-                    match s.split_once('=') {
-                        Some((k, v)) => (k.trim().to_string(), crate::fmt::parse_f64(v.trim())),
-                        None => (s.trim().to_string(), None),
-                    }
-                };
-                let conditions = split_nonempty(r[2], ',')
-                    .into_iter()
-                    .map(|c| {
-                        let (k, v) = pair(c);
-                        TokCond { r#type: Some(k), value: v.unwrap_or(0.0) as i32, cmp: "EQUALS".into(), group: 0 }
-                    })
-                    .collect();
-                let skill_conditions = split_nonempty(r[3], ',')
-                    .into_iter()
-                    .map(|c| {
-                        let (k, v) = pair(c);
-                        (Some(k), v.unwrap_or(0.0) as i32)
-                    })
-                    .collect();
-                let values = |s: &str| -> Vec<TokValue> {
-                    split_nonempty(s, ' ')
-                        .into_iter()
-                        .map(|c| {
-                            let (k, v) = pair(c);
-                            TokValue::new(Some(k.as_str()), 0, v.unwrap_or(0.0), "NONE", 0)
-                        })
-                        .collect()
-                };
-                m.insert(
-                    tid,
-                    Arc::new(TokuseiDef {
-                        id: tid,
-                        target: if r[1].is_empty() { "SELF".into() } else { r[1].to_string() },
-                        conditions,
-                        skill_conditions,
-                        target_conditions: false,
-                        correct: values(r[4]),
-                        aspects: values(r[5]),
-                        from_client_text: true,
-                    }),
-                );
-            }
-            Ok(m)
-        })?;
-        Ok(t.get(&id).cloned())
-    }
-
     /// The name of the server XML file that holds this tokusei id ("tokusei_00010000.xml"); read it with [`Self::tokusei_xml_text`].
     fn tokusei_file(&self, id: i32) -> String {
         format!("tokusei_{}.xml", d8(id.wrapping_div(10000).wrapping_mul(10000)))
@@ -1557,10 +1491,7 @@ impl GameData {
         }
         let d = match d {
             Some(d) => Some(d),
-            None => match self.newmoon_tokusei(id)? {
-                Some(d) => Some(d),
-                None => self.client_tokusei(id)?,
-            },
+            None => self.client_tokusei(id)?,
         };
         st.defs.insert(id, d.clone());
         Ok(d)
