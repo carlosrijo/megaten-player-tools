@@ -1177,3 +1177,4 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dun-tt-row { display: flex; justify-content: space-between; gap: 14px; }
 .tt-head .dun-item-pic { flex: none; }
 .dun-warn { padding: 7px 10px; font-size: 12px; }
+.gdb-icon img { object-position: 50% 50%; }
