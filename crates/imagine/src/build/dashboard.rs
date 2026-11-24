@@ -715,6 +715,16 @@ impl Dashboard {
         let mut icons: IndexMap<String, Option<String>> = IndexMap::new(); // icons.json: "quest" / "clan" / "compendium" / "mitama" -> data: URI
         icons.insert("mitama".into(), item_icons::mitama_mark_data_uri(store, 0)); // the mark on a Mitama demon's picture (every page that shows one)
         let mut parts = Dashboard::parts(&gear, &self.short_names(&recs)?, dres.as_ref(), expertise_rows);
+        // What VIT, INT and SPD take off cooldown and incantation time (from the last saved normal stats)
+        if store.last_stats_path().exists() {
+            let last = json::load(store.last_stats_path())?;
+            let pairs: Vec<i32> = json::arr(last.at("pairs")).map(|p| json::int(Some(p))).collect();
+            if pairs.len() >= 10 {
+                let s = |k: usize| pairs[2 * k].wrapping_add(pairs[2 * k + 1]);
+                let normal = [s(2), s(3), s(4)];
+                parts.extend(Dashboard::stat_time_parts(normal, dres.as_ref().map(|d| Dashboard::digitalized_time_stats(normal, d, &gear.effects))));
+            }
+        }
         // The demon summoned beside the character (as last seen in the game) gives it what its tokusei aim at the summoner
         let seen = super::pipeline::load_seen(store)?;
         if let Some(partner) = Dashboard::summoned_demon(seen.values().map(|s| &s.demon)) {
@@ -801,6 +811,63 @@ impl Dashboard {
                     ..Default::default()
                 });
             }
+        }
+        all
+    }
+
+    /// VIT, INT and SPD while digitalized: the normal ones plus the demon's stats at the digitalize rate, the flat stat
+    /// effects the digitalize gives (force stack, passives) and gear stats that only work digitalized.
+    pub fn digitalized_time_stats(normal: [i32; 3], d: &DigitalizeResult, gear: &[Effect]) -> [i32; 3] {
+        let mut out = normal;
+        for (i, idx) in [2, 3, 4].into_iter().enumerate() {
+            out[i] = out[i].wrapping_add(d.stats.get(&idx).copied().unwrap_or(0));
+        }
+        let mut add = |e: &Effect| {
+            if e.pct || e.target != "self" {
+                return;
+            }
+            let Some(v) = e.value else { return };
+            let v = v as i32;
+            match bonuses::canonical(&e.label, &GameStatLabels).0.as_str() {
+                "VIT" => out[0] = out[0].wrapping_add(v),
+                "INT" => out[1] = out[1].wrapping_add(v),
+                "SPD" => out[2] = out[2].wrapping_add(v),
+                "All stats" => out.iter_mut().for_each(|o| *o = o.wrapping_add(v)),
+                _ => {}
+            }
+        };
+        for e in d.effects.iter().filter(|e| e.counted() && !e.cond_note.starts_with("stats")) {
+            add(e);
+        }
+        for e in gear.iter().filter(|e| e.cond == "digitalized") {
+            add(e);
+        }
+        out
+    }
+
+    /// What VIT, INT and SPD take off cooldown and incantation time (kind "stats", see [`bonuses::stat_time_cut`]):
+    /// a normal part ("always", counted in the normal total only) and, with `digi`, a digitalized one (counted in the
+    /// digitalized total only). `normal` / `digi`: final [VIT, INT, SPD].
+    pub fn stat_time_parts(normal: [i32; 3], digi: Option<[i32; 3]>) -> Vec<Part> {
+        let mut all = Vec::new();
+        let mut push = |stats: [i32; 3], cond: &str| {
+            for (label, main, name) in [("Cooldown", stats[0], "VIT"), ("Incantation", stats[1], "INT")] {
+                all.push(Part {
+                    kind: "stats".into(),
+                    label: label.into(),
+                    value: bonuses::stat_time_cut(main, stats[2]),
+                    pct: true,
+                    target: "self".into(),
+                    cond: cond.into(),
+                    note: format!("2.5% per 10 {name} and 1.5% per 10 SPD, rounded down"),
+                    from: format!("{name} {main}, SPD {}", stats[2]),
+                    ..Default::default()
+                });
+            }
+        };
+        push(normal, "always");
+        if let Some(d) = digi {
+            push(d, "digitalized");
         }
         all
     }
@@ -902,6 +969,10 @@ impl Dashboard {
             // what the summoned partner gives its summoner (kind "summoned"): in the normal totals, not the digitalized ones
             let mut summoned_a = sum("summoned", &["always"]);
             let has_summoned = list.iter().any(|p| p.kind == "summoned");
+            // what the character's own stats take off (kind "stats"): one part per mode, each in its own total
+            let has_stats = list.iter().any(|p| p.kind == "stats");
+            let stats_a = sum("stats", &["always"]);
+            let stats_d = if list.iter().any(|p| p.kind == "stats" && p.cond == "digitalized") { sum("stats", &["digitalized"]) } else { stats_a };
             if !counted {
                 // Fight-dependent bonuses usually exclude each other (one partner race, one enemy alignment): show the largest.
                 let best = |kind: &str| -> f64 {
@@ -942,7 +1013,7 @@ impl Dashboard {
                     "quest".into()
                 } else if p.kind == "expertise" && p.from.contains("(Demonic Compendium") {
                     "compendium".into()
-                } else if p.kind == "expertise" || p.kind == "demon" || p.kind == "summoned" {
+                } else if p.kind == "expertise" || p.kind == "demon" || p.kind == "summoned" || p.kind == "stats" {
                     p.kind.clone()
                 } else if src.to_uppercase().starts_with("SET: ") {
                     "set".into()
@@ -1013,17 +1084,22 @@ impl Dashboard {
                 "row": id_text.trim_matches('-').to_lowercase(),
                 "group": f.group, "bonus": f.bonus, "unit": unit, "counted": counted,
                 "gear": fmt::round(gear_a, 2), "gear_digi": fmt::round(gear_d, 2), "expertise": fmt::round(exp_a, 2), "demon": fmt::round(demon_d, 2),
-                "total": if counted { json!(fmt::round(gear_a + exp_a + summoned_a, 2)) } else { Value::Null },
-                "total_digi": if counted { json!(fmt::round(gear_d + exp_a + demon_d, 2)) } else { Value::Null },
+                "total": if counted { json!(fmt::round(gear_a + exp_a + summoned_a + stats_a, 2)) } else { Value::Null },
+                "total_digi": if counted { json!(fmt::round(gear_d + exp_a + demon_d + stats_d, 2)) } else { Value::Null },
                 "from": from_text, "parts": rows_value(&parts),
             }));
+            if has_stats {
+                // what VIT/INT and SPD take off (in "total" and "total_digi", each with the stats of its mode)
+                row.insert("stats".into(), json!(fmt::round(stats_a, 2)));
+                row.insert("stats_digi".into(), json!(fmt::round(stats_d, 2)));
+            }
             if has_summoned {
                 // only with a partner out: what it gives the character (in "total", never in "total_digi")
                 row.insert("summoned".into(), json!(fmt::round(summoned_a, 2)));
             }
             let s2 = match combat_order.get(&f.bonus) {
                 Some(&ci) if f.group == "Combat" => ci as f64,
-                _ => 1000.0 - (gear_d + exp_a + demon_d + summoned_a).abs().min(999.0),
+                _ => 1000.0 - (gear_d + exp_a + demon_d + summoned_a + stats_a).abs().min(999.0),
             };
             rows.push((row, group_order(&f.group), s2, f.bonus.clone()));
         }

@@ -708,6 +708,11 @@ impl Simulator {
         }
         let expertise_rows = self.exp.rows(Some(&Value::Object(snap)), &entries, false)?;
         let mut parts = Dashboard::parts(&gear, &short_name, demon.as_ref(), &expertise_rows);
+        // What the build's VIT, INT and SPD take off cooldown and incantation time (as in bonuses.json)
+        if !b.blank {
+            let normal = [stats[2], stats[3], stats[4]];
+            parts.extend(Dashboard::stat_time_parts(normal, demon.as_ref().map(|d| Dashboard::digitalized_time_stats(normal, d, &gear.effects))));
+        }
         // The partner summoned beside the character gives it what its tokusei aim at the summoner (as in bonuses.json)
         if let Some(partner) = Dashboard::summoned_demon(b.seen.values()).filter(|_| !b.blank) {
             let calc = Digitalize::new(Arc::clone(data), ItemEffects::new(Arc::clone(data), &b.alignment, b.level, ranks.clone()));

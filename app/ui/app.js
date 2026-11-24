@@ -289,24 +289,37 @@
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
     ['Partner', 'Partner', 'Your partner'], ['Only in some fights', 'Situational', 'Only in some fights · not added to the totals'],
   ];
-  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon' };
+  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon', stats: 'Your stats' };
   const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon'];
   const lowIsGood = (name) => /taken|cooldown|cast time|incantation/i.test(name);
 
   // Stats that give nothing past a ceiling (from the user, 2026-11-23). The ceiling applies to the whole value
   // (gear + expertise, in the shown mode). To add one: its key from COMBAT above and its ceiling.
-  const CAPS = { final_crit: 100, lb_chance: 100, ta_chance: 100, pursuit_chance: 100, pursuit_power: 100 };
-  const capOfBonus = (row) => {   // the same list for a row of the bonus list (your own combat bonuses only)
-    if (!row || row.group !== 'Combat') return null;
+  // A negative one is a floor: cooldown stops at 5% of the skill's own (the server's lowest COOLDOWN_TIME).
+  const CAPS = { final_crit: 100, lb_chance: 100, ta_chance: 100, pursuit_chance: 100, pursuit_power: 100, cooldown: -95 };
+  const INCANTATION_CAP = -100;   // incantation (cast) time stops at 0
+  /** How far a total is past its cap (0 = at it, negative = not there yet); a negative cap is a floor. */
+  const pastCap = (total, cap) => round2(cap < 0 ? cap - total : total - cap);
+  const capOfBonus = (row) => {   // the same list for a row of the bonus list (your own bonuses only)
+    if (!row) return null;
+    if (row.group === 'Other' && /^(incantation|cast time)$/i.test(String(row.bonus))) return INCANTATION_CAP;
+    if (row.group !== 'Combat') return null;
     const hit = COMBAT.find(([, label]) => label === row.bonus);
     return hit && CAPS[hit[0]] !== undefined ? CAPS[hit[0]] : null;
   };
+  /** What VIT/INT and SPD take off a row in the shown mode (cooldown, incantation), or 0. */
+  const statsOf = (row) => n0(row && (digi() ? row.stats_digi : row.stats));
+  /** The stats part of a row in the shown mode (kind "stats": one normal, one digitalized). */
+  const statsPart = (row) => ((row && row.parts) || []).find((p) => p.kind === 'stats' && isTrue(p.digi) === digi())
+    || ((row && row.parts) || []).find((p) => p.kind === 'stats' && !isTrue(p.digi));
+  /** "From VIT 67, SPD 255: 2.5% per 10 VIT and 1.5% per 10 SPD, rounded down", or null. */
+  const statsNote = (row) => { const p = statsPart(row); return p ? `From ${p.source}${digi() && isTrue(p.digi) ? ' (digitalized)' : ''}: ${p.note}` : null; };
   /** "At the 100% cap" / "10% over the cap" as a small tag, or nothing while below it. */
   function capTag(total, cap, unit, style) {
-    if (cap === null || cap === undefined || total < cap) return null;
-    const over = round2(total - cap);
+    if (cap === null || cap === undefined || pastCap(total, cap) < 0) return null;
+    const over = pastCap(total, cap);
     return h('span', { class: 'tag ' + (over > 0 ? 'tag-over' : 'tag-max'), style: style || null,
-      'data-tip': over > 0 ? `Caps at ${fmt(cap, unit)}: the ${fmt(over, unit).replace(/^\+/, '')} above it adds nothing` : `Caps at ${fmt(cap, unit)}: more adds nothing`,
+      'data-tip': over > 0 ? `Caps at ${fmt(cap, unit)}: the ${fmt(over, unit).replace(/^\+/, '')} past it adds nothing` : `Caps at ${fmt(cap, unit)}: more adds nothing`,
       text: over > 0 ? `${fmt(over, unit).replace(/^\+/, '')} over the cap` : 'At the cap' });
   }
 
@@ -392,7 +405,9 @@
       const demon = dgc && dgc[k] !== undefined ? n0(dgc[k]) : n0(latest[k + '_demon']);
       // what the demon summoned beside you gives you (only a normal total: nobody is out while digitalized)
       const summoned = n0((bonusRowOf(k, label, unit) || {}).summoned);
-      by[k] = { stat: k, label, unit, gear, gearDigi, exp, demon, summoned };
+      // what VIT and SPD take off cooldown, each mode with its own stats
+      const statsRow = bonusRowOf(k, label, unit) || {}, stats = n0(statsRow.stats), statsDigi = n0(statsRow.stats_digi);
+      by[k] = { stat: k, label, unit, gear, gearDigi, exp, demon, summoned, stats, statsDigi };
     });
     // Which bonuses each item / set contributes to: from the per-source parts of the all-bonuses list.
     const setKey = (text) => { const m = /\((?:\d+\/\d+, )?(fusion set|set) (\d+)\)\s*$/.exec(String(text || '')); return m ? `${m[1]}:${m[2]}` : null; };
@@ -448,8 +463,8 @@
     const r = S.v.by[k];
     if (!r) return null;
     const gear = digi() ? r.gearDigi : r.gear;
-    const demonNow = digi() ? r.demon : 0, summonedNow = digi() ? 0 : r.summoned;
-    return { ...r, gearNow: gear, demonNow, summonedNow, total: round2(gear + r.exp + demonNow + summonedNow), extra: round2(r.gearDigi - r.gear) };
+    const demonNow = digi() ? r.demon : 0, summonedNow = digi() ? 0 : r.summoned, statsNow = digi() ? r.statsDigi : r.stats;
+    return { ...r, gearNow: gear, demonNow, summonedNow, statsNow, total: round2(gear + r.exp + demonNow + summonedNow + statsNow), extra: round2(r.gearDigi - r.gear) };
   }
 
   // ---------- tooltip ----------
@@ -1042,10 +1057,10 @@
       if (!r) return null;
       const f = (v) => fmt(v, r.unit, true);
       const cap = CAPS[k] === undefined ? null : CAPS[k];
-      const over = cap !== null && r.total > cap ? round2(r.total - cap) : 0;
+      const over = cap !== null && pastCap(r.total, cap) > 0 ? pastCap(r.total, cap) : 0;
       const plain = (v) => fmt(v, r.unit).replace(/^\+/, '');
       const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : []),
-        ...(!digi() ? [['sw-demon', summonedName(), r.summonedNow]] : [])].filter(([, , v]) => v);
+        ...(!digi() ? [['sw-demon', summonedName(), r.summonedNow]] : []), ['sw-base', 'Your stats', r.statsNow]].filter(([, , v]) => v);
       const open = S.over.open === k;
       const bonusRow0 = bonusRowOf(k, r.label, r.unit);
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
@@ -1066,11 +1081,12 @@
       return [row, h('div', { class: 'sheet-detail' },
         srcs.length ? srcs.map(([cls, name, v]) => line(cls, name, f(v),
           cls === 'sw-gear' && r.extra ? (digi() ? `${f(r.extra)} of it only while digitalized` : `${f(r.extra)} more while digitalized`)
-            : cls === 'sw-exp' ? toggleShareText(bonusRow0, 'it') : null))
+            : cls === 'sw-exp' ? toggleShareText(bonusRow0, 'it')
+            : name === 'Your stats' ? statsNote(bonusRow0) : null))
           : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
         toggleShare(bonusRow0) ? h('p', { class: 'note', text: togglesNote() }) : null,
         cap === null ? null : h('p', { class: 'note', text: `Caps at ${fmt(cap, r.unit)}: ` + (over ? `the ${plain(over)} above it adds nothing, so those points could go elsewhere.`
-          : r.total >= cap ? 'reached, more adds nothing.' : `${plain(round2(cap - r.total))} to go.`) }),
+          : pastCap(r.total, cap) >= 0 ? 'reached, more adds nothing.' : `${plain(Math.abs(pastCap(r.total, cap)))} to go.`) }),
         bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this, on the Bonuses page', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
           'View more') : null)];
     };
@@ -1187,7 +1203,9 @@
 
   // ---------- Bonuses ----------
   function partsList(row, onlySource) {
-    const parts = (Array.isArray(row.parts) ? row.parts : []).filter((p) => !onlySource || String(p.source).toLowerCase().includes(onlySource))
+    const own = statsPart(row);   // of the two "your stats" parts (normal, digitalized), only the shown mode's
+    const parts = (Array.isArray(row.parts) ? row.parts : []).filter((p) => p.kind !== 'stats' || p === own)
+      .filter((p) => !onlySource || String(p.source).toLowerCase().includes(onlySource))
       .sort((a, b) => Math.abs(n0(b.value)) - Math.abs(n0(a.value)));
     return h('ul', { class: 'parts' }, parts.map((p) => {
       const notes = [];
@@ -1202,7 +1220,7 @@
         // hovering it shows a game-style tooltip
         piece ? withTip(gearIcon(piece), gearTip(piece)) : withTip(gearIcon(other), sourceTip(p, other)),
         h('span', { class: 'kind', text: KIND[p.kind] || p.kind || '' }),
-        h('span', null, p.source, crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null, isTrue(p.toggle) ? toggleTag('margin-left:8px') : null,
+        h('span', null, p.source, crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) && p.kind !== 'stats' ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null, isTrue(p.toggle) ? toggleTag('margin-left:8px') : null,
           p.kind === 'summoned' ? h('span', { class: 'tag ' + (digi() ? 'tag-off' : 'tag-demon'), style: 'margin-left:8px', 'data-tip': String(p.source).replace(/ \(summoned\)$/, '') + ' gives you this only while it is summoned beside you, not while you are digitalized', text: 'While summoned' }) : null,
           notes.length ? h('small', { text: notes.join(' · ') }) : null),
         h('span', { class: 'pv', text: p.value === null || p.value === undefined ? '' : fmt(p.value, row.unit, true) }));
@@ -1246,7 +1264,7 @@
           const open = S.bonus.open.has(r.row) || viaSource;
           const gear = digi() ? r.gear_digi : r.gear, total = digi() ? r.total_digi : r.total;
           const extra = round2(n0(r.gear_digi) - n0(r.gear));
-          const nParts = (r.parts || []).length;
+          const ownStats = statsPart(r), nParts = (r.parts || []).filter((p) => p.kind !== 'stats' || p === ownStats).length, fromStats = statsOf(r);
           const toggle = () => { if (S.bonus.open.has(r.row)) S.bonus.open.delete(r.row); else S.bonus.open.add(r.row); draw(); };
           const cell = (v, cls) => h('td', { class: 'num ' + (n0(v) ? cls || '' : 'zero'), text: num(v) === null ? '—' : n0(v) === 0 ? '0' : fmt(v, r.unit, true) });
           const tr = h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
@@ -1254,6 +1272,7 @@
               h('span', { class: 'chev' }, icon('chevron')),
               h('span', null, r.bonus, h('span', { class: 'src-count', text: nParts === 1 ? '1 source' : `${nParts} sources` }),
                 counted && extra ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: digi() ? `incl. ${fmt(extra, r.unit, true)} digi` : `${fmt(extra, r.unit, true)} digitalized` }) : null,
+                counted && fromStats ? h('span', { class: 'tag tag-off', style: 'margin-left:8px', 'data-tip': statsNote(r), text: `incl. ${fmt(fromStats, r.unit, true)} from your stats` }) : null,
                 counted ? capTag(n0(total), capOfBonus(r), r.unit, 'margin-left:8px') : null,
                 counted && toggleShare(r) ? h('span', { class: 'tag tag-off', style: 'margin-left:8px', 'data-tip': toggleShareText(r, 'this total'), text: `${fmt(toggleShare(r), r.unit, true)} from toggles` }) : null))),
             cell(gear), cell(r.expertise), digi() ? cell(r.demon) : null, SM ? cell(r.summoned === undefined ? 0 : r.summoned) : null,
@@ -1279,6 +1298,7 @@
         SM ? h('th', { scope: 'col', class: 'num', text: SM, 'data-tip': 'Counts only while this demon is summoned beside you. It is left out of the digitalized totals.' }) : null,
         h('th', { scope: 'col', class: 'num', text: digi() ? 'Total, digitalized' : 'Total' }))), body)));
     page.append(h('p', { class: 'note', text: 'Gear includes tarot, soul fusions, mods, complete sets and appearance bonuses. For bonuses that only apply in some fights, the largest single value is shown.'
+      + ' Cooldown and incantation totals also count what your stats take off: 2.5% per 10 VIT (cooldown) or INT (incantation), and 1.5% per 10 SPD for both. Cooldown stops at 95% off.'
       + (SM ? ` ${SM.replace(/ \(summoned\)$/, '')}'s column counts only while ${SM.replace(/ \(summoned\)$/, '')} is summoned beside you; it is not in the digitalized totals.` : '') }));
     page.append(h('p', { class: 'note', text: togglesNote() }));
     drawChips(); draw();
@@ -1491,10 +1511,11 @@
       const foot = h('tfoot', null, h('tr', null, h('td', { class: 'pin', text: 'All gear' }), shown.map((c) => {
         if (!isTrue(c.row.counted)) return h('td', { class: 'num zero', 'data-tip': 'Depends on the fight, so it is not added up', text: '—' });
         const t = round2(rows.reduce((a, g) => a + val(c, g), 0));
-        const cap = capOfBonus(c.row), whole = round2(t + n0(c.row.expertise));   // the cap counts expertise too
-        if (cap !== null && whole >= cap) return h('td', { class: 'num capped', 'data-tip': whole > cap
-          ? `With expertise this is ${fmt(whole, c.row.unit)}: ${fmt(round2(whole - cap), c.row.unit).replace(/^\+/, '')} over the ${fmt(cap, c.row.unit).replace(/^\+/, '')} cap, which adds nothing`
-          : `With expertise this is exactly at the ${fmt(cap, c.row.unit).replace(/^\+/, '')} cap`, text: (t ? fmt(t, c.row.unit, true) : '0') + (whole > cap ? ' ▲' : ' ●') });
+        const cap = capOfBonus(c.row), whole = round2(t + n0(c.row.expertise) + statsOf(c.row));   // the cap counts expertise (and what your stats take off) too
+        const past = cap === null ? -1 : pastCap(whole, cap), also = statsOf(c.row) ? 'expertise and your stats' : 'expertise';
+        if (cap !== null && past >= 0) return h('td', { class: 'num capped', 'data-tip': past > 0
+          ? `With ${also} this is ${fmt(whole, c.row.unit)}: ${fmt(past, c.row.unit).replace(/^\+/, '')} past the ${fmt(cap, c.row.unit).replace(/^\+/, '')} cap, which adds nothing`
+          : `With ${also} this is exactly at the ${fmt(cap, c.row.unit).replace(/^\+/, '')} cap`, text: (t ? fmt(t, c.row.unit, true) : '0') + (past > 0 ? ' ▲' : ' ●') });
         return h('td', { class: 'num', text: t ? fmt(t, c.row.unit, true) : '0' });
       })));
       const scroll = tableHost.firstElementChild, left = scroll ? scroll.scrollLeft : 0, top = scroll ? scroll.scrollTop : 0;
