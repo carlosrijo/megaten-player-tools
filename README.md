@@ -72,6 +72,12 @@ program, so a build with the app open fails to replace it).
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
 
+**Back and forward**: the arrows on either side of the page's name in the top bar (also Alt+Left / Alt+Right and the
+mouse's side buttons) go back to the page you came from, for example after a demon link opened the Demon Database
+or the Overview's expertise opened the Expertise page. The page comes back as you left it: its search, filters,
+opened rows and scroll position. Opening and closing a Simulator build counts as a step too. Hovering an arrow says
+where it goes. The list lasts while the app is open (up to 50 steps).
+
 The info button beside **Take snapshot** (and the Overview before a character's first snapshot) lists what to open in
 game first, because the game only loads some data when its window is opened: start a Double Fusion at the Cathedral
 of Shadows and cancel it (loads every COMP demon, so the digitalize demon can be read), open Quest Completion Bonuses
