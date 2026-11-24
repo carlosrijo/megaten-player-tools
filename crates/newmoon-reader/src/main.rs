@@ -18,24 +18,36 @@
 //! --data <dir> uses that folder as-is instead (for tests on copies).
 //! The desktop app (app\) runs the same steps through Build\Pipeline.cs.
 //!
-//! Commands ported so far: clients, model (and model --check), demondb, dungeons, skilldb, labels. The others are marked
-//! `// WAVE3:` where they stop with "not ported yet".
+//! Commands ported: everything except `simulate` and `serve` (wave 4: they need the Simulator and the PreviewServer).
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
-use newmoon::build::{demon_db, demon_model, dungeons, item_icons, skill_db};
+use newmoon::build::pipeline::{self, Pipeline, default_csv, default_name, find_data_dir};
+use newmoon::build::snapshot::SnapshotResult;
+use newmoon::build::{demon_db, demon_model, dungeons, gear_db, item_icons, skill_db};
+use newmoon::calc::character_extras;
+use newmoon::calc::character_hp_mp::{self, Calibration};
+use newmoon::calc::digitalize::{Digitalize, MITAMA_NAMES, RUNE_NAMES, set_name};
+use newmoon::calc::effect::Effect;
+use newmoon::calc::item_effects::ItemEffects;
 use newmoon::console;
 use newmoon::data::characters::{Characters, get_directory_name, path_combine};
 use newmoon::data::config;
+use newmoon::data::demon_tables::Assist;
 use newmoon::data::game_data::GameData;
+use newmoon::data::json::{self, At};
 use newmoon::data::nif::{NifBlock, NifError, NifFile, NifKind, NifSequence};
 use newmoon::data::stat_labels;
 use newmoon::data::store::Store;
 use newmoon::fmt;
-use newmoon::game::client_reader;
-use newmoon::text::cmp_invariant;
+use newmoon::game::progress_reader::{self, ProgressState};
+use newmoon::game::{DemonRecord, client_reader, demon_reader};
+use newmoon::memory::GameMemory;
+use newmoon::text::{cmp_invariant, eq_ic};
 use newmoon::{Result, UserError, user_error};
+use serde_json::Value;
 
 /// What a .NET process returns when an exception nobody caught ends it (0xE0434352).
 const UNHANDLED_EXIT: i32 = 0xE043_4352_u32 as i32;
@@ -70,11 +82,11 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     if cmd == "geardb" {
         // The Gear Database page's data, from the client's decoded tables and the community sheets (no game, no character).
         //   geardb --decoded <dir with ItemData.xml, SItemData.xml, EquipmentSetData.xml, CItemData.xml> [--sheets sheet_gear.tsv] [--out app\ui\gear-db.json]
-        let _decoded = get("decoded").ok_or_else(|| user_error("geardb needs --decoded <folder with the decoded client tables>."))?;
-        // WAVE3: Program.cs lines 46-52: GearDb.Build(new GameData(), decoded, opts["sheets"], opts.GetValueOrDefault("out", Path.Combine("app", "ui", "gear-db.json")),
-        //        opts["ids-out"], opts["game-sources"]); return 0;   (--ids-out: the ids for tools\dcmexport --ids; --game-sources: its output).
-        //        gear_db.rs is the other agent's port; call its build() here.
-        return Err(user_error("not ported yet: geardb"));
+        let decoded = get("decoded").ok_or_else(|| user_error("geardb needs --decoded <folder with the decoded client tables>."))?;
+        let out = get_or("out", path_combine(&path_combine("app", "ui"), "gear-db.json"));
+        // --ids-out: the ids for tools\dcmexport --ids; --game-sources: its output
+        gear_db::build(Arc::new(GameData::new()), decoded, get("sheets"), &out, get("ids-out"), get("game-sources"))?;
+        return Ok(0);
     }
     if cmd == "dungeons" {
         // The Dungeon Explorer page's data: every dungeon and its enemies that can't be contracted (no game, no character).
@@ -151,61 +163,75 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
         }
         return Ok(0);
     }
+    // The character a command works on, with its pipeline (the C# `name`, `csv` and `pipe`).
+    let mut chosen: Option<(Target, Pipeline)> = None;
     if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve") {
         // Which character: --name, else the one logged in (snapshot, sets) or the only one with saved data (rebuild, recalc).
         // Each character has its own folder and CSV (data\characters.json). --data / --csv point somewhere else instead,
         // which is how tests run on copies.
-        let _target = resolve_character(cmd, opts)?;
-        // WAVE3: Program.cs lines 177-179: pipe = new Pipeline(entry != null ? known.DataDir(entry) : root); store = pipe.Store; data = pipe.Data; ctx = pipe.Ctx;
-        //        (build them from `_target.data_dir`; every arm below then uses _target.name / _target.csv, as `name` / `csv` in the C#).
+        let target = resolve_character(cmd, opts)?;
+        let pipe = Pipeline::new(target.data_dir.clone(), None, None, None);
+        chosen = Some((target, pipe));
     }
 
     // the switch of Program.cs
     match cmd {
         "snapshot" => {
-            // WAVE3: Program.cs lines 182-188: pipe.TakeSnapshot(name, csv, opts.ContainsKey("ignore-window")); PrintSnapshot(name, r) (lines 656-675);
-            //        "Expertise: {ranks} ranked (incl. computed chains)"; Rebuild().
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            let (r, ranks) = pipe.take_snapshot(&t.name, &t.csv, opts.contains_key("ignore-window"))?;
+            print_snapshot(&t.name, &r);
+            console::write_line(&format!("Expertise: {ranks} ranked (incl. computed chains)"));
+            rebuild(t, pipe)?;
+            Ok(0)
         }
         "toggles" => {
-            // WAVE3: Program.cs lines 190-240: newmoon-reader toggles ["Name, Name, ..." | none]: show or set which toggle (switch) skills are on.
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            toggles(opts, t, pipe)
         }
         "expertise" => {
-            // WAVE3: Program.cs lines 242-248: Re-read expertise ranks and Digitalization Levels from the game and rebuild the page data (no CSV row).
-            Err(not_ported(cmd))
+            // Re-read expertise ranks and Digitalization Levels from the game and rebuild the page data (no CSV row)
+            let (t, pipe) = need(&chosen)?;
+            let ranks = pipe.exp().read(&t.name)?;
+            console::write_line(&format!("Expertise: {} ranked (incl. computed chains)", ranks.len()));
+            rebuild(t, pipe)?;
+            Ok(0)
         }
         "rebuild" => {
-            // WAVE3: Program.cs lines 249-251: Rebuild() (lines 650-654).
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            rebuild(t, pipe)?;
+            Ok(0)
         }
         "simulate" => {
-            // WAVE3: Program.cs lines 252-275: the Simulator tool from the command line (--spec / --init / --catalog N / self check).
+            // WAVE4 (was WAVE3): Program.cs lines 252-275: the Simulator tool from the command line (--spec / --init / --catalog N / self check).
             Err(not_ported(cmd))
         }
         "serve" => {
-            // WAVE3: Program.cs lines 276-289: the page in a plain browser with a working Simulator: PreviewServer.Run(...).
+            // WAVE4 (was WAVE3): Program.cs lines 276-289: the page in a plain browser with a working Simulator: PreviewServer.Run(...).
             Err(not_ported(cmd))
         }
         "recalc" => {
-            // WAVE3: Program.cs lines 290-293: foreach line in pipe.Recalc(csv) print it; Rebuild().
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            for line in pipe.recalc(&t.csv)? {
+                console::write_line(&line);
+            }
+            rebuild(t, pipe)?;
+            Ok(0)
         }
         "extras" => {
-            // WAVE3: Program.cs lines 294-346: quest / compendium counts (--quests, --compendium, --compendium-v2), the clan read from the game, CharacterExtras.Compute.
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            extras(opts, t, pipe)
         }
         "alignment" => {
-            // WAVE3: Program.cs lines 347-373: newmoon-reader alignment [LAW|NEUTRAL|CHAOS] [--name N].
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            alignment(opts, t, pipe)
         }
         "sets" => {
-            // WAVE3: Program.cs lines 374-397: the sets/appearance bonuses of the worn gear (ctx.Gear().Compute).
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            sets(t, pipe)
         }
         "demon" => {
-            // WAVE3: Program.cs lines 398-474 (the command) and 678-775 (PrintDemon): newmoon-reader demon [name] [--assists ...] [--mitama-boost] [--picker|--comp|--raw|--use].
-            Err(not_ported(cmd))
+            let (t, pipe) = need(&chosen)?;
+            demon(opts, t, pipe)
         }
         "labels" => {
             // newmoon-reader labels: writes reference\stat-labels-game.tsv, the game's own name for each stat id
@@ -215,17 +241,16 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             console::write_line(&format!("{rows} stat labels written to {}", path.display()));
             Ok(0)
         }
-        "digilevels" => {
-            // WAVE3: Program.cs lines 485-545: newmoon-reader digilevels [--name N]: Digitalization Level of each race, learned assists and the extend
-            //        skills those levels give (read-only; independent of the saved data). Needs ItemEffects (fx.Correct / fx.Tokusei), DemonReader.ReadProgress,
-            //        ClientReader.ReadNameplate and DemonTables.RaceLevels / AllExtendSkills.
-            Err(not_ported(cmd))
-        }
+        "digilevels" => digilevels(opts),
         _ => {
             console::write_line("usage: newmoon-reader clients | snapshot|rebuild|recalc|sets [--name N] [--csv path] [--data dir] [--ignore-window]");
             Ok(if cmd == "help" { 0 } else { 2 })
         }
     }
+}
+
+fn need(chosen: &Option<(Target, Pipeline)>) -> Result<(&Target, &Pipeline)> {
+    chosen.as_ref().map(|(t, p)| (t, p)).ok_or_else(|| anyhow::anyhow!("Object reference not set to an instance of an object."))
 }
 
 fn not_ported(cmd: &str) -> anyhow::Error {
@@ -273,27 +298,7 @@ fn parse_args(a: &[String]) -> HashMap<String, String> {
     d
 }
 
-// ---------- Pipeline's statics (WAVE3: these belong to build::pipeline) ----------
-
-/// `Pipeline.FindDataDir()`: the "data" folder next to the project file (found by walking up from the program's
-/// folder), else beside the exe itself (the portable release).
-fn find_data_dir() -> PathBuf {
-    config::home_dir().join("data")
-}
-
-/// `Pipeline.DefaultName`.
-fn default_name() -> String {
-    config::current().default_character.clone().unwrap_or_else(|| "Character".to_string())
-}
-
-/// `Pipeline.DefaultCsv`.
-fn default_csv() -> Result<String> {
-    let stats = config::current().stats_folder.clone().ok_or_else(null_path)?;
-    Ok(path_combine(&stats, &format!("{}-stats.csv", default_name().to_lowercase())))
-}
-
 /// The character a command works on (the C# `name` and `csv`, and the folder its Pipeline is made for).
-#[allow(dead_code)]
 struct Target {
     name: String,
     csv: String,
@@ -355,6 +360,894 @@ fn resolve_character(cmd: &str, opts: &HashMap<String, String>) -> Result<Target
         },
     };
     Ok(Target { name, csv, data_dir })
+}
+
+// ---------- the commands ----------
+
+/// `Rebuild()`: the page data from the CSV and the saved files.
+fn rebuild(t: &Target, pipe: &Pipeline) -> Result<()> {
+    let c = pipe.rebuild(&t.csv)?;
+    console::write_line(&format!(
+        "Page data in {}: snapshots {}, gear {}, expertise {}, bonuses {}",
+        pipe.store().dash_dir().display(),
+        c.snapshots,
+        c.gear,
+        c.expertise,
+        c.bonuses
+    ));
+    Ok(())
+}
+
+fn print_snapshot(name: &str, r: &SnapshotResult) {
+    console::write_line(&format!("{name}  level {}  HP {}/{}  MP {}/{}  (stats: {}; source {})", r.level, r.hp, r.max_hp, r.mp, r.max_mp, r.stats_note, r.source));
+    if !r.missing.is_empty() {
+        console::write_line(&format!("No saved tooltip for: {}", r.missing));
+    }
+    for i in 0..12 {
+        console::write(&format!("{} {}  ", client_reader::STAT_NAMES[i], r.pairs[i * 2].wrapping_add(r.pairs[i * 2 + 1])));
+    }
+    console::blank_line();
+    for c in r.combat.iter().filter(|c| c.always != 0.0 || c.digi != 0.0) {
+        console::write_line(&format!("  {:<30} {:>8} {:>8}", c.stat, fmt::custom(c.always, "0.##"), fmt::custom(c.digi, "0.##")));
+    }
+    for s in r.gear.sets.iter().filter(|s| s.active && !s.appearance) {
+        console::write_line(&format!("  set {} [{}] {}", s.set_id, s.worn, s.pieces));
+    }
+    if let Some(dm) = r.demon.as_ref().and_then(|d| d.demon.as_ref()) {
+        console::write_line(&format!(
+            "Digitalize demon: {} Lv{}{}, {}% of its stats",
+            dm.name,
+            dm.level,
+            if r.demon.as_ref().is_some_and(|d| d.digitalized_when_taken) { " (digitalized now)" } else { "" },
+            r.digitalize_result.as_ref().map(|d| d.rate.to_string()).unwrap_or_default()
+        ));
+        for (stat, v) in r.demon_combat.iter().filter(|(_, v)| **v != 0.0) {
+            console::write_line(&format!("  {:<30} +{} while digitalized", stat, fmt::custom(*v, "0.##")));
+        }
+    }
+    if r.while_digitalized {
+        console::write_line("You were digitalized: the window's stats include the demon, so the saved normal stats were used.");
+    }
+}
+
+/// The rows of dash\expertise.json that are toggle skills.
+fn toggle_rows(pipe: &Pipeline) -> Result<Vec<Value>> {
+    let doc = json::load(pipe.store().dash_dir().join("expertise.json"))?;
+    Ok(json::arr(Some(&doc)).filter(|r| json::truthy(r.at("toggle"))).cloned().collect())
+}
+
+/// `SidOf(row)`: the skill id at the end of the row's id ("exp-12-5").
+fn sid_of(r: &Value) -> Result<i32> {
+    let row = json::str(r.at("row")).unwrap_or_default();
+    let last = row.rsplit('-').next().unwrap_or("");
+    fmt::parse_i32(last).ok_or_else(|| anyhow::anyhow!("The input string '{last}' was not in a correct format."))
+}
+
+fn toggles(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<i32> {
+    // newmoon-reader toggles ["Name, Name, ..." | none]: show or set which toggle (switch) skills are on
+    let store = pipe.store();
+    let data = pipe.data();
+    let mut rows = toggle_rows(pipe)?;
+    let arg = opts.get("_arg").map(String::as_str);
+    let mut from_game = false;
+    if arg.is_none() {
+        // The game decides when it's running: the learned-skill map's "on" flag (DemonReader.ReadSkillMap)
+        match client_reader::find_client(&t.name) {
+            Ok(p) => {
+                let gm = GameMemory::new(p.id())?;
+                if let Some(on) = demon_reader::read_progress(&gm).and_then(|p| p.switched_on) {
+                    let demons = data.demons()?;
+                    let mut v: Vec<i32> = on.into_iter().filter(|id| demons.skills.get(id).is_some_and(|s| s.0 == 2)).collect();
+                    v.sort();
+                    store.save_toggles(v)?;
+                    from_game = true;
+                    rebuild(t, pipe)?;
+                    rows = toggle_rows(pipe)?;
+                }
+            }
+            Err(e) if newmoon::error::is_user_error(&e) => {}
+            Err(e) => return Err(e),
+        }
+    }
+    if let Some(arg) = arg {
+        let mut want: Vec<i32> = Vec::new();
+        if !arg.eq_ignore_ascii_case("none") {
+            for n in arg.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+                let hit = rows.iter().find(|r| json::str(r.at("skill")).is_some_and(|s| eq_ic(&s, n)));
+                let Some(hit) = hit else {
+                    let mut names: Vec<String> = Vec::new();
+                    for r in &rows {
+                        let s = json::str(r.at("skill")).unwrap_or_default();
+                        if !names.contains(&s) {
+                            names.push(s);
+                        }
+                    }
+                    return Err(user_error(format!("No toggle skill called \"{n}\". Toggles: {}.", names.join(", "))));
+                };
+                want.push(sid_of(hit)?);
+            }
+        }
+        store.save_toggles(want)?;
+        rebuild(t, pipe)?;
+        rows = toggle_rows(pipe)?;
+    }
+    let on = store.active_toggles()?;
+    let mut seen: Vec<i32> = Vec::new();
+    for r in &rows {
+        let sid = sid_of(r)?;
+        if seen.contains(&sid) {
+            continue;
+        }
+        seen.push(sid);
+        console::write_line(&format!(
+            "{}  {:<28} {}",
+            if on.contains(&sid) { "ON " } else { "off" },
+            json::str(r.at("skill")).unwrap_or_default(),
+            json::str(r.at("expertise")).unwrap_or_default()
+        ));
+    }
+    console::write_line(if from_game {
+        "Read from the game (switched on right now)."
+    } else {
+        "Saved state (the game isn't running). Override with: newmoon-reader toggles \"Name, Name, ...\" (or none); the next snapshot reads the game again."
+    });
+    Ok(0)
+}
+
+fn extras(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<i32> {
+    // Quest bonus: the count is read from the game's completed-quest map once the game has loaded the quest list
+    // (e.g. the Quest Completion Bonuses window was opened); --quests sets it by hand. The compendium count isn't
+    // found in memory yet: set by hand. The clan (name and level) is read from the game; its bonuses are the
+    // learned clan skills.
+    let store = pipe.store();
+    let data = pipe.data();
+    let (mut quests, mut book, mut book_v2) = store.counts()?;
+    let mut changed = false;
+    let mut quests_from_game = false;
+    let mut book_from_game = false;
+    let mut count = |key: &str, current: Option<i32>| -> Result<Option<i32>> {
+        let Some(v) = opts.get(key) else { return Ok(current) };
+        changed = true;
+        if v.eq_ignore_ascii_case("none") {
+            return Ok(None);
+        }
+        match fmt::parse_i32(v).filter(|n| *n >= 0) {
+            Some(n) => Ok(Some(n)),
+            None => Err(user_error(format!("--{key} takes a number (or none), not \"{v}\"."))),
+        }
+    };
+    quests = count("quests", quests)?;
+    book = count("compendium", book)?;
+    if let Some(v2s) = opts.get("compendium-v2") {
+        changed = true;
+        book_v2 = match v2s.to_lowercase().as_str() {
+            "yes" | "true" => Some(true),
+            "no" | "false" => Some(false),
+            "none" => None,
+            _ => return Err(user_error("--compendium-v2 takes yes, no or none.")),
+        };
+    }
+    match client_reader::find_client(&t.name) {
+        Ok(p) => {
+            let gm = GameMemory::new(p.id())?;
+            if let Some(st) = progress_reader::read(&gm, None, None, None) {
+                let level = character_extras::clan_level(data, Some(&st))?.map(|l| l.to_string()).unwrap_or_else(|| "?".to_string());
+                console::write_line(&format!("Clan: {}, level {level} (its bonuses are the learned clan skills, on the Expertise tab)", st.clan_name.as_deref().unwrap_or("none")));
+            }
+            if !opts.contains_key("quests") {
+                let done = demon_reader::read_progress(&gm).and_then(|p| p.completed_quests);
+                if let Some(qc) = character_extras::quest_bonus_count(done)? {
+                    if Some(qc) != quests {
+                        changed = true;
+                    }
+                    quests = Some(qc);
+                    quests_from_game = true;
+                }
+            }
+            if !opts.contains_key("compendium") {
+                if let Some(cc) = progress_reader::read_compendium_count(&gm) {
+                    if Some(cc) != book {
+                        changed = true;
+                    }
+                    book = Some(cc);
+                    book_from_game = true;
+                }
+            }
+        }
+        Err(e) if newmoon::error::is_user_error(&e) => console::write_line("Clan: the game isn't running, not read."),
+        Err(e) => return Err(e),
+    }
+    if changed || quests_from_game || book_from_game {
+        store.save_counts(quests, book, book_v2, quests_from_game, book_from_game)?;
+    }
+    if changed {
+        rebuild(t, pipe)?;
+    }
+    let qsrc = store.quest_count_source()?;
+    console::write_line(&format!(
+        "Completed quests: {}{}",
+        quests.map(|q| q.to_string()).unwrap_or_else(|| "not set (open the Quest Completion Bonuses window in game, then run this again)".to_string()),
+        match (&quests, &qsrc) {
+            (Some(_), Some(s)) => format!(" ({s})"),
+            _ => String::new(),
+        }
+    ));
+    let csrc = store.compendium_count_source()?;
+    console::write_line(&format!(
+        "Compendium entries: {}{}   Compendium v2: {}",
+        book.map(|q| q.to_string()).unwrap_or_else(|| "not set (open the Demonic Compendium window in game, then run this again)".to_string()),
+        match (&book, &csrc) {
+            (Some(_), Some(s)) => format!(" ({s})"),
+            _ => String::new(),
+        },
+        match book_v2 {
+            Some(true) => "yes",
+            Some(false) => "no",
+            None => "not set (assumed yes)",
+        }
+    ));
+    let state = ProgressState { quest_bonus_count: quests, compendium_count: book, has_compendium_v2: book_v2, ..Default::default() };
+    for e in character_extras::compute(data, None, Some(&state), false)? {
+        console::write_line(&format!(
+            "  {:<60} {}{}{}{}",
+            e.item,
+            if e.target == "partner" { "Partner's " } else { "" },
+            e.label,
+            match e.value {
+                Some(x) => format!(" {}{}{}", if x >= 0.0 { "+" } else { "" }, fmt::g(x), if e.pct { "%" } else { "" }),
+                None => String::new(),
+            },
+            if e.cond == "always" { String::new() } else { format!("  [{}{}]", e.cond, if e.cond_note.is_empty() { String::new() } else { format!(": {}", e.cond_note) }) }
+        ));
+    }
+    Ok(0)
+}
+
+fn alignment(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<i32> {
+    // newmoon-reader alignment [LAW|NEUTRAL|CHAOS] [--name N]
+    // No value: read it from the game when it's running (and save it), else show the saved one. A value overrides
+    // until the next snapshot reads the game again.
+    let store = pipe.store();
+    let name = &t.name;
+    let Some(value) = opts.get("_arg") else {
+        let mut lnc: Option<i32> = None;
+        match client_reader::find_client(name) {
+            Ok(p) => {
+                let am = GameMemory::new(p.id())?;
+                lnc = client_reader::read_lnc(&am);
+            }
+            Err(e) if newmoon::error::is_user_error(&e) => {}
+            Err(e) => return Err(e),
+        }
+        if let Some(v) = lnc {
+            let g = client_reader::lnc_name(v);
+            if g != store.alignment()? || !store.profile_path().exists() {
+                let ar = pipe.set_alignment(&t.csv, g)?;
+                for line in &ar.log {
+                    console::write_line(line);
+                }
+            }
+            console::write_line(&format!("{name}: {g} ({v} alignment points, read from the game; LAW at -5000 or less, CHAOS at 5000 or more)"));
+        } else {
+            console::write_line(&format!(
+                "{name}: {}{}",
+                store.alignment()?,
+                if store.profile_path().exists() { " (saved; the game isn't running)" } else { " (assumed; not set)" }
+            ));
+        }
+        return Ok(0);
+    };
+    let r = pipe.set_alignment(&t.csv, value)?;
+    for line in &r.log {
+        console::write_line(line);
+    }
+    console::write_line(&if !r.changed {
+        format!("{name} is already {}.", store.alignment()?)
+    } else {
+        format!(
+            "{name} is now {}. {} of {} snapshots changed.{}",
+            store.alignment()?,
+            r.changed_rows,
+            r.rows,
+            match &r.backup {
+                Some(b) => format!(" Spreadsheet as it was: {b}"),
+                None => String::new(),
+            }
+        )
+    });
+    Ok(0)
+}
+
+fn sets(t: &Target, pipe: &Pipeline) -> Result<i32> {
+    let store = pipe.store();
+    let data = pipe.data();
+    let name = &t.name;
+    let proc = client_reader::find_client(name)?;
+    let mem = GameMemory::new(proc.id())?;
+    let grid = client_reader::live_gear(&mem).ok_or_else(|| user_error("Couldn't find the equipped gear."))?;
+    let ids = grid.ids.clone();
+    let tips = store.load_tooltip_cache()?;
+    let lvl = match client_reader::read_nameplate(&mem, name) {
+        Some(n) => n.level,
+        None => store.tooltips_level()?,
+    };
+    let texts: Vec<String> = ids.iter().map(|&i| if i > 0 { tips.get(&i).and_then(|t| t.text.clone()).unwrap_or_default() } else { String::new() }).collect();
+    let has_ench = !grid.tarot.is_empty();
+    let g = pipe.ctx.gear()?.compute(&texts, Some(&ids), has_ench.then_some(&grid.tarot[..]), has_ench.then_some(&grid.soul[..]), grid.details.as_deref(), lvl, None)?;
+    if grid.details.is_some() {
+        console::write_line(&format!("  item bonuses from each item's record and the server data ({})", g.item_source));
+    }
+    if !has_ench {
+        console::write_line("  (tarot/soul ids couldn't be read from memory, so fusion sets go by the crystal names in saved tooltips)");
+    }
+    for k in 0..15 {
+        let tarot = grid.tarot.get(k).copied().unwrap_or(0);
+        let soul = grid.soul.get(k).copied().unwrap_or(0);
+        let item_name = if ids[k] > 0 { data.item_name(ids[k])?.unwrap_or_else(|| "unknown item".to_string()) } else { "(empty)".to_string() };
+        let tarot_name = if tarot > 0 { data.enchant_name(tarot)? } else { String::new() };
+        let soul_name = if soul > 0 { data.enchant_name(soul)? } else { String::new() };
+        console::write_line(&format!(
+            "  slot {k:>2} {:<9} item {:>6} {:<34} tarot {:>5} {:<16} soul {:>5} {}",
+            client_reader::SLOT_NAMES[k],
+            ids[k],
+            item_name,
+            tarot,
+            tarot_name,
+            soul,
+            soul_name
+        ));
+    }
+    for s in g.sets.iter().filter(|s| s.active || s.fusion) {
+        let effects: Vec<String> =
+            s.effects.iter().map(|e| format!("{} {}{} [{}/{}]", e.label, e.value.map(fmt::g).unwrap_or_default(), if e.pct { "%" } else { "" }, e.cond, e.target)).collect();
+        console::write_line(&format!(
+            "{:<10} {:>5} [{}] {} {}: {}",
+            if s.appearance {
+                "appearance"
+            } else if s.fusion {
+                "fusion"
+            } else {
+                "set"
+            },
+            s.set_id,
+            s.worn,
+            if s.active { "ACTIVE" } else { "inactive" },
+            s.pieces,
+            effects.join("; ")
+        ));
+    }
+    Ok(0)
+}
+
+fn demon(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<i32> {
+    // newmoon-reader demon [demon name] [--assists all|TYPE,...|id,...] [--mitama-boost] [--name N]
+    let store = pipe.store();
+    let data = pipe.data();
+    let name = &t.name;
+    let proc = client_reader::find_client(name)?;
+    let mem = GameMemory::new(proc.id())?;
+    if opts.contains_key("picker") {
+        // what the app's demon dropdown gets after "Load demons from the game" (this saves the list, like the app does)
+        for c in pipe.comp_demons(name, true)? {
+            console::write_line(&format!(
+                "{:<22} Lv{:<3} {:<12} {}{}{}  {}{}",
+                c.name,
+                c.level,
+                c.race,
+                if c.current { "current " } else { "" },
+                if c.in_game { "in COMP " } else { "" },
+                if c.loaded {
+                    format!(
+                        "{}% stats, {} skills",
+                        c.offer.as_ref().map(|o| o.rate.to_string()).unwrap_or_default(),
+                        c.offer.as_ref().map(|o| o.skills.len().to_string()).unwrap_or_default()
+                    )
+                } else {
+                    "no details".to_string()
+                },
+                match &c.unlock {
+                    None => String::new(),
+                    Some(u) if u.listed => format!(
+                        "{}: {} DLv {} (yours {})",
+                        if u.reached() { "unlocked" } else { "locked" },
+                        u.race,
+                        u.level,
+                        u.race_level.map(|l| l.to_string()).unwrap_or_default()
+                    ),
+                    Some(_) => "not on any Digitalization Level".to_string(),
+                },
+                if c.in_comp == Some(false) { "  [not in COMP]" } else { "" }
+            ));
+        }
+        return Ok(0);
+    }
+    if opts.contains_key("comp") {
+        // the COMP's slots as the game lists them, with or without details
+        let all = demon_reader::read_demons(&mem, true);
+        let Some(comp) = demon_reader::read_comp(&mem, &all) else {
+            console::write_line("The game's COMP slot list wasn't found.");
+            return Ok(0);
+        };
+        for d in &comp {
+            console::write_line(&format!(
+                "{:<28} Lv{:<3} type {:<6} obj {:<9} HP {}/{}{}{}",
+                d.name,
+                d.level,
+                d.r#type,
+                d.object_id,
+                d.hp,
+                d.max_hp,
+                if d.summoned() { " summoned" } else { "" },
+                if d.loaded() { "" } else { "  (no details loaded)" }
+            ));
+        }
+        return Ok(0);
+    }
+    if opts.contains_key("raw") {
+        // every demon record in memory, also the ones the reader leaves out (no stats and no skills loaded)
+        let mut all = demon_reader::read_demons(&mem, true);
+        all.sort_by_key(|d| d.address);
+        for d in &all {
+            let mut line = format!(
+                "@{:08X} flags {:02X} obj {:<9} {:<22} Lv{:<3} type {:<6} HP {}/{} stats {} slots {} learned {} growth {} mitama {}",
+                d.address,
+                d.flags,
+                d.object_id,
+                d.name,
+                d.level,
+                d.r#type,
+                d.hp,
+                d.max_hp,
+                d.live_value.iter().take(6).map(i32::to_string).collect::<Vec<_>>().join(","),
+                d.skills.iter().filter(|&&x| x > 0).count(),
+                d.acquired.len(),
+                d.growth_type,
+                d.mitama_type
+            );
+            if opts.get("raw").map(String::as_str) == Some("data") {
+                if let Some(rec) = mem.read(d.address, 36) {
+                    if let Some(dat) = mem.read(u32::from_le_bytes([rec[32], rec[33], rec[34], rec[35]]) as i64, 64) {
+                        let hex = |b: &[u8]| b.iter().map(|x| format!("{x:02X}")).collect::<String>();
+                        line.push_str(&format!("\n      rec {}\n      data+20 {}", hex(&rec[4..36]), hex(&dat[20..64])));
+                    }
+                }
+            }
+            console::write_line(&line);
+        }
+        return Ok(0);
+    }
+    let demons = demon_reader::read_demons(&mem, false);
+    if demons.is_empty() {
+        return Err(user_error("No COMP demons found in the client's memory."));
+    }
+    let filter = opts.get("_arg").map(String::as_str);
+    let tables = data.demons()?;
+    let Some(filter) = filter else {
+        let mut sorted: Vec<&DemonRecord> = demons.iter().collect();
+        sorted.sort_by(|a, b| b.level.cmp(&a.level)); // OrderByDescending: stable
+        for d in sorted {
+            let mitama = if d.mitama_type > 0 { format!(" {} Mitama", MITAMA_NAMES[d.mitama_type as usize]) } else { String::new() };
+            let unlock = match pipe.unlock_for(d.r#type)? {
+                Some(u) if u.listed => format!(
+                    "  {}: {} DLv {} (yours {})",
+                    if u.reached() { "unlocked" } else { "locked" },
+                    u.race,
+                    u.level,
+                    u.race_level.map(|l| l.to_string()).unwrap_or_else(|| "not read".to_string())
+                ),
+                Some(_) => "  not on any Digitalization Level".to_string(),
+                None => String::new(),
+            };
+            console::write_line(&format!(
+                "{:<28} Lv{:<3} {:<9} type {:<6}{:<13}{}{unlock}",
+                d.name,
+                d.level,
+                tables.devils.get(&d.r#type).map(|v| v.race.as_str()).unwrap_or(""),
+                d.r#type,
+                mitama,
+                if d.summoned() { " summoned" } else { "" }
+            ));
+        }
+        console::write_line("Details and digitalize boosts: newmoon-reader demon \"<name>\" [--assists all|TYPE,...]");
+        return Ok(0);
+    };
+    let picked: Vec<&DemonRecord> = demons.iter().filter(|d| d.name.to_uppercase().contains(&filter.to_uppercase())).collect();
+    if picked.is_empty() {
+        return Err(user_error(format!("No COMP demon matches \"{filter}\". In the COMP: {}.", demons.iter().map(|d| d.name.as_str()).collect::<Vec<_>>().join(", "))));
+    }
+    let lvl = match client_reader::read_nameplate(&mem, name) {
+        Some(n) => n.level,
+        None => store.tooltips_level()?,
+    };
+    let calc = pipe.ctx.digitalize(lvl)?;
+    // Learned assists: read from the game unless --assists overrides them
+    let assist_arg = opts.get("assists").map(String::as_str);
+    let progress = demon_reader::read_progress(&mem);
+    let learned: Option<Vec<i32>> = if assist_arg.is_none() { progress.as_ref().map(|p| p.assists.clone()) } else { None };
+    if assist_arg.is_none() && learned.is_none() {
+        console::write_line("(couldn't read the learned digitalize assists; pass --assists)");
+    }
+    // Boosted Mitama sets: --mitama-boost [yes|no] overrides; otherwise whether the character has skill 5133
+    let boost = match opts.get("mitama-boost") {
+        Some(mb) => !matches!(mb.as_str(), "no" | "false"),
+        None => match &progress {
+            Some(p) => p.has_skill(data.mitama_set_boost_skill()?),
+            None => false,
+        },
+    };
+    if !opts.contains_key("mitama-boost") && progress.as_ref().is_none_or(|p| p.skills.is_none()) {
+        console::write_line("(couldn't read the learned skills: Mitama set boost assumed off; pass --mitama-boost)");
+    }
+    if opts.contains_key("use") {
+        // Make this the demon the Digitalized view adds (a snapshot taken while digitalized does this by itself)
+        if picked.len() != 1 {
+            return Err(user_error(format!(
+                "\"{filter}\" matches {} demons: {}. Be more specific.",
+                picked.len(),
+                picked.iter().map(|d| d.name.as_str()).collect::<Vec<_>>().join(", ")
+            )));
+        }
+        // Same as the app's demon picker: saved demon, the latest CSV row's demon columns (CSV copied first), page data
+        pipe.comp_demons(name, true)?;
+        let sw = pipe.use_demon(name, &t.csv, Some(&pipeline::key_of(picked[0])), true)?;
+        console::write_line(&format!(
+            "{} is now the digitalize demon.{}",
+            sw.name,
+            if sw.row_updated { format!(" The latest snapshot uses it (copy of the CSV before: {}).", sw.backup.as_deref().unwrap_or("")) } else { String::new() }
+        ));
+        return Ok(0);
+    }
+    // The character's normal Max HP/MP and STR/MAG/VIT/INT (Information window when open and not digitalized,
+    // else the last saved copy): the base for "Max HP/MP while digitalized".
+    let hpmp: Option<Calibration>;
+    let hpmp_from: Option<String>;
+    {
+        let known_items = data.items()?;
+        let win = if progress.as_ref().is_some_and(|p| p.digitalized()) { None } else { client_reader::read_info_window(&mem, name, |id| known_items.contains_key(&id)) };
+        // Percent Max HP/MP from the toggles on (e.g. -10% MP each for Gunslinger, Extended Scope...): live from the game
+        let toggles_on: Vec<i32> = match progress.as_ref().and_then(|p| p.switched_on.as_ref()) {
+            Some(s) => s.iter().copied().collect(),
+            None => store.active_toggles()?,
+        };
+        if let Some(win) = win {
+            hpmp = character_hp_mp::calibrate_from_reading(data.passives()?, win.level, &win.pairs, win.max_hp, win.max_mp, &toggles_on, &toggles_on);
+            hpmp_from = Some("Information window".to_string());
+        } else {
+            // Saved stats were measured with the toggles on at that time (saved with them)
+            let (cal, at) = character_hp_mp::from_saved_stats(&store.last_stats_path(), data.passives()?, Some(&toggles_on))?;
+            hpmp = cal;
+            hpmp_from = at.map(|a| format!("saved stats of {a}"));
+        }
+    }
+    for d in &picked {
+        print_demon(d, &calc, data, assist_arg, learned.as_deref(), boost, name, lvl, hpmp.as_ref(), hpmp_from.as_deref())?;
+    }
+    // While digitalized: what the game shows now, to check the prediction against (the Information window if
+    // it's open, else the nameplate)
+    if let Some(p) = progress.as_ref().filter(|p| p.digitalized()) {
+        let known_items = data.items()?;
+        let dw = client_reader::read_info_window(&mem, name, |id| known_items.contains_key(&id));
+        let np = client_reader::read_nameplate(&mem, name);
+        let with = demons.iter().find(|x| x.object_id == p.digitalized_demon).map(|x| x.name.clone()).unwrap_or_else(|| "a demon".to_string());
+        let stats4 = |pairs: &[i32]| (0..4).map(|k| pairs[2 * k].wrapping_add(pairs[2 * k + 1]).to_string()).collect::<Vec<_>>().join(" ");
+        if let Some(dw) = dw {
+            console::write_line(&format!("Digitalized with {with} now. The game shows Max HP {}, Max MP {} (Information window); STR..INT {}", dw.max_hp, dw.max_mp, stats4(&dw.pairs)));
+        } else if let Some(os) = client_reader::read_own_status(&mem, true) {
+            console::write_line(&format!("Digitalized with {with} now. The game shows Max HP {}, Max MP {} (character data); STR..INT {}", os.max_hp, os.max_mp, stats4(&os.pairs)));
+        } else if let Some(np) = np {
+            console::write_line(&format!("Digitalized with {with} now. The game shows Max HP {}, Max MP {} (nameplate)", np.max_hp, np.max_mp));
+        }
+    }
+    Ok(0)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn print_demon(
+    d: &DemonRecord,
+    calc: &Digitalize,
+    data: &GameData,
+    assist_arg: Option<&str>,
+    learned: Option<&[i32]>,
+    mitama_boost: bool,
+    who: &str,
+    lvl: i32,
+    hpmp: Option<&Calibration>,
+    hpmp_from: Option<&str>,
+) -> Result<()> {
+    let t = data.demons()?;
+    let devil = t.devils.get(&d.r#type);
+    let sk = |id: i32| -> Result<String> { Ok(data.skill_names()?.get(&id).cloned().flatten().unwrap_or_else(|| format!("skill {id}"))) };
+    const SHORT_STAT: [&str; 21] = ["STR", "MAG", "VIT", "INT", "SPD", "LUCK", "HP", "MP", "", "", "", "", "CLS-R", "LNG-R", "Spell", "Support", "", "", "", "P.Def", "M.Def"];
+    let say = |s: String| console::write_line(&s);
+    let assist_text = |a: &Assist| format!("L{} {}{}", (a.id - 1) / 72 + 2, a.r#type, if a.value != 0 { format!(" {}", a.value) } else { String::new() });
+
+    // Assists: read from the game (learned), or --assists: "all", assist types (STAT_RATE,PASSIVES,...) or ids;
+    // types/all pick that race's assists.
+    let mut assists: Option<Vec<i32>> = learned.map(<[i32]>::to_vec);
+    if let (Some(arg), Some(devil)) = (assist_arg, devil) {
+        let race = t.assists_of_race(devil.race_id);
+        let mut v: Vec<i32> = Vec::new();
+        for tok in arg.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+            if tok.eq_ignore_ascii_case("all") {
+                v.extend(race.iter().map(|a| a.id));
+            } else if let Some(id) = fmt::parse_i32(tok) {
+                v.push(id);
+            } else {
+                v.extend(race.iter().filter(|a| a.r#type.eq_ignore_ascii_case(tok)).map(|a| a.id));
+            }
+        }
+        assists = Some(v);
+    }
+    let r = calc.compute(d, assists.as_deref(), mitama_boost)?;
+
+    say(format!(
+        "{}  Lv{}  {} (race {})  type {}{}  growth {} {}{}",
+        d.name,
+        d.level,
+        devil.map(|v| v.race.as_str()).unwrap_or(""),
+        devil.map(|v| v.race_id.to_string()).unwrap_or_default(),
+        d.r#type,
+        if d.mitama_type > 0 { format!("  {} Mitama rank {}", MITAMA_NAMES[d.mitama_type as usize], d.mitama_rank) } else { String::new() },
+        r.growth,
+        t.growth_names.get(&r.growth).map(String::as_str).unwrap_or(""),
+        if d.summoned() { "  (summoned)" } else { "" }
+    ));
+    say(format!(
+        "  Window: HP {}/{}  MP {}/{}  {}  {}",
+        d.hp,
+        d.max_hp,
+        d.mp,
+        d.max_mp,
+        (0..6).map(|i| format!("{} {}+{}", SHORT_STAT[i], d.live_value[i], d.live_bonus[i])).collect::<Vec<_>>().join("  "),
+        [12usize, 13, 14, 15, 19, 20].iter().map(|&i| format!("{} {}", SHORT_STAT[i], d.live_value[i])).collect::<Vec<_>>().join("  ")
+    ));
+    say(format!("  Rebirth: {}", (0..12).map(|i| format!("{} {}", RUNE_NAMES[i], d.reunion[i])).collect::<Vec<_>>().join(" ")));
+    if let Some(fv) = &d.force_values {
+        // DEMON_FORCE_CONVERSION order; each 100000 points is +1 (only for the summoned demon, not when digitalizing)
+        const FORCE_NAMES: [&str; 20] = [
+            "HP", "MP", "STR", "MAG", "VIT", "INT", "SPD", "LUCK", "HP regen", "MP regen", "CLS-R", "LNG-R", "Spell", "Support", "Critical", "P.Def", "M.Def", "Crit Def", "XP %", "Ailment Def",
+        ];
+        let force: Vec<String> = (0..20).filter(|&i| fv[i] >= 100000).map(|i| format!("{} +{}", FORCE_NAMES[i], fv[i] / 100000)).collect();
+        say(format!("  Demon Force (summoned only): {}", if force.is_empty() { "none".to_string() } else { force.join(", ") }));
+        let stack: Vec<String> = d.force_stack.clone().unwrap_or_default().into_iter().filter(|&x| x > 0).map(|x| x.to_string()).collect();
+        say(format!("  Force stack: {}  (digitalize: needs the race's FORCE_STACK assist)", if stack.is_empty() { "empty".to_string() } else { stack.join(", ") }));
+    }
+    if let Some(eq) = d.equipment.as_ref().filter(|e| e.iter().any(|&x| x > 0)) {
+        let devil_traits: Vec<i32> = t.devils.get(&d.r#type).map(|v| v.traits.clone()).unwrap_or_default();
+        let mut parts: Vec<String> = Vec::new();
+        for i in 0..4 {
+            if eq[i] <= 0 {
+                continue;
+            }
+            let skill = match t.equipment_skill.get(&eq[i]) {
+                Some(&s) => sk(s)?,
+                None => "?".to_string(),
+            };
+            let replaces = if i < devil_traits.len() && devil_traits[i] > 0 { format!(" (replaces {})", sk(devil_traits[i])?) } else { String::new() };
+            parts.push(format!("slot {} item {} = {skill}{replaces}", i + 1, eq[i]));
+        }
+        say(format!("  Equipment: {}", parts.join(", ")));
+    }
+    say(format!("  Skills: {}", d.skills.iter().filter(|&&s| s > 0).map(|&s| sk(s)).collect::<Result<Vec<_>>>()?.join(", ")));
+    say(format!("  Learned ({}): {}", d.acquired.len(), d.acquired.iter().map(|&s| sk(s)).collect::<Result<Vec<_>>>()?.join(", ")));
+    if let Some(dv) = devil {
+        say(format!("  Traits: {}", dv.traits.iter().filter(|&&x| x > 0).map(|&s| sk(s)).collect::<Result<Vec<_>>>()?.join(", ")));
+    }
+    if d.mitama_type > 0 {
+        let mut counts = [0; 4];
+        for &b in &d.mitama_reunion {
+            if b != 0 {
+                counts[(b / 32).min(3) as usize] += 1;
+            }
+        }
+        say(format!("  Mitama slots: Ara {}  Nigi {}  Kusi {}  Saki {}", counts[0], counts[1], counts[2], counts[3]));
+        for s in &r.sets {
+            say(format!("    set {:<10} {}", set_name(s.id), if mitama_boost { &s.ex_description } else { &s.description }));
+        }
+    }
+    let Some(devil) = devil else {
+        for n in &r.notes {
+            say(format!("  {n}"));
+        }
+        return Ok(());
+    };
+
+    console::blank_line();
+    say(format!(
+        "Digitalized with {}: {}% of its stats (base {}%{}; up to {}% with all of the race's stat-rate assists)",
+        d.name,
+        r.rate,
+        r.base_rate,
+        if devil.is_mitama() { ", Mitama-fused type" } else { "" },
+        r.max_rate
+    ));
+    say(format!("  {}", r.stats.iter().map(|(k, v)| format!("{} {}->{}", SHORT_STAT[*k as usize], r.base[*k as usize], v)).collect::<Vec<_>>().join("  ")));
+    if let Some(hpmp) = hpmp {
+        let (df_hp, df_mp) = character_hp_mp::digitalize_only_flat(&r.effects);
+        let (d_hp, d_mp) = character_hp_mp::digitalized_with_result(hpmp, &r.stats, &r.effects, r.hp(), r.mp(), df_hp, df_mp);
+        say(format!(
+            "  Max HP/MP while digitalized: {d_hp} / {d_mp}  (normal {} / {} from the {}: formula {} / {} + flat {} / {}; digitalized formula on the new STR/MAG/VIT/INT, + demon {} / {}{}; gear that only works digitalized isn't included)",
+            hpmp.max_hp,
+            hpmp.max_mp,
+            hpmp_from.unwrap_or(""),
+            hpmp.formula_hp,
+            hpmp.formula_mp,
+            hpmp.flat_hp(),
+            hpmp.flat_mp(),
+            r.hp(),
+            r.mp(),
+            if df_hp != 0 || df_mp != 0 { format!(" + digitalize-only {df_hp} / {df_mp}") } else { String::new() }
+        ));
+    }
+    // Self-check: the window's STR..LUCK is the same base (Mitama sets included) plus demon force, which digitalizing leaves out.
+    // (the COMP window shows the normal set bonuses, boosted or not)
+    let mitama_set_ids: Vec<i32> = t.assists_of_race(devil.race_id).iter().filter(|a| a.r#type == "MITAMA_SET").map(|a| a.id).collect();
+    let full = calc.compute(d, Some(&mitama_set_ids), false)?;
+    say(format!(
+        "  Check vs window (base + Mitama sets; a gap is demon force): {}",
+        (0..6).map(|i| format!("{} {}{}{}", SHORT_STAT[i], full.base[i], if full.base[i] == d.live_value[i] { "=" } else { "≠" }, d.live_value[i])).collect::<Vec<_>>().join("  ")
+    ));
+    // Assist id = race slot + 36 j; level L offers j = 2(L-2) and 2(L-2)+1
+    let mine: Option<Vec<&Assist>> = assists.as_ref().map(|ids| {
+        let mut m: Vec<&Assist> = ids.iter().filter_map(|id| t.assists.get(id)).filter(|a| a.race_id == devil.race_id).collect();
+        m.sort_by_key(|a| a.id);
+        m
+    });
+    say(format!(
+        "  Assists ({}): {}",
+        if assist_arg.is_some() { "--assists" } else { "learned, from the game" },
+        match &mine {
+            None => "not known (pass --assists): parts that need one are listed, not counted".to_string(),
+            Some(m) if m.is_empty() => "none".to_string(),
+            Some(m) => m.iter().map(|a| assist_text(a)).collect::<Vec<_>>().join(", "),
+        }
+    ));
+    if d.mitama_type > 0 {
+        say(format!("  Mitama set bonuses: {}", if mitama_boost { "boosted (Mitama Demon Enhancement - Iron Man)" } else { "normal" }));
+    }
+    if r.extend_time != 0 || r.reduce_wait != 0 {
+        say(format!("  Digitalize time +{}s, wait -{}s", r.extend_time, r.reduce_wait));
+    }
+    if !r.active_skills.is_empty() {
+        say(format!("  Usable skills: {}", r.active_skills.iter().map(|&s| sk(s)).collect::<Result<Vec<_>>>()?.join(", ")));
+    }
+    // GroupBy(Item): first appearance
+    let mut groups: Vec<(&str, Vec<&Effect>)> = Vec::new();
+    for e in r.effects.iter().filter(|e| !e.cond_note.starts_with("stats")) {
+        match groups.iter_mut().find(|g| g.0 == e.item) {
+            Some(g) => g.1.push(e),
+            None => groups.push((e.item.as_str(), vec![e])),
+        }
+    }
+    for (item, g) in &groups {
+        say(format!("  {item}"));
+        for e in g {
+            say(format!(
+                "    {} {}{}{}",
+                if e.counted() { "+" } else { " " },
+                e.label,
+                match e.value {
+                    Some(v) => format!(" {}{}{}", if v >= 0.0 { "+" } else { "" }, fmt::custom(v, "0.##"), if e.pct { "%" } else { "" }),
+                    None => String::new(),
+                },
+                if e.counted() { String::new() } else { format!("  [{}{}]", e.cond, if e.cond_note.is_empty() { String::new() } else { format!(": {}", e.cond_note) }) }
+            ));
+        }
+    }
+    say(format!(
+        "  Race assists ({}): {}",
+        devil.race,
+        t.assists_of_race(devil.race_id).iter().map(|a| format!("{} {}{}", a.id, a.r#type, if a.value != 0 { format!(" {}", a.value) } else { String::new() })).collect::<Vec<_>>().join(", ")
+    ));
+    for n in &r.notes {
+        say(format!("  note: {n}"));
+    }
+    say(format!("  (+ = counted while digitalized; level-scaled effects use {who}'s level {lvl})"));
+    Ok(())
+}
+
+fn digilevels(opts: &HashMap<String, String>) -> Result<i32> {
+    // newmoon-reader digilevels [--name N]: Digitalization Level of each race, learned assists and the extend
+    // skills those levels give (read-only; independent of the saved data).
+    let who = match opts.get("name") {
+        Some(n) => n.clone(),
+        None => {
+            let in_game = logged_in();
+            if in_game.is_empty() {
+                return Err(user_error("No running client has a character logged in."));
+            }
+            if in_game.len() > 1 {
+                let names: Vec<String> = in_game.iter().map(|c| format!("{} ({})", c.character.as_deref().unwrap_or(""), c.folder)).collect();
+                return Err(user_error(format!("Several characters are logged in: {}. Pick one with --name.", names.join(", "))));
+            }
+            in_game[0].character.clone().unwrap_or_default()
+        }
+    };
+    let proc = client_reader::find_client(&who)?;
+    let mem = GameMemory::new(proc.id())?;
+    let gd = Arc::new(GameData::new());
+    let t = gd.demons()?;
+    let progress = demon_reader::read_progress(&mem).ok_or_else(|| user_error("Couldn't read the character's progress (digitalize data) from memory."))?;
+    let Some(levels) = progress.levels.as_ref() else { return Err(user_error("Couldn't read the Digitalization Levels from memory.")) };
+    let lvl = client_reader::read_nameplate(&mem, &who).map(|n| n.level).unwrap_or(0);
+    let fx = ItemEffects::new(Arc::clone(&gd), "NEUTRAL", lvl, Default::default());
+    let sk = |id: i32| -> Result<String> { Ok(gd.skill_names()?.get(&id).cloned().flatten().unwrap_or_else(|| format!("skill {id}"))) };
+    let effects = |sid: i32| -> Result<String> {
+        let Some(p) = gd.passives()?.get(&sid.to_string()).filter(|v| !v.is_null()) else { return Ok("no effect data".to_string()) };
+        let mut list: Vec<String> = Vec::new();
+        for c in json::arr(p.at("correctTbl")) {
+            let e = fx.correct(&json::str(c.at("id")).unwrap_or_default(), json::int(c.at("type")), json::num(c.at("value")).unwrap_or(0.0), "always", "digitalize", "");
+            let v = e.value.unwrap_or(0.0);
+            list.push(format!("{} {}{}{}", e.label, if v >= 0.0 { "+" } else { "" }, fmt::custom(v, "0.##"), if e.pct { "%" } else { "" }));
+        }
+        for tn in json::arr(p.at("tokuseiIds")) {
+            let tid = json::int(Some(tn));
+            if tid != 0 {
+                for e in fx.tokusei(tid, "digitalize", "")? {
+                    list.push(format!(
+                        "{}{}{}{}",
+                        if e.target != "self" { format!("{} ", e.target) } else { String::new() },
+                        e.label,
+                        match e.value {
+                            Some(v) => format!(" {}{}{}", if v >= 0.0 { "+" } else { "" }, fmt::custom(v, "0.##"), if e.pct { "%" } else { "" }),
+                            None => String::new(),
+                        },
+                        if e.cond == "always" || e.cond == "digitalized" { String::new() } else { format!(" [{}{}]", e.cond, if e.cond_note.is_empty() { String::new() } else { format!(": {}", e.cond_note) }) }
+                    ));
+                }
+            }
+        }
+        Ok(if list.is_empty() { "no effect data".to_string() } else { list.join("; ") })
+    };
+    let assists: Vec<&Assist> = progress.assists.iter().filter_map(|id| t.assists.get(id)).collect();
+    console::write_line(&format!("{who}: Digitalization Levels (read from the game)"));
+    for r in t.race_levels(Some(levels), progress.points.as_ref()) {
+        let mut mine: Vec<&Assist> = assists.iter().copied().filter(|a| a.race_id == r.race_id).collect();
+        mine.sort_by_key(|a| a.id);
+        if r.level == 0 && mine.is_empty() {
+            continue;
+        }
+        // % as the window shows it: truncated to 2 decimals
+        let pct = match r.percent_to_next {
+            Some(d) => format!("{}% ({}/{})", fmt::custom((d * 100.0).floor() / 100.0, "0.00"), r.points, t.levels[&r.race_id][r.level as usize].next_xp),
+            None => "max".to_string(),
+        };
+        let top_assist = mine.iter().map(|a| (a.id - 1) / 72 + 2).max().unwrap_or(0);
+        console::write_line(&format!(
+            "{:<14} race {:>3}  DLv{:>2}  {pct}{}",
+            r.race,
+            r.race_id,
+            r.level,
+            if top_assist > r.level { format!("  (!) an assist of L{top_assist} is above the level") } else { String::new() }
+        ));
+        if !mine.is_empty() {
+            console::write_line(&format!(
+                "    assists: {}",
+                mine.iter().map(|a| format!("L{} {}{}", (a.id - 1) / 72 + 2, a.r#type, if a.value != 0 { format!(" {}", a.value) } else { String::new() })).collect::<Vec<_>>().join(", ")
+            ));
+        }
+        for &sid in &r.extend_skills {
+            let at = t.levels[&r.race_id].iter().find(|x| x.extend_skill_id == sid).map(|x| x.level).ok_or_else(|| anyhow::anyhow!("Sequence contains no matching element"))?;
+            let known = progress.skills.as_ref().is_some_and(|s| s.contains(&sid));
+            console::write_line(&format!("    L{at:<2} {sid} {}: {}{}", sk(sid)?, effects(sid)?, if progress.skills.is_some() && !known { "  (not in the learned skills!)" } else { "" }));
+        }
+    }
+    let all = t.all_extend_skills(Some(levels));
+    // Cross-check: extend skills in the learned-skill map that the levels don't explain
+    let extend_ids: std::collections::HashSet<i32> = t.levels.values().flatten().filter(|x| x.extend_skill_id > 0).map(|x| x.extend_skill_id).collect();
+    let extra: Option<Vec<i32>> = progress.skills.as_ref().map(|sk| sk.iter().copied().filter(|s| extend_ids.contains(s) && !all.contains(s)).collect());
+    let missing: Option<Vec<i32>> = progress.skills.as_ref().map(|sk| all.iter().copied().filter(|s| !sk.contains(s)).collect());
+    let list = |v: &[i32]| v.iter().map(i32::to_string).collect::<Vec<_>>().join(", ");
+    console::write_line(&format!(
+        "{} extend skills from the levels; {}",
+        all.len(),
+        match (&missing, &extra) {
+            (Some(m), Some(e)) if m.is_empty() && e.is_empty() => "all of them, and no other, are in the learned skills".to_string(),
+            (Some(m), Some(e)) => format!("cross-check with the learned skills: {} missing [{}], {} learned but not explained by the levels [{}]", m.len(), list(m), e.len(), list(e)),
+            _ => "learned skills unreadable (no cross-check)".to_string(),
+        }
+    ));
+    Ok(0)
 }
 
 // ---------- model --check ----------
@@ -532,8 +1425,8 @@ mod tests {
 
     #[test]
     fn unported_commands_say_so() {
-        let e = run(&args(&["digilevels"])).unwrap_err();
-        assert_eq!(e.downcast_ref::<UserError>().unwrap().0, "not ported yet: digilevels");
+        let e = run(&args(&["simulate", "--name", "X", "--data", "C:/nonexistent-newmoon-test", "--csv", "C:/nonexistent-newmoon-test/x.csv"])).unwrap_err();
+        assert_eq!(e.downcast_ref::<UserError>().unwrap().0, "not ported yet: simulate");
         let e = run(&args(&["dungeons"])).unwrap_err();
         assert_eq!(e.downcast_ref::<UserError>().unwrap().0, "dungeons needs --decoded <folder with the decoded client tables>.");
     }
