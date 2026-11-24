@@ -511,6 +511,26 @@ impl MainForm {
                 }
             }
 
+            "menuIcons" => {
+                // The game's menu pictures (bar buttons PC, DEVIL, QUEST ... and some entries) for the first-snapshot
+                // steps, cut from the client's own Interface\tga\menu_icon_00.tga. Only read; {} while the game's
+                // folder isn't known.
+                let e = self.active_entry();
+                let mut client = match &e {
+                    Some(e) => self.backend.item_icons_client_dir(&self.char_dir(e))?,
+                    None => None,
+                };
+                if client.is_none() {
+                    client = self.backend.item_icons_client_dir(&self.data_dir)?;
+                }
+                if client.is_none() {
+                    client = backend::client_pids().into_iter().find_map(backend::process_exe_dir);
+                }
+                let icons: serde_json::Map<String, Value> =
+                    client.map(|d| imagine::build::item_icons::menu_icons(&d)).unwrap_or_default().into_iter().map(|(k, v)| (k.to_string(), json!(v))).collect();
+                Ok(Value::Object(icons).to_string())
+            }
+
             "theme" => {
                 self.ui.apply_chrome(jsonx::truthy(args.get("dark")));
                 Ok("true".to_string())

@@ -160,6 +160,7 @@
           return { source: Q.get('snap') === 'live' ? 'window' : 'cache', statsNote: 'Saved 2026-11-22 21:06', missing: '', level: 95, ranks: 31 };
         }
         if (cmd === 'status') return { gameRunning: fake.clients.length > 0, busy: false, clientsChanged: false };
+        if (cmd === 'menuIcons') return {};   // the menu bar's buttons come from the game's files: just the words here
         if (cmd === 'pictureSource') return fakeSrc[fake.active] || null;
         if (cmd === 'pictureCapture') {
           await wait(500);
@@ -602,6 +603,50 @@
     input.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && input.value) { input.value = ''; oninput(''); ev.stopPropagation(); } });
     return h('div', { class: 'search' }, icon('search'), input);
   }
+  /**
+   * Where a window is in the game's menu, as its own line: "Menu > [pic] PC > [pic] Status Equipment", with the
+   * game's own pictures of the bar's button and of the entry (host "menuIcons", cut from the client's files; just the
+   * words for one it has no picture of, or while the game's folder isn't known).
+   */
+  let menuIcons = null;   // name (PC, DEVIL ..., Status Equipment ...) -> data: URI, once asked
+  function menuPath(button, menu, item) {
+    const pic = (key) => {
+      const src = menuIcons && menuIcons[key];
+      return h('img', { class: 'menu-btn', alt: '', 'data-menu': key, src: src || null, hidden: !src });
+    };
+    if (!menuIcons) {
+      menuIcons = {};
+      host.call('menuIcons').then((m) => {
+        menuIcons = m && typeof m === 'object' ? m : {};
+        document.querySelectorAll('img.menu-btn[data-menu]').forEach((el) => { const src = menuIcons[el.dataset.menu]; if (src) { el.src = src; el.hidden = false; } });
+      }).catch(() => {});
+    }
+    return h('span', { class: 'menu-path' }, 'Menu > ', pic(button), `${menu} > `, pic(item), item);
+  }
+  const SNAP_ABOUT = 'A snapshot reads your stats, gear and expertise from the running game and works out every bonus. It only reads; nothing in the game is changed.';
+  /** What to do in game before a snapshot, so it reads everything: the first-run page and the top bar's info button. */
+  function snapshotSteps(name) {
+    return h('ol', { class: 'steps' },
+        h('li', null, h('span', { text: name ? `Start IMAGINE and log in as ${name}.` : 'Start IMAGINE and log in.' })),
+        // The fusion window loads every COMP demon's details (tested in game); a click in the COMP only loads that one.
+        h('li', null, h('span', null, 'At the ', h('b', { text: 'Cathedral of Shadows' }), ', start a ', h('b', { text: 'Double Fusion' }), ' with the Master, then cancel it.',
+          h('span', { class: 'step-note', text: 'That loads every demon in your COMP, so the app can read your digitalize demon’s stats and skills. Nothing is fused.' }))),
+        // The game only loads these when their window is opened (quest list, compendium count): without them the
+        // quest and compendium bonuses are left out of the totals.
+        h('li', null, h('span', null, 'Open the ', h('b', { text: 'Quest Completion Bonuses' }), ' and ', h('b', { text: 'Demonic Compendium' }), ' windows once.',
+          menuPath('QUEST', 'Quest', 'View Quest Bonuses'),
+          menuPath('DEVIL', 'Devil', 'Demonic Compendium'),
+          h('span', { class: 'step-note', text: 'The game only loads your quest and compendium counts when you open them. Without them, those bonuses are left out.' }))),
+        h('li', null, h('span', null, 'Open the ', h('b', { text: 'Information' }), ' window and leave it open.',
+          menuPath('PC', 'PC', 'Status Equipment'),
+          h('span', { class: 'step-note', text: 'It gives the exact stats, your tarot and soul enchants and your picture. If you are digitalized, the first snapshot needs it.' }))),
+        h('li', null, h('span', { text: 'Press Take snapshot (or F5).' })));
+  }
+  function openSnapSteps() {
+    const d = $('#snap-steps');
+    $('#snap-steps-body').replaceChildren(h('p', { class: 'field-help', text: SNAP_ABOUT }), snapshotSteps(S.meta.character || S.state.active));
+    if (!d.open) d.showModal();
+  }
   function firstRun() {
     const name = S.meta.character || S.state.active;
     if (!name) return h('div', { class: 'page' }, h('div', { class: 'empty' },
@@ -610,10 +655,8 @@
       h('button', { type: 'button', class: 'btn btn-primary', onclick: () => openChooser() }, 'Look for my character')));
     return h('div', { class: 'page' }, h('div', { class: 'empty' },
       h('h2', { class: 'empty-title', text: `No snapshot of ${name} yet` }),
-      h('p', { class: 'page-sub', text: 'A snapshot reads your stats, gear and expertise from the running game and works out every bonus. It only reads; nothing in the game is changed.' }),
-      h('ol', { class: 'steps' },
-        h('li', null, h('span', { text: `Start IMAGINE and log in as ${name}.` })),
-        h('li', null, h('span', { text: 'Press Take snapshot (or F5).' }))),
+      h('p', { class: 'page-sub', text: SNAP_ABOUT }),
+      snapshotSteps(name),
       h('button', { type: 'button', class: 'btn btn-primary', onclick: takeSnapshot }, icon('camera'), 'Take snapshot')));
   }
 
@@ -4780,6 +4823,10 @@
     }
   }
   $('#snap').addEventListener('click', takeSnapshot);
+  $('#snap-help').addEventListener('click', openSnapSteps);
+  $('#snap-steps-close').addEventListener('click', () => $('#snap-steps').close());
+  $('#snap-steps-go').addEventListener('click', () => { $('#snap-steps').close(); takeSnapshot(); });
+  $('#snap-steps').addEventListener('click', (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
 
   // settings
   const dlg = $('#settings');

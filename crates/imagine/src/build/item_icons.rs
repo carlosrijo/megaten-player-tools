@@ -84,6 +84,33 @@ pub fn mitama_mark_data_uri(store: &Store, pid: u32) -> Option<String> {
     menu_icon(store, "mitama", 0, 0, pid, "union_mark_mitama.tga", 14)
 }
 
+/// Pictures of the game's menu in Interface\tga\menu_icon_00.tga (32x32 cells; x, y of the cell's top left corner).
+/// The top row is the menu bar's buttons, left to right as the bar shows them (the labels of menu_name.tga), blue
+/// frame included; below them the menus' own entries. Only the entries the page names are listed (matched against
+/// the game's menus by eye).
+pub const MENU_ICONS: [(&str, i32, i32); 10] = [
+    ("PC", 0, 0),
+    ("DEVIL", 32, 0),
+    ("ITEM", 64, 0),
+    ("QUEST", 96, 0),
+    ("COMM", 128, 0),
+    ("SYSTEM", 160, 0),
+    ("POST", 192, 0),
+    ("SHOP", 224, 0),
+    ("Status Equipment", 0, 32),    // PC menu, first entry (framed like the bar)
+    ("Demonic Compendium", 32, 96), // DEVIL menu; the same picture as compendium_data_uri
+];
+
+/// The menu's pictures (MENU_ICONS) as data: URIs, by name. Read from the client each time; nothing is saved. Empty
+/// when the client folder or the sheet isn't there.
+pub fn menu_icons(client_dir: &Path) -> Vec<(&'static str, String)> {
+    let Ok(sheet) = std::fs::read(client_dir.join("Interface").join("tga").join("menu_icon_00.tga")) else { return Vec::new() };
+    MENU_ICONS
+        .iter()
+        .filter_map(|&(name, x, y)| uri(tga::to_png_crop(&sheet, Some((x, y, 32, 32))).as_deref()).map(|u| (name, u)))
+        .collect()
+}
+
 fn menu_icon(store: &Store, name: &str, x: i32, y: i32, pid: u32, file: &str, size: i32) -> Option<String> {
     let cached = store.ui_icon_path(name);
     // catch (IOException or UnauthorizedAccessException) { return null; }
