@@ -40,6 +40,14 @@ pub const STAT_MAP: &[(&str, &str)] = &[
     ("Limit break cap", "^(Limit Break|LB)( Damage)? (Cap|Upper Limit)$"), // gear says "LB Damage Cap", tooltips "Limit Break Cap", expertise "Limit break cap"
 ];
 
+/// What the character's own stats take off cooldown or incantation (cast) time, in percent points (a negative number).
+/// comp_hack `CharacterManager::CalculateDependentStats` (mode 0x04), after the base percent adjustments:
+/// COOLDOWN_TIME -= floor(2.5 * floor(VIT / 10) + 1.5 * floor(SPD / 10)); CHANT_TIME the same with INT for VIT.
+/// `main` is VIT for cooldown, INT for incantation; the stats are the final ones (gear and digitalize included).
+pub fn stat_time_cut(main: i32, spd: i32) -> f64 {
+    -(2.5 * (main.max(0) / 10) as f64 + 1.5 * (spd.max(0) / 10) as f64).floor()
+}
+
 /// The pattern of a tracked stat (C# `Pattern(stat)`; `First` throws for a stat that is not in the map: so does this).
 pub fn pattern(stat: &str) -> &'static str {
     STAT_MAP.iter().find(|s| s.0 == stat).expect("a stat of Bonuses.STAT_MAP").1
@@ -329,6 +337,15 @@ mod tests {
         assert_eq!(canonical("strength", &l), ("STR".to_string(), "Stats"));
         assert_eq!(canonical("EXP Earned", &l), ("EXP Gain".to_string(), "Other"));
         assert_eq!(canonical("foo bar", &l), ("Foo bar".to_string(), "Other"));
+    }
+
+    #[test]
+    fn stat_time_cuts() {
+        // Rubito: VIT 67, INT 148, SPD 255 -> cooldown 2.5*6 + 1.5*25 = 52.5 -> 52; incantation 2.5*14 + 37.5 = 72.5 -> 72
+        assert_eq!(stat_time_cut(67, 255), -52.0);
+        assert_eq!(stat_time_cut(148, 255), -72.0);
+        assert_eq!(stat_time_cut(9, 9), 0.0);
+        assert_eq!(stat_time_cut(10, 10), -4.0);
     }
 
     #[test]

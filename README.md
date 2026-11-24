@@ -401,7 +401,11 @@ third part in each key stat's breakdown, and
 a demon column on Bonuses (rows only the demon gives appear in that view only). While not digitalized, the demon summoned beside you
 gives you what its effects aim at its summoner (a Demon Force entry's "Long-Range +60", its passives' cooldown and cost cuts): they
 appear on Bonuses as a column and parts named "<demon> (summoned)" and in the key stats' breakdown, and are left out of the digitalized
-totals. The CSV gets "Digitalize demon",
+totals. Cooldown and Incantation also count what your own stats take off (the server's rule, comp_hack
+`CalculateDependentStats`): 2.5% per 10 VIT (cooldown) or INT (incantation) plus 1.5% per 10 SPD, rounded down, on the
+final stats of the shown mode (the last saved normal stats; while digitalized plus the demon's stats). They show as a
+"Your stats" source on Bonuses and in the Overview's Cooldown breakdown; cooldown stops at 95% off and incantation at
+100% off, past which the page tags the row as over the cap. The CSV gets "Digitalize demon",
 "<stat> (demon, digitalized)" per key stat, and "Digitalize demon record" (so `recalc` can redo it). A snapshot taken
 while digitalized doesn't take the window's 12 stats/HP/MP (they include the demon); the saved normal ones are used.
 
