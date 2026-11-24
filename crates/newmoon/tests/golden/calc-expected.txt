@@ -1,0 +1,648 @@
+corpus 5
+T0 name=Test Set Item♂ base=Test Set Item sex=Male tarot=~ soul=~ lines=18
+  C0 fx=1 sets=2
+    E label=Max HP value=100 pct=0 cond=always note= target=self source=characteristic item=Test Set Item
+    S pieces=[Test Set Item♂|Other Set Piece♀] fx=3
+      E label=STR value=5 pct=0 cond=always note= target=self source=set item=Test Set Item
+      E label=MAG value=5 pct=0 cond=always note= target=self source=set item=Test Set Item
+      E label=Critical value=3 pct=1 cond=inactive note=if you are CHAOS target=self source=set item=Test Set Item
+    S pieces=[Test Set Item♂] fx=1
+      E label=Close-Range value=10 pct=0 cond=always note= target=partner source=set item=Test Set Item
+  C1 fx=1 sets=2
+    E label=Max HP value=100 pct=0 cond=always note= target=self source=characteristic item=Test Set Item
+    S pieces=[Test Set Item♂|Other Set Piece♀] fx=3
+      E label=STR value=5 pct=0 cond=always note= target=self source=set item=Test Set Item
+      E label=MAG value=5 pct=0 cond=always note= target=self source=set item=Test Set Item
+      E label=Critical value=3 pct=1 cond=always note=if you are CHAOS target=self source=set item=Test Set Item
+    S pieces=[Test Set Item♂] fx=1
+      E label=Close-Range value=10 pct=0 cond=always note= target=partner source=set item=Test Set Item
+  C2 fx=1 sets=2
+    E label=Max HP value=100 pct=0 cond=always note= target=self source=characteristic item=Test Set Item
+    S pieces=[Test Set Item♂|Other Set Piece♀] fx=3
+      E label=STR value=5 pct=0 cond=always note= target=self source=set item=Test Set Item
+      E label=MAG value=5 pct=0 cond=always note= target=self source=set item=Test Set Item
+      E label=Critical value=3 pct=1 cond=inactive note=if you are CHAOS target=self source=set item=Test Set Item
+    S pieces=[Test Set Item♂] fx=1
+      E label=Close-Range value=10 pct=0 cond=always note= target=partner source=set item=Test Set Item
+T1 name=Crystal Thing base=Crystal Thing sex=~ tarot=~ soul=~ lines=18
+  C0 fx=13 sets=0
+    E label=Spell Damage value=5 pct=1 cond=inactive note=with Orthrus's Crystal target=self source=characteristic item=Crystal Thing
+    E label=Max HP value=300 pct=0 cond=situational note=If all items obtained by using Soul Stone Fusion on target=self source=characteristic item=Crystal Thing
+    E label=Critical value=4 pct=0 cond=situational note=When Partner's Friendship is 50 or higher target=partner source=characteristic item=Crystal Thing
+    E label=Damage value=10 pct=1 cond=situational note=Against Demon enemies target=self source=characteristic item=Crystal Thing
+    E label=Damage value=15 pct=1 cond=situational note=vs Beast enemies target=self source=characteristic item=Crystal Thing
+    E label=Fire Resistance value=50 pct=1 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Nulls Charm value=~ pct=0 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Expertise Points earned value=10 pct=1 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Reflect Physical value=~ pct=0 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Weird text with 5% somewhere value=~ pct=0 cond=unparsed note= target=self source=characteristic item=Crystal Thing
+    E label=Final Critical rate correction value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+    E label=Limit Break chance value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+    E label=Limit Break power value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+  C1 fx=13 sets=0
+    E label=Spell Damage value=5 pct=1 cond=inactive note=with Orthrus's Crystal target=self source=characteristic item=Crystal Thing
+    E label=Max HP value=300 pct=0 cond=situational note=If all items obtained by using Soul Stone Fusion on target=self source=characteristic item=Crystal Thing
+    E label=Critical value=4 pct=0 cond=situational note=When Partner's Friendship is 50 or higher target=partner source=characteristic item=Crystal Thing
+    E label=Damage value=10 pct=1 cond=situational note=Against Demon enemies target=self source=characteristic item=Crystal Thing
+    E label=Damage value=15 pct=1 cond=situational note=vs Beast enemies target=self source=characteristic item=Crystal Thing
+    E label=Fire Resistance value=50 pct=1 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Nulls Charm value=~ pct=0 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Expertise Points earned value=10 pct=1 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Reflect Physical value=~ pct=0 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Weird text with 5% somewhere value=~ pct=0 cond=unparsed note= target=self source=characteristic item=Crystal Thing
+    E label=Final Critical rate correction value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+    E label=Limit Break chance value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+    E label=Limit Break power value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+  C2 fx=13 sets=0
+    E label=Spell Damage value=5 pct=1 cond=fusion-set note=with Orthrus's Crystal target=self source=characteristic item=Crystal Thing
+    E label=Max HP value=300 pct=0 cond=fusion-set note=soul stone set target=self source=characteristic item=Crystal Thing
+    E label=Critical value=4 pct=0 cond=situational note=When Partner's Friendship is 50 or higher target=partner source=characteristic item=Crystal Thing
+    E label=Damage value=10 pct=1 cond=situational note=Against Demon enemies target=self source=characteristic item=Crystal Thing
+    E label=Damage value=15 pct=1 cond=situational note=vs Beast enemies target=self source=characteristic item=Crystal Thing
+    E label=Fire Resistance value=50 pct=1 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Nulls Charm value=~ pct=0 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Expertise Points earned value=10 pct=1 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Reflect Physical value=~ pct=0 cond=always note= target=self source=characteristic item=Crystal Thing
+    E label=Weird text with 5% somewhere value=~ pct=0 cond=unparsed note= target=self source=characteristic item=Crystal Thing
+    E label=Final Critical rate correction value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+    E label=Limit Break chance value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+    E label=Limit Break power value=5 pct=1 cond=digitalized note= target=self source=characteristic item=Crystal Thing
+T2 name=Class Ring base=Class Ring sex=Female tarot=The Fool soul=Some Soul lines=31
+  C0 fx=19 sets=0
+    E label=Rapid Power value=10 pct=1 cond=always note=needs Class 4 Rapid (you have 4) target=self source=characteristic item=Class Ring
+    E label=Shot Power value=5 pct=1 cond=always note=needs Class 4 Rapid (you have 4) target=self source=characteristic item=Class Ring
+    E label=Spin Power value=10 pct=1 cond=inactive note=needs Class 6 Spin (you have 0) target=self source=characteristic item=Class Ring
+    E label=NEUTRAL: Critical +1 value=~ pct=0 cond=unparsed note=if you are LAW target=self source=characteristic item=Class Ring
+    E label=Pursuit Rate value=2 pct=1 cond=always note=if you are LAW or CHAOS target=self source=characteristic item=Class Ring
+    E label=Close-range damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Long-range damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Spell damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Fire Affinity value=5 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Ice Affinity value=5 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Critical value=5 pct=0 cond=always note= target=self source=characteristic item=Class Ring
+    E label=STR value=-3 pct=0 cond=always note= target=self source=characteristic item=Class Ring
+    E label=LNG-R value=10 pct=0 cond=always note= target=self source=mod item=Class Ring
+    E label=Fire value=5 pct=1 cond=always note= target=self source=mod item=Class Ring
+    E label=Spin Skill Boost value=2.5 pct=1 cond=always note= target=self source=mod item=Class Ring
+    E label=Rapid damage value=4 pct=1 cond=always note= target=self source=tarot item=Class Ring
+    E label=Cooldown value=-5 pct=1 cond=always note=with Hecatonchires's Crystal target=self source=tarot item=Class Ring
+    E label=Max MP value=50 pct=0 cond=always note= target=self source=soul item=Class Ring
+    E label=Nested line　 Support value=7 pct=0 cond=always note= target=self source=soul item=Class Ring
+  C1 fx=19 sets=0
+    E label=Rapid Power value=10 pct=1 cond=always note=needs Class 4 Rapid (you have 5) target=self source=characteristic item=Class Ring
+    E label=Shot Power value=5 pct=1 cond=always note=needs Class 4 Rapid (you have 5) target=self source=characteristic item=Class Ring
+    E label=Spin Power value=10 pct=1 cond=always note=needs Class 6 Spin (you have 6) target=self source=characteristic item=Class Ring
+    E label=NEUTRAL: Critical +1 value=~ pct=0 cond=unparsed note=if you are LAW target=self source=characteristic item=Class Ring
+    E label=Pursuit Rate value=2 pct=1 cond=always note=if you are LAW or CHAOS target=self source=characteristic item=Class Ring
+    E label=Close-range damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Long-range damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Spell damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Fire Affinity value=5 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Ice Affinity value=5 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Critical value=5 pct=0 cond=always note= target=self source=characteristic item=Class Ring
+    E label=STR value=-3 pct=0 cond=always note= target=self source=characteristic item=Class Ring
+    E label=LNG-R value=10 pct=0 cond=always note= target=self source=mod item=Class Ring
+    E label=Fire value=5 pct=1 cond=always note= target=self source=mod item=Class Ring
+    E label=Spin Skill Boost value=2.5 pct=1 cond=always note= target=self source=mod item=Class Ring
+    E label=Rapid damage value=4 pct=1 cond=always note= target=self source=tarot item=Class Ring
+    E label=Cooldown value=-5 pct=1 cond=always note=with Hecatonchires's Crystal target=self source=tarot item=Class Ring
+    E label=Max MP value=50 pct=0 cond=always note= target=self source=soul item=Class Ring
+    E label=Nested line　 Support value=7 pct=0 cond=always note= target=self source=soul item=Class Ring
+  C2 fx=19 sets=0
+    E label=Rapid Power value=10 pct=1 cond=inactive note=needs Class 4 Rapid (you have 0) target=self source=characteristic item=Class Ring
+    E label=Shot Power value=5 pct=1 cond=inactive note=needs Class 4 Rapid (you have 0) target=self source=characteristic item=Class Ring
+    E label=Spin Power value=10 pct=1 cond=inactive note=needs Class 6 Spin (you have 0) target=self source=characteristic item=Class Ring
+    E label=NEUTRAL: Critical +1 value=~ pct=0 cond=unparsed note=if you are LAW target=self source=characteristic item=Class Ring
+    E label=Pursuit Rate value=2 pct=1 cond=inactive note=if you are LAW or CHAOS target=self source=characteristic item=Class Ring
+    E label=Close-range damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Long-range damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Spell damage suffered value=-10 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Fire Affinity value=5 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Ice Affinity value=5 pct=1 cond=always note= target=self source=characteristic item=Class Ring
+    E label=Critical value=5 pct=0 cond=always note= target=self source=characteristic item=Class Ring
+    E label=STR value=-3 pct=0 cond=always note= target=self source=characteristic item=Class Ring
+    E label=LNG-R value=10 pct=0 cond=always note= target=self source=mod item=Class Ring
+    E label=Fire value=5 pct=1 cond=always note= target=self source=mod item=Class Ring
+    E label=Spin Skill Boost value=2.5 pct=1 cond=always note= target=self source=mod item=Class Ring
+    E label=Rapid damage value=4 pct=1 cond=always note= target=self source=tarot item=Class Ring
+    E label=Cooldown value=-5 pct=1 cond=fusion-set note=with Hecatonchires's Crystal target=self source=tarot item=Class Ring
+    E label=Max MP value=50 pct=0 cond=always note= target=self source=soul item=Class Ring
+    E label=Nested line　 Support value=7 pct=0 cond=always note= target=self source=soul item=Class Ring
+T3 name=Hecatonchires's Crystal base=Hecatonchires's Crystal sex=~ tarot=~ soul=~ lines=12
+  C0 fx=10 sets=0
+    E label=Cooldown value=-3 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Movement Speed value=4 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Limit Break Cap value=100 pct=0 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=LB Damage Cap value=50 pct=0 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Ice Affinity Cap value=10 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Slash Boost value=2 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Elec Affinity value=3 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Words of Power Boost value=4 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=HP Regeneration value=10 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Cast time value=-5 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+  C1 fx=10 sets=0
+    E label=Cooldown value=-3 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Movement Speed value=4 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Limit Break Cap value=100 pct=0 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=LB Damage Cap value=50 pct=0 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Ice Affinity Cap value=10 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Slash Boost value=2 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Elec Affinity value=3 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Words of Power Boost value=4 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=HP Regeneration value=10 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Cast time value=-5 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+  C2 fx=10 sets=0
+    E label=Cooldown value=-3 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Movement Speed value=4 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Limit Break Cap value=100 pct=0 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=LB Damage Cap value=50 pct=0 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Ice Affinity Cap value=10 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Slash Boost value=2 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Elec Affinity value=3 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Words of Power Boost value=4 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=HP Regeneration value=10 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+    E label=Cast time value=-5 pct=1 cond=always note= target=self source=characteristic item=Hecatonchires's Crystal
+T4 name=Simple base=Simple sex=~ tarot=~ soul=~ lines=1
+  C0 fx=0 sets=0
+  C1 fx=0 sets=0
+  C2 fx=0 sets=0
+SP [* STR +5, MAG +5] -> * STR +5 ;; MAG +5
+SP [* When Partner's Friendship is 50 or higher, Partner's Critical +4] -> * When Partner's Friendship is 50 or higher ;; Partner's Critical +4
+SP [* While Digitalized, Player/Demon's Final Critical rate correction +5%,] -> * While Digitalized Final Critical rate correction +5% ;; Player/Demon's Final Critical rate correction +5%
+SP [Limit Break chance +5%, Limit Break power +5%] -> Limit Break chance +5% ;; Limit Break power +5%
+SP [* If player has Class 4 Rapid or more, Rapid Power +10%, Shot Power +5%] -> * If player has Class 4 Rapid or more ;; Rapid Power +10% ;; Shot Power +5%
+SP [* If player has Class 6 Spin or more, Spin Power +10%] -> * If player has Class 6 Spin or more ;; Spin Power +10%
+SP [* If Player is LAW, NEUTRAL: Critical +1] -> * If Player is LAW ;; NEUTRAL: Critical +1
+SP [* Close-range, Long-range, Spell damage suffered -10%] -> * Close-range damage suffered -10% ;; Long-range damage suffered -10% ;; Spell damage suffered -10%
+SP [* Fire, Ice Affinity +5%] -> * Fire Affinity +5% ;; Ice Affinity +5%
+SP [Close-range, Long-range, Spell damage suffered -10%] -> Close-range damage suffered -10% ;; Long-range damage suffered -10% ;; Spell damage suffered -10%
+SP [Fire, Ice, Elec Affinity +5%] -> Fire Affinity +5% ;; Ice Affinity +5% ;; Elec Affinity +5%
+SP [A, B, C] -> A ;; B ;; C
+SP [STR +5, MAG] -> STR +5 ;; MAG
+SP [x, y 3, z +4] -> x ;; y 3 ;; z +4
+SP [  ,  , ] -> 
+SP [a+5, b, c, d, e +3.5%] -> a+5 ;; b +3.5% ;; c +3.5% ;; d +3.5% ;; e +3.5%
+PW [Test Set Item♂] -> True
+PW [Other Set Piece♀] -> False
+PW [Spiral Code License♂] -> False
+PW [Spiral Code License] -> False
+PW [Crystal Thing] -> True
+PW [crystal thing] -> True
+PW [Class Ring♀] -> True
+PW [Class Ring♂] -> False
+PW [] -> True
+PW [Test Set Item] -> True
+PW [Class Ring] -> True
+PW [Hecatonchires's Crystal] -> True
+PW [Simple] -> True
+WW [Hecatonchires's Crystal] -> True
+WW [Hecatonchires'] -> True
+WW [Ogami's Crystal] -> False
+WW [The Fool] -> True
+WW [Orthrus's Crystal] -> False
+WW [Nothing Here] -> False
+WW [Some Soul] -> True
+WW [crystal] -> True
+WW [] -> True
+CAN [Max HP] -> Max HP | Stats
+CAN [Spell Damage] -> Spell damage dealt | Combat
+CAN [Critical] -> Critical | Combat
+CAN [Damage] -> Damage | Other
+CAN [Fire Resistance] -> Fire resist | Other
+CAN [Nulls Charm] -> Nulls Charm | Other
+CAN [Expertise Points earned] -> Expertise Earned | Other
+CAN [Reflect Physical] -> Reflect Physical | Other
+CAN [Weird text with 5% somewhere] -> Weird text with 5% somewhere | Other
+CAN [Final Critical rate correction] -> Final critical correction | Combat
+CAN [Limit Break chance] -> Limit break chance | Combat
+CAN [Limit Break power] -> Limit break power | Combat
+CAN [Rapid Power] -> Rapid skill boost | Combat
+CAN [Shot Power] -> Shot skill boost | Combat
+CAN [Spin Power] -> Spin skill boost | Combat
+CAN [NEUTRAL: Critical +1] -> NEUTRAL: Critical +1 | Other
+CAN [Pursuit Rate] -> Pursuit chance | Combat
+CAN [Close-range damage suffered] -> Close-range damage taken | Combat
+CAN [Long-range damage suffered] -> Long-range damage taken | Combat
+CAN [Spell damage suffered] -> Spell damage taken | Combat
+CAN [Fire Affinity] -> Fire affinity | Affinity
+CAN [Ice Affinity] -> Ice affinity | Affinity
+CAN [STR] -> STR | Stats
+CAN [LNG-R] -> LNG-R | Stats
+CAN [Fire] -> Fire | Other
+CAN [Spin Skill Boost] -> Spin skill boost | Combat
+CAN [Rapid damage] -> Rapid skill boost | Combat
+CAN [Cooldown] -> Cooldown | Combat
+CAN [Max MP] -> Max MP | Stats
+CAN [Nested line　 Support] -> Nested line　 Support | Other
+CAN [Movement Speed] -> Movement speed | Combat
+CAN [Limit Break Cap] -> Limit break cap | Combat
+CAN [LB Damage Cap] -> Limit break cap | Combat
+CAN [Ice Affinity Cap] -> Ice affinity cap | Affinity
+CAN [Slash Boost] -> Slash affinity | Affinity
+CAN [Elec Affinity] -> Electric affinity | Affinity
+CAN [Words of Power Boost] -> Words of Power affinity | Affinity
+CAN [HP Regeneration] -> HP Regen | Other
+CAN [Cast time] -> Incantation | Other
+CAN [critical] -> Critical | Combat
+CAN [Final Crit] -> Final critical correction | Combat
+CAN [Final Critical Rate Correction] -> Final critical correction | Combat
+CAN [LB Chance] -> Limit break chance | Combat
+CAN [Limit Break Power] -> Limit break power | Combat
+CAN [Pursuit Damage] -> Pursuit power | Combat
+CAN [TA Rate] -> Technical attack chance | Combat
+CAN [Tech Attack Power] -> Technical attack power | Combat
+CAN [Close-Range Damage] -> Close-range damage dealt | Combat
+CAN [Long-Range Damage Dealt] -> Long-range damage dealt | Combat
+CAN [Magic Damage] -> Spell damage dealt | Combat
+CAN [Close-Range Damage Taken] -> Close-range damage taken | Combat
+CAN [Spell Damage Suffered] -> Spell damage taken | Combat
+CAN [Attack Damage] -> Attack skill boost | Combat
+CAN [Rush Power] -> Rush skill boost | Combat
+CAN [Rapid Skill Power] -> Rapid skill boost | Combat
+CAN [Shot Boost] -> Shot skill boost | Combat
+CAN [LB Upper Limit] -> Limit break cap | Combat
+CAN [Gun Affinity] -> Handgun affinity | Affinity
+CAN [Gun resist] -> Handgun resist | Other
+CAN [Handgun Affinity Cap] -> Handgun affinity cap | Affinity
+CAN [Strike affinity] -> Blunt affinity | Affinity
+CAN [Strike-affinity] -> Blunt affinity | Affinity
+CAN [Blunt Resistance] -> Blunt resist | Other
+CAN [Elec resist] -> Electric resist | Other
+CAN [Electric Affinity] -> Electric affinity | Affinity
+CAN [Word affinity] -> Words of Power affinity | Affinity
+CAN [Heal affinity] -> Curative affinity | Affinity
+CAN [Healing Boost] -> Curative affinity | Affinity
+CAN [Magic Force affinity] -> Mystic affinity | Affinity
+CAN [MagicForce affinity] -> Mystic affinity | Affinity
+CAN [Curse Boost] -> Death affinity | Affinity
+CAN [Death Affinity] -> Death affinity | Affinity
+CAN [Mystic affinity] -> Mystic affinity | Affinity
+CAN [Nothing affinity] -> Nothing affinity | Other
+CAN [Strength] -> STR | Stats
+CAN [magic] -> MAG | Stats
+CAN [VIT] -> VIT | Stats
+CAN [Vitality] -> VIT | Stats
+CAN [INT] -> INT | Stats
+CAN [SPD] -> SPD | Stats
+CAN [LUCK] -> LUCK | Stats
+CAN [CLS-R] -> CLS-R | Stats
+CAN [Close-Range] -> CLS-R | Stats
+CAN [LNGR] -> LNG-R | Stats
+CAN [Long-Range] -> LNG-R | Stats
+CAN [Spell] -> Spell | Stats
+CAN [Support] -> Support | Stats
+CAN [P.Def] -> P.Def | Stats
+CAN [Physical Defense] -> P.Def | Stats
+CAN [M.Def] -> M.Def | Stats
+CAN [Magic Defense] -> M.Def | Stats
+CAN [HP Max] -> Max HP | Stats
+CAN [All parameters] -> All stats | Stats
+CAN [EXP Earned] -> EXP Earned | Other
+CAN [XP Gain] -> EXP Earned | Other
+CAN [Experience Points Earned] -> EXP Earned | Other
+CAN [Expertise earned] -> Expertise Earned | Other
+CAN [Incantation] -> Incantation | Other
+CAN [CHANT_TIME] -> Incantation | Other
+CAN [HP regen] -> HP Regen | Other
+CAN [MP regen] -> MP Regen | Other
+CAN [MP Regeneration] -> MP Regen | Other
+CAN [HP/MP Regeneration] -> HP/MP Regen | Other
+CAN [Critical defense] -> Critical Defense | Other
+CAN [  padded label  ] -> Padded label | Other
+CAN [über] -> Über | Other
+CAN [ßtest] -> ßtest | Other
+CAN [] ->  | Other
+CAN [x] -> X | Other
+PAT Critical ^Critical$
+PAT Final critical correction ^Final Crit(ical)?( Rate)?( Correction| Chance)?$
+PAT Limit break chance ^(Limit Break|LB) (Chance|Rate)$
+PAT Limit break power ^(Limit Break|LB) (Power|Damage)$
+PAT Pursuit chance ^Pursuit (Chance|Rate)$
+PAT Pursuit power ^Pursuit (Power|Damage)$
+PAT Technical attack chance ^(TA|Tech(nical)? Attack) (Chance|Rate)$
+PAT Technical attack power ^(TA|Tech(nical)? Attack) (Power|Damage)$
+PAT Close-range damage dealt % ^Close-Range Damage( Dealt)?$
+PAT Long-range damage dealt % ^Long-Range Damage( Dealt)?$
+PAT Spell damage dealt % ^(Spell|Magic) Damage( Dealt)?$
+PAT Close-range damage taken % ^Close-Range Damage (Taken|Suffered)$
+PAT Long-range damage taken % ^Long-Range Damage (Taken|Suffered)$
+PAT Spell damage taken % ^(Spell|Magic) Damage (Taken|Suffered)$
+PAT Spin skill boost % ^Spin( Skill)? (Damage|Power|Boost)$
+PAT Attack skill boost % ^Attack( Skill)? (Damage|Power|Boost)$
+PAT Rush skill boost % ^Rush( Skill)? (Damage|Power|Boost)$
+PAT Rapid skill boost % ^Rapid( Skill)? (Damage|Power|Boost)$
+PAT Shot skill boost % ^Shot( Skill)? (Damage|Power|Boost)$
+PAT Cooldown % ^Cooldown$
+PAT Movement speed % ^Movement Speed$
+PAT Limit break cap ^(Limit Break|LB)( Damage)? (Cap|Upper Limit)$
+DS Critical = 7.5
+DS Final critical correction = 5
+DS Limit break chance = 5
+DS Limit break power = 5
+DS Pursuit chance = 2
+DS Pursuit power = 0
+DS Technical attack chance = 0
+DS Technical attack power = 0
+DS Close-range damage dealt % = 0
+DS Long-range damage dealt % = 0
+DS Spell damage dealt % = 0
+DS Close-range damage taken % = -10
+DS Long-range damage taken % = -10
+DS Spell damage taken % = -10
+DS Spin skill boost % = 2.5
+DS Attack skill boost % = 0
+DS Rush skill boost % = 0
+DS Rapid skill boost % = 14
+DS Shot skill boost % = 5
+DS Cooldown % = -11.333
+DS Movement speed % = 4
+DS Limit break cap = 150
+CS Critical | 5 | 7.5 | Class Ring +5; Ring +2.5 (digi)
+CS Final critical correction | 0 | 5 | Crystal Thing +5% (digi)
+CS Limit break chance | 0 | 5 | Crystal Thing +5% (digi)
+CS Limit break power | 0 | 5 | Crystal Thing +5% (digi)
+CS Pursuit chance | 2 | 2 | Class Ring +2%
+CS Pursuit power | 0 | 0 | 
+CS Technical attack chance | 0 | 0 | 
+CS Technical attack power | 0 | 0 | 
+CS Close-range damage dealt % | 0 | 0 | 
+CS Long-range damage dealt % | 0 | 0 | 
+CS Spell damage dealt % | 0 | 0 | 
+CS Close-range damage taken % | -10 | -10 | Class Ring -10%
+CS Long-range damage taken % | -10 | -10 | Class Ring -10%
+CS Spell damage taken % | -10 | -10 | Class Ring -10%
+CS Spin skill boost % | 2.5 | 2.5 | Class Ring +2.5%
+CS Attack skill boost % | 0 | 0 | 
+CS Rush skill boost % | 0 | 0 | 
+CS Rapid skill boost % | 14 | 14 | Class Ring +10%; Class Ring +4%
+CS Shot skill boost % | 5 | 5 | Class Ring +5%
+CS Cooldown % | -11.333 | -11.333 | Class Ring -5%; Hecatonchires's Crystal -3%; Gem -3.33%
+CS Movement speed % | 4 | 4 | Hecatonchires's Crystal +4%
+CS Limit break cap | 150 | 150 | Hecatonchires's Crystal +100; Hecatonchires's Crystal +50
+CS Affinity: Elec Affinity | 3 | 3 | Hecatonchires's Crystal
+CS Affinity: Fire Affinity | 8 | 12 | Class Ring; Cape; Boots
+CS Affinity: Ice Affinity | 5 | 5 | Class Ring
+CS Affinity: Ice Boost | 1.25 | 1.25 | Hat
+CS Affinity: Slash Affinity | 7 | 7 | 
+CS Affinity: Slash Boost | 2 | 2 | Hecatonchires's Crystal
+CS Affinity: Words of Power Boost | 4 | 4 | Hecatonchires's Crystal
+FMT 0 -> 0 +0
+FMT 1 -> 1 +1
+FMT -1 -> -1 -1
+FMT 0.5 -> 0.5 +0.5
+FMT -0.456 -> -0.456 -0.46
+FMT 12.345 -> 12.345 +12.35
+FMT -0.004 -> -0.004 -0
+FMT 1E-06 -> 1E-06 +0
+FMT 1234567.891 -> 1234567.891 +1234567.89
+FMT NaN -> NaN -NaN
+FMT -0 -> -0 +0
+F lv0 st0 -> 190 12
+F lv0 st1 -> 190 13
+F lv0 st33 -> 187 61
+F lv0 st96 -> 181 155
+F lv0 st235 -> 167 364
+F lv0 st1000 -> 90 1512
+F lv1 st0 -> 192 12
+F lv1 st1 -> 192 13
+F lv1 st33 -> 189 61
+F lv1 st96 -> 183 155
+F lv1 st235 -> 169 364
+F lv1 st1000 -> 92 1512
+F lv50 st0 -> 295 27
+F lv50 st1 -> 295 28
+F lv50 st33 -> 292 76
+F lv50 st96 -> 286 170
+F lv50 st235 -> 272 379
+F lv50 st1000 -> 195 1527
+F lv95 st0 -> 390 41
+F lv95 st1 -> 390 42
+F lv95 st33 -> 387 90
+F lv95 st96 -> 381 184
+F lv95 st235 -> 367 393
+F lv95 st1000 -> 290 1541
+F lv100 st0 -> 400 42
+F lv100 st1 -> 400 43
+F lv100 st33 -> 397 91
+F lv100 st96 -> 391 185
+F lv100 st235 -> 377 394
+F lv100 st1000 -> 300 1542
+F lv999 st0 -> 2288 312
+F lv999 st1 -> 2288 313
+F lv999 st33 -> 2285 361
+F lv999 st96 -> 2279 455
+F lv999 st235 -> 2265 664
+F lv999 st1000 -> 2188 1812
+ADJ -5000 0 0 -> 1 1 2147478647 1
+ADJ -5000 0 -10 -> 1 1 1932730783 1
+ADJ -5000 0 7.7 -> 1 1 2147483647 1
+ADJ -5000 0 -100 -> 1 1 1 1
+ADJ -5000 -10 0 -> 1 1 1932730283 1
+ADJ -5000 -10 -10 -> 1 1 1739457255 1
+ADJ -5000 -10 7.7 -> 1 1 2081550514 1
+ADJ -5000 -10 -100 -> 1 1 1 1
+ADJ -5000 -50 0 -> 1 1 1073736824 1
+ADJ -5000 -50 -10 -> 1 1 966363142 1
+ADJ -5000 -50 7.7 -> 1 1 1156414559 1
+ADJ -5000 -50 -100 -> 1 1 1 1
+ADJ -5000 12.5 0 -> 1 1 2147483647 1
+ADJ -5000 12.5 -10 -> 1 1 2147483647 1
+ADJ -5000 12.5 7.7 -> 1 1 2147483647 1
+ADJ -5000 12.5 -100 -> 1 1 1 1
+ADJ -5000 -100 0 -> 1 1 1 1
+ADJ -5000 -100 -10 -> 1 1 1 1
+ADJ -5000 -100 7.7 -> 1 1 1 1
+ADJ -5000 -100 -100 -> 1 1 1 1
+ADJ -5000 -150 0 -> 1 1 1 1
+ADJ -5000 -150 -10 -> 1 1 1 1
+ADJ -5000 -150 7.7 -> 1 1 1 1
+ADJ -5000 -150 -100 -> 1 1 1 1
+ADJ -5000 33.3 0 -> 1 1 2147483647 1
+ADJ -5000 33.3 -10 -> 1 1 2147483647 1
+ADJ -5000 33.3 7.7 -> 1 1 2147483647 1
+ADJ -5000 33.3 -100 -> 1 1 1 1
+ADJ -1.5 0 0 -> 999 1 2147483646 1
+ADJ -1.5 0 -10 -> 900 1 1932735282 1
+ADJ -1.5 0 7.7 -> 1075 1 2147483647 1
+ADJ -1.5 0 -100 -> 1 1 1 1
+ADJ -1.5 -10 0 -> 899 1 1932735282 1
+ADJ -1.5 -10 -10 -> 810 1 1739461754 1
+ADJ -1.5 -10 7.7 -> 968 1 2081555898 1
+ADJ -1.5 -10 -100 -> 1 1 1 1
+ADJ -1.5 -50 0 -> 499 1 1073741823 1
+ADJ -1.5 -50 -10 -> 450 1 966367641 1
+ADJ -1.5 -50 7.7 -> 537 1 1156419943 1
+ADJ -1.5 -50 -100 -> 1 1 1 1
+ADJ -1.5 12.5 0 -> 1124 1 2147483647 1
+ADJ -1.5 12.5 -10 -> 1012 1 2147483647 1
+ADJ -1.5 12.5 7.7 -> 1210 1 2147483647 1
+ADJ -1.5 12.5 -100 -> 1 1 1 1
+ADJ -1.5 -100 0 -> 1 1 1 1
+ADJ -1.5 -100 -10 -> 1 1 1 1
+ADJ -1.5 -100 7.7 -> 1 1 1 1
+ADJ -1.5 -100 -100 -> 1 1 1 1
+ADJ -1.5 -150 0 -> 1 1 1 1
+ADJ -1.5 -150 -10 -> 1 1 1 1
+ADJ -1.5 -150 7.7 -> 1 1 1 1
+ADJ -1.5 -150 -100 -> 1 1 1 1
+ADJ -1.5 33.3 0 -> 1331 1 2147483647 1
+ADJ -1.5 33.3 -10 -> 1198 1 2147483647 1
+ADJ -1.5 33.3 7.7 -> 1433 1 2147483647 1
+ADJ -1.5 33.3 -100 -> 1 1 1 1
+ADJ 0 0 0 -> 1000 1 2147483647 1
+ADJ 0 0 -10 -> 900 1 1932735283 1
+ADJ 0 0 7.7 -> 1077 1 2147483647 1
+ADJ 0 0 -100 -> 1 1 1 1
+ADJ 0 -10 0 -> 900 1 1932735283 1
+ADJ 0 -10 -10 -> 810 1 1739461755 1
+ADJ 0 -10 7.7 -> 969 1 2081555899 1
+ADJ 0 -10 -100 -> 1 1 1 1
+ADJ 0 -50 0 -> 500 1 1073741824 1
+ADJ 0 -50 -10 -> 450 1 966367642 1
+ADJ 0 -50 7.7 -> 538 1 1156419944 1
+ADJ 0 -50 -100 -> 1 1 1 1
+ADJ 0 12.5 0 -> 1125 1 2147483647 1
+ADJ 0 12.5 -10 -> 1013 1 2147483647 1
+ADJ 0 12.5 7.7 -> 1211 1 2147483647 1
+ADJ 0 12.5 -100 -> 1 1 1 1
+ADJ 0 -100 0 -> 1 1 1 1
+ADJ 0 -100 -10 -> 1 1 1 1
+ADJ 0 -100 7.7 -> 1 1 1 1
+ADJ 0 -100 -100 -> 1 1 1 1
+ADJ 0 -150 0 -> 1 1 1 1
+ADJ 0 -150 -10 -> 1 1 1 1
+ADJ 0 -150 7.7 -> 1 1 1 1
+ADJ 0 -150 -100 -> 1 1 1 1
+ADJ 0 33.3 0 -> 1332 1 2147483647 1
+ADJ 0 33.3 -10 -> 1199 1 2147483647 1
+ADJ 0 33.3 7.7 -> 1434 1 2147483647 1
+ADJ 0 33.3 -100 -> 1 1 1 1
+ADJ 326.7 0 0 -> 1326 326 2147483647 321
+ADJ 326.7 0 -10 -> 1194 294 1932735576 289
+ADJ 326.7 0 7.7 -> 1428 351 2147483647 345
+ADJ 326.7 0 -100 -> 1 1 1 1
+ADJ 326.7 -10 0 -> 1226 326 1932735609 321
+ADJ 326.7 -10 -10 -> 1104 294 1739462049 289
+ADJ 326.7 -10 7.7 -> 1320 351 2081556250 345
+ADJ 326.7 -10 -100 -> 1 1 1 1
+ADJ 326.7 -50 0 -> 826 326 1073742150 323
+ADJ 326.7 -50 -10 -> 744 294 966367935 291
+ADJ 326.7 -50 7.7 -> 889 351 1156420295 347
+ADJ 326.7 -50 -100 -> 1 1 1 1
+ADJ 326.7 12.5 0 -> 1451 326 2147483647 321
+ADJ 326.7 12.5 -10 -> 1306 294 2147483647 289
+ADJ 326.7 12.5 7.7 -> 1562 351 2147483647 345
+ADJ 326.7 12.5 -100 -> 1 1 1 1
+ADJ 326.7 -100 0 -> 326 326 326 326
+ADJ 326.7 -100 -10 -> 294 294 294 294
+ADJ 326.7 -100 7.7 -> 351 351 351 351
+ADJ 326.7 -100 -100 -> 1 1 1 1
+ADJ 326.7 -150 0 -> 326 326 326 326
+ADJ 326.7 -150 -10 -> 294 294 294 294
+ADJ 326.7 -150 7.7 -> 351 351 351 351
+ADJ 326.7 -150 -100 -> 1 1 1 1
+ADJ 326.7 33.3 0 -> 1658 326 2147483647 320
+ADJ 326.7 33.3 -10 -> 1493 294 2147483647 288
+ADJ 326.7 33.3 7.7 -> 1785 351 2147483647 344
+ADJ 326.7 33.3 -100 -> 1 1 1 1
+ADJ 1000000000000 0 0 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 0 -10 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 0 7.7 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 0 -100 -> 1 1 1 1
+ADJ 1000000000000 -10 0 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -10 -10 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -10 7.7 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -10 -100 -> 1 1 1 1
+ADJ 1000000000000 -50 0 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -50 -10 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -50 7.7 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -50 -100 -> 1 1 1 1
+ADJ 1000000000000 12.5 0 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 12.5 -10 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 12.5 7.7 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 12.5 -100 -> 1 1 1 1
+ADJ 1000000000000 -100 0 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -100 -10 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -100 7.7 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -100 -100 -> 1 1 1 1
+ADJ 1000000000000 -150 0 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -150 -10 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -150 7.7 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 -150 -100 -> 1 1 1 1
+ADJ 1000000000000 33.3 0 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 33.3 -10 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 33.3 7.7 -> 2147483647 2147483647 2147483647 2147483647
+ADJ 1000000000000 33.3 -100 -> 1 1 1 1
+ADJ -1000000000000 0 0 -> 1 1 1 1
+ADJ -1000000000000 0 -10 -> 1 1 1 1
+ADJ -1000000000000 0 7.7 -> 1 1 1 1
+ADJ -1000000000000 0 -100 -> 1 1 1 1
+ADJ -1000000000000 -10 0 -> 1 1 1 1
+ADJ -1000000000000 -10 -10 -> 1 1 1 1
+ADJ -1000000000000 -10 7.7 -> 1 1 1 1
+ADJ -1000000000000 -10 -100 -> 1 1 1 1
+ADJ -1000000000000 -50 0 -> 1 1 1 1
+ADJ -1000000000000 -50 -10 -> 1 1 1 1
+ADJ -1000000000000 -50 7.7 -> 1 1 1 1
+ADJ -1000000000000 -50 -100 -> 1 1 1 1
+ADJ -1000000000000 12.5 0 -> 1 1 1 1
+ADJ -1000000000000 12.5 -10 -> 1 1 1 1
+ADJ -1000000000000 12.5 7.7 -> 1 1 1 1
+ADJ -1000000000000 12.5 -100 -> 1 1 1 1
+ADJ -1000000000000 -100 0 -> 1 1 1 1
+ADJ -1000000000000 -100 -10 -> 1 1 1 1
+ADJ -1000000000000 -100 7.7 -> 1 1 1 1
+ADJ -1000000000000 -100 -100 -> 1 1 1 1
+ADJ -1000000000000 -150 0 -> 1 1 1 1
+ADJ -1000000000000 -150 -10 -> 1 1 1 1
+ADJ -1000000000000 -150 7.7 -> 1 1 1 1
+ADJ -1000000000000 -150 -100 -> 1 1 1 1
+ADJ -1000000000000 33.3 0 -> 1 1 1 1
+ADJ -1000000000000 33.3 -10 -> 1 1 1 1
+ADJ -1000000000000 33.3 7.7 -> 1 1 1 1
+ADJ -1000000000000 33.3 -100 -> 1 1 1 1
+COMPUTE lv1 p0 -> 2134 633
+COMPUTE lv1 p-50 -> 1230 386
+COMPUTE lv95 p0 -> 2332 662
+COMPUTE lv95 p-50 -> 1329 401
+CAL 326 139 376 152
+CAL2 326 215  -20
+DIGI 2495 768 802 241
+DIGI 2495 719 802 287
+ONLYSTATS 0:7,3:1
+ONLYFLAT 250 75
+DIGIRES 2502 763 hp=1630 mp=371
+TOG [] HP_MAX -> 0
+TOG [] MP_MAX -> 0
+TOG [] NOPE -> 0
+TOG [1] HP_MAX -> 5.5
+TOG [1] MP_MAX -> -10
+TOG [1] NOPE -> 0
+TOG [1,1,2] HP_MAX -> 11
+TOG [1,1,2] MP_MAX -> -30
+TOG [1,1,2] NOPE -> 0
+TOG [2,3] HP_MAX -> -2.5
+TOG [2,3] MP_MAX -> -17
+TOG [2,3] NOPE -> 0
+TOG [4,5,6,7] HP_MAX -> 0
+TOG [4,5,6,7] MP_MAX -> -10
+TOG [4,5,6,7] NOPE -> 0
+TOG [6,6,6,6,6] HP_MAX -> 0
+TOG [6,6,6,6,6] MP_MAX -> -50
+TOG [6,6,6,6,6] NOPE -> 0
+TOGNULL 0
+CALTOG 5.5 -10 0 -10 flat 306 154
+CALTOG 0 0 0 0 flat 326 139
+CALTOG 5.5 -20 0 0 flat 306 169
+CALSHORT True
+CALNOHP True
+CALNULLPAIRS True
+SAVED none True
+SAVED last1.json now=1 -> 95 96 71 64 154 702 291 376 152 5.5 -20 5.5 -10 flat 306 169 at=2026-11-20T10:00:00
+SAVED last1.json now=null -> 95 96 71 64 154 702 291 376 152 5.5 -20 0 0 flat 306 169 at=2026-11-20T10:00:00
+SAVED last2.json now=1 -> 50 15 25 35 45 500 0 222 60 5.5 -10 5.5 -10 flat 266 -54 at=~
+SAVED last2.json now=null -> 50 15 25 35 45 500 0 222 60 0 0 0 0 flat 278 -60 at=~
+SAVED last3.json now=1 -> null at=5
+SAVED last3.json now=null -> null at=5
+SAVED last4.json now=1 -> 80 15 25 35 45 900 100 285 69 -2.5 -17 5.5 -10 flat 622 42 at=true
+SAVED last4.json now=null -> 80 15 25 35 45 900 100 285 69 -2.5 -17 0 0 flat 622 42 at=true

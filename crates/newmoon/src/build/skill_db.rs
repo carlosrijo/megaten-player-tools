@@ -1,0 +1,426 @@
+//! Port of `src/Build/SkillDb.cs`.
+//!
+//! The Skill Database page's data (app\ui\skill-db.json) and its pictures (app\ui\skill-db-icons\): every skill of the
+//! game grouped by its action type, with its element, cost, cast time, cooldown, reach, power and who can learn it.
+//!
+//! Inputs (all decoded from the NewMoon client, smt-decoded\server):
+//!   SkillData.xml   the skills: category (active / passive / switch), action type, family, element, costs, timings,
+//!                   target and the damage modifier
+//!   CHelpData.xml   the game's Help: the names of the 12 action types ("Action types include the following") in the
+//!                   order of the action type numbers (comp_hack skilldata.xml: ATTACK 0 ... SUPPORT 11), and the page
+//!                   that explains each one
+//!   reference       skill-text.tsv (names, descriptions), skill-icons.tsv, expertise-rank-skills.tsv, expertise-newmoon.tsv
+//!
+//! Left out: item uses (family ITEM: what an item does when used), the demons' own item uses (DEMON_SOLO), DEBUG skills,
+//! skills without a name and skills whose name the client never translated (only Japanese: test or unused records).
+//! Which demons learn a skill is not written here: the page works it out from demon-db.json, which already holds every
+//! compendium demon's skills and features.
+
+use std::collections::HashMap;
+use std::path::Path;
+use std::time::Instant;
+
+use anyhow::anyhow;
+use regex::Regex;
+use serde_json::{Map, Value, json};
+
+use super::item_icons;
+use super::xml::{self, elements, element, m, mem, obj, title};
+use crate::Result;
+use crate::console;
+use crate::data::game_data::{GameData, reference_file};
+use crate::data::json::{self, Escape};
+use crate::data::stat_labels;
+use crate::fmt;
+use crate::text::cmp_invariant;
+
+/// `Int`: `int.TryParse` of the trimmed text, else 0.
+fn int(s: Option<&str>) -> i32 {
+    s.and_then(fmt::parse_i32).unwrap_or(0)
+}
+
+fn int_of(o: Option<roxmltree::Node>, name: &str) -> i32 {
+    int(m(o, name).as_deref())
+}
+
+/// The action type numbers in order (comp_hack libcomp\schema\binarydata\skilldata.xml, MiSkillBasicData actionType).
+const ACTION_IDS: [&str; 12] = ["ATTACK", "SPIN", "RUSH", "SHOT", "RAPID", "GUARD", "COUNTER", "DODGE", "TALK", "INTIMIDATE", "TAUNT", "SUPPORT"];
+
+fn stat_of(k: &str) -> Option<&'static str> {
+    Some(match k {
+        "CLSR" => "Close-range",
+        "LNGR" => "Long-range",
+        "SPELL" => "Spell",
+        "SUPPORT" => "Support",
+        "WEAPON" => "Weapon",
+        _ => return None,
+    })
+}
+
+fn target_of(k: &str) -> Option<&'static str> {
+    Some(match k {
+        "ENEMY" => "Enemy",
+        "ALLY" => "Ally",
+        "PARTY" => "Party",
+        "SOURCE" => "Self",
+        "DEAD_ALLY" => "Fallen ally",
+        "DEAD_PARTY" => "Fallen party member",
+        "PARTNER" => "Partner demon",
+        "OTHER_PLAYER" => "Another player",
+        "ALLY_PLAYER" => "Allied player",
+        "PLAYER" => "Player",
+        "OBJECT" => "Object",
+        _ => return None,
+    })
+}
+
+/// `Sec`: milliseconds as seconds, "1.5 s".
+fn sec(ms: i32) -> String {
+    format!("{} s", fmt::custom(ms as f64 / 1000.0, "0.##"))
+}
+
+struct HelpPage {
+    id: i32,
+    prev: i32,
+    topic: String,
+    text: String,
+}
+
+fn ms(sw: &Instant) -> u128 {
+    sw.elapsed().as_millis()
+}
+
+pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_file: &Path) -> Result<()> {
+    let sw = Instant::now();
+    let reference = |f: &str| reference_file(f).ok_or_else(|| anyhow!("reference\\{f} is missing."));
+
+    // ---- names and descriptions (client CSkillData via reference\skill-text.tsv) ----
+    let mut names: HashMap<i32, String> = HashMap::new();
+    for line in reference("skill-text.tsv")?.lines()? {
+        if line.starts_with('#') {
+            continue;
+        }
+        let p: Vec<&str> = line.split('\t').collect();
+        if p.len() >= 2 {
+            if let Some(id) = fmt::parse_i32(p[0]) {
+                if !p[1].trim().is_empty() {
+                    names.insert(id, p[1].trim().to_string());
+                }
+            }
+        }
+    }
+
+    // ---- the action types, as the game's Help names and explains them ----
+    let help_text = xml::read_text(&decoded.join("CHelpData.xml"))?;
+    let help_doc = xml::parse(&help_text)?;
+    let help: Vec<HelpPage> = elements(help_doc.root_element(), "object")
+        .map(|o| HelpPage {
+            id: int_of(Some(o), "ID"),
+            prev: int_of(Some(o), "previousID"),
+            topic: m(Some(o), "topic").unwrap_or_default(),
+            text: m(Some(o), "text").unwrap_or_default().replace('\r', "").trim().to_string(),
+        })
+        .collect();
+    // the text of the first page under a topic
+    let under = |topic_pattern: &str| -> Option<String> {
+        let re = Regex::new(&format!("(?i){topic_pattern}")).expect("topic pattern");
+        let t = help.iter().find(|x| re.is_match(&x.topic))?;
+        help.iter().find(|x| x.prev == t.id && !x.text.is_empty()).map(|x| x.text.clone())
+    };
+    let list = help
+        .iter()
+        .find(|x| x.text.contains("Action types include the following"))
+        .map(|x| x.text.clone())
+        .ok_or_else(|| anyhow!("CHelpData.xml has no list of action types."))?;
+    let game_names: Vec<String> = list
+        .split('\n')
+        .filter(|l| l.trim_start().starts_with('・'))
+        .map(|l| l.trim().trim_start_matches('・').trim().to_string())
+        .collect();
+    if game_names.len() != ACTION_IDS.len() {
+        return Err(anyhow!("The Help lists {} action types, the skill data has {}.", game_names.len(), ACTION_IDS.len()));
+    }
+    let ws = Regex::new(r"\s+").expect("whitespace");
+    let intro = ws.replace_all(list.split("Action types include").next().unwrap_or("").trim(), " ").into_owned();
+    let negotiation = under("^Negotiation Methods$");
+    let skills_help = help.iter().find(|x| x.text.starts_with("Skills are split into")).map(|x| x.text.clone()).unwrap_or_default();
+    let phrase = |what: &str| -> Option<String> {
+        let re = Regex::new(&format!("{what} Skills that ([^,.]+)")).expect("phrase pattern");
+        re.captures(&skills_help).map(|c| c[1].trim().to_string())
+    };
+    let mut types: Vec<Map<String, Value>> = Vec::new();
+    for i in 0..ACTION_IDS.len() {
+        let n = &game_names[i];
+        let text = if matches!(ACTION_IDS[i], "TALK" | "INTIMIDATE" | "TAUNT") { negotiation.clone() } else { under(&format!("- {}( Magic)?$", regex::escape(n))) };
+        let mut t = Map::new();
+        t.insert("key".into(), json!(ACTION_IDS[i].to_lowercase()));
+        t.insert("name".into(), json!(n));
+        t.insert("help".into(), json!(text));
+        types.push(t);
+    }
+    let passive_text = phrase("Passive");
+    let switch_text = phrase("Switch");
+    for (key, name, text) in [("passive", "Passive", passive_text), ("switch", "Switch", switch_text)] {
+        let mut t = Map::new();
+        t.insert("key".into(), json!(key));
+        t.insert("name".into(), json!(name));
+        t.insert("help".into(), match text {
+            Some(x) => json!(format!("{name} skills {x}.")),
+            None => Value::Null,
+        });
+        types.push(t);
+    }
+    // Destruction magic (Agi, Zio...) is the Shot type in the data; say so under Shot with the game's own words for it
+    if let Some(destruction) = under("- Destruction$") {
+        types[3].insert("also".into(), json!(destruction));
+    }
+    if let Some(support) = under("- Support Magic$") {
+        types[11].insert("also".into(), json!(support));
+    }
+    if let Some(curse) = under("- Curse Magic$") {
+        types[11].insert("also2".into(), json!(curse));
+    }
+
+    // ---- expertise ranks that unlock each skill ----
+    let mut exp_of: HashMap<i32, Vec<String>> = HashMap::new();
+    let expertises = data.expertises_nm()?;
+    for (eid, ranks) in data.rank_skills_nm()? {
+        let Some(en) = expertises.get(eid).map(|d| d.name.as_str()) else { continue };
+        for (rank_idx, unlocked) in ranks {
+            for s in unlocked {
+                exp_of.entry(*s).or_default().push(format!("{en} · Class {} Rank {}", rank_idx / 10, rank_idx % 10));
+            }
+        }
+    }
+
+    // ---- icons ----
+    let out_dir = std::path::absolute(out_file)?.parent().map(Path::to_path_buf).unwrap_or_default();
+    let icon_dir = out_dir.join("skill-db-icons");
+    std::fs::create_dir_all(&icon_dir)?;
+    let mut icon_done: HashMap<String, Option<String>> = HashMap::new();
+    let mut icon = |id: i32| -> Result<Option<String>> {
+        let Some(client) = client_dir else { return Ok(None) };
+        let Some(a) = data.skill_icon_asset(id)? else { return Ok(None) };
+        if let Some(have) = icon_done.get(&a) {
+            return Ok(have.clone());
+        }
+        let dest = icon_dir.join(format!("{a}.png"));
+        let mut res = None;
+        if dest.is_file() {
+            res = Some(format!("skill-db-icons/{a}.png"));
+        } else if let Some(png) = item_icons::client_png(client, &a, &[]) {
+            std::fs::write(&dest, png)?;
+            res = Some(format!("skill-db-icons/{a}.png"));
+        }
+        icon_done.insert(a, res.clone());
+        Ok(res)
+    };
+
+    // ---- the skills ----
+    let mut skills: Vec<Map<String, Value>> = Vec::new();
+    let (mut untranslated, mut unnamed, mut items) = (0, 0, 0);
+    let latin = Regex::new("[A-Za-z]").expect("latin");
+    let skill_text = xml::read_text(&decoded.join("SkillData.xml"))?;
+    let skill_doc = xml::parse(&skill_text)?;
+    for o in xml::records(&skill_doc) {
+        let common = obj(Some(o), "common");
+        let basic = obj(Some(o), "basic");
+        let cond = obj(Some(o), "condition");
+        let cast = obj(Some(o), "cast");
+        let id = int_of(common, "id");
+        let cat = int_of(obj(common, "category"), "mainCategory");
+        let family = m(basic, "family").unwrap_or_default();
+        if matches!(family.as_str(), "ITEM" | "DEMON_SOLO" | "DEBUG") {
+            items += 1;
+            continue;
+        }
+        let Some(name) = names.get(&id) else {
+            unnamed += 1;
+            continue;
+        };
+        if !latin.is_match(name) {
+            untranslated += 1;
+            continue;
+        }
+        let action = m(basic, "actionType").unwrap_or_else(|| "SUPPORT".to_string()).to_lowercase();
+        let ty = if cat == 0 { "passive".to_string() } else if cat == 2 { "switch".to_string() } else { action };
+
+        let mut s = Map::new();
+        s.insert("id".into(), json!(id));
+        s.insert("name".into(), json!(name));
+        s.insert("type".into(), json!(ty));
+        if let Some(desc) = data.skill_text(id)? {
+            s.insert("desc".into(), json!(desc));
+        }
+        if let Some(ic) = icon(id)? {
+            s.insert("icon".into(), json!(ic));
+        }
+        // why there is no picture: the client gives the skill none (fusion skills, most features: CSkillData
+        // iconID 0), or it names a picture its Interface folders do not have (Machine Gun's icon_SD01_0023a)
+        else if client_dir.is_some() {
+            s.insert("noIcon".into(), json!(if data.skill_icon_asset(id)?.is_none() { "none" } else { "missing" }));
+        }
+        if let Some(el) = stat_labels::element_by_number(int_of(common, "affinity")) {
+            if cat == 1 {
+                s.insert("el".into(), json!(el));
+            }
+        }
+        if family == "FUSION" {
+            s.insert("fusion".into(), json!(true));
+        }
+        if let Some(ex) = exp_of.get(&id) {
+            s.insert("exp".into(), json!(ex));
+        }
+
+        if cat == 1 {
+            // cost: MP, HP, bullets or an item, a number or a % of the maximum
+            let mut costs: Vec<String> = Vec::new();
+            if let Some(cs) = mem(cond, "costs") {
+                for c in elements(cs, "element").map(|e| element(e, "object")) {
+                    let n = int_of(c, "cost");
+                    let ct = m(c, "type");
+                    let pct = m(c, "numType").as_deref() == Some("PERCENT");
+                    if n <= 0 {
+                        continue;
+                    }
+                    costs.push(match ct.as_deref() {
+                        Some(t @ ("MP" | "HP")) => format!("{n}{} {t}", if pct { "%" } else { "" }),
+                        Some("BULLET") => if n == 1 { "1 bullet".to_string() } else { format!("{n} bullets") },
+                        Some("ITEM") => format!("{} × {}", fmt::n0(n as f64), data.item_name(int_of(c, "item"))?.unwrap_or_else(|| "an item".to_string())),
+                        t => format!("{n} {}", title(t.unwrap_or(""))),
+                    });
+                }
+            }
+            if !costs.is_empty() {
+                s.insert("cost".into(), json!(costs.join(", ")));
+            }
+            let drain = int_of(cond, "activeMPDrain");
+            if drain > 0 {
+                s.insert("drain".into(), json!(drain));
+            }
+            let charge = int_of(obj(cast, "basic"), "chargeTime");
+            let cd = int_of(cond, "cooldownTime");
+            if charge > 0 {
+                s.insert("cast".into(), json!(sec(charge)));
+            }
+            if cd > 0 {
+                s.insert("cd".into(), json!(sec(cd)));
+            }
+            let target = obj(Some(o), "target");
+            let range = obj(Some(o), "range");
+            let reach = int_of(target, "range");
+            if reach > 0 {
+                s.insert("reach".into(), json!(reach));
+            }
+            let valid = m(range, "validType");
+            let area = m(range, "areaType");
+            let aoe = int_of(range, "aoeRange");
+            let who = target_of(valid.as_deref().unwrap_or("")).map(str::to_string).or_else(|| match valid.as_deref() {
+                None | Some("NONE") => None,
+                Some(v) => Some(title(v)),
+            });
+            if let Some(who) = who {
+                s.insert("target".into(), json!(match area.as_deref() {
+                    Some("SOURCE_RADIUS") if aoe > 0 => format!("{who}, all around you"),
+                    Some("TARGET_RADIUS") if aoe > 0 => format!("{who}, all around the target"),
+                    Some("STRAIGHT_LINE") => format!("{who}, in a line"),
+                    _ => who,
+                }));
+            }
+            // stiffness: how long the hit target stays stunned (the "Stiffness:" in the game's description)
+            let stiff = int_of(obj(Some(o), "discharge"), "stiffness");
+            if stiff > 0 {
+                s.insert("stiff".into(), json!(stiff));
+            }
+            let dmg = obj(obj(Some(o), "damage"), "battleDamage");
+            let formula = m(dmg, "formula");
+            let power = int_of(dmg, "modifier1");
+            match formula.as_deref() {
+                Some("DMG_NORMAL") if power > 0 => {
+                    s.insert("power".into(), json!(power));
+                }
+                Some("HEAL_NORMAL" | "HEAL_STATIC") if power > 0 => {
+                    s.insert("heal".into(), json!(power));
+                }
+                Some("HEAL_MAX_PERCENT") if power > 0 => {
+                    s.insert("heal".into(), json!(format!("{power}%")));
+                }
+                _ => {}
+            }
+            let dep = m(basic, "dependencyType");
+            if let Some(dep) = dep.as_deref().filter(|d| *d != "NONE") {
+                let parts: Vec<String> = dep.split('_').map(|d| stat_of(d).map(str::to_string).unwrap_or_else(|| title(d))).collect();
+                s.insert("stat".into(), json!(parts.join(", ")));
+            }
+            match m(obj(cond, "restriction"), "weaponType").as_deref() {
+                Some("CLOSE_RANGE") => {
+                    s.insert("weapon".into(), json!("Close-range weapon"));
+                }
+                Some("LONG_RANGE") => {
+                    s.insert("weapon".into(), json!("Long-range weapon"));
+                }
+                _ => {}
+            }
+        }
+        skills.push(s);
+    }
+    console::write_line(&format!(
+        "{} skills kept ({items} item and debug uses, {unnamed} without a name, {untranslated} with only a Japanese name left out; {} ms)",
+        skills.len(),
+        ms(&sw)
+    ));
+
+    let mut result = Map::new();
+    result.insert("generatedAt".into(), json!(chrono::Utc::now().format("%Y-%m-%d").to_string()));
+    result.insert("intro".into(), json!(intro));
+    result.insert("types".into(), Value::Array(types.iter().cloned().map(Value::Object).collect()));
+    result.insert("skipped".into(), json!({ "untranslated": untranslated }));
+    result.insert("skills".into(), Value::Array(skills.iter().cloned().map(Value::Object).collect()));
+    let text = json::serialize(&Value::Object(result), Escape::Relaxed, false);
+    std::fs::write(out_file, &text)?;
+
+    // per type, in the order of the type keys (the default string order of .NET)
+    let mut keys: Vec<&str> = Vec::new();
+    for s in &skills {
+        let k = s["type"].as_str().unwrap_or("");
+        if !keys.contains(&k) {
+            keys.push(k);
+        }
+    }
+    keys.sort_by(|a, b| cmp_invariant(a, b));
+    for k in keys {
+        let count = skills.iter().filter(|s| s["type"].as_str() == Some(k)).count();
+        let name = types.iter().find(|t| t["key"].as_str() == Some(k)).and_then(|t| t["name"].as_str()).unwrap_or("");
+        console::write_line(&format!("  {name:<10} {count:>5}"));
+    }
+    let size = std::fs::metadata(out_file)?.len();
+    console::write_line(&format!(
+        "{} with a picture, {} from expertise. Written to {} ({} KB, {} ms)",
+        skills.iter().filter(|x| x.contains_key("icon")).count(),
+        skills.iter().filter(|x| x.contains_key("exp")).count(),
+        out_file.display(),
+        size / 1024,
+        ms(&sw)
+    ));
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn seconds_text() {
+        assert_eq!(sec(1500), "1.5 s");
+        assert_eq!(sec(2000), "2 s");
+        assert_eq!(sec(250), "0.25 s");
+        assert_eq!(sec(1234), "1.23 s");
+    }
+
+    #[test]
+    fn integers_are_read_like_int_tryparse() {
+        assert_eq!(int(Some(" 7 ")), 7);
+        assert_eq!(int(Some("7.5")), 0);
+        assert_eq!(int(None), 0);
+    }
+}
