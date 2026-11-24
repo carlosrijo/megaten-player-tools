@@ -484,6 +484,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
     let mut base_ids: Vec<i32> = bases.iter().copied().collect();
     base_ids.sort();
     const STAT_IDX: [usize; 14] = [0, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 19, 20];
+    const CRIT_IDX: usize = 16;
     let pad = |v: &[i32]| -> Vec<i32> {
         let mut c = v.to_vec();
         if c.len() < 126 {
@@ -523,6 +524,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
                 t.insert("level".into(), json!(md.base_level));
                 t.insert("growth".into(), json!(md.growth));
                 t.insert("stats".into(), json!(STAT_IDX.iter().map(|&i| mc[i]).collect::<Vec<_>>()));
+                t.insert("crit".into(), json!(mc[CRIT_IDX]));
                 t.insert("res".into(), json!((2..23).map(|i| mc[26 + i]).collect::<Vec<_>>()));
                 t.insert("nra".into(), json!((2..23).map(|i| mc[49 + i]).collect::<Vec<_>>()));
                 let mut traits = Vec::new();
@@ -603,6 +605,8 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
         };
         e.insert("icon".into(), json!(icon));
         e.insert("stats".into(), json!(STAT_IDX.iter().map(|&i| c[i]).collect::<Vec<_>>()));
+        // Critical (CorrectTbl::CRITICAL): fixed, it does not grow with level. A crit roll adds Luck to it (SkillManager).
+        e.insert("crit".into(), json!(c[CRIT_IDX]));
         e.insert("res".into(), json!((2..23).map(|i| c[26 + i]).collect::<Vec<_>>()));
         e.insert("nra".into(), json!((2..23).map(|i| c[49 + i]).collect::<Vec<_>>()));
         let mut traits = Vec::new();

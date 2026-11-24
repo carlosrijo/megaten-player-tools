@@ -110,6 +110,18 @@ Working on the app's page:
   needs the model file first (`newmoon-reader.exe model`, below); `?assistant=0` leaves it out, `?assistant=none`
   stands in for "the game's folder isn't known yet".
 
+### Tools: Demon Rank
+
+Under **Tools** in the left bar, before the DCM Locator. The Demon Database's demons in one table with their STR, MAG,
+VIT, INT, SPD, LUCK, Max HP, Max MP, CLS-R, LNG-R, Spell, Support and Critical (P.Def and M.Def are left out); click a
+column heading to rank by it (again for the other way), click a demon to open it in the Demon Database. Compare them each
+at their base level, all at level 1 (the server's formula at level 1, below where any demon starts, so they compare on
+equal footing) or all at level 99. "Mitama-fused" uses the Mitama form's stats where a demon has one, marked with the
+game's Mitama sign on the face's top left corner, as on Overview's summoned demon. Shows the demons that can be
+contracted (140), every one you can get some way (contract, normal fusion or a DCM), or all 359. Stats are a fresh
+demon's (no Demon Force, rebirth or Mitama runes). Critical is the demon's own value from the game data: it does not
+grow with level, and a critical roll adds Luck to it.
+
 ### Tools: DCM Locator
 
 Under **Tools** in the left bar. Lists every DCM (Demon Compendium Memory) and where the game data says it comes from:
