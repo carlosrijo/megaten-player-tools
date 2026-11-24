@@ -37,13 +37,13 @@ the page's JSON shapes are built in `main_form.rs` (`snapshot`, `rebuild`, `setA
 | `comp_demons(name, dir, scan)` | `Pipeline::comp_demons` + `CompDemon::to_value` | `Pipe(e).CompDemons(e.Name, scan)` as camelCase JSON array |
 | `use_demon(name, dir, csv, key)` | `Pipeline::use_demon(.., scan: false)` | `Pipe(e).UseDemon(..)` as `{name, changed, rowUpdated, backup}` |
 
-## Simulator plumbing, ready; `sim_command` is the one stub left (`// WAVE4:` in backend.rs)
+## Simulator (wired)
 
 | backend.rs | Stands for |
 |---|---|
 | `Backend::sim_pipe(&SimRequest, who) -> Result<Arc<Pipeline>>` | `SimPipe(who)` of `MainForm.Dispatch`: `who != ""` -> `Pipe(_chars.Find(who))` or `UserError("There is no saved character called <who>.")`; `who == ""` -> the lazily made `_blank` pipeline: `Pipeline::new(<data>\characters\_blank, game_data, Some(blank_sets), Some(Store::new(active_dir)))`. `blank_sets` = the first saved character's set table (`client-sets.json` exists, `load_set_table` non-empty), reading the character folders of the latest request (C# reads `_chars.All` live) |
 | `SimRequest.owner`, `.skill_icons`, `.builds_path`, `.default_base` | computed in `main_form.rs`'s `simInit/simulate/...` arm exactly as the C# does (`owner` = the character whose `Dir` is `.`/empty/null, else the active one; `skill_icons(who)` = `folder_url(entry, dash\skill-icons)`); the arm already holds the `calc` lock and refuses `simSaveBuild`/`simDeleteBuild` under NoWrites |
-| `Backend::sim_command(&SimRequest) -> Result<String>` | `PreviewServer.SimCommand(SimPipe, e.Name, <data>\sim-builds.json, cmd, args, owner, SkillIcons)` (src\Build\PreviewServer.cs:35). Stub until `PreviewServer::sim_command` is ported: then it is one call, `newmoon::build::preview_server::sim_command(&|who| self.sim_pipe(req, who), req.default_base, &req.builds_path, req.cmd, req.args, Some(req.owner), Some(req.skill_icons))` (adapt to the real signature) |
+| `Backend::sim_command(&SimRequest) -> Result<String>` | `PreviewServer.SimCommand(SimPipe, e.Name, <data>\sim-builds.json, cmd, args, owner, SkillIcons)` (src\Build\PreviewServer.cs:35). Calls `newmoon::build::preview_server::sim_command(&|who| self.sim_pipe(req, who), default_base, builds_path, cmd, Some(args), Some(owner), Some(skill_icons))`; its None (not a Simulator command) is posted as JSON `null` |who| self.sim_pipe(req, who), req.default_base, &req.builds_path, req.cmd, req.args, Some(req.owner), Some(req.skill_icons))` (adapt to the real signature) |
 
 ## Implemented in the app (nothing to wire)
 

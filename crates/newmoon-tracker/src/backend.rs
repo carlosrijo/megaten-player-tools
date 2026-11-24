@@ -4,11 +4,11 @@
 //! Section 2: the library, re-exported under the names the app uses (data::characters, data::store,
 //!            game::client_reader) and the thin helpers the C# `Pipeline` statics gave MainForm (now build::pipeline's).
 //! Section 3: the library calls: `Backend` keeps what MainForm kept (`_gameData`, `_pipes`, `_blank`) and wires the
-//!            Pipeline commands (snapshot, rebuild, setAlignment, compDemons, useDemon). The one PreviewServer call
-//!            (`sim_command`) is still a stub marked `// WAVE4:`; everything it needs (`sim_pipe`) is ready.
+//!            Pipeline commands (snapshot, rebuild, setAlignment, compDemons, useDemon) and the Simulator
+//!            (`sim_command` -> build::preview_server::sim_command).
 //!            `WIRING.md` (next to Cargo.toml) lists what is where.
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use newmoon::build::pipeline::{self, Pipeline};
 use newmoon::build::{demon_model, item_icons};
 use newmoon::data::game_data::GameData;
@@ -70,12 +70,8 @@ impl EntryExt for CharacterEntry {
 }
 
 // ====================================================================================================================
-// 3. Library calls: the Pipeline ones are wired; the PreviewServer one (`sim_command`) is a stub (`// WAVE4:`)
+// 3. Library calls
 // ====================================================================================================================
-
-fn not_ported<T>(what: &str) -> Result<T> {
-    Err(anyhow!("not ported yet: {what}"))
-}
 
 /// `Snapshot.Result` as MainForm.snapshot sends it, plus the expertise ranks count of `Pipeline.TakeSnapshot`.
 #[derive(Debug, Clone)]
@@ -98,7 +94,7 @@ pub struct AlignmentOutcome {
 }
 
 /// What `MainForm.SimPipe` needs to find or make a Pipeline: the characters (name -> folder) and the data folder.
-#[allow(dead_code)] // WAVE4: read by `sim_command` once PreviewServer is ported
+
 pub struct SimRequest<'a> {
     /// `e.Name` of the active character (the default "base")
     pub default_base: &'a str,
@@ -164,7 +160,7 @@ impl Backend {
     /// character a build stands on, or for `who == ""` the "_blank" one: a pipeline with no character behind it
     /// (folder `<data>\characters\_blank`), whose set table is the first saved character's that has one and whose
     /// icon cache is the active character's. Throws a UserError for a name that is not a saved character.
-    #[allow(dead_code)] // WAVE4: called by `sim_command`
+
     pub fn sim_pipe(&self, req: &SimRequest, who: &str) -> Result<Arc<Pipeline>> {
         // what the blank pipeline's closure reads (C# reads `_chars.All` live)
         *self.char_dirs.lock().unwrap_or_else(|p| p.into_inner()) = req.characters.iter().map(|(_, d)| d.clone()).collect();
@@ -253,13 +249,21 @@ impl Backend {
     /// C# `PreviewServer.SimCommand(SimPipe, e.Name, <data>\sim-builds.json, cmd, args, owner, SkillIcons)`
     /// (src\Build\PreviewServer.cs:35) for simInit/simulate/simCatalog/simDemons/simBuilds/simSaveBuild/simDeleteBuild.
     /// Returns the JSON text for the page. See `SimRequest` for how `SimPipe` is expressed.
-    pub fn sim_command(&self, _req: &SimRequest) -> Result<String> {
-        // WAVE4: once PreviewServer::sim_command lands, this is the whole body (the lookups are ready: `sim_pipe`,
-        // `req.owner`, `req.skill_icons`, `req.builds_path`; MainForm holds the calc lock and checked NoWrites):
-        //     newmoon::build::preview_server::sim_command(
-        //         &|who| self.sim_pipe(req, who), req.default_base, &req.builds_path, req.cmd, req.args, Some(req.owner), Some(req.skill_icons))
-        // (adapt to its real signature; the C# returns null for a command that is not one of the Simulator's: none reach here)
-        not_ported("PreviewServer.SimCommand")
+    pub fn sim_command(&self, req: &SimRequest) -> Result<String> {
+        // MainForm holds the calc lock and has checked NoWrites before this.
+        let pipe_of = |who: &str| self.sim_pipe(req, who);
+        let skill_icons = |who: &str| (req.skill_icons)(who);
+        let result = newmoon::build::preview_server::sim_command(
+            &pipe_of,
+            req.default_base,
+            &req.builds_path,
+            req.cmd,
+            Some(req.args),
+            Some(req.owner),
+            Some(&skill_icons),
+        )?;
+        // C# null (not a Simulator command; none reach here) is posted as the JSON null
+        Ok(result.unwrap_or_else(|| "null".to_string()))
     }
 
     /// C# `ItemIcons.ClientDir(new Store(dir))` (src\Build\ItemIcons.cs:135): the game client's folder as last seen
