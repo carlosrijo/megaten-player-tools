@@ -19,6 +19,8 @@
     sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
     camera: '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.2" r="3.4"/>',
     chevron: '<path d="M9 6l6 6-6 6"/>',
+    back: '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
+    forward: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
     alert: '<path d="M12 4l9 16H3l9-16z"/><path d="M12 10v4.5M12 17.5v.01"/>',
     check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.2 9.5"/>',
@@ -593,10 +595,86 @@
   });
   function go(page) {
     if (S.page === page) return;
+    remember();
     if (S.page === 'ddb') S.ddb.only = null;   // a demon a link opened alone: the whole list again next time
     S.page = page;
     render(); $('#main').scrollTop = 0;
   }
+
+  // ---------- back and forward ----------
+  // Every page change (the left bar, Ctrl+1..6, a link to another page, a Simulator build) leaves the page you were
+  // on in a list, so Back (the top bar's arrow, Alt+Left, the mouse's back button) brings it back as you left it:
+  // its search, filters, opened rows and where it was scrolled to. Forward undoes a Back until you go somewhere new.
+  // What a page keeps of itself: the fields of its S part that say what is shown (not its loaded data, and not the
+  // choices it also saves for next time, such as a grouping or a chart's series).
+  const PAGE_KEEP = {
+    overview: { over: ['open', 'allChanges'] },
+    bonuses: { bonus: ['q', 'group', 'open'], extra: ['q', 'closed'] },
+    gear: { gear: ['view', 'sel', 'colq'] },
+    expertise: { exp: ['q', 'closed'] },
+    digitalize: { dg: ['q', 'closed'] },
+    skills: { skl: ['q', 'type', 'who', 'el', 'sort', 'open', 'shown'] },
+    ddb: { ddb: ['q', 'kind', 'race', 'align', 'sort', 'open', 'mtView', 'only'] },
+    geardb: { gdb: ['q', 'slot', 'known', 'open', 'shown'] },
+    rank: { rank: ['q', 'kind', 'race', 'at', 'mt', 'sort', 'dir'] },
+    dcm: { dcm: ['q', 'kind', 'open'] },
+    dungeons: { dun: ['q', 'kind', 'open', 'mob', 'shown'] },
+    quests: { quest: ['q', 'type', 'open'] },
+  };
+  const keepCopy = (v) => (v instanceof Set ? new Set(v) : v);
+  const NAV_MAX = 50;
+  const trail = { back: [], fwd: [], quiet: false };
+  /** Where you are now, to come back to. */
+  function here() {
+    const kept = {};
+    Object.entries(PAGE_KEEP[S.page] || {}).forEach(([part, keys]) => { kept[part] = {}; keys.forEach((k) => { kept[part][k] = keepCopy(S[part][k]); }); });
+    return { page: S.page, kept, scroll: $('#main').scrollTop, sim: S.page === 'sim' ? { view: S.sim.view, id: S.sim.id } : null };
+  }
+  function remember() {
+    if (trail.quiet) return;
+    trail.back.push(here());
+    if (trail.back.length > NAV_MAX) trail.back.shift();
+    trail.fwd = [];
+  }
+  const pageName = (id) => (PAGES.concat(TOOLS).find((p) => p[0] === id) || [])[1] || '';
+  const stepName = (e) => (e.page === 'sim' && e.sim && e.sim.view === 'edit' ? (e.sim.id ? ((S.sim.builds || []).find((b) => b.id === e.sim.id) || {}).name || 'a build' : 'the unsaved build') : pageName(e.page));
+  /** Back (dir -1) or forward (+1) one step. */
+  function step(dir) {
+    const from = dir < 0 ? trail.back : trail.fwd, to = dir < 0 ? trail.fwd : trail.back;
+    if (!from.length) return;
+    const e = from.pop();
+    to.push(here());
+    if (S.page === 'ddb') S.ddb.only = null;
+    Object.entries(e.kept).forEach(([part, vals]) => Object.entries(vals).forEach(([k, v]) => { S[part][k] = keepCopy(v); }));
+    const main = $('#main');
+    const scroll = () => { main.scrollTop = e.scroll; };
+    S.page = e.page;
+    trail.quiet = true;   // (a Simulator build opening here is this step, not a new one)
+    try {
+      if (e.sim && e.sim.view === 'edit' && (S.sim.view !== 'edit' || S.sim.id !== e.sim.id)) simOpen(e.sim.id);
+      else if (e.sim && e.sim.view === 'home' && S.sim.view === 'edit') simGoHome();
+      else render();
+    } finally { trail.quiet = false; }
+    scroll();
+    requestAnimationFrame(scroll);   // (again once a page that draws in two goes has its rows)
+  }
+  function drawNavButtons() {
+    const b = $('#nav-back'), f = $('#nav-fwd');
+    const lastB = trail.back[trail.back.length - 1], lastF = trail.fwd[trail.fwd.length - 1];
+    b.disabled = !lastB; f.disabled = !lastF;
+    b.dataset.tip = lastB ? `Back to ${stepName(lastB)} (Alt+Left)` : 'Back (Alt+Left)';
+    f.dataset.tip = lastF ? `Forward to ${stepName(lastF)} (Alt+Right)` : 'Forward (Alt+Right)';
+  }
+  $('#nav-back').addEventListener('click', () => step(-1));
+  $('#nav-fwd').addEventListener('click', () => step(1));
+  // The mouse's side buttons. (WebView2 would otherwise go back in its own history: there is none, the page is one.)
+  const sideButton = (ev) => ev.button === 3 || ev.button === 4;
+  window.addEventListener('mousedown', (ev) => { if (sideButton(ev)) ev.preventDefault(); });
+  window.addEventListener('mouseup', (ev) => {
+    if (!sideButton(ev)) return;
+    ev.preventDefault();
+    if (!document.querySelector('dialog[open], [popover]:popover-open')) step(ev.button === 3 ? -1 : 1);
+  });
   // (Normal / Digitalized is picked in the demon dropdown on the Overview: "No demon" or a demon. See setMode.)
 
   function renderChrome() {
@@ -613,6 +691,7 @@
     $('#page-title').textContent = (PAGES.concat(TOOLS).find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
     document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.page === S.page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     drawSimNav();
+    drawNavButtons();
     const foot = $('#side-foot');
     foot.replaceChildren();
     if (L) {
@@ -3158,6 +3237,7 @@
   /** Opens a build in the editor (no id: the unsaved one). */
   async function simOpen(id) {
     const M = S.sim;
+    if (S.page === 'sim' && !(M.view === 'edit' && M.id === (id || null))) remember();   // (from another page, go() does it)
     if (M.state !== 'ready') { M.view = 'edit'; M.id = id || null; simShow(); return; }   // simLoad puts it in the editor once the character is read
     simFlush();
     try { await simUse(id || null); M.view = 'edit'; }
@@ -3193,6 +3273,7 @@
     const M = S.sim;
     if (M.view === 'edit' && M.id && M.cur && !M.working && M.state === 'ready') M.cards.set(M.id, { key: simCardKey({ base: M.char, level: M.level, alignment: M.align, demon: M.demon, slots: M.build.slots, points: M.build.points }), res: M.cur });
     simFlush();
+    if (S.page === 'sim' && M.view === 'edit') remember();
     M.view = 'home';
     simShow();
   }
@@ -5631,6 +5712,8 @@
     if (document.querySelector('dialog[open], [popover]:popover-open')) return;   // any dialog (settings, characters, picture) or the demon dropdown
     if (ev.key === 'F5') { ev.preventDefault(); takeSnapshot(); return; }
     if (ev.ctrlKey && !ev.shiftKey && !ev.altKey && ev.key >= '1' && ev.key <= String(PAGES.length)) { ev.preventDefault(); go(PAGES[Number(ev.key) - 1][0]); return; }
+    if (ev.altKey && !ev.ctrlKey && !ev.shiftKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) { ev.preventDefault(); step(ev.key === 'ArrowLeft' ? -1 : 1); return; }
+    if (ev.key === 'BrowserBack' || ev.key === 'BrowserForward') { ev.preventDefault(); step(ev.key === 'BrowserBack' ? -1 : 1); return; }
     if ((ev.ctrlKey && ev.key.toLowerCase() === 'f') || (ev.key === '/' && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))) {
       const box = $('[data-search]');
       if (box) { ev.preventDefault(); box.focus(); box.select(); }

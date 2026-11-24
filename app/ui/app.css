@@ -117,6 +117,11 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .who-btn { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 8px 4px 6px; margin-left: -6px; border-radius: 8px; cursor: pointer; }
 .who-btn:hover { background: var(--hover); }
 .who-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+/* Back | the page's name | Forward. The name has the longest page name's width, so the arrows stay put from page to page. */
+.top-mid { display: flex; align-items: center; gap: 8px; }
+.top-mid .top-title { min-width: 140px; text-align: center; }
+.top-mid .btn-square { width: 30px; height: 30px; }
+.top-mid .btn:disabled { opacity: .35; cursor: default; background: transparent; }
 .who-chev { display: inline-grid; color: var(--text-3); transform: rotate(90deg); }
 .who-pic { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; object-position: 50% 0; flex: none; box-shadow: 0 0 0 1px var(--border-strong); }
 /* character picture: the portrait on Overview, the small ones in lists, and the crop dialog */
