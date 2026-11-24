@@ -431,3 +431,7 @@ Layouts are documented in `crates/imagine/src/game/client_reader.rs`.
   "Gear records" column does the same per row, so `rebuild` and `recalc` work from ids too.
 - `data/dash/` page data: `snapshots.json`, `gear.json`, `expertise.json`, `bonuses.json`. `skill-icons/` holds the skill icons the Expertise and Digitalize pages show, converted from the game client's own icon files.
 - Machine-specific paths live in `data/config.json` (created with detected defaults on first run; edit when something is elsewhere): `websiteContent` (the website's content folder), `tokuseiXml` (comp_hack's `datastore/data/tokusei`), `serverConstants` (the local server's `config/constants.xml`: digitalize rates, Mitama set boost skill), `statsFolder` (where new characters' CSVs go), `defaultCharacter`.
+  The first three are optional: `reference/bundled/` holds copies of the tokusei XML, `constants.xml` and the website
+  files the reader uses, compiled into the exe, so the portable release gets the same numbers. A folder set here and
+  present wins over the copy. Refresh the copies with `tools/refresh-bundled-data.ps1` when the server's data changes,
+  then rebuild (`reference/bundled/README.md` says where each one comes from).

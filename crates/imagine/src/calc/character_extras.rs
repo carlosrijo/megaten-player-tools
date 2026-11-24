@@ -22,7 +22,6 @@
 #![allow(clippy::collapsible_if, clippy::needless_range_loop, clippy::type_complexity, clippy::too_many_arguments, clippy::manual_range_contains)]
 
 use std::collections::HashMap;
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use indexmap::{IndexMap, IndexSet};
@@ -31,8 +30,7 @@ use super::effect::Effect;
 use super::gear_effects;
 use super::item_effects::ItemEffects;
 use crate::Result;
-use crate::data::config;
-use crate::data::game_data::{GameData, double_parse, int_parse, member_objects, member_text, parse_xml, reference_file, xml_children, xml_value};
+use crate::data::game_data::{GameData, double_parse, int_parse, member_objects, member_text, parse_xml, reference_file, server_constants_text, xml_children, xml_value};
 use crate::data::json::{self, At};
 use crate::data::stat_labels;
 use crate::fmt;
@@ -358,9 +356,8 @@ impl Rules {
 
     fn build(data: &GameData) -> Result<Rules> {
         let mut r = Rules::default();
-        if let Some(cpath) = config::current().server_constants.as_deref() {
-            if Path::new(cpath).is_file() {
-                let text = json::read_all_text(Path::new(cpath))?;
+        {
+            if let Some(text) = server_constants_text()? {
                 let doc = parse_xml(&text)?;
                 // ToDictionary: a name twice is an error
                 let mut consts: HashMap<String, roxmltree::Node> = HashMap::new();
@@ -394,17 +391,11 @@ impl Rules {
         }
 
         // Tokusei: the custom file holds the quest/compendium ids; the others are looked up by their range file.
-        let dir = data.tokusei_xml_dir.as_deref();
         let want: IndexSet<i32> = r.quest_bonus.iter().chain(&r.book_demon).chain(&r.book_summoner).flat_map(|p| p.1.iter().copied()).filter(|&t| t != 0).collect();
         let mut files: IndexSet<String> = want.iter().map(|t| format!("tokusei_{}.xml", d8(t.wrapping_div(10000).wrapping_mul(10000)))).collect();
         files.insert("tokusei_custom.xml".to_string());
         for file in &files {
-            let Some(dir) = dir else { continue };
-            let path = Path::new(dir).join(file);
-            if !path.is_file() {
-                continue;
-            }
-            let text = json::read_all_text(&path)?;
+            let Some(text) = data.tokusei_xml_text(file)? else { continue };
             let doc = parse_xml(&text)?;
             for o in doc.descendants().filter(|x| x.is_element() && x.tag_name().name() == "object" && x.attribute("name") == Some("Tokusei")) {
                 let Some(tid) = member_text(o, "ID").and_then(|s| fmt::parse_i32(&s)) else { continue };

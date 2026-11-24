@@ -379,26 +379,26 @@ pub fn run(input: &Input) -> Report {
         "Where each character's snapshot spreadsheet (CSV) goes.",
         "It is created when the first snapshot is saved. To keep the spreadsheets elsewhere, set statsFolder in the config file.",
     ));
-    checks.push(check_path(
+    checks.push(check_bundled_path(
         "Server constants",
         cfg.server_constants.as_deref(),
         false,
         "The local server's constants.xml (digitalize rates, Mitama set boost).",
-        "Not needed: the reader falls back to comp_hack's usual values (10%/30% digitalize rates). Only if your server changed them, set serverConstants in the config file.",
+        "Not needed: the reader has a copy of IMAGINE's constants built in. Set serverConstants in the config file only to read a newer one.",
     ));
-    checks.push(check_path(
+    checks.push(check_bundled_path(
         "Website content",
         cfg.website_content.as_deref(),
         true,
         "The website's content folder (item, skill and effect data).",
-        "Optional: without it the reader uses the game's own tables and the effects it cannot find are listed as not counted. Set websiteContent in the config file if you have the folder.",
+        "Not needed: the reader has a copy of the files it uses built in. Set websiteContent in the config file only to read a newer one.",
     ));
-    checks.push(check_path(
+    checks.push(check_bundled_path(
         "Effect files",
         cfg.tokusei_xml.as_deref(),
         true,
         "comp_hack's tokusei XML folder (effect numbers only the server has).",
-        "Optional: without it a few effects have no numbers and are listed as not counted. Set tokuseiXml in the config file if you have the folder.",
+        "Not needed: the reader has a copy of the effect files built in. Set tokuseiXml in the config file only to read a newer one.",
     ));
     let (chars, char_names) = check_characters(&input.data_dir);
     checks.push(chars);
@@ -509,6 +509,16 @@ fn check_path(name: &str, value: Option<&str>, dir: bool, what: &str, advice_mis
                 ck("Files", name, Status::Warn, format!("{p} does not exist. {what}"), advice_missing)
             }
         }
+    }
+}
+
+/// A server or website folder the reader has a built-in copy of (reference\bundled\): set and there, it is read;
+/// otherwise the built-in copy is used, which is fine.
+fn check_bundled_path(name: &str, value: Option<&str>, dir: bool, what: &str, advice: &str) -> Check {
+    let there = value.is_some_and(|p| if dir { Path::new(p).is_dir() } else { Path::new(p).is_file() });
+    match value {
+        Some(p) if there => ck("Files", name, Status::Pass, p.to_string(), ""),
+        _ => ck("Files", name, Status::Pass, format!("Using the built-in copy. {what}"), advice),
     }
 }
 
