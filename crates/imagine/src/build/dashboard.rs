@@ -1137,10 +1137,20 @@ impl Dashboard {
                         }
                     }
                 }
+                // A summoned demon's Demon Force entry or epitaph is an item (the Demon Soul it is drawn with, the Epitaph Parts it is made from):
+                // its name goes after a Demon Force note and heads the icon's tooltip ("item_name")
+                let item_name = if p.kind == "summoned" && p.item_id > 0 { data.item_name(p.item_id)? } else { None };
+                let note = match &item_name {
+                    Some(n) if p.note == "Demon Force" => format!("{} · {n}", p.note),
+                    _ => p.note.clone(),
+                };
                 let mut part = obj(json!({
-                    "source": src, "kind": kind, "value": fmt::round(p.value, 2), "digi": p.cond == "digitalized", "note": p.note, "icon": icon,
+                    "source": src, "kind": kind, "value": fmt::round(p.value, 2), "digi": p.cond == "digitalized", "note": note, "icon": icon,
                     "tip": if p.skill_id > 0 { data.skill_text(p.skill_id)? } else { None }, // the game's description, for the hover tooltip
                 }));
+                if let Some(n) = &item_name {
+                    part.insert("item_name".into(), json!(n));
+                }
                 if p.toggle {
                     part.insert("toggle".into(), json!(true)); // a toggle skill that is on: the page tags it, and says how much of a total the toggles give
                 }
