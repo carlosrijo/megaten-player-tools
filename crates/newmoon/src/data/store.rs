@@ -448,6 +448,30 @@ impl Store {
         Some(v.into_iter().map(|r| if r.id > 0 { r.detail.clone() } else { None }).collect())
     }
 
+    /// The item records of an earlier snapshot (`prev`, as [`Store::load_tooltips`] gives them), for a snapshot that
+    /// couldn't read them, when they still describe what is worn: the same item id in every slot and, where the
+    /// tarot/soul enchants were read now, the same enchants. Otherwise None. Without this, one snapshot that misses the
+    /// records wrote tooltips.txt without them, and the simulator refused to import until the next good snapshot.
+    /// Mods and fuse can't be checked against anything; only durability is known to go stale.
+    pub fn keep_details(prev: &[SlotTip], items: &[i32], tarot: Option<&[i32]>, soul: Option<&[i32]>) -> Option<Vec<Option<WornItem>>> {
+        let det = Store::unpack_details(prev)?;
+        if items.len() != 15 {
+            return None;
+        }
+        let mut ids: Vec<(i32, i32)> = prev.iter().map(|r| (r.index, r.id)).collect();
+        ids.sort();
+        if ids.iter().map(|p| p.1).ne(items.iter().copied()) {
+            return None;
+        }
+        for (k, d) in det.iter().enumerate() {
+            let Some(d) = d else { continue };
+            if d.id != items[k] || tarot.is_some_and(|t| t[k] != d.tarot) || soul.is_some_and(|s| s[k] != d.soul) {
+                return None;
+            }
+        }
+        Some(det)
+    }
+
     /// Compute arguments from saved slots (texts, ids, tarot, soul); enchant ids only when every slot has them.
     #[allow(clippy::type_complexity)]
     pub fn unpack(recs: &[SlotTip]) -> (Vec<String>, Vec<i32>, Option<Vec<i32>>, Option<Vec<i32>>) {

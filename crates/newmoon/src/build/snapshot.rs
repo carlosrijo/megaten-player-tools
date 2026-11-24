@@ -312,6 +312,16 @@ impl Snapshot {
                 details = g.details.clone();
             }
         }
+        // Not read this time: keep the last snapshot's records while the same items (and enchants) are worn.
+        if details.is_none()
+            && store.tooltips_path().exists()
+            && let Ok(prev) = store.load_tooltips()
+        {
+            details = Store::keep_details(&prev, &r.items, tarot.as_deref(), soul.as_deref());
+            if details.is_some() {
+                log::write(log::Level::Info, "snapshot: item records not read; kept the last snapshot's (same items worn)");
+            }
+        }
         store.save_tooltips(&r.items, &r.texts, tarot.as_deref(), soul.as_deref(), details.as_deref(), r.level)?;
         // Missing = no way to know the item's bonuses: neither its record nor its tooltip.
         let missing: Vec<&str> =
