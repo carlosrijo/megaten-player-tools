@@ -749,18 +749,30 @@
     // learned assists, one line per level (the full wording on hover)
     const short = (t) => t.replace(/^Duration /, 'Time ').replace(/ min$/, 'm').replace(/^Passive skills$/, 'Passives').replace(/^Active skills$/, 'Actives')
       .replace(/^Mitama sets$/, 'Mitama sets').replace(/^Resistances$/, 'Resistances');
+    // the race's Digitalization Level passives by level ("DLv 2"), with the icons the "Unlocked Digitalization passives" list shows
+    const passivesAt = new Map();
+    (S.data.expertise || []).filter((r) => isDlevel(r) && r.skill && DG.race
+      && r.expertise.replace(/^Digitalize: /, '').toLowerCase() === String(DG.race).toLowerCase()).forEach((r) => {
+      const m = /(\d+)/.exec(String(r.rank || ''));
+      if (m) passivesAt.set(+m[1], (passivesAt.get(+m[1]) || []).concat(r));
+    });
     const assists = h('div', { class: 'demon-assists' },
       h('span', { class: 'stat-label', text: 'Digitalize boosts' }),
       isTrue(DG.assists_known)
-        // every level, L1-L10 (five per column); level 1 offers no assist, and a level with no pick shows a dash
+        // every level, L1-L10, one per row; level 1 offers no assist, and a level with no pick shows a dash
         ? (() => {
           const byLevel = new Map();
           (DG.assists || []).forEach((a) => { const m = /^L(\d+) (.*)$/.exec(a); if (m) byLevel.set(+m[1], m[2]); });
-          const top = Math.max(10, ...byLevel.keys());
-          return h('div', { class: 'dg-assist-list', style: `--rows:${Math.ceil(top / 2)}` }, Array.from({ length: top }, (_, i) => {
-            const lv = i + 1, t = byLevel.get(lv);
-            return h('div', { class: 'dg-assist' + (t ? '' : ' none'), 'data-tip': t ? `Level ${lv} assist: ${t}` : lv === 1 ? 'Level 1 has no assist' : `No assist picked at level ${lv} (or not reached yet)` },
-              h('b', { text: 'L' + lv }), h('span', { text: t ? short(t) : '—' }));
+          const top = Math.max(10, ...byLevel.keys(), ...passivesAt.keys());
+          return h('div', { class: 'dg-assist-list' }, Array.from({ length: top }, (_, i) => {
+            const lv = i + 1, t = byLevel.get(lv), ps = passivesAt.get(lv) || [];
+            const lines = [t ? `Level ${lv} assist: ${t}` : lv === 1 ? 'Level 1 has no assist' : `No assist picked at level ${lv} (or not reached yet)`,
+              ...ps.map((r) => `${r.rank} passive: ${r.skill}${r.effects ? ' · ' + String(r.effects).split('; ').join(' · ') : ''}${isTrue(r.counted) ? '' : ' (not counted)'}`)];
+            const row = h('div', { class: 'dg-assist' + (t ? '' : ' none') },
+              h('b', { text: 'L' + lv }),
+              h('span', { class: 'dg-assist-icons' }, ps.map((r) => { const ic = skillIcon(r); if (!isTrue(r.counted)) ic.classList.add('off'); return ic; })),
+              h('span', { text: t ? short(t) : '—' }));
+            return withTip(row, () => h('div', null, lines.map((l) => h('div', { class: 'tt-line', text: l }))));
           }));
         })()
         : h('span', { class: 'note', text: 'Couldn’t be read, so only its stats count.' }));
@@ -798,8 +810,9 @@
       h('h3', { class: 'demon-name' }, name), open ? chips : chips.slice(0, idChips), open || !SK ? null : SK.icons, actions);
     if (!open) return h('section', { class: 'card demon-card closed' }, pic, h('div', { class: 'demon-main' }, id));
     return h('section', { class: 'card demon-card' }, pic,
-      h('div', { class: 'demon-main' }, id, extra.length ? h('div', { class: 'demon-extra' }, extra) : null, bars),
-      assists, SK ? SK.parts : null);
+      // two columns: who it is, its stats, skills and features | its boosts, one level per row, down the whole card
+      h('div', { class: 'demon-main' }, id, extra.length ? h('div', { class: 'demon-extra' }, extra) : null, bars, SK ? SK.parts : null),
+      assists);
   }
 
   /**

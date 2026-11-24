@@ -36,6 +36,9 @@ use super::digitalize_demon::DigitalizeSave;
 use super::item_icons;
 use super::snapshot::{DEMON_COLUMN, demon_col};
 
+/// The item "Guidance of Amala" (items-game.tsv): its "?" icon is the picture of a demon feature, which has none of its own.
+const GUIDANCE_OF_AMALA: i32 = 27626;
+
 const STAT_KEYS: [(&str, &str); 12] = [
     ("STR", "str"),
     ("MAG", "mag"),
@@ -601,9 +604,21 @@ impl Dashboard {
             let tr = devil.traits.get(i).copied().unwrap_or(0);
             if equip > 0 && t.equipment_skill.contains_key(&equip) {
                 let eq = t.equipment_skill[&equip];
-                skills.push(skill_row("Equipment", eq, Some("equipment"), needs("TRAITS", "Features"), if tr > 0 { Some(skill_name(tr)?) } else { None })?);
+                let mut row = skill_row("Equipment", eq, Some("equipment"), needs("TRAITS", "Features"), if tr > 0 { Some(skill_name(tr)?) } else { None })?;
+                // its picture: the Epitaph Parts item it is made from (the game has no icon for the skill itself)
+                if let Some(a) = item_icons::item_asset(store, data, equip, 0)? {
+                    row.insert("icon".to_string(), json!(a));
+                }
+                skills.push(row);
             } else if equip <= 0 && tr > 0 {
-                skills.push(skill_row("Feature", tr, Some("trait"), needs("TRAITS", "Features"), None)?);
+                let mut row = skill_row("Feature", tr, Some("trait"), needs("TRAITS", "Features"), None)?;
+                // the game has no picture for features (CSkillData iconID 0): the item Guidance of Amala's "?" stands in (the user's pick)
+                if row.get("icon").is_none_or(Value::is_null) {
+                    if let Some(a) = item_icons::item_asset(store, data, GUIDANCE_OF_AMALA, 0)? {
+                        row.insert("icon".to_string(), json!(a));
+                    }
+                }
+                skills.push(row);
             }
         }
         Ok(skills)
