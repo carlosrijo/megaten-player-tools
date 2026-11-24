@@ -5,16 +5,16 @@ obj/
 
 # demon icons for the DCM Locator: the game's own art, made locally by tools\dcmexport
 app/ui/dcm-icons/
-# enemy pictures for the Dungeon Explorer: game art, made locally by newmoon-reader dungeons --client
+# enemy pictures for the Dungeon Explorer: game art, made locally by imagine-reader dungeons --client
 app/ui/dungeon-icons/
-# the assistant's 3D model: the game's own art, made locally from the client (newmoon-reader.exe model, or the app on first use)
+# the assistant's 3D model: the game's own art, made locally from the client (imagine-reader.exe model, or the app on first use)
 data/cache/models/
 data/characters/*/cache/models/
-# demon and skill pictures for the Demon Database: the game's own art, made locally by newmoon-reader demondb
+# demon and skill pictures for the Demon Database: the game's own art, made locally by imagine-reader demondb
 app/ui/demon-db-icons/
-# skill pictures for the Skill Database: the game's own art, made locally by newmoon-reader skilldb
+# skill pictures for the Skill Database: the game's own art, made locally by imagine-reader skilldb
 app/ui/skill-db-icons/
-# item pictures for the Gear Database: the game's own art, made locally by newmoon-reader geardb --client
+# item pictures for the Gear Database: the game's own art, made locally by imagine-reader geardb --client
 app/ui/gear-db-icons/
 # your own data (stats, gear, characters, pictures, paths on this PC): kept on disk, never committed
 /data/
@@ -36,7 +36,7 @@ dist-symbols/
 /bug-report-*.md
 /legacy-powershell/
 # the C# version the Rust code was ported from, and its tools and scripts: kept on disk, never committed
-/NewMoonReader.csproj
+/*.csproj
 /src/
 /app/*.cs
 /app/*.csproj

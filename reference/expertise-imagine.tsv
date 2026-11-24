@@ -1,0 +1,60 @@
+#expertise id	IMAGINE name (client translation.xml)	Japanese name	maxClass	isChain	chain (sourceId:minRank:share; minRank in points/10000, share of the source points)	website name	website chain (differs = website is stale)
+0	Attack	アタック	10	false		Attack	
+1	Spin	スピン	7	false		Spin	
+2	Rush	ラッシュ	7	false		Rush	
+3	Shot	ショット	9	false		Shot	
+4	Rapid	ラピッド	10	false		Rapid	
+5	Guard	ガード	0	false		Guard	
+6	Counter	カウンター	0	false		Counter	
+7	Dodge	ダッジ	0	false		Dodge	
+8	Curative Magic	回復魔法	10	false		Curative Magic	
+9	Destruction Magic	破壊魔法	10	false		Destruction Magic	
+10	Support Magic	支援魔法	8	false		Support Magic	
+11	Curse Magic	呪詛魔法	8	false		Curse Magic	
+12	Talk	対話	0	false		Talk	
+13	Threaten	威圧	0	false		Threaten	
+14	Taunt	挑発	0	false		Taunt	
+15	Summon	召喚	6	false		Summon	
+16	Occultism	神秘学	7	false		Occultism	
+17	Fusion	合体	10	false		Fusion	
+18	Demonology	悪魔学	7	false		Demonology	
+19	Weapon Knowledge	武器知識	9	false		Weapon Knowledge	
+20	Survival Techniques	生存技術	7	false		Survival Techniques	
+21	Psychology	心理学	10	false		Psychology	
+22	Medical Sciences	医学	6	false		Medical Sciences	
+23	Crushing Technique	撃破技術	10	false		Crushing Technique	
+24	Mineralogy	鉱物学	10	false		Mineralogy	
+25	Biology	生物学	7	false		Biology	
+26	Botany	植物学	0	false		Botany	
+27	Mechanical Engineering	機械工学	0	false		Mechanical Engineering	
+28	Information Engineering	情報工学	0	false		Information Engineering	
+29	Blades	刃物	10	false		Blades	
+30	Sketching	栽工技術	8	false		Sketching	
+31	Creation	外丹	5	false		Creation	
+32	Crafts	工作	10	false		Crafts	
+33	Firearms Knowledge	火器知識	0	false		Firearms Knowledge	
+34	Gun Knowledge	銃器知識	9	false		Gun Knowledge	
+35	Pursuit	追撃	9	false		Pursuit	
+36	Magic Control	操魔	9	false		Magic Control	
+37	Bless	祝福	9	false		Bless	
+38	Development	開発	0	false		Software	
+39	Mitama Demon Growth Science	御魂悪魔育成学	8	true	18:30:0.6;21:20:0.4	Mitama Demon Growth	18:30:0.6;21:20:0.4
+40	Swordsmith	刀匠	9	true	19:10:0.2;29:10:0.8	Swordsmith	19:10:0.2;29:10:0.8
+41	Berserker	近接戦闘の境地	10	true	0:30:0.4;19:30:0.4;35:10:0.2	Conditions of Melee Combat	19:30:0.4;23:30:0.4;18:10:0.2
+42	Conditions of Ranged Combat	射撃戦闘の境地	10	false		Conditions of Ranged Combat	34:30:0.4;23:30:0.4;18:10:0.2
+43	Essence of Magic	魔法戦闘の境地	10	true	36:30:0.3;9:30:0.3;35:10:0.4	Conditions of Magic Combat	36:30:0.4;23:30:0.4;18:10:0.2
+44	Craftsmanship	煉丹術	6	true	31:10:0.6;22:20:0.2;30:0:0.2	Craftsmanship	31:10:0.6;22:20:0.2;30:0:0.2
+45	Mastery of Three Forms of Life	三元の巧	1	true	19:0:0.2;34:0:0.2;36:0:0.2;37:0:0.2	Mastery of the Three Forms of Life	19:0:0.2;34:0:0.2;36:0:0.2;37:0:0.2
+46	Arms Maker	アームズメイカー	9	true	32:10:0.8;34:10:0.2	Arms Maker	32:10:0.8;34:10:0.2
+47	Support Bullet	援弾の射手	10	true	10:20:0.4;37:20:0.4;4:20:0.2	Support Bullet	10:20:0.4;37:20:0.4;4:20:0.2
+48	Sanguine Contract	分解	8	true	15:10:0.2;17:20:0.4;18:20:0.4	Disassembly	
+49	Synthesis	融合	10	true	16:10:0.4;18:0:0.4;19:0:0.1;24:0:0.1	Synthesis	16:10:0.4;18:0:0.4;19:0:0.1;24:0:0.1
+50	Ashes and Dust	魔放圏	10	true	4:30:0.4;34:20:0.4;35:20:0.2	Magic Fist (unused)	
+51	Demolition Dash	魔崩拳	10	true	2:10:0.3;19:10:0.2;35:10:0.2;36:10:0.3	Magic Fist	2:10:0.3;9:10:0.3;36:10:0.4
+52	Curse of the Wretched	忌門禁呪の法	10	true	11:20:0.5;36:10:0.3;37:10:0.2	Curse of the Wretched	9:10:0.1;11:20:0.5;36:10:0.2;37:10:0.2
+53	Enhancement	エンハンスメント	10	true	8:20:0.3;10:20:0.4;37:10:0.3	Enhancement	8:20:0.3;10:20:0.4;37:10:0.3
+54	Magic Bullet	魔弾の射手	10	true	3:20:0.3;11:20:0.1;34:10:0.4;36:10:0.2	Magic Bullet	3:20:0.3;11:20:0.1;34:10:0.4;36:10:0.2
+55	Sharpshooter	シャープシュート	10	true	35:20:0.3;34:20:0.4;18:20:0.3	Sharpshooter	3:20:0.4;18:20:0.4;34:10:0.2
+56	Vanguard	ランページ	9	true	35:30:0.4;1:20:0.3;20:20:0.3	Rampage	0:20:0.2;1:20:0.2;2:20:0.2;35:30:0.4
+57	Regal Presence	王者の風格	10	true	19:20:0.4;20:10:0.2;35:20:0.4	Regal Presence	0:20:0.2;19:10:0.4;20:10:0.4
+58	Dunamis	デュナミス	0	true		Illusion Chain	

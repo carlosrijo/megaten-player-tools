@@ -3,7 +3,7 @@
 # Windows locks a running program, so "cargo build" with BABEL open cannot replace BABEL.exe
 # (the page files are inside the exe, so nothing changes until it is replaced). This closes the app first (only the copy
 # the desktop shortcut runs, target\release\BABEL.exe, never a --capture run from elsewhere), builds the reader
-# (newmoon-reader.exe) and the app, and starts the app again, also when the build failed (with what was there before).
+# (imagine-reader.exe) and the app, and starts the app again, also when the build failed (with what was there before).
 #
 #   pwsh -NoProfile -File tools\rebuild-app.ps1            # close, build, reopen
 #   pwsh -NoProfile -File tools\rebuild-app.ps1 -NoStart   # close and build only

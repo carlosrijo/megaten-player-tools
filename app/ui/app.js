@@ -60,8 +60,9 @@
     return el;
   }
   const store = {
-    get(k) { try { return localStorage.getItem('nm-' + k); } catch (e) { return null; } },
-    set(k, v) { try { localStorage.setItem('nm-' + k, v); } catch (e) { /* preferences only */ } },
+    // 'babel-' keys; a value saved by 0.4.0 or older (prefix 'nm-') is still read until it is saved again
+    get(k) { try { const v = localStorage.getItem('babel-' + k); return v !== null ? v : localStorage.getItem('nm-' + k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem('babel-' + k, v); } catch (e) { /* preferences only */ } },
   };
   const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
   const n0 = (v) => Number(v) || 0;
@@ -107,7 +108,7 @@
     }
     // Stand-in for a plain browser: ?empty=1 (first run), ?snap=fail, ?clients=0|1|2 (how many characters are in game)
     const get = (p, dflt) => fetch(p).then((r) => (r.ok ? r.json() : dflt)).catch(() => dflt);
-    const settings = { character: 'Rubito', csv: 'C:\\Users\\…\\smt-stats\\rubito-stats.csv', theme: store.get('theme') || 'system', dataDir: '…\\newmoon-reader\\data', csvExists: true };
+    const settings = { character: 'Rubito', csv: 'C:\\Users\\…\\smt-stats\\rubito-stats.csv', theme: store.get('theme') || 'system', dataDir: '…\\imagine-reader\\data', csvExists: true };
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const fake = { active: 'Rubito', scanned: false, clients: [], characters: [{ name: 'Rubito', hasData: true, inGame: false, folder: '', level: 0 }] };
     const fakeClients = [{ pid: 7224, folder: 'client2', character: 'Rubito', level: 95 }, { pid: 30184, folder: 'client1', character: 'Rokujuu', level: 97 }];
@@ -196,15 +197,15 @@
           return { changed: true, rows: fake.active === 'Rubito' ? 5 : 0, changedRows: fake.active === 'Rubito' ? 3 : 0, backup: 'rubito-stats.backup-before-alignment-20261122-233212.csv' };
         }
         // The Simulator's numbers and saved builds are the reader's own: the browser preview has them when it is
-        // served by "newmoon-reader serve" (src\Build\PreviewServer.cs), which answers these like the app does.
+        // served by "imagine-reader serve" (src\Build\PreviewServer.cs), which answers these like the app does.
         if (cmd.startsWith('sim')) {
           const r = await fetch('/host/' + cmd, { method: 'POST', body: JSON.stringify(args || {}) }).catch(() => null);
-          if (!r || !r.ok) throw Object.assign(new Error('This browser preview has no reader behind it, so it can’t work out a build. Open it through “newmoon-reader serve”, or use the desktop app.'), { kind: 'user' });
+          if (!r || !r.ok) throw Object.assign(new Error('This browser preview has no reader behind it, so it can’t work out a build. Open it through “imagine-reader serve”, or use the desktop app.'), { kind: 'user' });
           const m = await r.json();
           if (!m.ok) throw Object.assign(new Error(m.error), { kind: m.kind });
           return m.result;
         }
-        // the assistant's model: the file the reader made (newmoon-reader.exe model); ?assistant=none stands in for "game never seen"
+        // the assistant's model: the file the reader made (imagine-reader.exe model); ?assistant=none stands in for "game never seen"
         if (cmd === 'assistant') return Q.get('assistant') === 'none' ? null : get('../../data/cache/models/D2_11_003a.json', null);
         if (cmd === 'getSettings' || cmd === 'pickCsv') return { ...settings };
         if (cmd === 'saveSettings') { Object.assign(settings, args); return { ...settings }; }
@@ -216,7 +217,7 @@
           const c = (section, name, status, detail, advice, ms) => ({ section, name, status, detail, advice: advice || '', ms: ms || 0 });
           const checks = [c('App', 'Program version', 'pass', '0.0.0 (browser preview)'), c('App', 'WebView2', 'pass', 'This is a browser, not the app'),
             c('Files', 'Data folder', 'pass', settings.dataDir + ' (writable)', '', 3), c('Files', 'Server constants', 'warn', 'C:\\…\\constants.xml does not exist.', 'Not needed: the reader falls back to the usual values.'),
-            c('Game', 'Game running', 'warn', 'No ImagineClient is running.', 'Start NewMoon and log in to take a snapshot.'),
+            c('Game', 'Game running', 'warn', 'No ImagineClient is running.', 'Start IMAGINE and log in to take a snapshot.'),
             c('Client 1: client1, Rubito', 'Client build', 'fail', 'Shown only so the page can be tried: nothing here was checked.', 'The real check runs in the desktop app.', 120)];
           const n = (s) => checks.filter((x) => x.status === s).length;
           return { program: 'BABEL (browser preview)', windows: 'Windows', checkedAt: '', checks, text: 'Browser preview: nothing was checked.\r\n',
@@ -605,13 +606,13 @@
     const name = S.meta.character || S.state.active;
     if (!name) return h('div', { class: 'page' }, h('div', { class: 'empty' },
       h('h2', { class: 'empty-title', text: 'No character yet' }),
-      h('p', { class: 'page-sub', text: 'Start NewMoon and log in. The app reads your character’s name from the game by itself; if two game clients are open it asks which one to look at.' }),
+      h('p', { class: 'page-sub', text: 'Start IMAGINE and log in. The app reads your character’s name from the game by itself; if two game clients are open it asks which one to look at.' }),
       h('button', { type: 'button', class: 'btn btn-primary', onclick: () => openChooser() }, 'Look for my character')));
     return h('div', { class: 'page' }, h('div', { class: 'empty' },
       h('h2', { class: 'empty-title', text: `No snapshot of ${name} yet` }),
       h('p', { class: 'page-sub', text: 'A snapshot reads your stats, gear and expertise from the running game and works out every bonus. It only reads; nothing in the game is changed.' }),
       h('ol', { class: 'steps' },
-        h('li', null, h('span', { text: `Start NewMoon and log in as ${name}.` })),
+        h('li', null, h('span', { text: `Start IMAGINE and log in as ${name}.` })),
         h('li', null, h('span', { text: 'Press Take snapshot (or F5).' }))),
       h('button', { type: 'button', class: 'btn btn-primary', onclick: takeSnapshot }, icon('camera'), 'Take snapshot')));
   }
@@ -1858,7 +1859,7 @@
   // ---------- render ----------
   // ---------- Tools: DCM Locator ----------
   // dcm-sources.json is made by tools\dcmexport from the game data; dcm-notes.json is written by hand (what players
-  // found on NewMoon itself). Both sit beside this file.
+  // found on IMAGINE itself). Both sit beside this file.
   const DCM_KINDS = [['all', 'All'], ['shop', 'Shop'], ['drop', 'Enemy drop'], ['chest', 'Chest or loot'], ['event', 'Event or NPC'], ['present', 'Present only'], ['none', 'No known source']];
   const pct = (v) => `${nf.format(n0(v))}%`;
   function loadDcm() {
@@ -1877,7 +1878,7 @@
     const lines = [], by = (k) => it.sources.filter((s) => s.kind === k);
     const zones = (list) => { const z = [...new Set(list.map((s) => s.zone).filter(Boolean))]; return z.length > 6 ? z.slice(0, 6).join(', ') + ` and ${z.length - 6} more` : z.join(', '); };
     const grouped = (list, key) => { const m = new Map(); list.forEach((s) => { const k = key(s); if (!m.has(k)) m.set(k, []); m.get(k).push(s); }); return [...m.values()]; };
-    (S.dcm.notes[it.id] || []).forEach((t) => lines.push({ group: 'note', kind: 'NewMoon note', text: String(t), rank: 0 }));
+    (S.dcm.notes[it.id] || []).forEach((t) => lines.push({ group: 'note', kind: 'IMAGINE note', text: String(t), rank: 0 }));
     // A shop's moon mask: bit n = moon phase n (0 new, 8 full), the phases it is sold in.
     const moon = (mask) => 'Moon: ' + [...Array(16).keys()].filter((i) => mask & (1 << i)).map((i) => (i === 0 ? 'new' : i === 8 ? 'full' : i < 8 ? `${i}/8 waxing` : `${16 - i}/8 waning`)).join(', ');
     // "201010_halloween" (the server's folder of a seasonal event) -> "Halloween 2010 event"
@@ -1917,8 +1918,8 @@
       page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The DCM list could not be loaded (dcm-sources.json is missing beside the page).' : 'Loading the DCM list…' }));
       return page;
     }
-    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
-      'The DCM list, zone names and shop stock are the NewMoon client\'s. Drops, chests, presents and events come from the public server data, so NewMoon may have changed them. Lines marked “NewMoon note” are confirmed by players.')));
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
+      'The DCM list, zone names and shop stock are the IMAGINE client\'s. Drops, chests, presents and events come from the public server data, so IMAGINE may have changed them. Lines marked “IMAGINE note” are confirmed by players.')));
     const items = D.data.items;
     const inKind = (it, k) => k === 'all' ? true : k === 'none' ? !it.lines.length : k === 'present' ? it.lines.length > 0 && it.lines.every((l) => l.group === 'present') : it.kinds.has(k);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by source' });
@@ -1945,7 +1946,7 @@
           h('td', { class: 'num' + (best && best.value ? '' : ' zero'), text: best && best.value ? best.value : '—' })));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 },
           it.lines.length ? h('ul', { class: 'parts dcm-parts' }, it.lines.map(lineEl))
-            : h('p', { class: 'note', text: 'Nothing in the data gives this DCM. It is most likely a NewMoon addition whose source only the live server knows.' }),
+            : h('p', { class: 'note', text: 'Nothing in the data gives this DCM. It is most likely an IMAGINE addition whose source only the live server knows.' }),
           h('p', { class: 'note', style: 'margin-top:8px', text: `Item ${it.id} · ${it.name}` }))));
       });
       if (!rows.length) body.append(h('tr', null, h('td', { colspan: 3, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No DCM in this group.' })));
@@ -2030,8 +2031,8 @@
       page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The quest list could not be loaded (quest-guide.json is missing beside the page).' : 'Loading the quests…' }));
       return page;
     }
-    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
-      'Quest names, objectives and kill or collect counts are the game\'s own. The steps (who to talk to, what to pick, rewards) come from the public server\'s event files, so NewMoon may have changed them. Valuables are shown with the name the game data has, which is Japanese.')));
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
+      'Quest names, objectives and kill or collect counts are the game\'s own. The steps (who to talk to, what to pick, rewards) come from the public server\'s event files, so IMAGINE may have changed them. Valuables are shown with the name the game data has, which is Japanese.')));
     const quests = D.data.quests;
     const inType = (q, t) => (t === 'available' ? q.type !== 'Inactive' : q.type === t);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of quest' });
@@ -2064,7 +2065,7 @@
     return page;
   }
   // ---------- Tools: Gear Database ----------
-  // gear-db.json is made by "newmoon-reader geardb": what each piece gives is read from the NewMoon client's current
+  // gear-db.json is made by "imagine-reader geardb": what each piece gives is read from the IMAGINE client's current
   // tables; where it comes from is what the community spreadsheets say. It sits beside this file.
   // Item pictures are in gear-db-icons\ beside it (the game's own art, made locally with geardb --client, not in git).
   const GDB_SLOTS = ['Weapon', 'Head', 'Face', 'Neck', 'Top', 'Arms', 'Bottom', 'Feet', 'Ring', 'Earring', 'Extra', 'Back', 'Talisman', 'COMP', 'Bullets'];
@@ -2139,7 +2140,7 @@
       return page;
     }
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Two sources. ' }),
-      'Stats, effects and sets are read from the NewMoon client\'s current item tables. "Where to get it" is traced through the public server data (drops, chests, shops, events), which NewMoon may have changed. "Community notes" are what the community wrote down for NewMoon, and can be imprecise.')));
+      'Stats, effects and sets are read from the IMAGINE client\'s current item tables. "Where to get it" is traced through the public server data (drops, chests, shops, events), which IMAGINE may have changed. "Community notes" are what the community wrote down for IMAGINE, and can be imprecise.')));
     const items = D.data.items;
     const pass = (it, slot) => (!D.known || it.known) && (slot === 'all' || it.slot === slot);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by slot' });
@@ -2182,8 +2183,8 @@
     return page;
   }
   // ---------- Tools: Dungeon Explorer ----------
-  // dungeons.json is made by "newmoon-reader dungeons" (src\Build\Dungeons.cs): the server's zone, instance and drop
-  // files for where each enemy is, the NewMoon client's demon table for what it is. Only enemies that can't be
+  // dungeons.json is made by "imagine-reader dungeons" (src\Build\Dungeons.cs): the server's zone, instance and drop
+  // files for where each enemy is, the IMAGINE client's demon table for what it is. Only enemies that can't be
   // contracted are in it. Enemy pictures sit in dungeon-icons\ beside it (made locally from the client, not in git).
   const DUN_KINDS = [['all', 'All'], ['Dungeon', 'Dungeons'], ['Field', 'Fields'], ['other', 'Other places']];
   const STAT_NAMES = ['STR', 'MAG', 'VIT', 'INT', 'SPD', 'LUCK'], COMBAT_NAMES = ['CLS-R', 'LNG-R', 'Spell', 'Support', 'P.Def', 'M.Def'];
@@ -2279,13 +2280,13 @@
     const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
     const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest');
     // One short warning for all of it: the rates are the vanilla server data's, and a place whose enemies drop nothing
-    // there (Dark Babel: NewMoon sets those on its own server) says so. The game-wide drops any enemy anywhere can give
+    // there (Dark Babel: IMAGINE sets those on its own server) says so. The game-wide drops any enemy anywhere can give
     // (d.everywhere) are left off the page: the user asked to ignore them.
     if (loot.length || boss.length || other.length) box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null,
-      h('b', { text: 'Vanilla rates, not NewMoon\'s. ' }),
-      loot.length ? '' : 'No enemy drops here in the server data (NewMoon keeps its own). ',
+      h('b', { text: 'Vanilla rates, not IMAGINE\'s. ' }),
+      loot.length ? '' : 'No enemy drops here in the server data (IMAGINE keeps its own). ',
       boss.length || other.length ? 'Each chest item rolls on its own.' : '')));
-    else box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null, h('b', { text: 'No drops here in the server data. ' }), 'NewMoon keeps its own.')));
+    else box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null, h('b', { text: 'No drops here in the server data. ' }), 'IMAGINE keeps its own.')));
     if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }), strip(loot, dunLootTip)));
     if (boss.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'What the boss chest at the end of a stage can hold, over every stage of this place', text: `End chest · ${boss.length === 1 ? '1 item' : `${boss.length} items`}` }), strip(boss, dunLootTip)));
     if (other.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'Other chests the events here open', text: `Other chests · ${other.length === 1 ? '1 item' : `${other.length} items`}` }), strip(other, dunLootTip)));
@@ -2348,8 +2349,8 @@
       page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The dungeon list could not be loaded (dungeons.json is missing beside the page).' : 'Loading the dungeons…' }));
       return page;
     }
-    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
-      'Names, stats, skills and traits are the NewMoon client\'s. Which enemies are where, their levels, whether they talk and their drops come from the public server data, so NewMoon may have changed them. Stats are the enemy\'s own at that level, before its passive skills and traits.')));
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
+      'Names, stats, skills and traits are the IMAGINE client\'s. Which enemies are where, their levels, whether they talk and their drops come from the public server data, so IMAGINE may have changed them. Stats are the enemy\'s own at that level, before its passive skills and traits.')));
     const list = D.data.dungeons;
     const inKind = (x, k) => (k === 'all' ? true : k === 'other' ? x.kind !== 'Dungeon' && x.kind !== 'Field' : x.kind === k);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of place' });
@@ -2411,8 +2412,8 @@
   }
 
   // ---------- Tools: Demon Database ----------
-  // demon-db.json is made by "newmoon-reader demondb" (src\Build\DemonDb.cs): the compendium's demons with their stats,
-  // affinities, features, skills, tarot and soul from the NewMoon client, and where each can be contracted from the
+  // demon-db.json is made by "imagine-reader demondb" (src\Build\DemonDb.cs): the compendium's demons with their stats,
+  // affinities, features, skills, tarot and soul from the IMAGINE client, and where each can be contracted from the
   // server's zone files. Enemy-only copies (dungeon and boss versions) are folded into their demon, not listed. Pictures
   // are in demon-db-icons\ beside this file.
   const DDB_KINDS = [['contract', 'Can be contracted'], ['other', 'Not contracted anywhere'], ['all', 'All demons']];
@@ -2539,8 +2540,8 @@
       page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The demon list could not be loaded (demon-db.json is missing beside the page).' : 'Loading the demons…' }));
       return page;
     }
-    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on NewMoon. ' }),
-      'Demons, stats, affinities, skills, tarot and soul are the NewMoon client\'s. Where each spawns comes from the public server data, so NewMoon may have changed it. Dungeon and boss copies of a demon are not listed on their own: they show under “Enemy only”.')));
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
+      'Demons, stats, affinities, skills, tarot and soul are the IMAGINE client\'s. Where each spawns comes from the public server data, so IMAGINE may have changed it. Dungeon and boss copies of a demon are not listed on their own: they show under “Enemy only”.')));
     const all = D.data.demons;
     const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : !x.contract.length);
     const inPick = (x) => (!D.race || x.race === D.race) && (!D.align || x.align === D.align);   // the Race and Alignment dropdowns
@@ -2667,7 +2668,7 @@
     return page;
   }
   // ---------- Tools: Skill Database ----------
-  // skill-db.json is made by "newmoon-reader skilldb" (src\Build\SkillDb.cs): every skill of the NewMoon client grouped
+  // skill-db.json is made by "imagine-reader skilldb" (src\Build\SkillDb.cs): every skill of the IMAGINE client grouped
   // by its action type (the game's Help names them), with element, cost, timings, power and the expertise ranks that
   // unlock it. Which demons learn it or have it as a feature comes from demon-db.json (the Demon Database), read here.
   // Icons are in skill-db-icons\ beside this file.
@@ -3919,9 +3920,9 @@
   }
 
   // ---------- Tools: Fusion Planner ----------
-  // fusion-data.json is made by tools\fusionexport: the demons, races and special fusions are the NewMoon client's; the
+  // fusion-data.json is made by tools\fusionexport: the demons, races and special fusions are the IMAGINE client's; the
   // race chart and the tri-fusion rules are the comp_hack server's (FusionManager.cpp), followed here step by step,
-  // including its quirks, so the planner says what that server would make. NewMoon may have changed them.
+  // including its quirks, so the planner says what that server would make. IMAGINE may have changed them.
   function loadFusion() {
     if (S.fus.state !== 'idle') return;
     S.fus.state = 'loading';
@@ -4251,7 +4252,7 @@
       return page;
     }
     page.append(U.view === 'reverse' ? fusionReverse(U.eng) : fusionForward(U.eng));
-    page.append(h('p', { class: 'note fus-foot', text: 'Demons, levels, races and special fusions: the NewMoon client. The race chart and the tri-fusion and elemental rules: the server’s fusion code, which NewMoon may have changed. Checked in game: two two-demon fusions (one the community chart lacks), a tri-fusion and the refusal of Mitama-fused demons, all as the planner says. Special fusions and elemental rank changes are not checked yet.' }));
+    page.append(h('p', { class: 'note fus-foot', text: 'Demons, levels, races and special fusions: the IMAGINE client. The race chart and the tri-fusion and elemental rules: the server’s fusion code, which IMAGINE may have changed. Checked in game: two two-demon fusions (one the community chart lacks), a tri-fusion and the refusal of Mitama-fused demons, all as the planner says. Special fusions and elemental rank changes are not checked yet.' }));
     return page;
   }
 
@@ -4437,7 +4438,7 @@
       ...inGame.map((c) => row(c.character, [`Level ${c.level}`, c.folder, st.characters.some((k) => k.name === c.character && k.hasData) ? null : 'no snapshot yet'].filter(Boolean).join(' · '), true)));
     if (saved.length) list.append(h('div', { class: 'list-head', text: inGame.length ? 'Not in game' : 'Saved characters' }),
       ...saved.map((c) => row(c.name, c.hasData ? 'Saved snapshots' : 'No snapshot yet', false)));
-    if (!inGame.length && !saved.length) list.append(h('p', { class: 'note', text: st.scanned ? 'Nobody is logged in. Start NewMoon, log in, then look again.' : 'Looking…' }));
+    if (!inGame.length && !saved.length) list.append(h('p', { class: 'note', text: st.scanned ? 'Nobody is logged in. Start IMAGINE, log in, then look again.' : 'Looking…' }));
     $('#chooser-status').textContent = S.scanning ? 'Looking at the game clients…'
       : idle.length ? `${idle.map((c) => c.folder || `client ${c.pid}`).join(', ')}: nobody logged in yet`
       : st.scanned && !st.clients.length ? 'The game is not running.' : '';
@@ -4676,9 +4677,9 @@
 
   function explain(message) {
     const who = S.meta.character || 'your character';
-    if (/ImagineClient is not running/i.test(message)) return ['The game isn\u2019t running', `Start NewMoon, log in as ${who}, then take the snapshot again.`];
+    if (/ImagineClient is not running/i.test(message)) return ['The game isn\u2019t running', `Start IMAGINE, log in as ${who}, then take the snapshot again.`];
     if (/No running client has/i.test(message)) return [`${who} isn\u2019t logged in`, 'None of the open game clients has that character logged in. Log in, or click the name at the top left to switch to the character that is in game.'];
-    if (/No character is selected/i.test(message)) return ['No character yet', 'Start NewMoon and log in; the app reads the character\u2019s name from the game.'];
+    if (/No character is selected/i.test(message)) return ['No character yet', 'Start IMAGINE and log in; the app reads the character\u2019s name from the game.'];
     if (/No saved stats yet/i.test(message)) return ['Take the first snapshot undigitalized', 'While digitalized the game counts the demon in your stats, so the first snapshot has to be taken when you are not digitalized (or with the Information window open).'];
     if (/Couldn't find the equipped gear/i.test(message)) return ['Open the Information window for this one', `The app couldn’t find ${who}’s gear list in the game’s memory while the Information window is closed. Open the window in game and take the snapshot again.`];
     if (/access is denied|access denied/i.test(message)) return ['Windows blocked reading the game', 'If the game runs as administrator, start this app as administrator too.'];
@@ -4696,7 +4697,7 @@
     $('#set-assistant').checked = on;
     $('#assistant-help').textContent = !on ? 'Off. Its model and animations come from your game’s own files.'
       : A.state === 'loading' ? 'Getting its model from the game’s files…'
-      : A.state === 'missing' ? 'Its model comes from the game’s own files, and the app doesn’t know yet where the game is installed. Start NewMoon and it will show up.'
+      : A.state === 'missing' ? 'Its model comes from the game’s own files, and the app doesn’t know yet where the game is installed. Start IMAGINE and it will show up.'
       : A.state === 'failed' ? 'It couldn’t be drawn here: this window has no 3D graphics (WebGL).'
       : 'Its model and animations come from your game’s own files. Click it for a trick; it also reacts when you take a snapshot.';
   }
@@ -4967,7 +4968,7 @@
     catch (e) {
       $('#main').replaceChildren(h('div', { class: 'page' }, h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'Couldn\u2019t load the saved data. ' }), String(e && e.message || e)))));
     }
-    window.__nm = { S, takeSnapshot, assistant: A, host };   // for checking the page from DevTools (and for scripted runs: tours)
+    window.__babel = { S, takeSnapshot, assistant: A, host };   // for checking the page from DevTools (and for scripted runs: tours)
     // The saved data is on screen; now see who is in game. One character: show it. Several: ask.
     if (host.native || Q.has('clients')) { await scanClients(); await settle(true); }
     if (assistantWanted()) {

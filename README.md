@@ -1,6 +1,6 @@
-# newmoon-reader
+# imagine-reader
 
-Read-only snapshots of a NewMoon character's stats and gear from the running ImagineClient,
+Read-only snapshots of an IMAGINE character's stats and gear from the running ImagineClient,
 and BABEL, the desktop app that shows them.
 
 It only ever opens the game process with read access (`PROCESS_QUERY_INFORMATION | PROCESS_VM_READ`):
@@ -55,7 +55,7 @@ target\release\BABEL.exe
 ```
 
 `cargo build --release` makes both programs in `target\release`: the app (`BABEL.exe`, with the page files
-inside it) and the command line reader (`newmoon-reader.exe`). After a change, with the app possibly open:
+inside it) and the command line reader (`imagine-reader.exe`). After a change, with the app possibly open:
 `pwsh -NoProfile -File tools\rebuild-app.ps1` closes it, builds both and opens it again (Windows locks a running
 program, so a build with the app open fails to replace it).
 
@@ -90,10 +90,10 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
 - **Characters:** the name is read from the running game, nothing to type. With one character in game the app shows it;
   with two clients open it asks which one. Each character keeps its own folder and spreadsheet (`data\characters.json`);
   click the name in the header to switch.
-- `crates\newmoon-tracker\src\main_form.rs` the window (WebView2) and the handful of requests the page can make.
+- `crates\imagine-tracker\src\main_form.rs` the window (WebView2) and the handful of requests the page can make.
 - `app\ui\` the page: `index.html`, `app.css`, `app.js` (plain JavaScript, no libraries, works offline).
-- `crates\newmoon\src\build\pipeline.rs` the snapshot / rebuild steps shared by the app and the command line.
-- Preferences (character, CSV path, theme, window position) live in `%AppData%\NewMoonTracker\settings.json`.
+- `crates\imagine\src\build\pipeline.rs` the snapshot / rebuild steps shared by the app and the command line.
+- Preferences (character, CSV path, theme, window position) live in `%AppData%\BABEL\settings.json`.
 - Theme: by default the app follows Windows' light/dark app setting, also when it changes while the app is open
   (Settings can pin Light or Dark). The window sets the page's colour scheme (`set_scheme` in `host.rs`); the page
   only asks `prefers-color-scheme`. `--capture out.png --then-scheme light|dark` checks the live switch.
@@ -102,12 +102,12 @@ Working on the app's page:
 - `BABEL.exe --dev` loads the page straight from `app\ui`, so page edits need no rebuild (F12 opens DevTools).
 - `BABEL.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]` saves a
   picture of the page and exits.
-- In a plain browser: `newmoon-reader.exe serve --port 18765 [--data <copy of the data folder>]`, then
+- In a plain browser: `imagine-reader.exe serve --port 18765 [--data <copy of the data folder>]`, then
   `http://localhost:18765/app/ui/index.html` (the same page, with the real calculation behind the Simulator).
   A stand-in for the app reads `data\dash`. Add `?empty=1` (first run), `?snap=fail` or `?snap=live` (snapshot results),
   `?game=1`, `?page=…`, `?theme=…`, `?mode=digi`.
 - The assistant: `--capture` pictures leave it out unless the run adds `--query assistant=1`. In a plain browser it
-  needs the model file first (`newmoon-reader.exe model`, below); `?assistant=0` leaves it out, `?assistant=none`
+  needs the model file first (`imagine-reader.exe model`, below); `?assistant=0` leaves it out, `?assistant=none`
   stands in for "the game's folder isn't known yet".
 
 ### Tools: Demon Rank
@@ -129,11 +129,11 @@ shops with prices, enemies with drop rates and zones, chests, event or NPC rewar
 demon itself. Search by demon, enemy, zone or shop; the chips filter by kind of source. It works without a snapshot.
 Each row shows the demon's own icon from your game client when the client has one.
 
-The DCM list, zone names and shop stock are the NewMoon client's. Drops, chests, presents and events come from the
-public server data, so NewMoon may have changed them; DCMs with "No known source" are most likely NewMoon additions.
-To record what players confirmed on NewMoon, add notes to `app\ui\dcm-notes.json`
+The DCM list, zone names and shop stock are the IMAGINE client's. Drops, chests, presents and events come from the
+public server data, so IMAGINE may have changed them; DCMs with "No known source" are most likely IMAGINE additions.
+To record what players confirmed on IMAGINE, add notes to `app\ui\dcm-notes.json`
 (`"notes": { "<item id>": ["Sold by X in Y for Z"] }`; the item id is shown at the bottom of an opened row).
-They appear first, marked "NewMoon note".
+They appear first, marked "IMAGINE note".
 
 ### Tools: Quest Guide
 
@@ -144,23 +144,23 @@ Law or a Chaos answer) every way is shown with what it changes. Search by quest,
 filter by kind of quest.
 
 The quest names, objective text and counts are the game's own. The steps come from the public server's event files
-(468 quests have them; the rest show the game's objective text only), so NewMoon may have changed them. Valuables
+(468 quests have them; the rest show the game's objective text only), so IMAGINE may have changed them. Valuables
 (key items) are shown with the name in the game data, which is Japanese.
 ### Tools: Gear Database
 
 Under **Tools** in the left bar. Every piece of gear in the game (10,270) with what it gives: stats, effects, appearance
 bonus, the sets it belongs to, mod slots, and who can wear it. Where a piece comes from (dungeon, ticket, exchange)
 is traced through the game data (drops, chests, shops, NPC exchanges, the ticket a piece comes in), with community notes from
-SnowSheet's gear reference for NewMoon beside it. Search with several
+SnowSheet's gear reference for IMAGINE beside it. Search with several
 words at once ("limit break celu"), filter by slot, and untick "Only gear with a known source" to see everything.
 
-Stats and effects are read from the NewMoon client's current item tables, not from the spreadsheets. 963 spreadsheet
+Stats and effects are read from the IMAGINE client's current item tables, not from the spreadsheets. 963 spreadsheet
 rows matched no item in the game data (different spelling); they are listed with the sheet's own text, marked
 "sheet only". The cosmetic ticket tabs (Vanities) are left out.
 
 Each piece shows the icon the game shows for it (10,168 of 10,270; 102 have no picture in the client).
 The pictures are the game's own art, so they are not in the repository: they are made from your game folder by
-`newmoon-reader geardb ... --client <game folder>`, into `app\ui\gear-db-icons\`. Without
+`imagine-reader geardb ... --client <game folder>`, into `app\ui\gear-db-icons\`. Without
 them the list shows empty boxes.
 
 ### Tools: Fusion Planner
@@ -178,8 +178,8 @@ Under **Tools** in the left bar. Two views:
 Mitama-fused demons are not in the lists: the game won't fuse them. **Find a recipe** only offers demons some fusion
 makes (417 of 850); the others come from quests, events or contracts.
 
-Demons, levels, races and special fusions are the NewMoon client's. The race chart and the tri-fusion and elemental
-rules are the comp_hack server's fusion code, which NewMoon may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.
+Demons, levels, races and special fusions are the IMAGINE client's. The race chart and the tri-fusion and elemental
+rules are the comp_hack server's fusion code, which IMAGINE may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.
 ### Tools: Dungeon Explorer
 
 Under **Tools** in the left bar. Every dungeon (175; each difficulty such as Bronze, Silver and Gold on its own), field and other place with enemies, and the enemies in it that
@@ -199,7 +199,7 @@ chance under each. Hover one for the game's description and which enemies drop i
 here" for the place's own drops). Below it: the **End chest** (what the boss chest at the end of a stage can hold,
 over every stage of the place) and **Other chests**. The game-wide drops any enemy anywhere can give (the
 Jack/Queen/King/Ace boxes, the Invoke emblems) are left out. A place whose enemies drop nothing of their own
-(Dark Babel) says so: NewMoon sets those drops on its own server. All rates are the vanilla comp_hack server data's
+(Dark Babel) says so: IMAGINE sets those drops on its own server. All rates are the vanilla comp_hack server data's
 (your local server's), before luck and drop bonuses; one short warning banner above the drops says so.
 
 Places are grouped by where you enter them from (all of Dark Babel's floors under "Entered from Dark Babel", Celu
@@ -210,8 +210,8 @@ strongest; "+N" for the rest); hover one for its name and level.
 Search a place, an enemy, a skill, a drop or an entrance; the chips filter dungeons, fields and other places. A search
 opens every group it finds something in, and searching an enemy lists only the matching enemies inside each place.
 
-Names, stats, skills and traits are the NewMoon client's. Which enemies are where, their levels, whether they talk and
-their drops come from the public server data, so NewMoon may have changed them. Stats are the server's formula for an
+Names, stats, skills and traits are the IMAGINE client's. Which enemies are where, their levels, whether they talk and
+their drops come from the public server data, so IMAGINE may have changed them. Stats are the server's formula for an
 enemy at that level (with the extra HP the game gives enemies), before its passive skills and traits. Not checked in
 game.
 ### Tools: Demon Database
@@ -228,8 +228,8 @@ affinities, features and skills to its Mitama-fused form (340 demons have one).
 The list opens on the demons that can be contracted somewhere (140); "Not contracted anywhere" and "All demons" show
 the rest. Dungeon and boss copies of a demon are not listed on their own: the places they appear, where they cannot be
 talked into a contract, are under "Enemy only". Search by name, race, skill, feature, tarot text or zone; filter by
-race and alignment (Law, Neutral, Chaos); sort by level, name or race. Demons, stats, skills, tarot and soul are the NewMoon client's; spawns are the
-public server data, so NewMoon may have changed them.
+race and alignment (Law, Neutral, Chaos); sort by level, name or race. Demons, stats, skills, tarot and soul are the IMAGINE client's; spawns are the
+public server data, so IMAGINE may have changed them.
 
 ### Tools: Skill Database
 
@@ -306,12 +306,12 @@ Everything for this is in **Settings** (the gear at the top right):
   still the build the reader was made for (the app also says so at start when the game was updated: *readings may be
   wrong until the reader is updated*), that each client can be opened read-only, and that each part is found in the
   game's memory (character, nameplate, stats, gear, demons, progress) and how long it took. The command line has the same:
-  `newmoon-reader.exe doctor` (add `--json` for a machine-readable version).
+  `imagine-reader.exe doctor` (add `--json` for a machine-readable version).
 - **The log** is in `data\logs` beside the program (**Show logs** opens the folder). A few small text files, 5 MB at most
   altogether, the newest kept. It says what the app did and how long it took, which parts of the game were found, and any
   error. It never holds what the page asked for (that can be personal), spreadsheet rows, or anything read from the game's
-  memory. `--log-level debug|info|warn` (on `BABEL.exe` and `newmoon-reader.exe`) changes how much goes in;
-  `newmoon-reader.exe --version` says which build you have.
+  memory. `--log-level debug|info|warn` (on `BABEL.exe` and `imagine-reader.exe`) changes how much goes in;
+  `imagine-reader.exe --version` says which build you have.
 - **A crash** writes `crash-<date>-<time>.txt` beside the log (what went wrong, where, the version, Windows, a stack trace),
   and the app tells you where it is instead of just closing.
 - **Save a support bundle…** writes one zip (to your Desktop unless you pick another place) to send to whoever helps you.
@@ -325,25 +325,25 @@ Everything for this is in **Settings** (the gear at the top right):
 
 ```
 cargo build --release
-target\release\newmoon-reader.exe clients    # which clients are running and who is logged in to each
-target\release\newmoon-reader.exe doctor     # the self-check: files, game build, each reader found? (pass / warn / fail; --json for machines)
-target\release\newmoon-reader.exe --version  # which build this is: version, commit, build date
-target\release\newmoon-reader.exe snapshot   # read the game, add a row to the CSV, rebuild page data
-target\release\newmoon-reader.exe rebuild    # rebuild page data from saved files (game not needed)
-target\release\newmoon-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild
-target\release\newmoon-reader.exe gear-names # name every CSV row's gear the game's way (copies the CSV first), then rebuild
-target\release\newmoon-reader.exe sets       # list set and appearance bonuses for the worn gear
-target\release\newmoon-reader.exe simulate   # check the Simulator: the build as read must give back the readings and the saved bonus list
-target\release\newmoon-reader.exe simulate --spec build.json   # the result of another build, as JSON (--init: the build as read; --catalog N: what fits slot N)
-target\release\newmoon-reader.exe serve --port 18765           # the app's page in a browser, with a working Simulator (for testing)
-target\release\newmoon-reader.exe alignment       # the character's alignment, read from the game (LAW/NEUTRAL/CHAOS overrides until the next snapshot)
-target\release\newmoon-reader.exe demon           # list the COMP demons
-target\release\newmoon-reader.exe demon Specter   # one demon in detail and what digitalizing with it gives
-target\release\newmoon-reader.exe demon Specter --use   # make it the digitalize demon the page adds
-target\release\newmoon-reader.exe digilevels      # Digitalization Level and % per race, assists, level-unlock skills
-target\release\newmoon-reader.exe expertise       # re-read expertise ranks and Digitalization Levels, rebuild (no CSV row)
-target\release\newmoon-reader.exe toggles         # which toggle skills are on, read from the game ("Name, ..." overrides when it isn't running)
-target\release\newmoon-reader.exe labels          # regenerate reference\stat-labels-game.tsv: the game's own name for each stat (from the client's effect text)
+target\release\imagine-reader.exe clients    # which clients are running and who is logged in to each
+target\release\imagine-reader.exe doctor     # the self-check: files, game build, each reader found? (pass / warn / fail; --json for machines)
+target\release\imagine-reader.exe --version  # which build this is: version, commit, build date
+target\release\imagine-reader.exe snapshot   # read the game, add a row to the CSV, rebuild page data
+target\release\imagine-reader.exe rebuild    # rebuild page data from saved files (game not needed)
+target\release\imagine-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild
+target\release\imagine-reader.exe gear-names # name every CSV row's gear the game's way (copies the CSV first), then rebuild
+target\release\imagine-reader.exe sets       # list set and appearance bonuses for the worn gear
+target\release\imagine-reader.exe simulate   # check the Simulator: the build as read must give back the readings and the saved bonus list
+target\release\imagine-reader.exe simulate --spec build.json   # the result of another build, as JSON (--init: the build as read; --catalog N: what fits slot N)
+target\release\imagine-reader.exe serve --port 18765           # the app's page in a browser, with a working Simulator (for testing)
+target\release\imagine-reader.exe alignment       # the character's alignment, read from the game (LAW/NEUTRAL/CHAOS overrides until the next snapshot)
+target\release\imagine-reader.exe demon           # list the COMP demons
+target\release\imagine-reader.exe demon Specter   # one demon in detail and what digitalizing with it gives
+target\release\imagine-reader.exe demon Specter --use   # make it the digitalize demon the page adds
+target\release\imagine-reader.exe digilevels      # Digitalization Level and % per race, assists, level-unlock skills
+target\release\imagine-reader.exe expertise       # re-read expertise ranks and Digitalization Levels, rebuild (no CSV row)
+target\release\imagine-reader.exe toggles         # which toggle skills are on, read from the game ("Name, ..." overrides when it isn't running)
+target\release\imagine-reader.exe labels          # regenerate reference\stat-labels-game.tsv: the game's own name for each stat (from the client's effect text)
 et10.0
 ewmoon-reader.exe toggles         # which toggle skills are on, read from the game (a "Name, ..." list overrides when it isn't running)
 ```
@@ -392,9 +392,9 @@ After that, each snapshot (or `extras`) reads them and saves them, and the saved
 reading. The Expertise tab shows a "not counted" row for whichever is missing. They can also be set by hand:
 
 ```
-newmoon-reader extras --quests 32 --compendium 60      # --compendium-v2 no if you don't own Compendium v2; none = unset
-target\release\newmoon-reader.exe model           # the assistant's 3D model (Black Frost) from the game folder into data\cache\models, with a summary
-target\release\newmoon-reader.exe model --check "<game folder>\Devil\bone"   # which of the client's model/animation files the reader can read
+imagine-reader extras --quests 32 --compendium 60      # --compendium-v2 no if you don't own Compendium v2; none = unset
+target\release\imagine-reader.exe model           # the assistant's 3D model (Black Frost) from the game folder into data\cache\models, with a summary
+target\release\imagine-reader.exe model --check "<game folder>\Devil\bone"   # which of the client's model/animation files the reader can read
 ```
 
 Without options, `extras` shows the clan (read from the game), reads both counts when the game has them, and lists
@@ -410,23 +410,23 @@ every bonus they give.
 | Item bonuses (stats, characteristics, tarot, soul, mods) | Each worn item's record in memory (stats source item, special-effect source item, mods, fusion great-success bonuses, tarot, soul) worked out with the server data (`calc/item_effects.rs`). A part with no server data (e.g. Ogami's Crystal) uses the item's tooltip text (cached per item id); so do old snapshots without records |
 | Set and appearance bonuses | The client's equipment-set table (one-piece entries are appearance bonuses), with effect numbers from the server data |
 | Fusion (soul/tarot) set bonuses | Each slot's tarot/soul enchant ids (the worn item's own record; the gear grid as fallback) checked against the enchant-set table: active only when every enchant in the set is worn |
-| Expertise ranks | The client's expertise tree; chain expertises use NewMoon's chain formulas and rank skills (client data, `reference/expertise-*.tsv`). Toggle skills count only while switched on (read from the game: the learned-skill map's "on" flag) |
+| Expertise ranks | The client's expertise tree; chain expertises use IMAGINE's chain formulas and rank skills (client data, `reference/expertise-*.tsv`). Toggle skills count only while switched on (read from the game: the learned-skill map's "on" flag) |
 | Other learned passives | Every learned passive skill that no expertise rank or Digitalization Level gives (Additional HP/MP, "Additional" affinity skills, Quickness, clan skills, Quickdraw...), from the learned-skill map; shown as "Other learned skills" on the Expertise tab |
 | Digitalization Levels | The character's progress data in memory (level and points per race); each level's "extend" passive skill counts like an expertise passive (one group per race on the Digitalize page, which also shows the digitalize demon) |
 | The assistant (Black Frost) | The client's own 3D files: `Devil\bone\D2_11_003a_Base.nif` (model, bones, texture) and the 15 animations its `.kfm` lists (Jack Frost's `.kf` files, which the game itself uses for Black Frost). Read by `data/nif.rs`, turned into one file for the page by `build/demon_model.rs` |
 | COMP demons (`demon`) | Each demon's records in memory (`game/demon_reader.rs`): level, growth type, rebirth ranks, Mitama slots, skill slots, learned skills; base values, growth, traits and Mitama tables from the server's demon tables (`reference\`) |
 
-Layouts are documented in `crates/newmoon/src/game/client_reader.rs`.
+Layouts are documented in `crates/imagine/src/game/client_reader.rs`.
 
 ## Files
 
-- `crates/` the program (Rust): `newmoon/` the reader library (`memory`, `game`, `data`, `calc`, `build`), `newmoon-reader/` the command line, `newmoon-tracker/` the desktop app (window, WebView2, page bridge).
+- `crates/` the program (Rust): `imagine/` the reader library (`memory`, `game`, `data`, `calc`, `build`), `imagine-reader/` the command line, `imagine-tracker/` the desktop app (window, WebView2, page bridge).
 - `data/cache/` last stats, tooltip text per item, the set table, alignment. `data/cache/models/` the assistant's model,
   made from the game's files (the game's art: not in the repository).
 - `app/ui/assistant.js` draws the assistant (plain WebGL, no library).
 - `reference/enchants-game.tsv` the client's own enchant table; `reference/devils-game.tsv`, `devil-growth.tsv`,
   `mitama-*.tsv`, `guardian-assist.tsv`, `guardian-levels.tsv`, `skills-digitize.tsv` the server's demon and digitalize tables;
-  `tokusei-*.tsv`, `expertise-newmoon.tsv`, `traits-unresolved.tsv` NewMoon data from the client.
+  `tokusei-*.tsv`, `expertise-imagine.tsv`, `traits-unresolved.tsv` IMAGINE data from the client.
 - `data/tooltips.txt` also saves each slot's item record (`(item …)` in the header) and the level; the CSV's
   "Gear records" column does the same per row, so `rebuild` and `recalc` work from ids too.
 - `data/dash/` page data: `snapshots.json`, `gear.json`, `expertise.json`, `bonuses.json`. `skill-icons/` holds the skill icons the Expertise and Digitalize pages show, converted from the game client's own icon files.

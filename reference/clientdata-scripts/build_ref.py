@@ -1,4 +1,4 @@
-"""Build reference TSVs for newmoon-reader from decoded client tables.
+"""Build reference TSVs for imagine-reader from decoded client tables.
 usage: build_ref.py <clientdata dir (has out/)> <client translation.xml> <reference out dir>"""
 import sys, os, re, xml.etree.ElementTree as ET
 from collections import defaultdict, OrderedDict
@@ -65,7 +65,7 @@ with open(os.path.join(REF, 'tokusei-missing.tsv'), 'w', encoding='utf-8', newli
         n += 1
     print('missing/empty rows', n)
 
-# ---------- C. expertise names + chains (NewMoon client)
+# ---------- C. expertise names + chains (IMAGINE client)
 names = {}
 t = open(TRANS, encoding='utf-8').read()
 addr = []
@@ -77,8 +77,8 @@ for m in re.finditer(r'<translation>(.*?)</translation>', t, re.S):
         if 0x6A1109 <= a <= 0x6A16CC and (a - 0x6A1109) % 0x19 == 0:
             names[(a - 0x6A1109) // 0x19] = (en.group(1), jp.group(1))
 chains = {p[0]: p for p in rows(os.path.join(CD, 'out', 'expertise-chains.tsv'))}
-with open(os.path.join(REF, 'expertise-newmoon.tsv'), 'w', encoding='utf-8', newline='\n') as o:
-    o.write('#expertise id\tNewMoon name (client translation.xml)\tJapanese name\tmaxClass\tisChain\tchain (sourceId:minRank:share; minRank in points/10000, share of the source points)\twebsite name\twebsite chain (differs = website is stale)\n')
+with open(os.path.join(REF, 'expertise-imagine.tsv'), 'w', encoding='utf-8', newline='\n') as o:
+    o.write('#expertise id\tIMAGINE name (client translation.xml)\tJapanese name\tmaxClass\tisChain\tchain (sourceId:minRank:share; minRank in points/10000, share of the source points)\twebsite name\twebsite chain (differs = website is stale)\n')
     for eid in sorted(int(k) for k in chains):
         p = chains[str(eid)]
         en, jp = names.get(eid, ('', ''))
