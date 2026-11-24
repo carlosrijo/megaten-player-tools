@@ -1,15 +1,15 @@
 //! Command line (C# `AppOptions` in Program.cs).
 //!
-//!   NewMoonTracker.exe                 normal use
-//!   NewMoonTracker.exe --dev           load the page from app\ui in the repo (no rebuild after page edits) + DevTools (F12)
-//!   NewMoonTracker.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]
+//!   BABEL.exe                 normal use
+//!   BABEL.exe --dev           load the page from app\ui in the repo (no rebuild after page edits) + DevTools (F12)
+//!   BABEL.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]
 //!                                      open, save a picture of the window's page, and exit (used to check the UI)
 //!   ... --capture out.png --page compare --query "short=1"
 //!                                      extra page options for that run only (compare = Gear's Compare view)
 //!   ... --character Name                show that saved character for this run
 //!   ... --data <folder>                 use another data folder (a copy, for tests; scripted runs may then save into it)
 //!   ... --log-level debug|info|warn     how much goes into the log in <data folder>\logs (default info)
-//!   NewMoonTracker.exe --tour steps.json --capture folder [--size 1280x720]
+//!   BABEL.exe --tour steps.json --capture folder [--size 1280x720]
 //!                                      click through the page as scripted, saving a picture per step (for the demo video)
 //!   ... --tour steps.json --capture folder --live
 //!                                      the same steps filmed as they happen, with a pointer that moves and clicks

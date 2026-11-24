@@ -8,7 +8,7 @@ it never writes to the game or changes anything.
 
 ## Download (portable, nothing to install)
 
-Get `NewMoonTracker.exe` from the [latest release](https://github.com/carlosrijo/megaten-player-tools/releases/latest),
+Get `BABEL.exe` from the [latest release](https://github.com/carlosrijo/megaten-player-tools/releases/latest),
 put it in a folder of its own and run it. It needs 64-bit Windows 10 or 11 with the Microsoft Edge WebView2 Runtime
 (already part of Windows 11). Your data goes in a `data` folder made beside the exe, so keep the exe somewhere you
 can write to (not Program Files); to move it to another PC, copy the exe together with that folder. Your stats CSV
@@ -16,12 +16,12 @@ goes in `Documents\smt-stats` (change `statsFolder` in `data\config.json`).
 
 ### Check the download
 
-Each release lists the SHA-256 of its `NewMoonTracker.exe` in its notes (and in `NewMoonTracker.exe.sha256` beside
+Each release lists the SHA-256 of its `BABEL.exe` in its notes (and in `BABEL.exe.sha256` beside
 it). It is the fingerprint of the exact exe GitHub built from the release's tag, the one the team tested. Before the
 first run, in PowerShell in the exe's folder:
 
 ```powershell
-(Get-FileHash .\NewMoonTracker.exe -Algorithm SHA256).Hash
+(Get-FileHash .\BABEL.exe -Algorithm SHA256).Hash
 ```
 
 It must match the release's value (capital or small letters do not matter). If it does not, the file is not the one
@@ -41,7 +41,7 @@ git push origin v1.0.0
 
 A tag with a dash (`v1.1.0-beta.1`) makes a pre-release. To try the build first, run the Release workflow by hand
 (Actions > Release > Run workflow) and download the exe from the run, or build it here:
-`pwsh -NoProfile -File tools\publish-portable.ps1` (gives `dist\NewMoonTracker.exe`, and `dist-symbols\NewMoonTracker.pdb`: the debug
+`pwsh -NoProfile -File tools\publish-portable.ps1` (gives `dist\BABEL.exe`, and `dist-symbols\BABEL.pdb`: the debug
 symbols of that exe, which are never shipped; the workflow keeps them as a second artifact, for reading crash reports).
 
 ## Desktop app
@@ -51,10 +51,10 @@ and the Visual Studio C++ build tools.
 
 ```
 cargo build --release
-target\release\NewMoonTracker.exe
+target\release\BABEL.exe
 ```
 
-`cargo build --release` makes both programs in `target\release`: the app (`NewMoonTracker.exe`, with the page files
+`cargo build --release` makes both programs in `target\release`: the app (`BABEL.exe`, with the page files
 inside it) and the command line reader (`newmoon-reader.exe`). After a change, with the app possibly open:
 `pwsh -NoProfile -File tools\rebuild-app.ps1` closes it, builds both and opens it again (Windows locks a running
 program, so a build with the app open fails to replace it).
@@ -62,7 +62,7 @@ program, so a build with the app open fails to replace it).
 The C# version (`src\`, `app\*.cs`, `*.csproj`) is the one this was ported from, kept in the repository for comparison
 until it is removed; changes go to the Rust code. `PORTING.md` says how the two correspond.
 
-"NewMoon Build Tracker": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise, Digitalize and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
+"BABEL": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise, Digitalize and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
 It shows `data\dash\*.json`, so it opens with the last saved data even when the game is closed.
 
@@ -102,8 +102,8 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
   only asks `prefers-color-scheme`. `--capture out.png --then-scheme light|dark` checks the live switch.
 
 Working on the app's page:
-- `NewMoonTracker.exe --dev` loads the page straight from `app\ui`, so page edits need no rebuild (F12 opens DevTools).
-- `NewMoonTracker.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]` saves a
+- `BABEL.exe --dev` loads the page straight from `app\ui`, so page edits need no rebuild (F12 opens DevTools).
+- `BABEL.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]` saves a
   picture of the page and exits.
 - In a plain browser: `tools\serve.ps1 -Root . -Port 18765`, then `http://localhost:18765/app/ui/index.html`.
   For the Simulator use `newmoon-reader.exe serve --port 18765 [--data <copy of the data folder>]` instead: the same
@@ -301,7 +301,7 @@ Everything for this is in **Settings** (the gear at the top right):
 - **The log** is in `data\logs` beside the program (**Show logs** opens the folder). A few small text files, 5 MB at most
   altogether, the newest kept. It says what the app did and how long it took, which parts of the game were found, and any
   error. It never holds what the page asked for (that can be personal), spreadsheet rows, or anything read from the game's
-  memory. `--log-level debug|info|warn` (on `NewMoonTracker.exe` and `newmoon-reader.exe`) changes how much goes in;
+  memory. `--log-level debug|info|warn` (on `BABEL.exe` and `newmoon-reader.exe`) changes how much goes in;
   `newmoon-reader.exe --version` says which build you have.
 - **A crash** writes `crash-<date>-<time>.txt` beside the log (what went wrong, where, the version, Windows, a stack trace),
   and the app tells you where it is instead of just closing.

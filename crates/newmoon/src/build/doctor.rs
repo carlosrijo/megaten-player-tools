@@ -221,7 +221,7 @@ pub struct Check {
 
 #[derive(Clone, Debug)]
 pub struct Report {
-    /// "NewMoon Build Tracker 1.2.0 (commit 356636c, built 2026-11-24 03:41 UTC)"
+    /// "BABEL 1.2.0 (commit 356636c, built 2026-11-24 03:41 UTC)"
     pub program: String,
     pub windows: String,
     pub checked_at: String,
@@ -907,7 +907,7 @@ mod tests {
             ms: 12,
         };
         Report {
-            program: "NewMoon Build Tracker 1.0.0 (commit abc1234, built 2026-11-24 03:41 UTC)".into(),
+            program: "BABEL 1.0.0 (commit abc1234, built 2026-11-24 03:41 UTC)".into(),
             windows: "Windows 11 Pro 24H2 (10.0.26100.1), 64-bit".into(),
             checked_at: "2026-11-24 04:00:00".into(),
             checks: vec![
@@ -922,7 +922,7 @@ mod tests {
     #[test]
     fn the_report_renders_as_text() {
         let t = report().to_text();
-        assert!(t.starts_with("NewMoon self-check\r\nNewMoon Build Tracker 1.0.0"), "{t}");
+        assert!(t.starts_with("NewMoon self-check\r\nBABEL 1.0.0"), "{t}");
         assert!(t.contains("\r\nApp\r\n  [pass] Program version  1.0.0\r\n"), "{t}");
         assert!(t.contains("\r\nFiles\r\n  [fail] Data folder      C:\\x can't be written to.\r\n"), "{t}");
         assert!(t.contains("-> Move the exe.\r\n"), "{t}");

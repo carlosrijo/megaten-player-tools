@@ -24,5 +24,5 @@ dist/
 
 # Rust build output
 /target/
-# the release exe's debug symbols (NewMoonTracker.pdb): not shipped, kept as a workflow artifact for reading crash reports
+# the release exe's debug symbols (BABEL.pdb): not shipped, kept as a workflow artifact for reading crash reports
 dist-symbols/

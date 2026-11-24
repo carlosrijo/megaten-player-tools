@@ -253,8 +253,8 @@ impl WebHost {
                     } else if kind == COREWEBVIEW2_PROCESS_FAILED_KIND_BROWSER_PROCESS_EXITED && !scripted {
                         winutil::error_box(
                             Some(winutil::hwnd_of(owner)),
-                            "The part of Windows that draws this window (Microsoft Edge WebView2) stopped.\n\nClose NewMoon Build Tracker and open it again. Your saved data is not affected. The log (Settings > Troubleshooting) has the details.",
-                            "NewMoon Build Tracker",
+                            "The part of Windows that draws this window (Microsoft Edge WebView2) stopped.\n\nClose BABEL and open it again. Your saved data is not affected. The log (Settings > Troubleshooting) has the details.",
+                            "BABEL",
                         );
                     }
                     Ok(())

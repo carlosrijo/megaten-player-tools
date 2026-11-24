@@ -245,7 +245,7 @@ mod tests {
         std::fs::write(data.join("characters").join("Rokujuu").join("dash").join("snapshots.json"), "[]").unwrap();
         std::fs::write(data.join("secret.csv"), "Timestamp,Character\n1,Rubito\n").unwrap();
         let report = Report {
-            program: "NewMoon Build Tracker 1.0.0 (commit abc1234, built 2026-11-24 03:41 UTC)".into(),
+            program: "BABEL 1.0.0 (commit abc1234, built 2026-11-24 03:41 UTC)".into(),
             windows: "Windows 11".into(),
             checked_at: "2026-11-24 04:00:00".into(),
             checks: vec![Check { section: "Game".into(), name: "Game running".into(), status: Status::Pass, detail: "client1 -> Rubito (level 95)".into(), advice: String::new(), ms: 1 }],
@@ -258,7 +258,7 @@ mod tests {
     fn the_bundle_holds_the_listed_files_and_no_user_name_or_character_name() {
         let root = scratch("a");
         let (data, report) = fixture(&root);
-        let input = Input { data_dir: &data, config_path: data.join("config.json"), settings_path: None, include_names: false, report: &report, about: "NewMoon Build Tracker 1.0.0\r\n".into() };
+        let input = Input { data_dir: &data, config_path: data.join("config.json"), settings_path: None, include_names: false, report: &report, about: "BABEL 1.0.0\r\n".into() };
         let out = root.join("bundle.zip");
         let summary = write_with(&out, &input, Redactor::new(Some(r"C:\Users\Joe"), Some("Joe"))).unwrap();
         let files = read_zip(&out);

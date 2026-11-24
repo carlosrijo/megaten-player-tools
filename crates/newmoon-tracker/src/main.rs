@@ -1,8 +1,8 @@
-//! NewMoon Build Tracker: the desktop window around the read-only reader (port of app\*.cs).
+//! BABEL: the desktop window around the read-only reader (port of app\*.cs).
 //!
-//!   NewMoonTracker.exe                 normal use
-//!   NewMoonTracker.exe --dev           load the page from app\ui in the repo (no rebuild after page edits) + DevTools (F12)
-//!   NewMoonTracker.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]
+//!   BABEL.exe                 normal use
+//!   BABEL.exe --dev           load the page from app\ui in the repo (no rebuild after page edits) + DevTools (F12)
+//!   BABEL.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]
 //!   ... see options.rs for the whole list.
 //!
 //! One self-contained exe: the page (app\ui), the picture patches (app\assets) and the icon are inside it; the WebView2
@@ -40,7 +40,7 @@ use crate::main_form::MainForm;
 use crate::options::AppOptions;
 use crate::ui::{Ui, UserEvent};
 
-const TITLE: &str = "NewMoon Build Tracker";
+const TITLE: &str = "BABEL";
 const MIN_WIDTH: i32 = 760;
 const MIN_HEIGHT: i32 = 520;
 
@@ -58,7 +58,7 @@ fn main() {
             Some(dir) => format!("\n\nA crash report was saved in {}.\nSettings > Troubleshooting > Save a support bundle sends it along.", dir.display()),
             None => String::new(),
         };
-        winutil::error_box(None, &format!("NewMoon Build Tracker stopped unexpectedly.\n\n{message}{note}"), TITLE);
+        winutil::error_box(None, &format!("BABEL stopped unexpectedly.\n\n{message}{note}"), TITLE);
     })));
     unsafe {
         let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
@@ -87,7 +87,7 @@ fn main() {
         Ok(a) => Arc::new(a),
         Err(e) => {
             newmoon::log_error!("start failed: {e:#}");
-            winutil::error_box(None, &format!("NewMoon Build Tracker stopped unexpectedly.\n\n{e}"), TITLE);
+            winutil::error_box(None, &format!("BABEL stopped unexpectedly.\n\n{e}"), TITLE);
             return;
         }
     };
@@ -164,6 +164,7 @@ fn main() {
         // A capture or tour run starts from a clean page every time (nothing remembered from the run before).
         // Each run has its own folder (named after its process), so two scripted runs at once don't share one;
         // folders left by runs that have ended are cleared here.
+        // (the folder keeps its old name, NewMoonTracker, so the program's rename to BABEL did not reset anyone's page storage)
         clear_old_capture_folders(&local.join("NewMoonTracker"));
     }
     // scripted runs keep their own page storage, so they never change what the real window remembers
@@ -275,7 +276,7 @@ fn center_on_primary(hwnd: windows::Win32::Foundation::HWND) {
     winutil::set_outer_bounds(hwnd, wa.left + ((wa.right - wa.left) - w) / 2, wa.top + ((wa.bottom - wa.top) - h) / 2, w, h);
 }
 
-/// Every `WebView2-capture*` folder whose trailing number is not the id of a running NewMoonTracker process: the
+/// Every `WebView2-capture*` folder whose trailing number is not the id of a running BABEL process: the
 /// leftovers of scripted runs that have ended.
 fn clear_old_capture_folders(app_data: &std::path::Path) {
     let Ok(entries) = std::fs::read_dir(app_data) else { return };
@@ -289,7 +290,7 @@ fn clear_old_capture_folders(app_data: &std::path::Path) {
             .next()
             .and_then(|last| last.parse::<u32>().ok())
             .and_then(winutil::process_name)
-            .is_some_and(|p| p.to_ascii_lowercase().contains("newmoontracker"));
+            .is_some_and(|p| p.to_ascii_lowercase().contains("babel"));
         if !alive {
             let _ = std::fs::remove_dir_all(entry.path());
         }

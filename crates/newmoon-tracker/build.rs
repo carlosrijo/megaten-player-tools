@@ -1,4 +1,4 @@
-//! Windows resources of NewMoonTracker.exe: the icon (the same app\app.ico the window uses), a version resource and a
+//! Windows resources of BABEL.exe: the icon (the same app\app.ico the window uses), a version resource and a
 //! manifest (per-monitor DPI like the C# app's ApplicationHighDpiMode, visual styles, long paths).
 
 const MANIFEST: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -48,10 +48,10 @@ fn main() {
     res.set_version_info(winresource::VersionInfo::PRODUCTVERSION, packed);
     res.set("FileVersion", &version);
     res.set("ProductVersion", &version);
-    res.set("ProductName", "NewMoon Build Tracker");
-    res.set("FileDescription", "NewMoon Build Tracker");
-    res.set("InternalName", "NewMoonTracker");
-    res.set("OriginalFilename", "NewMoonTracker.exe");
+    res.set("ProductName", "BABEL");
+    res.set("FileDescription", "BABEL");
+    res.set("InternalName", "BABEL");
+    res.set("OriginalFilename", "BABEL.exe");
     if let Err(e) = res.compile() {
         println!("cargo:warning=could not embed the Windows resources: {e}");
     }

@@ -1,11 +1,11 @@
-# Release: build the portable NewMoonTracker.exe (one file, nothing to install; see tools/publish-portable.ps1).
+# Release: build the portable BABEL.exe (one file, nothing to install; see tools/publish-portable.ps1).
 #
 #   Push a version tag   ->  builds the exe and publishes a GitHub release with it (notes made from the commits):
 #       git tag v1.2.0
 #       git push origin v1.2.0
 #     A tag with a dash (v1.2.0-beta.1) makes a pre-release.
 #   Run it by hand (Actions > Release > Run workflow)  ->  only builds the exe, kept as the run's artifact for testing.
-# Either way the exe's debug symbols (NewMoonTracker.pdb) are kept as a second artifact, "NewMoonTracker-symbols-<version>": not a
+# Either way the exe's debug symbols (BABEL.pdb) are kept as a second artifact, "BABEL-symbols-<version>": not a
 # release asset, only for reading the crash reports of that exact build (HANDOVER.md).
 name: Release
 
@@ -53,20 +53,20 @@ jobs:
       - name: Checksum
         shell: pwsh
         run: |
-          $h = (Get-FileHash dist/NewMoonTracker.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$h  NewMoonTracker.exe" | Out-File dist/NewMoonTracker.exe.sha256 -Encoding ascii
+          $h = (Get-FileHash dist/BABEL.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$h  BABEL.exe" | Out-File dist/BABEL.exe.sha256 -Encoding ascii
 
       - uses: actions/upload-artifact@v7
         with:
-          name: NewMoonTracker-${{ steps.ver.outputs.version }}
+          name: BABEL-${{ steps.ver.outputs.version }}
           path: dist/*
 
       # The debug symbols of this exact exe, for reading its crash reports (HANDOVER.md, "Symbolizing a crash"). A workflow
       # artifact only: never a release asset, so users do not download them.
       - uses: actions/upload-artifact@v7
         with:
-          name: NewMoonTracker-symbols-${{ steps.ver.outputs.version }}
-          path: dist-symbols/NewMoonTracker.pdb
+          name: BABEL-symbols-${{ steps.ver.outputs.version }}
+          path: dist-symbols/BABEL.pdb
           retention-days: 365
 
       - name: Publish the release
@@ -78,11 +78,11 @@ jobs:
           $tag = '${{ github.ref_name }}'
           # The SHA-256 goes in the notes too, so a player can check the exe against the page without downloading the
           # .sha256 file (README.md, "Check the download"). --notes is put above the generated notes.
-          $h = (Get-Content dist/NewMoonTracker.exe.sha256 -Raw).Split(' ')[0].Trim()
+          $h = (Get-Content dist/BABEL.exe.sha256 -Raw).Split(' ')[0].Trim()
           $notes = @(
             '### Check the download'
             ''
-            'SHA-256 of `NewMoonTracker.exe`:'
+            'SHA-256 of `BABEL.exe`:'
             ''
             '```'
             $h
@@ -91,12 +91,12 @@ jobs:
             'In PowerShell, in the folder with the exe:'
             ''
             '```powershell'
-            '(Get-FileHash .\NewMoonTracker.exe -Algorithm SHA256).Hash'
+            '(Get-FileHash .\BABEL.exe -Algorithm SHA256).Hash'
             '```'
             ''
             'The two must match (capital or small letters do not matter). If they do not, do not run the exe.'
           ) -join "`n"
-          $flags = @('--title', "NewMoon Build Tracker $tag", '--notes', $notes, '--generate-notes')
+          $flags = @('--title', "BABEL $tag", '--notes', $notes, '--generate-notes')
           if ($tag -like '*-*') { $flags += '--prerelease' }
-          gh release create $tag dist/NewMoonTracker.exe dist/NewMoonTracker.exe.sha256 @flags
+          gh release create $tag dist/BABEL.exe dist/BABEL.exe.sha256 @flags
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

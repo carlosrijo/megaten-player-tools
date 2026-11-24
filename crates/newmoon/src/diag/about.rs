@@ -11,7 +11,7 @@ use windows::core::PCWSTR;
 /// The build: what `build.rs` stamped into the program.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BuildInfo {
-    /// "NewMoon Build Tracker" or "newmoon-reader"
+    /// "BABEL" or "newmoon-reader"
     pub program: String,
     /// NEWMOON_VERSION when the build was told one, else the crate's version
     pub version: String,
@@ -22,7 +22,7 @@ pub struct BuildInfo {
 }
 
 impl BuildInfo {
-    /// "NewMoon Build Tracker 1.2.0 (commit 356636c, built 2026-11-24 03:41 UTC)"
+    /// "BABEL 1.2.0 (commit 356636c, built 2026-11-24 03:41 UTC)"
     pub fn line(&self) -> String {
         format!("{} {} (commit {}, built {})", self.program, self.version, self.commit, self.built)
     }
@@ -163,8 +163,8 @@ mod tests {
 
     #[test]
     fn the_lines_say_what_they_should() {
-        let b = BuildInfo { program: "NewMoon Build Tracker".into(), version: "1.2.0".into(), commit: "abc1234-dirty".into(), built: "2026-11-24 03:41 UTC".into() };
-        assert_eq!(b.line(), "NewMoon Build Tracker 1.2.0 (commit abc1234-dirty, built 2026-11-24 03:41 UTC)");
+        let b = BuildInfo { program: "BABEL".into(), version: "1.2.0".into(), commit: "abc1234-dirty".into(), built: "2026-11-24 03:41 UTC".into() };
+        assert_eq!(b.line(), "BABEL 1.2.0 (commit abc1234-dirty, built 2026-11-24 03:41 UTC)");
         let w = WindowsInfo { name: "Windows 11 Pro".into(), release: Some("24H2".into()), version: "10.0.26100.1".into(), build: 26100 };
         assert_eq!(w.text(), "Windows 11 Pro 24H2 (10.0.26100.1), 64-bit");
     }

@@ -1,4 +1,4 @@
-//! Turning a crash report's frames (`NewMoonTracker.exe+0x1a2b3c`) into functions and lines, offline, with the `.pdb` of
+//! Turning a crash report's frames (`BABEL.exe+0x1a2b3c`) into functions and lines, offline, with the `.pdb` of
 //! the build that crashed (`tools\publish-portable.ps1` writes it to dist-symbols\, the release workflow keeps it as an
 //! artifact). Uses the `dbghelp.dll` every Windows has: the exe is loaded at an invented base address, its `.pdb` is looked
 //! for in the folder given (and beside the exe), and each offset is looked up. Used by `newmoon-reader symbolize`.
@@ -16,7 +16,7 @@ pub struct Frame {
     pub offset: u64,
 }
 
-/// The frames listed in a crash report: lines like `  #3  NewMoonTracker.exe+0x1a2b3c`.
+/// The frames listed in a crash report: lines like `  #3  BABEL.exe+0x1a2b3c`.
 pub fn frames_in(report: &str) -> Vec<Frame> {
     let mut v = Vec::new();
     for line in report.lines() {
@@ -146,10 +146,10 @@ mod tests {
 
     #[test]
     fn frames_are_read_from_a_report() {
-        let r = "Frames (...):\r\n  #0  NewMoonTracker.exe+0x1a2b3c\r\n  #1  0x7ff812345678 (outside NewMoonTracker.exe)\r\n  #12 NewMoonTracker.exe+0x10\r\nBacktrace:\r\n   0: <unknown>\r\n";
+        let r = "Frames (...):\r\n  #0  BABEL.exe+0x1a2b3c\r\n  #1  0x7ff812345678 (outside BABEL.exe)\r\n  #12 BABEL.exe+0x10\r\nBacktrace:\r\n   0: <unknown>\r\n";
         assert_eq!(
             frames_in(r),
-            vec![Frame { index: 0, module: "NewMoonTracker.exe".into(), offset: 0x1a2b3c }, Frame { index: 12, module: "NewMoonTracker.exe".into(), offset: 0x10 }]
+            vec![Frame { index: 0, module: "BABEL.exe".into(), offset: 0x1a2b3c }, Frame { index: 12, module: "BABEL.exe".into(), offset: 0x10 }]
         );
         assert!(symbolize("nothing here", Path::new("X.exe"), None).is_err());
     }

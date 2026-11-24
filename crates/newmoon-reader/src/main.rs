@@ -131,10 +131,10 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     }
 
     if cmd == "symbolize" {
-        // Read a crash report offline: turn its "NewMoonTracker.exe+0xOFFSET" frames into functions and lines with the .pdb of the
+        // Read a crash report offline: turn its "BABEL.exe+0xOFFSET" frames into functions and lines with the .pdb of the
         // build that crashed (tools\publish-portable.ps1 writes it to dist-symbols\; the release workflow keeps it).
         //   symbolize <crash-....txt> --exe <the exe of that build> [--pdb <folder with its .pdb>]
-        let usage = "symbolize needs a crash report and the exe that made it: symbolize <crash-....txt> --exe <NewMoonTracker.exe> [--pdb <folder with the .pdb>].";
+        let usage = "symbolize needs a crash report and the exe that made it: symbolize <crash-....txt> --exe <BABEL.exe> [--pdb <folder with the .pdb>].";
         let file = opts.get("_arg").ok_or_else(|| user_error(usage))?;
         let exe = get("exe").ok_or_else(|| user_error(usage))?;
         let report = std::fs::read_to_string(file).map_err(|e| user_error(format!("{file} can't be read: {e}")))?;

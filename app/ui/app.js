@@ -1,5 +1,5 @@
 'use strict';
-// NewMoon Build Tracker: the page inside the desktop window.
+// BABEL: the page inside the desktop window.
 // Data comes from the host (MainForm.cs) through host.call(cmd, args); in a plain browser a stand-in reads the repo's
 // data\dash files so the page can be tested without the app (see README, "Working on the app's page").
 (() => {
@@ -188,7 +188,7 @@
               offer: name === cur && S.data && S.data.digitalize ? (({ rate, alignment, stats, skills }) => ({ rate, alignment, stats, skills, combat: {} }))(S.data.digitalize) : null }));
         }
         // The browser preview has no game and no files to change: say so instead of pretending (the desktop app switches)
-        if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Pick the demon in the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
+        if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Pick the demon in the desktop app (BABEL.exe).'), { kind: 'user' }); }
         if (cmd === 'setAlignment') {
           await wait(900);
           fake.align = fake.align || {}; fake.align[fake.active] = args.alignment;
@@ -208,8 +208,8 @@
         if (cmd === 'getSettings' || cmd === 'pickCsv') return { ...settings };
         if (cmd === 'saveSettings') { Object.assign(settings, args); return { ...settings }; }
         // Troubleshooting: the stand-in has no build, game or files to look at, so it shows what the answers look like
-        if (cmd === 'about') return { program: 'NewMoon Build Tracker', version: '0.0.0', commit: 'browser preview', built: 'not built', windows: 'Windows (the browser preview does not ask)', webview2: 'none: this is a browser',
-          text: 'NewMoon Build Tracker (browser preview)\r\nThe stand-in for the app has no real version to show.\r\n', dataDir: settings.dataDir, logDir: settings.dataDir + '\\logs', logLevel: 'info' };
+        if (cmd === 'about') return { program: 'BABEL', version: '0.0.0', commit: 'browser preview', built: 'not built', windows: 'Windows (the browser preview does not ask)', webview2: 'none: this is a browser',
+          text: 'BABEL (browser preview)\r\nThe stand-in for the app has no real version to show.\r\n', dataDir: settings.dataDir, logDir: settings.dataDir + '\\logs', logLevel: 'info' };
         if (cmd === 'doctor') {
           await wait(900);
           const c = (section, name, status, detail, advice, ms) => ({ section, name, status, detail, advice: advice || '', ms: ms || 0 });
@@ -218,10 +218,10 @@
             c('Game', 'Game running', 'warn', 'No ImagineClient is running.', 'Start NewMoon and log in to take a snapshot.'),
             c('Client 1: client1, Rubito', 'Client build', 'fail', 'Shown only so the page can be tried: nothing here was checked.', 'The real check runs in the desktop app.', 120)];
           const n = (s) => checks.filter((x) => x.status === s).length;
-          return { program: 'NewMoon Build Tracker (browser preview)', windows: 'Windows', checkedAt: '', checks, text: 'Browser preview: nothing was checked.\r\n',
+          return { program: 'BABEL (browser preview)', windows: 'Windows', checkedAt: '', checks, text: 'Browser preview: nothing was checked.\r\n',
             summary: { pass: n('pass'), warn: n('warn'), fail: n('fail'), worst: 'fail', text: `${n('pass')} passed, ${n('warn')} warning, ${n('fail')} failed` } };
         }
-        if (cmd === 'saveBundle') { await wait(300); throw Object.assign(new Error('This is the browser preview: it can’t save a support bundle. Use the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
+        if (cmd === 'saveBundle') { await wait(300); throw Object.assign(new Error('This is the browser preview: it can’t save a support bundle. Use the desktop app (BABEL.exe).'), { kind: 'user' }); }
         if (cmd === 'buildCheck') return Q.get('build') === 'old' ? { clients: 1, known: 0, unknown: [{ folder: 'client1', pid: 1, fingerprint: 'preview', same: false }] } : { clients: fake.clients.length, known: fake.clients.length, unknown: [] };
         if (cmd === 'log') return true;   // the page's error reports: nothing to write them to here
         return true;

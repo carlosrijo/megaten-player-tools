@@ -1,4 +1,4 @@
-/* NewMoon Build Tracker: window styles. Colours are roles; light values first, dark under [data-theme="dark"]. */
+/* BABEL: window styles. Colours are roles; light values first, dark under [data-theme="dark"]. */
 :root {
   color-scheme: light;
   --bg: #f6f5f2;            /* window plane */
