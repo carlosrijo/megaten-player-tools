@@ -81,3 +81,38 @@ pub fn save_csv(owner: HWND, title: &str, file_name: &str, initial_dir: Option<&
         result_path(&base)
     }
 }
+
+/// The Desktop folder (the support bundle's default place), or None when Windows doesn't say.
+pub fn desktop_dir() -> Option<PathBuf> {
+    unsafe {
+        let p = SHGetKnownFolderPath(&FOLDERID_Desktop, KF_FLAG_DEFAULT, None).ok()?;
+        let s = p.to_string().ok();
+        CoTaskMemFree(Some(p.as_ptr() as *const _));
+        s.map(PathBuf::from).filter(|d| d.is_dir())
+    }
+}
+
+/// A save dialog for the support bundle: "Zip files (*.zip)", asking before it replaces a file.
+pub fn save_zip(owner: HWND, title: &str, file_name: &str, initial_dir: Option<&Path>) -> Option<PathBuf> {
+    let _com = ComScope::new();
+    unsafe {
+        let dialog: IFileSaveDialog = CoCreateInstance(&FileSaveDialog, None, CLSCTX_INPROC_SERVER).ok()?;
+        let base: IFileDialog = windows::core::Interface::cast(&dialog).ok()?;
+        let name = HSTRING::from("Zip files (*.zip)");
+        let spec = HSTRING::from("*.zip");
+        let filters = [COMDLG_FILTERSPEC { pszName: PCWSTR(name.as_ptr()), pszSpec: PCWSTR(spec.as_ptr()) }];
+        base.SetFileTypes(&filters).ok()?;
+        base.SetTitle(&HSTRING::from(title)).ok()?;
+        base.SetDefaultExtension(&HSTRING::from("zip")).ok()?;
+        base.SetFileName(&HSTRING::from(file_name)).ok()?;
+        let opts = base.GetOptions().ok()?;
+        base.SetOptions(opts | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT).ok()?;
+        if let Some(dir) = initial_dir {
+            if let Some(item) = folder_item(dir) {
+                let _ = base.SetFolder(&item);
+            }
+        }
+        base.Show(Some(owner)).ok()?;
+        result_path(&base)
+    }
+}

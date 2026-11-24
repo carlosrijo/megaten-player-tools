@@ -12,5 +12,10 @@ license = "MIT"
 opt-level = "z"
 lto = "fat"
 codegen-units = 1
-strip = true
-debug = false
+# Symbols stay in the build, and on MSVC that means a separate .pdb beside the exe: the exe itself only carries the
+# .pdb's file name, so it does not grow (measured in HANDOVER.md, "Troubleshooting"). tools\publish-portable.ps1 keeps
+# the .pdb out of the release and the release workflow stores it as an artifact: with it a crash report's
+# NewMoonTracker.exe+0xOFFSET lines become functions and lines (newmoon-reader symbolize). "line-tables-only" is enough
+# for that (functions, files, lines; no variables) and keeps the .pdb at about 27 MB.
+strip = false
+debug = "line-tables-only"

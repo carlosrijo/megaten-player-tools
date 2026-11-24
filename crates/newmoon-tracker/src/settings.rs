@@ -61,7 +61,7 @@ impl AppSettings {
         base.join("NewMoonTracker")
     }
 
-    fn file_path() -> PathBuf {
+    pub fn file_path() -> PathBuf {
         Self::dir().join("settings.json")
     }
 

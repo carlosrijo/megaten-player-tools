@@ -26,13 +26,14 @@ use std::sync::Arc;
 
 use newmoon::build::pipeline::{self, Pipeline, default_csv, default_name, find_data_dir};
 use newmoon::build::snapshot::SnapshotResult;
-use newmoon::build::{demon_db, demon_model, dungeons, gear_db, item_icons, preview_server, skill_db};
+use newmoon::build::{demon_db, demon_model, doctor, dungeons, gear_db, item_icons, preview_server, skill_db};
 use newmoon::calc::character_extras;
 use newmoon::calc::character_hp_mp::{self, Calibration};
 use newmoon::calc::digitalize::{Digitalize, MITAMA_NAMES, RUNE_NAMES, set_name};
 use newmoon::calc::effect::Effect;
 use newmoon::calc::item_effects::ItemEffects;
 use newmoon::console;
+use newmoon::diag::{about, crash, log};
 use newmoon::data::characters::{Characters, get_directory_name, path_combine};
 use newmoon::data::config;
 use newmoon::data::demon_tables::Assist;
@@ -55,17 +56,36 @@ const UNHANDLED_EXIT: i32 = 0xE043_4352_u32 as i32;
 fn main() {
     // The C# command line never registered the code pages, so a model's Shift-JIS node names stay as they were read.
     demon_model::set_shift_jis_names(false);
+    about::init(about::BuildInfo {
+        program: "newmoon-reader".to_string(),
+        version: env!("NEWMOON_BUILD_VERSION").to_string(),
+        commit: env!("NEWMOON_BUILD_COMMIT").to_string(),
+        built: env!("NEWMOON_BUILD_DATE").to_string(),
+    });
     let args: Vec<String> = std::env::args().skip(1).collect();
+    // `newmoon-reader --version`: which build is this (the line a bug report starts with)
+    if matches!(args.first().map(String::as_str), Some("--version" | "-V" | "version")) {
+        console::write_line(&about::build_info().line());
+        std::process::exit(0);
+    }
+    // a crash writes logs\crash-<time>.txt once logging has a folder (commands that touch a character's data); the usual message still prints
+    crash::install(None);
     let opts = parse_args(&args);
+    let started = std::time::Instant::now();
     let code = match run(&opts) {
-        Ok(code) => code,
+        Ok(code) => {
+            log::write(log::Level::Info, &format!("finished: exit {code} after {} ms", started.elapsed().as_millis()));
+            code
+        }
         Err(e) => match e.downcast_ref::<UserError>() {
             Some(u) => {
+                log::write(log::Level::Info, &format!("stopped with a message for the person: {}", u.0));
                 console::error_line(&u.0);
                 1
             }
             None => {
                 // not a UserError: the C# let it end the process
+                log::write(log::Level::Error, &format!("failed: {e:#}"));
                 console::error_line(&format!("Unhandled exception. {e:#}"));
                 UNHANDLED_EXIT
             }
@@ -78,6 +98,59 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     let cmd = opts.get("_cmd").map(String::as_str).unwrap_or("help");
     let get = |k: &str| opts.get(k).map(String::as_str);
     let get_or = |k: &str, d: String| opts.get(k).cloned().unwrap_or(d);
+
+    // The local log (<data folder>\logs): for the commands that touch a character's data or the game, not for the database builders.
+    // --log-level debug|info|warn (default info).
+    let level = match opts.get("log-level") {
+        None => log::Level::Info,
+        Some(v) => match log::Level::parse(v) {
+            Some(l) if l != log::Level::Error => l,
+            _ => return Err(user_error(format!("--log-level must be debug, info or warn, not '{v}'."))),
+        },
+    };
+    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve" | "clients" | "digilevels" | "doctor" | "crash-test") {
+        let root = opts.get("data").map(PathBuf::from).unwrap_or_else(find_data_dir);
+        let logs = root.join("logs");
+        if log::init(&logs, level, &format!("{}, command '{cmd}'", about::build_info().line())) {
+            crash::set_dir(&logs);
+            log::write(log::Level::Info, &format!("Windows: {}", about::windows_info().text()));
+        }
+    }
+
+    if cmd == "doctor" {
+        // The self-check (the same as Settings > Check my setup in the app): one pass over the files, the game and each reader.
+        //   doctor [--data <folder>] [--json]
+        let data_dir = opts.get("data").map(PathBuf::from).unwrap_or_else(find_data_dir);
+        let report = doctor::run(&doctor::Input { data_dir, webview2: None, settings_path: None, probe_write: true, game: true });
+        if opts.contains_key("json") {
+            console::write_line(&serde_json::to_string_pretty(&report.to_json())?);
+        } else {
+            console::write(&report.to_text());
+        }
+        return Ok(if report.worst() == doctor::Status::Fail { 1 } else { 0 });
+    }
+
+    if cmd == "symbolize" {
+        // Read a crash report offline: turn its "NewMoonTracker.exe+0xOFFSET" frames into functions and lines with the .pdb of the
+        // build that crashed (tools\publish-portable.ps1 writes it to dist-symbols\; the release workflow keeps it).
+        //   symbolize <crash-....txt> --exe <the exe of that build> [--pdb <folder with its .pdb>]
+        let usage = "symbolize needs a crash report and the exe that made it: symbolize <crash-....txt> --exe <NewMoonTracker.exe> [--pdb <folder with the .pdb>].";
+        let file = opts.get("_arg").ok_or_else(|| user_error(usage))?;
+        let exe = get("exe").ok_or_else(|| user_error(usage))?;
+        let report = std::fs::read_to_string(file).map_err(|e| user_error(format!("{file} can't be read: {e}")))?;
+        let out = newmoon::diag::symbolize::symbolize(&report, Path::new(exe), get("pdb").map(Path::new)).map_err(user_error)?;
+        console::write(&out);
+        return Ok(0);
+    }
+
+    #[cfg(feature = "crash-test")]
+    if cmd == "crash-test" {
+        // Test builds only: panic on purpose, to look at the crash report (logs\crash-*.txt) and its stack trace.
+        fn deepest(n: u32) -> u32 {
+            if n == 0 { panic!("deliberate test panic (crash-test)") } else { deepest(n - 1) + 1 }
+        }
+        deepest(3);
+    }
 
     if cmd == "geardb" {
         // The Gear Database page's data, from the client's decoded tables and the community sheets (no game, no character).

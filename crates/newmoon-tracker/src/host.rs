@@ -4,12 +4,14 @@
 //!
 //! Everything here runs on the UI thread. WebView2Loader is linked into the exe (no DLL beside it).
 
-use std::sync::{mpsc, Arc};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{mpsc, Arc, OnceLock};
 use webview2_com::Microsoft::Web::WebView2::Win32::*;
 use webview2_com::{
     CallDevToolsProtocolMethodCompletedHandler, CapturePreviewCompletedHandler, CreateCoreWebView2ControllerCompletedHandler,
     CreateCoreWebView2EnvironmentCompletedHandler, DevToolsProtocolEventReceivedEventHandler, ExecuteScriptCompletedHandler,
-    NavigationStartingEventHandler, NewWindowRequestedEventHandler, WebMessageReceivedEventHandler, WebResourceRequestedEventHandler, take_pwstr,
+    NavigationStartingEventHandler, NewWindowRequestedEventHandler, ProcessFailedEventHandler, WebMessageReceivedEventHandler,
+    WebResourceRequestedEventHandler, take_pwstr,
 };
 use windows::Win32::Foundation::{E_POINTER, HWND, RECT};
 use windows::Win32::System::Com::{IStream, STREAM_SEEK_END, STREAM_SEEK_SET};
@@ -41,15 +43,59 @@ fn bg_color(dark: bool) -> COREWEBVIEW2_COLOR {
     COREWEBVIEW2_COLOR { A: 255, R: r, G: g, B: b }
 }
 
+static WEBVIEW2_VERSION: OnceLock<String> = OnceLock::new();
+
+/// The WebView2 runtime this window runs on (known once the window exists); before that, or in a run that never makes
+/// a window, the one that is installed. Err says why there is none.
+pub fn webview2_version() -> Result<String, String> {
+    if let Some(v) = WEBVIEW2_VERSION.get() {
+        return Ok(v.clone());
+    }
+    let mut v = PWSTR::null();
+    // SAFETY: plain call into the loader; the text it returns is taken (and freed) by take_pwstr.
+    unsafe { GetAvailableCoreWebView2BrowserVersionString(PCWSTR::null(), &mut v) }.map_err(|e| e.message())?;
+    let s = take_pwstr(v);
+    if s.is_empty() { Err("no WebView2 runtime is installed".to_string()) } else { Ok(s) }
+}
+
+fn failed_kind_name(k: COREWEBVIEW2_PROCESS_FAILED_KIND) -> &'static str {
+    match k.0 {
+        0 => "the browser process exited",
+        1 => "the page's renderer process exited",
+        2 => "the page's renderer is not responding",
+        3 => "a frame's renderer process exited",
+        4 => "a utility process exited",
+        5 => "the sandbox helper exited",
+        6 => "the GPU process exited",
+        7 | 8 => "a plugin process exited",
+        _ => "another process exited",
+    }
+}
+
+fn failed_reason_name(r: COREWEBVIEW2_PROCESS_FAILED_REASON) -> &'static str {
+    match r.0 {
+        0 => "unexpected",
+        1 => "unresponsive",
+        2 => "terminated",
+        3 => "crashed",
+        4 => "launch failed",
+        5 => "out of memory",
+        6 => "profile deleted",
+        _ => "unknown",
+    }
+}
+
 impl WebHost {
     /// Make the WebView2 control fill the window. `user_data` is the profile folder (the same folders as the C# app:
     /// %LocalAppData%\NewMoonTracker\WebView2, or ...\WebView2-capture for scripted runs).
+    #[allow(clippy::too_many_arguments)]
     pub fn create(
         hwnd: HWND,
         user_data: &std::path::Path,
         dark: bool,
         dev: bool,
         offscreen: bool,
+        scripted: bool,
         site: Arc<Site>,
         on_message: MessageHandler,
     ) -> anyhow::Result<WebHost> {
@@ -81,6 +127,14 @@ impl WebHost {
             .map_err(w)?;
             rx.recv().map_err(|_| anyhow::anyhow!("no WebView2 environment"))??
         };
+        // which WebView2 runtime this is (for the log, Settings and the self-check)
+        {
+            let mut v = PWSTR::null();
+            // SAFETY: plain property read; the text is taken (and freed) by take_pwstr.
+            if unsafe { env.BrowserVersionString(&mut v) }.is_ok() {
+                let _ = WEBVIEW2_VERSION.set(take_pwstr(v));
+            }
+        }
         let controller = {
             let (tx, rx) = mpsc::channel();
             let env2 = env.clone();
@@ -100,11 +154,11 @@ impl WebHost {
         host.resize();
         unsafe { host.controller.SetIsVisible(true)? };
         host.set_background(dark);
-        host.configure(dev, site, on_message)?;
+        host.configure(dev, scripted, site, on_message)?;
         Ok(host)
     }
 
-    fn configure(&mut self, dev: bool, site: Arc<Site>, on_message: MessageHandler) -> anyhow::Result<()> {
+    fn configure(&mut self, dev: bool, scripted: bool, site: Arc<Site>, on_message: MessageHandler) -> anyhow::Result<()> {
         unsafe {
             let s = self.core.Settings()?;
             s.SetAreDefaultContextMenusEnabled(dev)?;
@@ -158,6 +212,50 @@ impl WebHost {
                         if !starts_with_ic(&uri, &format!("https://{HOST}/")) {
                             args.SetCancel(true)?;
                         }
+                    }
+                    Ok(())
+                })),
+                &mut token,
+            )?;
+            // a browser process that fails is logged (which one, why, exit code); a page whose renderer stopped is loaded
+            // again (at most 3 times), a browser that is gone is said so once
+            let reloads = Arc::new(AtomicU32::new(0));
+            let owner = self.hwnd.0 as isize;
+            self.core.add_ProcessFailed(
+                &ProcessFailedEventHandler::create(Box::new(move |wv, args| {
+                    let Some(args) = args else { return Ok(()) };
+                    let mut kind = COREWEBVIEW2_PROCESS_FAILED_KIND(9);
+                    let _ = args.ProcessFailedKind(&mut kind);
+                    let mut more = String::new();
+                    if let Ok(a2) = args.cast::<ICoreWebView2ProcessFailedEventArgs2>() {
+                        let mut reason = COREWEBVIEW2_PROCESS_FAILED_REASON(0);
+                        if a2.Reason(&mut reason).is_ok() {
+                            more.push_str(&format!(", reason: {}", failed_reason_name(reason)));
+                        }
+                        let mut code = 0i32;
+                        if a2.ExitCode(&mut code).is_ok() {
+                            more.push_str(&format!(", exit code 0x{code:x}"));
+                        }
+                        let mut d = PWSTR::null();
+                        if a2.ProcessDescription(&mut d).is_ok() {
+                            let d = take_pwstr(d);
+                            if !d.is_empty() {
+                                more.push_str(&format!(", {d}"));
+                            }
+                        }
+                    }
+                    newmoon::log_error!("WebView2 process failed: {}{more}", failed_kind_name(kind));
+                    let renderer = kind == COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_EXITED || kind == COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_UNRESPONSIVE;
+                    if renderer && reloads.fetch_add(1, Ordering::Relaxed) < 3 {
+                        if let Some(wv) = wv {
+                            let _ = wv.Reload();
+                        }
+                    } else if kind == COREWEBVIEW2_PROCESS_FAILED_KIND_BROWSER_PROCESS_EXITED && !scripted {
+                        winutil::error_box(
+                            Some(winutil::hwnd_of(owner)),
+                            "The part of Windows that draws this window (Microsoft Edge WebView2) stopped.\n\nClose NewMoon Build Tracker and open it again. Your saved data is not affected. The log (Settings > Troubleshooting) has the details.",
+                            "NewMoon Build Tracker",
+                        );
                     }
                     Ok(())
                 })),

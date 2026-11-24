@@ -49,3 +49,20 @@ the page's JSON shapes are built in `main_form.rs` (`snapshot`, `rebuild`, `setA
 
 Pictures (`character_picture.rs`), the page bridge (`main_form.rs`), settings (`settings.rs`), the tours (`tour.rs`,
 `live_tour.rs`) are complete.
+
+## Troubleshooting commands (support.rs, 2026-11-24)
+
+New page commands, not in the C#. The work is in the library (`newmoon::build::doctor`, `build::bundle`, `newmoon::diag`);
+`support.rs` is the app's side (WebView2 version, the settings file path, the page-error limit). See HANDOVER.md section 21.
+
+| Page command | Does | Notes |
+|---|---|---|
+| `about` | `{ version, commit, built, windows, webview2, text, dataDir, logDir, logLevel }`; `text` is what "Copy" copies | no writes |
+| `doctor` | `doctor::run(..).to_json()`: the self-check, one pass | inside `guarded` (one piece of reader work at a time); the data-folder write test is skipped in a capture run on real data |
+| `saveBundle` `{ includeNames }` | save dialog (default `newmoon-support-<yyyyMMdd-HHmm>.zip` on the Desktop), fresh `doctor`, `bundle::write`; `{ path, zipBytes, files, includeNames }`, `null` when cancelled | refused in a capture run without `--data` (NoWrites); a capture run with `--data` writes `support-bundle.zip` beside its pictures instead of asking |
+| `buildCheck` | `{ clients, known, unknown: [{ folder, pid, fingerprint, same }] }`: each running client's exe against `doctor::KNOWN_CLIENTS` (size + SHA-256, cached) | the page warns once per fingerprint |
+| `log` `{ kind, message, source, stack }` | the page's JavaScript errors into the log (`PageLog`: 20 a minute, 200 a run, texts cut) | does nothing under NoWrites; always answers `true`; the browser stand-in answers `true` too |
+| `reveal` `{ what: "logs" \| "bundle" }` | opens the log folder / selects the bundle this run saved | never a path from the page |
+| `debugPanic` | panics on purpose | only in debug builds and with `--features crash-test` |
+
+Every command's duration and outcome (not its arguments) goes into the log (`log_command` in `main_form.rs`).

@@ -207,9 +207,46 @@
         if (cmd === 'assistant') return Q.get('assistant') === 'none' ? null : get('../../data/cache/models/D2_11_003a.json', null);
         if (cmd === 'getSettings' || cmd === 'pickCsv') return { ...settings };
         if (cmd === 'saveSettings') { Object.assign(settings, args); return { ...settings }; }
+        // Troubleshooting: the stand-in has no build, game or files to look at, so it shows what the answers look like
+        if (cmd === 'about') return { program: 'NewMoon Build Tracker', version: '0.0.0', commit: 'browser preview', built: 'not built', windows: 'Windows (the browser preview does not ask)', webview2: 'none: this is a browser',
+          text: 'NewMoon Build Tracker (browser preview)\r\nThe stand-in for the app has no real version to show.\r\n', dataDir: settings.dataDir, logDir: settings.dataDir + '\\logs', logLevel: 'info' };
+        if (cmd === 'doctor') {
+          await wait(900);
+          const c = (section, name, status, detail, advice, ms) => ({ section, name, status, detail, advice: advice || '', ms: ms || 0 });
+          const checks = [c('App', 'Program version', 'pass', '0.0.0 (browser preview)'), c('App', 'WebView2', 'pass', 'This is a browser, not the app'),
+            c('Files', 'Data folder', 'pass', settings.dataDir + ' (writable)', '', 3), c('Files', 'Server constants', 'warn', 'C:\\…\\constants.xml does not exist.', 'Not needed: the reader falls back to the usual values.'),
+            c('Game', 'Game running', 'warn', 'No ImagineClient is running.', 'Start NewMoon and log in to take a snapshot.'),
+            c('Client 1: client1, Rubito', 'Client build', 'fail', 'Shown only so the page can be tried: nothing here was checked.', 'The real check runs in the desktop app.', 120)];
+          const n = (s) => checks.filter((x) => x.status === s).length;
+          return { program: 'NewMoon Build Tracker (browser preview)', windows: 'Windows', checkedAt: '', checks, text: 'Browser preview: nothing was checked.\r\n',
+            summary: { pass: n('pass'), warn: n('warn'), fail: n('fail'), worst: 'fail', text: `${n('pass')} passed, ${n('warn')} warning, ${n('fail')} failed` } };
+        }
+        if (cmd === 'saveBundle') { await wait(300); throw Object.assign(new Error('This is the browser preview: it can’t save a support bundle. Use the desktop app (NewMoonTracker.exe).'), { kind: 'user' }); }
+        if (cmd === 'buildCheck') return Q.get('build') === 'old' ? { clients: 1, known: 0, unknown: [{ folder: 'client1', pid: 1, fingerprint: 'preview', same: false }] } : { clients: fake.clients.length, known: fake.clients.length, unknown: [] };
+        if (cmd === 'log') return true;   // the page's error reports: nothing to write them to here
         return true;
       },
     };
+  })();
+
+  // ---------- errors the page can't handle go into the app's log ----------
+  // window.onerror and unhandled promise rejections are sent to the host ("log" command) so a problem someone sees can be
+  // found in logs\ afterwards. A few per minute at most, the same one only once; the host limits them again, and the
+  // browser stand-in simply answers true. Nothing here may ever make the page fail.
+  (() => {
+    const seen = new Set();
+    let sent = 0, since = Date.now();
+    const report = (kind, message, source, stack) => {
+      try {
+        if (Date.now() - since > 60000) { since = Date.now(); sent = 0; seen.clear(); }
+        const key = kind + '|' + message + '|' + source;
+        if (sent >= 10 || seen.has(key)) return;
+        seen.add(key); sent++;
+        host.call('log', { kind, message: String(message).slice(0, 500), source: String(source || '').slice(0, 200), stack: String(stack || '').slice(0, 1500) }).catch(() => {});
+      } catch (e) { /* the report must not cause another one */ }
+    };
+    window.addEventListener('error', (ev) => report('error', ev.message, `${ev.filename || ''}:${ev.lineno || 0}:${ev.colno || 0}`, ev.error && ev.error.stack));
+    window.addEventListener('unhandledrejection', (ev) => { const r = ev.reason; report('unhandledrejection', (r && r.message) || r, '', r && r.stack); });
   })();
 
   // ---------- what the page knows ----------
@@ -4266,7 +4303,7 @@
   async function scanClients() {
     if (S.scanning) return;
     S.scanning = true; renderChrome(); drawChooser();
-    try { S.state = await host.call('clients'); S.lastScan = Date.now(); }
+    try { S.state = await host.call('clients'); S.lastScan = Date.now(); checkBuild(); }
     catch (e) { /* the indicator keeps its last answer */ }
     finally { S.scanning = false; renderChrome(); drawChooser(); }
   }
@@ -4674,7 +4711,7 @@
       toast('err', 'Couldn’t change the alignment', String(e && e.message || e), 0);
     } finally { S.aligning = false; fillSettings(); }
   }));
-  $('#open-settings').addEventListener('click', () => { S.alignNote = ''; fillSettings(); dlg.showModal(); });
+  $('#open-settings').addEventListener('click', () => { S.alignNote = ''; fillSettings(); fillAbout(); dlg.showModal(); });
   dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
   document.querySelectorAll('[data-theme-choice]').forEach((b) => b.addEventListener('click', () => {
     applyTheme(b.dataset.themeChoice);
@@ -4693,6 +4730,106 @@
     try { await host.call('rebuild'); await reload(); toast('ok', 'Spreadsheet changed', 'The page now shows the snapshots in that file.'); }
     catch (e) { toast('err', 'Couldn\u2019t read that spreadsheet', String(e && e.message || e), 0); }
   });
+
+  // About this version, and When something goes wrong (the self-check, the support bundle, the log)
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      try {   // the older way, from a box inside the dialog (a modal dialog makes everything outside it unreachable)
+        const box = h('textarea', { style: 'position:fixed;left:-9999px;top:0', 'aria-hidden': 'true' });
+        box.value = text; dlg.append(box); box.select();
+        const ok = document.execCommand('copy'); box.remove(); return ok;
+      } catch (e2) { return false; }
+    }
+  }
+  /** Flash a button's label ("Copied") and put it back. */
+  function flashLabel(btn, text) {
+    const was = btn.dataset.label || btn.textContent; btn.dataset.label = was; btn.textContent = text;
+    clearTimeout(btn._flash); btn._flash = setTimeout(() => { btn.textContent = was; }, 1600);
+  }
+  async function fillAbout() {
+    const dl = $('#about-block');
+    try {
+      const a = await host.call('about');
+      if (!a || typeof a !== 'object') throw new Error('no answer');
+      S.about = a;
+      const row = (k, v) => [h('dt', { text: k }), h('dd', { text: v })];
+      dl.replaceChildren(...row('Version', a.version), ...row('Commit', a.commit), ...row('Built', a.built), ...row('Windows', a.windows), ...row('WebView2', a.webview2));
+    } catch (e) { S.about = null; dl.replaceChildren(h('dt', { text: 'Version' }), h('dd', { text: 'Not available' })); }
+    $('#about-copy').disabled = !S.about;
+  }
+  $('#about-copy').addEventListener('click', async (ev) => {
+    if (!S.about) return;
+    flashLabel(ev.currentTarget, (await copyText(S.about.text)) ? 'Copied' : 'Couldn’t copy');
+  });
+
+  function drawDoctor(r) {
+    const out = $('#doctor-out');
+    const word = { pass: 'Pass: ', warn: 'Warning: ', fail: 'Fail: ' };
+    const kids = [h('div', { class: 'checks-sum' }, h('span', { text: r.summary.text }),
+      h('button', { type: 'button', class: 'btn btn-sm', text: 'Copy results', onclick: async (ev) => { flashLabel(ev.currentTarget, (await copyText(r.text)) ? 'Copied' : 'Couldn’t copy'); } }))];
+    let section = null;
+    for (const c of r.checks) {
+      if (c.section !== section) { section = c.section; kids.push(h('h3', { text: section })); }
+      kids.push(h('div', { class: 'check check-' + c.status },
+        icon(c.status === 'pass' ? 'check' : c.status === 'warn' ? 'alert' : 'x'),
+        h('div', null,
+          h('div', null, h('span', { class: 'sr-only', text: word[c.status] || '' }), h('span', { class: 'check-name', text: c.name })),   // (how long it took is in the detail)
+          h('div', { class: 'check-detail', text: c.detail }),
+          c.advice ? h('div', { class: 'check-advice' }, h('b', { text: 'What to do: ' }), c.advice) : null)));
+    }
+    out.replaceChildren(...kids);
+    out.scrollIntoView({ block: 'start' });   // the dialog scrolls: show the results from their first line
+  }
+  let doctorBusy = false;
+  $('#doctor-run').addEventListener('click', async (ev) => {
+    if (doctorBusy) return;
+    doctorBusy = true;
+    const btn = ev.currentTarget, out = $('#doctor-out');
+    btn.disabled = true; btn.textContent = 'Checking…';
+    out.hidden = false;
+    out.replaceChildren(h('span', { class: 'field-help', text: 'Looking at your files, the game and each reader. This takes a few seconds.' }));
+    out.scrollIntoView({ block: 'nearest' });
+    try { drawDoctor(await host.call('doctor')); }
+    catch (e) {
+      out.replaceChildren(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'The check couldn’t run. ' }), String(e && e.message || e))));
+    } finally { doctorBusy = false; btn.disabled = false; btn.textContent = 'Check my setup'; }
+  });
+
+  let bundleBusy = false;
+  $('#bundle-save').addEventListener('click', async (ev) => {
+    if (bundleBusy) return;
+    bundleBusy = true;
+    const btn = ev.currentTarget, result = $('#bundle-result');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    $('#bundle-done').hidden = true;
+    try {
+      const r = await host.call('saveBundle', { includeNames: $('#bundle-names').checked });
+      if (r && typeof r === 'object' && r.path) {   // (null: the save window was cancelled)
+        result.hidden = false;
+        result.textContent = `Saved ${r.path} (${Math.max(1, Math.round(r.zipBytes / 1000))} KB, ${r.files.length} files). Character names are ${r.includeNames ? 'included' : 'left out'}.`;
+        $('#bundle-done').hidden = false;
+        result.scrollIntoView({ block: 'nearest' });
+      }
+    } catch (e) {
+      result.hidden = true;
+      toast('err', 'The bundle couldn’t be saved', String(e && e.message || e), 0);
+    } finally { bundleBusy = false; btn.disabled = false; btn.textContent = 'Save a support bundle…'; }
+  });
+  $('#bundle-show').addEventListener('click', () => host.call('reveal', { what: 'bundle' }).catch(() => {}));
+  $('#logs-show').addEventListener('click', () => host.call('reveal', { what: 'logs' }).catch(() => {}));
+
+  // The game was updated: say so once per game build, gently (the reader's memory layouts are for one build)
+  const warnedBuilds = new Set();
+  async function checkBuild() {
+    try {
+      const r = await host.call('buildCheck');
+      const fresh = ((r && r.unknown) || []).filter((c) => !warnedBuilds.has(c.fingerprint));
+      if (!fresh.length) return;
+      fresh.forEach((c) => warnedBuilds.add(c.fingerprint));
+      toast('warn', 'The game was updated', 'Readings may be wrong until the reader is updated. Settings > Check my setup has the details.', 15000);
+    } catch (e) { /* an older host has no such check */ }
+  }
 
   // keyboard
   document.addEventListener('keydown', (ev) => {
@@ -4727,7 +4864,7 @@
     catch (e) {
       $('#main').replaceChildren(h('div', { class: 'page' }, h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'Couldn\u2019t load the saved data. ' }), String(e && e.message || e)))));
     }
-    window.__nm = { S, takeSnapshot, assistant: A };   // for checking the page from DevTools
+    window.__nm = { S, takeSnapshot, assistant: A, host };   // for checking the page from DevTools (and for scripted runs: tours)
     // The saved data is on screen; now see who is in game. One character: show it. Several: ask.
     if (host.native || Q.has('clients')) { await scanClients(); await settle(true); }
     if (assistantWanted()) {

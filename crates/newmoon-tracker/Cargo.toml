@@ -38,3 +38,8 @@ winresource = "0.1.34"
 [[bin]]
 name = "NewMoonTracker"
 path = "src/main.rs"
+
+[features]
+# Test builds only: keeps the `debugPanic` page command (a panic on purpose, to look at the crash report) in a release
+# build, which has it off. Never on in a shipped exe.
+crash-test = []

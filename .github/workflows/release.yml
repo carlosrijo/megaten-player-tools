@@ -5,6 +5,8 @@
 #       git push origin v1.2.0
 #     A tag with a dash (v1.2.0-beta.1) makes a pre-release.
 #   Run it by hand (Actions > Release > Run workflow)  ->  only builds the exe, kept as the run's artifact for testing.
+# Either way the exe's debug symbols (NewMoonTracker.pdb) are kept as a second artifact, "NewMoonTracker-symbols-<version>": not a
+# release asset, only for reading the crash reports of that exact build (HANDOVER.md).
 name: Release
 
 on:
@@ -58,6 +60,14 @@ jobs:
         with:
           name: NewMoonTracker-${{ steps.ver.outputs.version }}
           path: dist/*
+
+      # The debug symbols of this exact exe, for reading its crash reports (HANDOVER.md, "Symbolizing a crash"). A workflow
+      # artifact only: never a release asset, so users do not download them.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: NewMoonTracker-symbols-${{ steps.ver.outputs.version }}
+          path: dist-symbols/NewMoonTracker.pdb
+          retention-days: 365
 
       - name: Publish the release
         if: github.ref_type == 'tag'

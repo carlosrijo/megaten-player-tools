@@ -20,6 +20,7 @@ use crate::data::demon_tables::Devil;
 use crate::data::game_data::GameData;
 use crate::data::json::{self, At};
 use crate::data::store::Store;
+use crate::diag::log;
 use crate::error::is_user_error;
 use crate::game::{DemonRecord, SetRecord, client_reader, demon_reader};
 use crate::memory::{self, GameMemory};
@@ -290,12 +291,13 @@ impl Pipeline {
         // Alignment from the game (LAW/NEUTRAL/CHAOS conditions on gear); a change recalculates the saved rows
         // All the searches below walk one copy of the game's memory (GameMemory.ShareSweeps): about a dozen otherwise.
         let _shared = memory::share_sweeps();
-        if let Some(align) = Pipeline::read_alignment(name)? {
+        let align = log::timed("snapshot: alignment", || Pipeline::read_alignment(name), |a| match a { Ok(Some(_)) => "read".into(), Ok(None) => "not read".into(), Err(_) => "failed".into() })?;
+        if let Some(align) = align {
             if align != self.store().alignment()? || !self.store().profile_path().exists() {
                 self.set_alignment(csv, &align)?;
             }
         }
-        let ranks = self.exp.read(name)?;
+        let ranks = log::timed("snapshot: expertise ranks", || self.exp.read(name), |r| match r { Ok(r) => format!("found, {} ranked", r.len()), Err(_) => "failed".into() })?;
         let r = Snapshot::new(Arc::clone(&self.ctx)).take(name, csv, ignore_window)?;
         Ok((r, ranks.len()))
     }

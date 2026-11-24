@@ -28,7 +28,8 @@ git push origin v1.0.0
 
 A tag with a dash (`v1.1.0-beta.1`) makes a pre-release. To try the build first, run the Release workflow by hand
 (Actions > Release > Run workflow) and download the exe from the run, or build it here:
-`pwsh -NoProfile -File tools\publish-portable.ps1` (gives `dist\NewMoonTracker.exe`).
+`pwsh -NoProfile -File tools\publish-portable.ps1` (gives `dist\NewMoonTracker.exe`, and `dist-symbols\NewMoonTracker.pdb`: the debug
+symbols of that exe, which are never shipped; the workflow keeps them as a second artifact, for reading crash reports).
 
 ## Desktop app
 
@@ -268,11 +269,40 @@ The numbers come from the same calculation as the rest of the app. Stats start f
 what the change adds, in the server's order (a point of SPD is half a point of LNG-R, and so on). Not counted, as
 everywhere: buffs, and effects the game data has no numbers for (those are listed on the piece and named in a notice).
 
+## When something goes wrong
+
+Everything for this is in **Settings** (the gear at the top right):
+
+- **About this version** shows the version, the build's commit and date, your Windows and the WebView2 runtime it runs on.
+  **Copy** puts those lines on the clipboard, to paste into a bug report.
+- **Check my setup** looks at your files, the game and each part of the reader in one pass, and says line by line what is
+  fine (pass), worth a look (warn) or broken (fail), and what to do about it. It checks that the data folder can be
+  written to, the paths in `data\config.json`, which clients are running and who is logged in on each, whether the game is
+  still the build the reader was made for (the app also says so at start when the game was updated: *readings may be
+  wrong until the reader is updated*), that each client can be opened read-only, and that each part is found in the
+  game's memory (character, nameplate, stats, gear, demons, progress) and how long it took. The command line has the same:
+  `newmoon-reader.exe doctor` (add `--json` for a machine-readable version).
+- **The log** is in `data\logs` beside the program (**Show logs** opens the folder). A few small text files, 5 MB at most
+  altogether, the newest kept. It says what the app did and how long it took, which parts of the game were found, and any
+  error. It never holds what the page asked for (that can be personal), spreadsheet rows, or anything read from the game's
+  memory. `--log-level debug|info|warn` (on `NewMoonTracker.exe` and `newmoon-reader.exe`) changes how much goes in;
+  `newmoon-reader.exe --version` says which build you have.
+- **A crash** writes `crash-<date>-<time>.txt` beside the log (what went wrong, where, the version, Windows, a stack trace),
+  and the app tells you where it is instead of just closing.
+- **Save a support bundle…** writes one zip (to your Desktop unless you pick another place) to send to whoever helps you.
+  In it: the version, a fresh setup check, the log and crash files, `config.json`, `characters.json`, the app's settings
+  file, and a list of your data folder's files (names, sizes and dates, not what is in them). **Never** in it: your
+  spreadsheets, anything read from the game's memory, pictures, item or tooltip data. Your Windows user name is taken out of
+  every path (`C:\Users\<name>` becomes `%USERPROFILE%`), and character names are replaced by "Character 1", "Character 2"…
+  unless you tick **Include character names**. It is a plain zip: open it and look before you send it.
+
 ## Commands
 
 ```
 cargo build --release
 target\release\newmoon-reader.exe clients    # which clients are running and who is logged in to each
+target\release\newmoon-reader.exe doctor     # the self-check: files, game build, each reader found? (pass / warn / fail; --json for machines)
+target\release\newmoon-reader.exe --version  # which build this is: version, commit, build date
 target\release\newmoon-reader.exe snapshot   # read the game, add a row to the CSV, rebuild page data
 target\release\newmoon-reader.exe rebuild    # rebuild page data from saved files (game not needed)
 target\release\newmoon-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild

@@ -22,7 +22,7 @@ use crate::options::AppOptions;
 use crate::settings::AppSettings;
 use crate::site::DATA_HOST;
 use crate::ui::Ui;
-use crate::{dialogs, tour, winutil};
+use crate::{dialogs, support, tour, winutil};
 
 /// Everything that changes while the app runs.
 struct State {
@@ -55,15 +55,19 @@ pub struct MainForm {
     /// One piece of reader work at a time: the reference data fills its tables on first use, which two threads must not do at once.
     calc: Mutex<()>,
     scan: Mutex<Option<Arc<ScanJob>>>,
+    /// the page's own JavaScript errors, as far as the log takes them (support.rs)
+    page_log: support::PageLog,
+    /// where the last support bundle was saved, for "Show in folder" (never a path from the page)
+    last_bundle: Mutex<Option<PathBuf>>,
+    /// the log level of this run, by name
+    log_level: String,
 }
 
 impl MainForm {
     /// C# `new MainForm(opt)`; an error (the characters list could not be saved) is what the C# constructor threw.
     pub fn new(opt: AppOptions, ui: Ui) -> Result<MainForm> {
-        let data_dir = match &opt.data {
-            Some(d) => std::path::absolute(d).unwrap_or_else(|_| PathBuf::from(d)),
-            None => backend::find_data_dir(),
-        };
+        let data_dir = Self::data_dir_for(&opt);
+        let level_name = newmoon::diag::log::Level::parse(opt.log_level.as_deref().unwrap_or("info")).map(|l| l.name()).unwrap_or("info").to_string();
         let mut set = AppSettings::load();
         set.read_only = opt.capture.is_some(); // a capture or tour run never changes the saved preferences
         // With its own data folder (--data), a run keeps its spreadsheets beside that folder too, never in the real place.
@@ -86,7 +90,18 @@ impl MainForm {
             backend: Backend::new(),
             calc: Mutex::new(()),
             scan: Mutex::new(None),
+            page_log: support::PageLog::new(),
+            last_bundle: Mutex::new(None),
+            log_level: level_name,
         })
+    }
+
+    /// The data folder of a run: `--data <folder>`, else `data` beside the exe (or the repo).
+    pub fn data_dir_for(opt: &AppOptions) -> PathBuf {
+        match &opt.data {
+            Some(d) => std::path::absolute(d).unwrap_or_else(|_| PathBuf::from(d)),
+            None => backend::find_data_dir(),
+        }
     }
 
     fn st(&self) -> MutexGuard<'_, State> {
@@ -163,7 +178,9 @@ impl MainForm {
         let args = m.get("args").cloned().unwrap_or(Value::Null);
         let me = self.clone();
         std::thread::spawn(move || {
+            let started = std::time::Instant::now();
             let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| me.dispatch(&cmd, &args)));
+            log_command(&cmd, started.elapsed().as_millis(), &r);
             let reply = match r {
                 Ok(Ok(result)) => format!("{{\"id\":{id},\"ok\":true,\"result\":{result}}}"),
                 Ok(Err(e)) => fail(id, &e.to_string(), if newmoon::error::is_user_error(&e) { "user" } else { "error" }),
@@ -428,7 +445,20 @@ impl MainForm {
                 let csv_parent = csv.as_deref().and_then(|c| Path::new(c).parent().map(|p| p.to_path_buf()));
                 let is_csv = what.as_deref() == Some("csv");
                 let is_data = what.as_deref() == Some("data");
-                if is_csv && csv.as_deref().is_some_and(|c| Path::new(c).is_file()) {
+                let last_bundle = self.last_bundle.lock().unwrap_or_else(|p| p.into_inner()).clone();
+                if what.as_deref() == Some("logs") {
+                    let logs = self.data_dir.join("logs");
+                    if logs.is_dir() {
+                        winutil::explorer(&format!("\"{}\"", logs.display()));
+                    } else if self.data_dir.is_dir() {
+                        winutil::explorer(&format!("\"{}\"", self.data_dir.display()));
+                    }
+                } else if what.as_deref() == Some("bundle") {
+                    // only the bundle this run saved
+                    if let Some(b) = last_bundle.filter(|b| b.is_file()) {
+                        winutil::explorer(&format!("/select,\"{}\"", b.display()));
+                    }
+                } else if is_csv && csv.as_deref().is_some_and(|c| Path::new(c).is_file()) {
                     winutil::explorer(&format!("/select,\"{}\"", csv.unwrap_or_default()));
                 } else if is_csv && csv_parent.as_deref().is_some_and(|p| p.is_dir()) {
                     winutil::explorer(&format!("\"{}\"", csv_parent.unwrap_or_default().display()));
@@ -538,6 +568,56 @@ impl MainForm {
                     skill_icons: &skill_icons,
                 })
             }
+
+            // ---- troubleshooting (support.rs): the version block, the self-check, the support bundle ----
+            "about" => Ok(support::about_json(&self.data_dir, &self.log_level).to_string()),
+
+            // one pass over the files, the game and each reader; one piece of reader work at a time
+            "doctor" => {
+                let no_writes = self.no_writes();
+                self.guarded(|| Ok(support::run_doctor(&self.data_dir, no_writes).to_json().to_string()))
+            }
+
+            "saveBundle" => {
+                if self.no_writes() {
+                    return Err(user_error("Not saving a support bundle during a capture run."));
+                }
+                let include_names = support::bundle_request(args)?;
+                let out = match &self.opt.capture {
+                    // a scripted run (tests) has no one to answer a dialog: the bundle goes beside its pictures
+                    Some(c) => {
+                        let c = Path::new(c);
+                        let dir = if self.opt.tour.is_some() { c.to_path_buf() } else { c.parent().map(Path::to_path_buf).unwrap_or_default() };
+                        std::fs::create_dir_all(&dir)?;
+                        dir.join("support-bundle.zip")
+                    }
+                    None => {
+                        let owner = winutil::hwnd_of(self.hwnd.load(Ordering::Relaxed));
+                        match dialogs::save_zip(owner, "Save a support bundle", &newmoon::build::bundle::default_name(), dialogs::desktop_dir().as_deref()) {
+                            Some(p) => p,
+                            None => return Ok("null".to_string()), // cancelled
+                        }
+                    }
+                };
+                let result = self.guarded(|| Ok(support::save_bundle(&self.data_dir, include_names, &out)?.to_string()))?;
+                *self.last_bundle.lock().unwrap_or_else(|p| p.into_inner()) = Some(out);
+                Ok(result)
+            }
+
+            // is each running client the build the reader was made for (the page warns, once, when not)
+            "buildCheck" => Ok(support::build_check().to_string()),
+
+            // the page's JavaScript errors; a capture run on real data writes nothing, not even a log line
+            "log" => {
+                if !self.no_writes() {
+                    self.page_log.record(args);
+                }
+                Ok("true".to_string())
+            }
+
+            // test builds only: a panic on a page-command thread, to look at the crash report
+            #[cfg(any(debug_assertions, feature = "crash-test"))]
+            "debugPanic" => panic!("deliberate test panic (debugPanic)"),
 
             _ => Err(user_error(format!("Unknown request '{cmd}'."))),
         }
@@ -719,6 +799,27 @@ fn raw_json(path: &Path, fallback: &str) -> String {
     match serde_json::from_str::<serde::de::IgnoredAny>(t) {
         Ok(_) => t.to_string(),
         Err(_) => fallback.to_string(),
+    }
+}
+
+/// One line in the log per page command: its name, how long it took and how it went (a message for the person is a
+/// "user error"). What the page asked with (the arguments) is never logged: it can hold personal data. The page's
+/// status poll every few seconds is only logged at debug level (unless it fails).
+fn log_command(cmd: &str, ms: u128, r: &std::thread::Result<Result<String>>) {
+    use newmoon::diag::log::{self, Level};
+    // the name comes from the page: keep to what a command name looks like
+    let name: String = cmd.chars().filter(|c| c.is_ascii_alphanumeric() || *c == '_').take(32).collect();
+    let name = if name.is_empty() { "?".to_string() } else { name };
+    // the page's own error reports are not commands worth a line each
+    if name == "log" {
+        return;
+    }
+    let quiet = matches!(name.as_str(), "status");
+    match r {
+        Ok(Ok(_)) => log::write(if quiet { Level::Debug } else { Level::Info }, &format!("command {name}: ok ({ms} ms)")),
+        Ok(Err(e)) if newmoon::error::is_user_error(e) => log::write(Level::Info, &format!("command {name}: user error: {e} ({ms} ms)")),
+        Ok(Err(e)) => log::write(Level::Error, &format!("command {name}: error: {e:#} ({ms} ms)")),
+        Err(_) => log::write(Level::Error, &format!("command {name}: panicked ({ms} ms); see the crash report next to the log")),
     }
 }
 

@@ -20,6 +20,7 @@ mod options;
 mod settings;
 mod site;
 mod tour;
+mod support;
 mod ui;
 mod winutil;
 
@@ -32,6 +33,8 @@ use tao::platform::windows::{WindowBuilderExtWindows, WindowExtWindows};
 use tao::window::WindowBuilder;
 use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx};
 
+use newmoon::diag::{about, crash, log};
+
 use crate::host::WebHost;
 use crate::main_form::MainForm;
 use crate::options::AppOptions;
@@ -42,24 +45,48 @@ const MIN_WIDTH: i32 = 760;
 const MIN_HEIGHT: i32 = 520;
 
 fn main() {
-    // A crash with no window to show it would just vanish: say what happened.
-    std::panic::set_hook(Box::new(|info| {
-        if std::thread::current().name() == Some("main") {
-            winutil::error_box(None, &format!("NewMoon Build Tracker stopped unexpectedly.\n\n{info}"), TITLE);
-        }
-    }));
+    about::init(about::BuildInfo {
+        program: TITLE.to_string(),
+        version: env!("NEWMOON_BUILD_VERSION").to_string(),
+        commit: env!("NEWMOON_BUILD_COMMIT").to_string(),
+        built: env!("NEWMOON_BUILD_DATE").to_string(),
+    });
+    // A crash with no window to show it would just vanish: write a crash report (logs\crash-<time>.txt, see
+    // newmoon::diag::crash) and say what happened.
+    crash::install(Some(Box::new(|message, saved| {
+        let note = match saved.and_then(|p| p.parent()) {
+            Some(dir) => format!("\n\nA crash report was saved in {}.\nSettings > Troubleshooting > Save a support bundle sends it along.", dir.display()),
+            None => String::new(),
+        };
+        winutil::error_box(None, &format!("NewMoon Build Tracker stopped unexpectedly.\n\n{message}{note}"), TITLE);
+    })));
     unsafe {
         let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
     }
 
     let args: Vec<String> = std::env::args().skip(1).collect();
     let opt = AppOptions::parse(&args);
+    let level = match log::level_from_args(&args) {
+        Ok(l) => l,
+        Err(m) => {
+            winutil::error_box(None, &m, TITLE);
+            return;
+        }
+    };
+    // The local log, <data folder>\logs. A scripted run on the person's own data (no --data) writes nothing there.
+    if opt.capture.is_none() || opt.data.is_some() {
+        let logs = MainForm::data_dir_for(&opt).join("logs");
+        if log::init(&logs, level, &about::build_info().line()) {
+            crash::set_dir(&logs);
+        }
+    }
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     let ui = Ui::new(event_loop.create_proxy());
     let app = match MainForm::new(opt, ui) {
         Ok(a) => Arc::new(a),
         Err(e) => {
+            newmoon::log_error!("start failed: {e:#}");
             winutil::error_box(None, &format!("NewMoon Build Tracker stopped unexpectedly.\n\n{e}"), TITLE);
             return;
         }
@@ -147,9 +174,10 @@ fn main() {
         let app = app.clone();
         Arc::new(move |json, source| app.on_message(json, source))
     };
-    let web = match WebHost::create(hwnd, &user_data, dark, opt.dev, opt.offscreen, site, handler) {
+    let web = match WebHost::create(hwnd, &user_data, dark, opt.dev, opt.offscreen, opt.capture.is_some(), site, handler) {
         Ok(w) => w,
         Err(e) => {
+            newmoon::log_error!("the window's WebView2 couldn't start: {e}");
             winutil::error_box(
                 Some(hwnd),
                 &format!("The app's window couldn't start. It needs the Microsoft Edge WebView2 Runtime, which normally comes with Windows 11.\n\n{e}"),
@@ -158,6 +186,19 @@ fn main() {
             return;
         }
     };
+    // what a bug report needs about this start: build, Windows, WebView2, where it runs from, how it was started
+    newmoon::log_info!(
+        "app start: {} | Windows {} | WebView2 {} | exe {} | data folder {} | options:{}{}{}{}",
+        about::build_info().line(),
+        about::windows_info().text(),
+        host::webview2_version().unwrap_or_else(|e| format!("not found ({e})")),
+        std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_default(),
+        app.data_dir.display(),
+        if opt.dev { " dev" } else { "" },
+        if opt.capture.is_some() { " capture" } else { "" },
+        if opt.tour.is_some() { " tour" } else { "" },
+        if opt.offscreen { " offscreen" } else { "" },
+    );
     web.set_scheme(theme.as_deref());
     if let Err(e) = web.navigate(&app.start_url()) {
         winutil::error_box(Some(hwnd), &format!("The page couldn't be opened.\n\n{e}"), TITLE);

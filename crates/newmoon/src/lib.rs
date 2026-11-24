@@ -13,6 +13,7 @@ pub mod calc;
 pub mod console;
 pub mod context;
 pub mod data;
+pub mod diag;
 pub mod error;
 pub mod fmt;
 pub mod game;
