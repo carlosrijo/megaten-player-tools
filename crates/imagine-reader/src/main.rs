@@ -27,7 +27,7 @@ use std::sync::Arc;
 
 use imagine::build::pipeline::{self, Pipeline, default_csv, default_name, find_data_dir};
 use imagine::build::snapshot::SnapshotResult;
-use imagine::build::{demon_db, demon_model, doctor, dungeons, gear_db, item_icons, preview_server, skill_db};
+use imagine::build::{demon_db, demon_model, digi_planner, doctor, dungeons, gear_db, item_icons, preview_server, skill_db};
 use imagine::calc::character_extras;
 use imagine::calc::character_hp_mp::{self, Calibration};
 use imagine::calc::digitalize::{Digitalize, MITAMA_NAMES, RUNE_NAMES, set_name};
@@ -196,6 +196,13 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
         let client = client_arg(get("client"))?;
         let out = get_or("out", path_combine(&path_combine("app", "ui"), "demon-db.json"));
         demon_db::build(&GameData::new(), Path::new(decoded), Path::new(store_dir), client.as_deref(), Path::new(&out))?;
+        return Ok(0);
+    }
+    if cmd == "digiplanner" {
+        // The Digitalize Planner page's data, from the reference tables (no game, no character).
+        //   digiplanner [--out app\ui\digi-planner.json]
+        let out = get_or("out", path_combine(&path_combine("app", "ui"), "digi-planner.json"));
+        digi_planner::build(&GameData::new(), Path::new(&out))?;
         return Ok(0);
     }
     if cmd == "skilldb" {

@@ -78,6 +78,47 @@ fn demon_tables_like_csharp() {
 }
 
 #[test]
+fn digitalize_unlocks_specials_and_race_names() {
+    let gd = GameData::with_paths(None, None);
+    let t = gd.demons().unwrap();
+    // GuardianUnlockData: 25 races start locked; Raptor needs Wild Bird 4 and Evil Dragon 4, Tyrant Vile 7, Reaper 8, Foul 8
+    assert_eq!(t.unlocks.len(), 25);
+    assert_eq!(t.unlocks[&8], vec![(11, 4), (109, 4)]);
+    assert_eq!(t.unlocks[&112], vec![(4, 7), (51, 8), (101, 8)]);
+    assert!(!t.unlocks.contains_key(&2) && !t.unlocks.contains_key(&56)); // Entity and Fiend: open from the start
+    // GuardianSpecialData: David only needs Fiend 1 (or Brute 6); Gabriel Seraphim 6 or Avian 8
+    assert_eq!(t.specials.len(), 73);
+    assert_eq!(t.specials[&615], vec![(56, 1), (102, 6)]);
+    assert_eq!(t.specials[&24], vec![(1, 6), (5, 8)]);
+    // the client's names (CGuardianAssistData): MAJIN is "Fiend" in game; one Divine line is Japanese and loses the vote
+    assert_eq!(t.game_race_name(56).as_deref(), Some("Fiend"));
+    assert_eq!(t.game_race_name(9).as_deref(), Some("Divine"));
+    assert_eq!(t.game_race_name(11).as_deref(), Some("Wild Bird"));
+    assert_eq!(t.assists[&1].effect_text(), "Duration time +1 minute");
+}
+
+#[test]
+fn digitalize_planner_data() {
+    use imagine::build::digi_planner;
+    let gd = GameData::with_paths(None, None);
+    let v = digi_planner::planner_json(&gd).unwrap();
+    let races = v["races"].as_array().unwrap();
+    assert_eq!(races.len(), 36); // the 37 digitalize races but Gaian, which has no points to earn
+    let race = |id: i64| races.iter().find(|r| r["id"] == id).unwrap();
+    // tiers: the points from level 1 to 10 are 1x to 5x the cheapest race's (70,200,100)
+    assert_eq!((race(9)["tier"].as_i64(), race(8)["tier"].as_i64(), race(2)["tier"].as_i64(), race(112)["tier"].as_i64()), (Some(1), Some(2), Some(4), Some(5)));
+    assert_eq!(race(9)["xp"].as_array().unwrap().iter().map(|x| x.as_i64().unwrap()).sum::<i64>(), 70_200_100);
+    assert_eq!((race(56)["name"].as_str(), race(56)["side"].as_str()), (Some("Fiend"), Some("NEUTRAL")));
+    // Fiend DLv 2: Intelligence +55 for you; DLv 5: an affinity cap for the demon ("DE【...】" name unwrapped)
+    assert_eq!(race(56)["extend"][0], serde_json::json!([2, 60142, "Base Stat Boost", "Intelligence +55", "you"]));
+    assert_eq!(race(56)["extend"][2][2], "Affinity Upper Limit Raise");
+    assert_eq!(race(56)["extend"][2][4], "demon");
+    assert_eq!(race(56)["assists"][0][1][0][1], "Duration time +1 minute");
+    assert_eq!(race(1)["demons"][0], serde_json::json!([26, "Uriel", 1, 80]));
+    assert!(v["special"].as_array().unwrap().iter().any(|s| s[0] == 615 && s[2] == 56));
+}
+
+#[test]
 fn expertise_tables_like_csharp() {
     let gd = GameData::with_paths(None, None);
     let e = gd.expertises_client().unwrap();

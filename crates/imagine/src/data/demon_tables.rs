@@ -50,6 +50,18 @@ pub struct Assist {
     pub race_id: i32,
     pub r#type: String,
     pub value: i32,
+    /// The client's line for it (CGuardianAssistData), e.g. "Wild Bird DA【Duration time +1 minute】"; empty if unknown.
+    pub text: String,
+}
+
+impl Assist {
+    /// What the client says it does: the part in 【】 ("Duration time +1 minute"), else the whole line.
+    pub fn effect_text(&self) -> &str {
+        match (self.text.find('【'), self.text.rfind('】')) {
+            (Some(a), Some(b)) if b > a => &self.text[a + '【'.len_utf8()..b],
+            _ => &self.text,
+        }
+    }
 }
 
 /// One Digitalization Level of a race (MiGuardianLevelData). `next_xp`: the points it takes from this level to the next
@@ -96,6 +108,11 @@ pub struct DemonTables {
     pub force_stack_tokusei: IndexMap<i32, Vec<i32>>,
     /// Demon equipment item id -> the skill that replaces the trait of its slot (DevilEquipmentItemData).
     pub equipment_skill: IndexMap<i32, i32>,
+    /// Race id -> the race:level pairs that enable it (GuardianUnlockData; all of them). A race not here starts enabled.
+    pub unlocks: IndexMap<i32, Vec<(i32, i32)>>,
+    /// Demon id -> race:level pairs that let it be digitalized when no level of its race names it (GuardianSpecialData;
+    /// any one of them).
+    pub specials: IndexMap<i32, Vec<(i32, i32)>>,
     race_names: Mutex<HashMap<i32, String>>,
 }
 
@@ -144,6 +161,11 @@ fn refs(r: &[String]) -> Vec<&str> {
     r.iter().map(String::as_str).collect()
 }
 
+/// "11:4,109:4" -> [(11, 4), (109, 4)] (race:level pairs; a malformed part is left out).
+fn race_levels_of(s: &str) -> Vec<(i32, i32)> {
+    s.split(',').filter_map(|p| p.split_once(':')).map(|(r, l)| (i(r), i(l))).filter(|(r, _)| *r > 0).collect()
+}
+
 impl DemonTables {
     pub fn loaded(&self) -> bool {
         !self.devils.is_empty()
@@ -163,6 +185,8 @@ impl DemonTables {
             levels: IndexMap::new(),
             force_stack_tokusei: IndexMap::new(),
             equipment_skill: IndexMap::new(),
+            unlocks: IndexMap::new(),
+            specials: IndexMap::new(),
             race_names: Mutex::new(HashMap::new()),
         };
         for r in rows("devils-game.tsv")? {
@@ -212,7 +236,16 @@ impl DemonTables {
         for r in rows("guardian-assist.tsv")? {
             let r = refs(&r);
             let id = i(col(&r, 0)?);
-            t.assists.insert(id, Assist { id, race_id: i(col(&r, 1)?), r#type: col(&r, 2)?.to_string(), value: i(col(&r, 3)?) });
+            let text = r.get(4).map(|s| s.to_string()).unwrap_or_default();
+            t.assists.insert(id, Assist { id, race_id: i(col(&r, 1)?), r#type: col(&r, 2)?.to_string(), value: i(col(&r, 3)?), text });
+        }
+        for r in rows("guardian-unlock.tsv")? {
+            let r = refs(&r);
+            t.unlocks.insert(i(col(&r, 0)?), race_levels_of(r.get(1).copied().unwrap_or("")));
+        }
+        for r in rows("guardian-special.tsv")? {
+            let r = refs(&r);
+            t.specials.insert(i(col(&r, 0)?), race_levels_of(r.get(1).copied().unwrap_or("")));
         }
         for r in rows("skills-digitize.tsv")? {
             let r = refs(&r);
@@ -282,6 +315,27 @@ impl DemonTables {
                 best.map(|(k, _)| k.to_string()).unwrap_or_else(|| format!("race {race_id}"))
             })
             .clone()
+    }
+
+    /// The race's name as the game writes it: the "<name> DA【...】" lines of its assists in the client (CGuardianAssistData),
+    /// the name most of them give (one Divine line is still in Japanese). None when no assist line names it.
+    pub fn game_race_name(&self, race_id: i32) -> Option<String> {
+        let mut counts: IndexMap<&str, usize> = IndexMap::new();
+        for a in self.assists_of_race(race_id) {
+            if let Some((name, _)) = a.text.split_once(" DA") {
+                let name = name.trim();
+                if !name.is_empty() {
+                    *counts.entry(name).or_insert(0) += 1;
+                }
+            }
+        }
+        let mut best: Option<(&str, usize)> = None;
+        for (k, c) in counts {
+            if best.is_none_or(|(_, bc)| c > bc) {
+                best = Some((k, c));
+            }
+        }
+        best.map(|(k, _)| k.to_string())
     }
 
     /// The extend skills a character at this level of the race has: those of levels 1..level.
