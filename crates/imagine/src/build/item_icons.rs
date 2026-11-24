@@ -72,6 +72,23 @@ pub fn item_asset(store: &Store, data: &GameData, item_id: i32, pid: u32) -> Res
     Ok(load(&cached, None, (0, Some(name.clone())), pid, store).map(|_| name))
 }
 
+/// One of the client's interface pictures by file name (Interface\tga or tga2, e.g. "digitalize_featureicon"), saved
+/// beside the skill icons (dash\skill-icons\<name>.png) so the page loads it by name like a skill icon. None when the
+/// client was never seen or has no such picture.
+pub fn client_asset(store: &Store, name: &str, pid: u32) -> Option<String> {
+    if name.is_empty() || name.chars().any(is_invalid_file_name_char) {
+        return None;
+    }
+    let cached = store.skill_icon_dir().join(format!("{name}.png"));
+    if cached.is_file() {
+        return Some(name.to_string());
+    }
+    let png = client_png(&client_dir(store, pid)?, name, &[])?;
+    std::fs::create_dir_all(cached.parent()?).ok()?;
+    std::fs::write(&cached, &png).ok()?;
+    Some(name.to_string())
+}
+
 /// The item's icon as a data: URI for the page's JSON, or None.
 pub fn data_uri(store: &Store, data: &GameData, item_id: i32, pid: u32) -> Result<Option<String>> {
     Ok(uri(png(store, data, item_id, pid)?.as_deref()))

@@ -36,8 +36,21 @@ use super::digitalize_demon::DigitalizeSave;
 use super::item_icons;
 use super::snapshot::{DEMON_COLUMN, demon_col};
 
-/// The item "Guidance of Amala" (items-game.tsv): its "?" icon is the picture of a demon feature, which has none of its own.
-const GUIDANCE_OF_AMALA: i32 = 27626;
+/// The digitalize window's picture for each kind of Digitalize boost (Interface\tga2\<name>.tga), by assist type.
+fn assist_icon_name(typ: &str) -> Option<&'static str> {
+    Some(match typ {
+        "STAT_RATE" => "digitalize_assisticon",
+        "EXTEND_TIME" => "digitalize_timeupicon",
+        "REDUCE_WAIT" => "digitalize_latencydownicon",
+        "AFFINITIES" => "digitalize_defenseicon",
+        "FORCE_STACK" => "digitalize_forceicon",
+        "PASSIVES" => "digitalize_passiveicon",
+        "TRAITS" => "digitalize_featureicon",
+        "ACTIVES" => "digitalize_activeicon",
+        "MITAMA_SET" => "digitalize_mitamaicon",
+        _ => return None,
+    })
+}
 
 const STAT_KEYS: [(&str, &str); 12] = [
     ("STR", "str"),
@@ -200,7 +213,7 @@ fn assist_text(a: &Assist) -> String {
     match a.r#type.as_str() {
         "STAT_RATE" => format!("Stats +{}%", a.value),
         "EXTEND_TIME" => format!("Duration +{} min", a.value / 60),
-        "REDUCE_WAIT" => format!("Wait -{} min", a.value / 60),
+        "REDUCE_WAIT" => format!("Cooldown -{} min", a.value / 60), // the game: "Cool-down time -15 minutes"
         "AFFINITIES" => "Resistances".into(),
         "FORCE_STACK" => "Demon Force".into(),
         "PASSIVES" => "Passive skills".into(),
@@ -455,6 +468,9 @@ impl Dashboard {
         let mut mine: Vec<&Assist> = learned_assists.iter().filter_map(|id| t.assists.get(id)).filter(|a| a.race_id == devil.race_id).collect();
         mine.sort_by_key(|a| a.id);
         let assists: Vec<String> = mine.iter().map(|a| format!("L{} {}", (a.id - 1) / 72 + 2, assist_text(a))).collect();
+        // each learned boost's picture from the digitalize window (same order as `assists`), and its lock for a level with none learned
+        let assist_icons: Vec<Option<String>> = mine.iter().map(|a| assist_icon_name(&a.r#type).and_then(|n| item_icons::client_asset(store, n, 0))).collect();
+        let lock_icon = item_icons::client_asset(store, "digitalize_assist_lockicon", 0);
         let learned = |typ: &str| learned_assists.iter().any(|id| t.assists.get(id).is_some_and(|a| a.race_id == devil.race_id && a.r#type == typ));
         let skill_name = |id: i32| -> Result<String> { Ok(data.skill_names()?.get(&id).cloned().flatten().unwrap_or_else(|| format!("skill {id}"))) };
 
@@ -522,7 +538,8 @@ impl Dashboard {
                 "demon": demon.name, "level": demon.level, "race": title(&devil.race), "rate": r.rate, "max_rate": r.max_rate,
                 "mitama": if demon.mitama_type > 0 && demon.mitama_type < 5 { json!(MITAMA_NAMES[demon.mitama_type as usize]) } else { Value::Null },
                 "alignment": data.devil_alignment(demon.r#type)?,
-                "assists": assists, "assists_known": s.assists.is_some(), "mitama_boost": s.mitama_boost,
+                "assists": assists, "assist_icons": assist_icons, "assist_lock_icon": lock_icon,
+                "assists_known": s.assists.is_some(), "mitama_boost": s.mitama_boost,
                 "stats": rows_value(&stats),
                 // what it adds to each key stat (page keys), for the Overview while digitalized
                 "combat": Value::Object(combat),
@@ -612,9 +629,9 @@ impl Dashboard {
                 skills.push(row);
             } else if equip <= 0 && tr > 0 {
                 let mut row = skill_row("Feature", tr, Some("trait"), needs("TRAITS", "Features"), None)?;
-                // the game has no picture for features (CSkillData iconID 0): the item Guidance of Amala's "?" stands in (the user's pick)
+                // the game has no picture for a feature itself (CSkillData iconID 0): the digitalize window's Features boost picture stands in
                 if row.get("icon").is_none_or(Value::is_null) {
-                    if let Some(a) = item_icons::item_asset(store, data, GUIDANCE_OF_AMALA, 0)? {
+                    if let Some(a) = item_icons::client_asset(store, "digitalize_featureicon", 0) {
                         row.insert("icon".to_string(), json!(a));
                     }
                 }

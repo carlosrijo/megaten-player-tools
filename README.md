@@ -378,10 +378,11 @@ digitalized with the Specter, Rubito's stats rose by exactly the computed amount
 
 **The demon's skills.** In the Digitalized view, the demon's card (Overview and Digitalize) shows the demon's own skills.
 Closed, its line has the icons of the skills in its slots. "Details" opens two columns: on the left who it is, the stats
-it adds, its skills and its features; on the right its Digitalize boosts, one row per level, each with the icons of that
-level's Digitalization passives for the demon's race. Each skill has its icon, what it gives you, and the game's
-description on hover. The game has no picture for features, so they show the "?" of the item Guidance of Amala; a demon
-equipment shows the picture of the Epitaph Parts item it comes from. A skill you don't get while digitalized is dimmed
+it adds, its skills and its features; on the right its Digitalize boosts, one row per level: the digitalize window's
+picture of the boost (a lock where none is learned yet) and the icons of that level's Digitalization passives for the
+demon's race. Each skill has its icon, what it gives you, and the game's description on hover. The game has no picture
+for a feature itself, so features show the digitalize window's Features boost picture; a demon equipment shows the
+picture of the Epitaph Parts item it comes from. A skill you don't get while digitalized is dimmed
 (for example, its features when the race's Features boost isn't learned).
 
 **Demons you have unlocked.** The Digitalize page shows them as a grid of small pictures; "Details" lists, per race you have a Digitalization Level in, the demons those

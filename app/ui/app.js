@@ -776,8 +776,10 @@
       isTrue(DG.assists_known)
         // every level, L1-L10, one per row; level 1 offers no assist, and a level with no pick shows a dash
         ? (() => {
-          const byLevel = new Map();
-          (DG.assists || []).forEach((a) => { const m = /^L(\d+) (.*)$/.exec(a); if (m) byLevel.set(+m[1], m[2]); });
+          const byLevel = new Map(), iconAt = new Map();
+          (DG.assists || []).forEach((a, i) => { const m = /^L(\d+) (.*)$/.exec(a); if (m) { byLevel.set(+m[1], m[2]); iconAt.set(+m[1], (DG.assist_icons || [])[i]); } });
+          // the digitalize window's picture of the boost; its lock where none is learned yet (level 1 has no boost: nothing)
+          const boostIcon = (lv, t) => { const icon = t ? iconAt.get(lv) : lv > 1 ? DG.assist_lock_icon : null; return skillIcon({ icon }); };
           const top = Math.max(10, ...byLevel.keys(), ...passivesAt.keys());
           return h('div', { class: 'dg-assist-list' }, Array.from({ length: top }, (_, i) => {
             const lv = i + 1, t = byLevel.get(lv), ps = passivesAt.get(lv) || [];
@@ -785,8 +787,9 @@
               ...ps.map((r) => `${r.rank} passive: ${r.skill}${r.effects ? ' · ' + String(r.effects).split('; ').join(' · ') : ''}${isTrue(r.counted) ? '' : ' (not counted)'}`)];
             const row = h('div', { class: 'dg-assist' + (t ? '' : ' none') },
               h('b', { text: 'L' + lv }),
-              h('span', { class: 'dg-assist-icons' }, ps.map((r) => { const ic = skillIcon(r); if (!isTrue(r.counted)) ic.classList.add('off'); return ic; })),
-              h('span', { text: t ? short(t) : '—' }));
+              boostIcon(lv, t),
+              h('span', { text: t ? short(t) : '—' }),
+              h('span', { class: 'dg-assist-icons' }, ps.map((r) => { const ic = skillIcon(r); if (!isTrue(r.counted)) ic.classList.add('off'); return ic; })));
             return withTip(row, () => h('div', null, lines.map((l) => h('div', { class: 'tt-line', text: l }))));
           }));
         })()
@@ -1781,7 +1784,10 @@
   function demonSkills(DG) {
     if (!DG || !Array.isArray(DG.skills)) return null;
     const row = (s) => {
-      const name = h('span', { class: 'skill', tabindex: 0 }, skillIcon(s), h('span', { text: s.name }));
+      const ic = skillIcon(s);
+      // a feature shown with the Features boost's picture (it has none of its own): tinted, so it isn't taken for the boost
+      if (s.kind === 'Feature' && /^digitalize_/.test(String(s.icon || ''))) ic.classList.add('as-feature');
+      const name = h('span', { class: 'skill', tabindex: 0 }, ic, h('span', { text: s.name }));
       if (s.tip) withTip(name, () => h('div', null, tipHead(skillIcon(s), s.name, s.kind === 'Equipment' ? 'Demon equipment' : s.kind), ...tipLines(s.tip), skillWhy(s)));
       const fx = (s.effects || []).length ? s.effects
         : s.kind === 'Active' && isTrue(s.counted) ? ['You can use it while digitalized'] : isTrue(s.counted) ? ['No stat bonus'] : [];
