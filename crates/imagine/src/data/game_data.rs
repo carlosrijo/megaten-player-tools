@@ -280,6 +280,9 @@ pub struct EnchantSide {
     pub conditions: Vec<(i32, i32, i32, Vec<i32>)>,
     pub mask: i32,
     pub crystal_item: i32,
+    /// The client's own description of the crystal's effect on this side (the enchant table's last column; its line
+    /// breaks are ` / `), empty when not known (website data). Read when the tokusei above have no data.
+    pub text: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1291,6 +1294,7 @@ impl GameData {
                             conditions: conds,
                             mask: crate::fmt::parse_i32(f[6]).unwrap_or(0),
                             crystal_item: crate::fmt::parse_i32(f[2]).unwrap_or(0),
+                            text: f.get(9).map(|s| s.to_string()).unwrap_or_default(),
                         },
                     );
                 }
@@ -1324,6 +1328,7 @@ impl GameData {
                                 .collect(),
                             mask: 0,
                             crystal_item: 0,
+                            text: String::new(),
                         },
                     );
                 }

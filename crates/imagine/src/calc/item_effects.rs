@@ -22,14 +22,16 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 
 use super::effect::Effect;
+use super::enchant_text;
 use super::gear_effects;
 use crate::Result;
-use crate::data::game_data::{GameData, TokCond, TokValue};
+use crate::data::game_data::{EnchantSide, GameData, TokCond, TokValue};
 use crate::data::json::{self, At};
 use crate::data::stat_labels;
 use crate::fmt;
 use crate::game::WornItem;
 use crate::game::client_reader;
+use crate::text::eq_ic;
 
 /// In the note of an effect that needs a stat the calculator wasn't given ("100 ÷ Luck: depends on your Luck").
 pub const NEEDS_STATS_NOTE: &str = ": depends on your ";
@@ -298,7 +300,59 @@ impl ItemEffects {
                 }
             }
         }
+        self.read_text_where_no_data(side, src, item_name, &mut fx)?;
         Ok(fx)
+    }
+
+    /// A crystal whose tokusei have no data at all (not in comp_hack, the website or the client's per-tokusei text) gave
+    /// "Unknown effect" rows, which the Bonuses page drops, so its bonuses showed only while a fresh tooltip of the worn item
+    /// was saved. The client's description of the crystal is one block for all of its tokusei, so it is read once here
+    /// (`enchant_text`) and stands in for them: put on the lowest id that has no data, the others left empty. What the data
+    /// already gives is not counted again (an effect of the same value, percent and side as one the data gave is skipped).
+    /// Nothing changes when the text has no readable value: the rows stay as they were and the tooltip may still stand in.
+    fn read_text_where_no_data(&self, side: &EnchantSide, src: &str, item_name: &str, fx: &mut Vec<Effect>) -> Result<()> {
+        let is_gap = |e: &Effect| e.missing_data && e.cond == "unparsed" && e.source == src && e.tokusei != 0;
+        let Some(lowest) = fx.iter().filter(|e| is_gap(e)).map(|e| e.tokusei).min() else { return Ok(()) };
+        if side.text.is_empty() {
+            return Ok(());
+        }
+        let known = !self.expertise_ranks.is_empty();
+        let rank_of = |name: &str| -> Option<i32> {
+            if !known {
+                return None;
+            }
+            let id = self.data.expertises_client().ok()?.values().find(|d| eq_ic(&d.name, name))?.id;
+            Some(self.expertise_ranks.get(&id).copied().unwrap_or(0))
+        };
+        let read = enchant_text::effects(&side.text, src, item_name, &enchant_text::Rules { alignment: &self.lnc, rank_of: &rank_of });
+        if !read.iter().any(|e| e.value.is_some()) {
+            return Ok(());
+        }
+        // What the data already gives is not counted twice: an effect on the same side with the same value and percent, or that
+        // names the same stat ("Long-Range damage +15%" when the data has "Long-range Damage"), is skipped. Skipping too much
+        // undercounts, which is the safer way to be wrong here.
+        let family = |label: &str| {
+            let l: String = label.to_lowercase().chars().filter(|c| c.is_alphanumeric()).collect();
+            let l = l.strip_suffix("dealt").unwrap_or(&l).to_string();
+            for tail in ["damage", "boost", "power", "effects"] {
+                if let Some(h) = l.strip_suffix(tail) {
+                    if !h.is_empty() {
+                        return h.to_string();
+                    }
+                }
+            }
+            l
+        };
+        let covered = |e: &Effect, have: &[Effect]| {
+            e.value.is_some()
+                && have.iter().any(|h| {
+                    !is_gap(h) && h.cond != "unparsed" && h.target == e.target && ((h.value == e.value && h.pct == e.pct) || family(&h.label) == family(&e.label))
+                })
+        };
+        fx.retain(|e| !is_gap(e));
+        let fresh: Vec<Effect> = read.into_iter().filter(|e| !covered(e, fx)).map(|e| Effect { tokusei: lowest, ..e }).collect();
+        fx.extend(fresh);
+        Ok(())
     }
 
     /// Requirement of an enchant's extra tokusei (TokuseiManager: 0 none, 1 level, 2 alignment, 10+stat, 100+expertise).
@@ -726,5 +780,69 @@ mod tests {
         v.mult = "CORRECT_TABLE".into();
         v.value = 2.0;
         assert_eq!(with(&v, 57.0).0, 114.0);
+    }
+
+    fn crystal_effects(ranks: &[(i32, i32)], id: i32, tarot: bool) -> Vec<Effect> {
+        let ranks: IndexMap<i32, i32> = ranks.iter().copied().collect();
+        ItemEffects::new(Arc::new(GameData::new()), "NEUTRAL", 95, ranks).enchant(id, tarot, "Weapon").unwrap()
+    }
+
+    /// Ogami's Crystal as a soul fusion (enchant 3105, "of the Warmonger"): its tokusei 2000192-2000194 are in neither comp_hack
+    /// nor the website file, and the client's text for them is one block shared by the three. Before the text was read, the
+    /// effects were "Unknown effect" rows the Bonuses page dropped, so a weapon's Final Critical, Limit Break chance and power
+    /// bonuses showed only while a fresh tooltip of the weapon was saved. The game's text: "While Digitalized, Player/Demon's
+    /// Final Critical rate correction +5%, Limit Break chance +5%, Limit Break power +5%. Player's Damage to Neutral enemies +20%."
+    #[test]
+    fn ogamis_crystal_soul_is_read_from_its_text_once() {
+        let list = crystal_effects(&[], 3105, false);
+        assert!(list.iter().all(|e| !e.missing_data && e.cond != "unparsed" && e.tokusei == 2000192 && e.source == "soul"), "{list:#?}");
+        let find = |label: &str, target: &str| list.iter().filter(|e| e.label == label && e.target == target).collect::<Vec<_>>();
+        // the player's and the digitalize demon's side, only while digitalized, +5% each, counted once
+        for target in ["self", "partner"] {
+            for label in ["Final Critical rate correction", "Limit Break chance", "Limit Break power"] {
+                let hit = find(label, target);
+                assert_eq!(hit.len(), 1, "{label} / {target}: {list:#?}");
+                assert_eq!((hit[0].value, hit[0].pct, hit[0].cond.as_str()), (Some(5.0), true, "digitalized"), "{label} / {target}");
+            }
+        }
+        // the damage line depends on the enemy's alignment, so it is never counted in a total
+        let damage: Vec<&Effect> = list.iter().filter(|e| e.label == "Damage").collect();
+        assert_eq!(damage.len(), 1, "{list:#?}");
+        assert_eq!((damage[0].value, damage[0].cond.as_str(), damage[0].target.as_str(), damage[0].cond_note.as_str()), (Some(20.0), "situational", "self", "vs NEUTRAL enemies; from the game's text"));
+        assert_eq!(list.len(), 7, "{list:#?}");
+    }
+
+    /// Ogami's tarot has the same gap: "If Player has Pursuit Class 9: Digitalize Duration +2%, Limit Break Cap +25, MAX HP +25".
+    /// With the character's ranks unknown the requirement stays a note; known, it is decided (Pursuit is expertise 35, 90 = Class 9).
+    #[test]
+    fn a_tarot_with_a_class_requirement_follows_the_ranks() {
+        let unknown = crystal_effects(&[], 3105, true);
+        assert_eq!(unknown.len(), 3, "{unknown:#?}");
+        assert!(unknown.iter().all(|e| e.cond == "situational" && e.cond_note.starts_with("needs Class 9 Pursuit") && e.tokusei == 2000191), "{unknown:#?}");
+        let met = crystal_effects(&[(35, 90)], 3105, true);
+        assert!(met.iter().all(|e| e.cond == "always" && e.value.is_some()), "{met:#?}");
+        let short = crystal_effects(&[(35, 84)], 3105, true);
+        assert!(short.iter().all(|e| e.cond == "inactive" && e.cond_note.contains("you have 8-4")), "{short:#?}");
+    }
+
+    /// Executioner (soul 3108, "STR +7, Blunt-based Skill effects +10%, For all Death-based skills, Death Boost +10% and Limit
+    /// Break Cap + (STR x 1)"): the clauses that can be read count, the ones that cannot stay as notes, and the block sits on the
+    /// lowest tokusei without data (363485) while the other (2100150) gets nothing.
+    #[test]
+    fn a_clause_the_text_cannot_give_does_not_drop_the_rest() {
+        let list = crystal_effects(&[], 3108, false);
+        let values: Vec<(&str, f64)> = list.iter().filter(|e| e.value.is_some()).map(|e| (e.label.as_str(), e.value.unwrap())).collect();
+        assert_eq!(values, vec![("STR", 7.0), ("Blunt-based Skill effects", 10.0), ("Death Boost", 10.0)], "{list:#?}");
+        let notes: Vec<&Effect> = list.iter().filter(|e| e.value.is_none()).collect();
+        assert!(notes.iter().any(|e| e.label.contains("Limit Break Cap")), "{list:#?}");
+        assert!(notes.iter().all(|e| e.cond == "unparsed" && e.cond_note == "from the game's text" && !e.missing_data));
+        assert!(list.iter().all(|e| e.tokusei == 363485), "{list:#?}");
+    }
+
+    /// A crystal whose text says nothing the reader can use keeps its "Unknown effect" rows (a saved tooltip may still stand in).
+    #[test]
+    fn an_unreadable_text_leaves_the_unknown_rows() {
+        let list = crystal_effects(&[], 3113, false);
+        assert!(!list.is_empty() && list.iter().all(|e| e.missing_data && e.value.is_none()), "{list:#?}");
     }
 }
