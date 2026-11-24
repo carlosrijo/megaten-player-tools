@@ -211,12 +211,18 @@ Digitalization Level, in what order, and how many Digitalize points (DP) that ta
   open with your search, **Add all shown** ticks every match you don't have yet, and the plan updates as you tick. Each
   goal card shows its race as three of its demons in small round pictures. Digitalize's own choices (the assists:
   duration, cooldown, the demon's stat share and skills, Demon Force, Mitama sets) are not goals. A race level itself
-  can be aimed at from the race's table (**Plan to here**). Goals are kept between visits.
-- **The plan**: the cheapest set of race levels that meets every goal, as steps in an order that works. Each step says
-  the DP, which demons you can raise that race with, the races it opens and the boosts you learn on the way. Races that
-  go past DLv 5 are marked: past 5 a race only rises with a Mitama-fused demon.
-- **Races**: every race by side (Law, Neutral, Chaos) and tier, with your level, what the plan adds (pink) and what
-  opens a locked one. Click a race for its ten levels: DP per level, demons, passive, assist choices, and **Plan to here**.
+  can be aimed at from the race's table (**Plan to here**). Goals are kept between visits. With no goals yet, the page
+  offers six to click: the strongest boost of each kind you don't have, from the race that costs you the least.
+- **The plan**: the cheapest set of race levels that meets every goal. On top: the DP in all, the races to raise, and
+  one bar with each step's share of the DP. Then the steps down a numbered line, in an order that works; a step's
+  card, its number, the line down to the next step and its part of the bar are in the colour of its race's side (Law,
+  Neutral, Chaos). Each step says the
+  DP, which demons you can raise that race with, the boosts you get on the way and the races it opens. A step that
+  goes past DLv 5 is tagged **Mitama-fused demon**: past 5 a race only rises with one.
+- **Races**: every race by side (Law, Neutral, Chaos) and tier, with your level (the part you are working on is
+  filled as far as your points go), what the plan adds (pink) and what opens it (a tick marks a need you already
+  meet). A locked race is dashed, with its pictures greyed. Click a race for its ten levels: DP per level, demons,
+  boost, assist choices, and **Plan to here**; the level you are at has a dot and the plan's levels are tinted.
 
 **From my levels** plans from the levels and points of the last snapshot; **From scratch** from the races everyone
 starts with. Tiers are how many DP a race's levels take: tier 1 is 70.2M DP from DLv 1 to 10, tier 5 five times that.

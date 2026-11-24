@@ -4252,7 +4252,9 @@
       if (todo.length) out.stuck = todo.map((t) => raceName(t.r));
       return out;
     }
-    return { P, races, demons, raceName, start, solve, cost, waysIn, canUse, trainers, unlockAll };
+    /** The points DLv 1 to 10 takes in a tier (every race of a tier costs the same, give or take a rounding). */
+    const tierPoints = (t) => { const r = [...races.values()].find((x) => x.tier === t); return r ? r.cum[P.cap] : 0; };
+    return { P, races, demons, raceName, start, solve, cost, waysIn, canUse, trainers, unlockAll, tierPoints };
   }
 
   /** The planner's goals, kept between visits: race levels (with the boost they are for) and demons. */
@@ -4369,8 +4371,9 @@
       const plan = U.goals.length ? E.solve(st, U.goals) : null;
       count.textContent = U.goals.length ? `${U.goals.length} goal${U.goals.length === 1 ? '' : 's'}` : '';
       clear.hidden = !U.goals.length;
-      chips.replaceChildren(dplGoalCards(E, st));
-      rest.replaceChildren(dplPlan(E, st, plan), dplMap(E, st, plan));
+      chips.replaceChildren(dplGoalCards(E, st, toggle, redraw));
+      // no goals: no plan section (the goals card then suggests some boosts); the race map is always there
+      rest.replaceChildren(...[plan ? dplPlan(E, st, plan) : null, dplMap(E, st, plan, redraw)].filter(Boolean));
     };
     const same = (x, g) => x.k === g.k && (g.k === 'race' ? x.race === g.race && (x.why || '') === (g.why || '') : x.id === g.id);
     const isOn = (g) => U.goals.some((x) => same(x, g));
@@ -4399,11 +4402,51 @@
       three.map((id) => h('img', { src: `dcm-icons/${id}.png`, alt: '', loading: 'lazy', onerror: (ev) => { ev.target.style.visibility = 'hidden'; } })));
   }
 
-  /** The goal cards under the search: what each boost is, its race and level (changeable), and a remove button. */
-  function dplGoalCards(E, st) {
+  /**
+   * The strongest boosts you don't have yet, one of each kind (Limit Break cap, each stat...; for you and for your demon
+   * apart): the biggest number wins, and among equals the race that costs the least from where you are.
+   */
+  function dplSuggestions(E, st, count) {
+    const cands = [];
+    E.races.forEach((r) => {
+      const cur = st.lv.get(r.id) || 0;
+      r.extend.forEach(([l, , , text, who]) => {
+        if (cur >= l) return;
+        cands.push({ text, who, r, l, val: Number((/\+(\d+)/.exec(text) || [])[1]) || 0, goal: { k: 'race', race: r.id, level: l, why: `${text}${who === 'demon' ? ' (demon)' : ''}` } });
+      });
+    });
+    cands.forEach((c) => { const p = E.solve(st, [c.goal]); c.dp = p.ok ? p.cost : Infinity; });
+    const seen = new Set(), top = [];
+    for (const c of cands.filter((x) => x.dp < Infinity).sort((a, b) => b.val - a.val || a.dp - b.dp)) {
+      const kind = c.text.replace(/\s*\+\d+.*$/, '') + '|' + c.who;
+      if (seen.has(kind)) continue;
+      seen.add(kind);
+      top.push(c);
+      if (top.length === count) break;
+    }
+    return top;
+  }
+
+  /**
+   * The goal cards under the search: what each boost is, its race and level (changeable), and a remove button.
+   * With no goals yet: a few suggestions to click instead, so the page shows what Digitalize gives before anything is typed.
+   * `toggle(goal)` adds or removes a goal and redraws; `redraw()` redraws after a change made here.
+   */
+  function dplGoalCards(E, st, toggle, redraw) {
     const U = S.dpl;
-    const chip = (g, i) => {
-      const remove = h('button', { type: 'button', class: 'dpl-x', 'aria-label': 'Remove this goal', onclick: () => { U.goals.splice(i, 1); dplGoalsSave(); render(); } }, icon('x'));
+    if (!U.goals.length) {
+      const top = dplSuggestions(E, st, 6);
+      return h('div', { class: 'dpl-empty' },
+        h('p', { class: 'dpl-empty-title', text: 'What do you want from Digitalize?' }),
+        h('p', { class: 'note', text: 'Search the boosts the Digitalization Levels teach (stats, affinities, the Limit Break cap), for you or for your demon, and tick the ones you want. Or start from one of the strongest you don’t have yet:' }),
+        h('div', { class: 'dpl-suggs' }, top.map((c) => h('button', { type: 'button', class: 'dpl-sugg', 'data-tip': `Add “${c.text}” for ${c.who === 'demon' ? 'your demon' : 'you'} as a goal: ${c.r.name} DLv ${c.l}, ${nf.format(c.dp)} Digitalize points from here`, onclick: () => toggle(c.goal) },
+          dplRaceOrbs(E, c.r),
+          h('span', { class: 'dpl-goal-text' }, h('span', { class: 'dpl-goal-title' }, h('b', { text: c.text }), h('span', { class: 'tag dpl-kind' + (c.who === 'demon' ? ' tag-demon' : ''), text: c.who === 'demon' ? 'Demon' : 'You' })),
+            h('span', { class: 'card-sub', text: `${c.r.name} DLv ${c.l} · ${dpShort(c.dp)} DP` })),
+          h('span', { class: 'dpl-sugg-plus', 'aria-hidden': 'true' }, icon('plus'))))));
+    }
+    const chip = (g) => {
+      const remove = h('button', { type: 'button', class: 'dpl-x', 'aria-label': 'Remove this goal', onclick: () => toggle(g) }, icon('x'));
       if (g.k === 'demon') {
         const d = E.demons.get(g.id);
         if (!d) return null;
@@ -4414,69 +4457,90 @@
       const R = E.races.get(g.race);
       if (!R) return null;
       const cur = st.lv.get(g.race) || 0;
-      const sel = h('select', { class: 'input dpl-lvl', 'aria-label': `${R.name} level to reach`, onchange: () => { g.level = Number(sel.value); dplGoalsSave(); render(); } },
+      const sel = h('select', { class: 'input dpl-lvl', 'aria-label': `${R.name} level to reach`, onchange: () => { g.level = Number(sel.value); dplGoalsSave(); redraw(); } },
         Array.from({ length: E.P.cap }, (_, k) => k + 1).map((l) => h('option', { value: l, selected: l === g.level ? true : null, text: `DLv ${l}` })));
       // the boost is the card's title (what you want); the race and level under it
       const demonSide = /\(demon\)$/.test(g.why || '');
       const title = g.why ? g.why.replace(/ \(demon\)$/, '') : R.name;
-      return h('span', { class: 'dpl-goal' }, dplRaceOrbs(E, R),
+      const done = cur >= g.level;
+      return h('span', { class: 'dpl-goal' + (done ? ' done' : '') }, dplRaceOrbs(E, R),
         h('span', { class: 'dpl-goal-text' }, h('span', { class: 'dpl-goal-title' }, h('b', { text: title }),
           g.why ? h('span', { class: 'tag dpl-kind' + (demonSide ? ' tag-demon' : ''), text: demonSide ? 'Demon' : 'You' }) : null),
-          h('span', { class: 'card-sub', text: [g.why ? R.name : null, cur >= g.level ? 'done' : cur ? `you have DLv ${cur}` : 'locked'].filter(Boolean).join(' · ') })), sel, remove);
+          h('span', { class: 'card-sub', text: [g.why ? R.name : null, done ? 'you have it' : cur ? `you have DLv ${cur}` : 'locked'].filter(Boolean).join(' · ') })), sel, remove);
     };
-    return U.goals.length ? h('div', { class: 'dpl-goals' }, U.goals.map(chip))
-      : h('p', { class: 'note', text: 'Add the boosts you are after: the stat, affinity and Limit Break passives the levels teach, for you or for your demon. Tick as many as you like in the list; type “demon” or “you” to see only one side. To aim at a race level itself, click a race below.' });
+    return h('div', { class: 'dpl-goals' }, U.goals.map(chip));
   }
 
+  /**
+   * The plan: the points in all, each race's share of them as one bar, and the steps down a numbered line, in an order
+   * that works (a race is raised only once it is open and you have a demon of it).
+   */
   function dplPlan(E, st, plan) {
-    if (!plan) return sect('The plan', null, null, h('section', { class: 'card' }, h('p', { class: 'note', text: 'Add a goal to see the plan.' })));
     if (!plan.ok) return sect('The plan', null, null, h('section', { class: 'card' }, h('p', { class: 'note', text: plan.why })));
     const S2 = plan.steps;
-    if (!S2.length) return sect('The plan', null, null, h('section', { class: 'card' }, h('p', { class: 'note', text: 'Nothing to do: you already have every goal.' })));
+    if (!S2.length) return sect('The plan', null, null, h('section', { class: 'card dpl-done' }, icon('check'),
+      h('div', null, h('b', { text: 'You already have every goal.' }), h('p', { class: 'note', text: 'Nothing to raise. Add another boost above to plan further.' }))));
+    const mit = S2.filter((x) => x.mitama);
+    const mitTip = `Past DLv ${E.P.plainCap} a race only rises while you are digitalized with a Mitama-fused demon of it (a plain one stops at ${E.P.plainCap})`;
     const sum = h('div', { class: 'dpl-sum' },
-      h('div', { class: 'dpl-stat' }, h('span', { class: 'card-sub', text: 'Digitalize points' }), h('b', { text: nf.format(plan.cost) })),
-      h('div', { class: 'dpl-stat' }, h('span', { class: 'card-sub', text: 'Races to raise' }), h('b', { text: String(S2.length) })),
-      S2.some((x) => x.mitama) ? h('div', { class: 'dpl-stat dpl-stat-list', 'data-tip': `Past DLv ${E.P.plainCap} a race only rises while you are digitalized with a Mitama-fused demon of it` },
-        h('span', { class: 'card-sub', text: 'Needs a Mitama-fused demon' }), h('span', { text: S2.filter((x) => x.mitama).map((x) => x.name).join(', ') })) : null);
+      h('div', { class: 'dpl-stat' }, h('span', { class: 'card-sub', text: 'Digitalize points' }), h('b', { 'data-tip': `${nf.format(plan.cost)} Digitalize points`, text: dpShort(plan.cost) })),
+      h('div', { class: 'dpl-stat' }, h('span', { class: 'card-sub', text: S2.length === 1 ? 'Race to raise' : 'Races to raise' }), h('b', { text: String(S2.length) })),
+      mit.length ? h('div', { class: 'dpl-stat dpl-stat-list' },
+        h('span', { class: 'card-sub', 'data-tip': mitTip, text: 'Needs a Mitama-fused demon' }), h('span', { 'data-tip': mitTip, text: mit.map((x) => x.name).join(', ') })) : null);
+    // each step's share of the points, in the plan's order (hover a part for its race). A part, and the step's number
+    // on the line below, wear the colour of the race's side (Law, Neutral, Chaos), as the race map's columns do.
+    const share = (x) => Math.round((x.dp / plan.cost) * 100);
+    const side = (x) => String((E.races.get(x.race) || {}).side || '').toLowerCase();
+    const sideName = (x) => { const s = side(x); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; };
+    const bar = S2.length > 1 && plan.cost > 0 ? h('div', { class: 'dpl-dpbar' },
+      S2.map((x, i) => h('i', { class: side(x), style: `flex-grow:${Math.max(1, Math.round((x.dp / plan.cost) * 1000))}`, tabindex: 0, role: 'img', 'aria-label': `Step ${i + 1}, ${x.name} (${sideName(x)}): ${share(x)}% of the points`,
+        'data-tip': `${i + 1}. ${x.name} (${sideName(x)}) · ${nf.format(x.dp)} DP · ${share(x) || '<1'}% of the plan` }))) : null;
+    const line = (key, ...body) => h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: key }), body);
     const list = h('ol', { class: 'dpl-steps' }, S2.map((x, i) => {
-      const lines = [];
-      if (x.with.length) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Raise it with' }),
+      const R = E.races.get(x.race), lines = [];
+      if (x.with.length) lines.push(line('Raise it with',
         h('span', { class: 'dpl-pics' }, x.with.slice(0, 8).map((d) => h('span', { class: 'dpl-mini', 'data-tip': `${d.name} (base level ${d.base})` }, dplPic(d), h('span', { text: d.name }))),
           x.with.length > 8 ? h('span', { class: 'src-count', text: `+${x.with.length - 8} more` }) : null)));
-      if (x.mitama) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Note' }), h('span', { text: `Past DLv ${E.P.plainCap} the demon has to be Mitama-fused (a plain one stops at ${E.P.plainCap}).` })));
-      if (x.opens.length) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Opens' }), h('span', { class: 'dpl-tags' }, x.opens.map((r) => h('span', { class: 'tag tag-digi', text: r.name })))));
       // the boosts learned on the way (for you, or for your demon); the assists and demons a level opens are in the race's table
-      if (x.extend.length) lines.push(h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Boosts' }),
+      if (x.extend.length) lines.push(line('You get',
         h('span', { class: 'dpl-tags' }, x.extend.map((e) => h('span', { class: 'tag' + (e.who === 'demon' ? ' tag-demon' : ''), 'data-tip': `${e.name}, learned at DLv ${e.l}, for ${e.who === 'demon' ? 'your demon' : 'you'}`, text: `${e.text}${e.who === 'demon' ? ' (demon)' : ''}` })))));
-      return h('li', { class: 'dpl-step' },
-        h('div', { class: 'dpl-step-head' }, h('span', { class: 'dpl-n', text: String(i + 1) }),
-          h('span', { class: 'dpl-step-name' }, h('b', { text: x.name }), h('span', { class: 'card-sub', text: ` DLv ${x.from} → ${x.to}` })),
+      if (x.opens.length) lines.push(line('Opens', h('span', { class: 'dpl-tags' }, x.opens.map((r) => h('span', { class: 'tag tag-digi', text: r.name })))));
+      // the step wears its race's side: the card's tint, its number, and the line down to the next number
+      return h('li', { class: 'dpl-step ' + side(x) },
+        h('span', { class: 'dpl-n', 'aria-hidden': 'true', text: String(i + 1) }),
+        h('div', { class: 'dpl-step-head' }, R ? dplRaceOrbs(E, R) : null,
+          h('span', { class: 'dpl-step-name' }, h('b', { text: x.name }),
+            h('span', { class: 'dpl-step-lv' }, `DLv ${x.from}`, h('span', { class: 'dpl-arrow', text: ` → ${x.to}` }))),
           h('span', { class: 'tag', 'data-tip': 'Tier: how many points its levels take, 1 (least) to 5 (most)', text: `Tier ${x.tier}` }),
+          x.mitama ? h('span', { class: 'tag dpl-mitama', 'data-tip': mitTip, text: 'Mitama-fused demon' }) : null,
           h('span', { class: 'toolbar-spacer' }),
           h('span', { class: 'dpl-dp', 'data-tip': `${nf.format(x.dp)} Digitalize points`, text: `${dpShort(x.dp)} DP` })),
         lines);
     }));
     const stuck = S2.stuck ? h('p', { class: 'note warn', text: `Could not place: ${S2.stuck.join(', ')}.` }) : null;
-    return sect('The plan', 'cheapest first, in an order that works', null, h('section', { class: 'card' }, sum, list, stuck));
+    return sect('The plan', 'cheapest first, in an order that works', null, h('section', { class: 'card dpl-plan-card' }, sum, bar, list, stuck));
   }
 
   /** Every race as a tile, by side (Law, Neutral, Chaos) and tier, with your level, the plan's level and what opens it. */
-  function dplMap(E, st, plan) {
+  function dplMap(E, st, plan, redraw) {
     const U = S.dpl, need = plan && plan.ok ? plan.need : new Map();
-    const sides = [['LAW', 'Law'], ['NEUTRAL', 'Neutral'], ['CHAOS', 'Chaos']];
+    const sides = [['LAW', 'Law', 'law'], ['NEUTRAL', 'Neutral', 'neutral'], ['CHAOS', 'Chaos', 'chaos']];
     const tiers = [...new Set([...E.races.values()].map((r) => r.tier))].sort((a, b) => a - b);
     const tile = (r) => {
       const cur = st.lv.get(r.id) || 0, to = Math.max(need.get(r.id) || 0, cur), pts = st.pts.get(r.id) || 0;
       const next = cur >= 1 && cur < E.P.cap ? r.xp[cur - 1] : 0;
       const pct = next ? Math.min(100, (pts / next) * 100) : cur >= E.P.cap ? 100 : 0;
+      // ten parts, one per level: yours, the plan's, and the part you are working on filled as far as your points go
       const bar = h('span', { class: 'dpl-bar', 'aria-hidden': 'true' },
-        Array.from({ length: E.P.cap }, (_, k) => h('i', { class: k < cur ? 'on' : k < to ? 'plan' : '' })));
-      // a race open from the start keeps an empty needs line, so every tile is the same height
+        Array.from({ length: E.P.cap }, (_, k) => h('i', { class: k < cur ? 'on' : k < to ? 'plan' : '',
+          style: k === cur && k >= to && next && pct >= 1 ? `background:linear-gradient(90deg, var(--text-2) ${pct}%, var(--grid) ${pct}%)` : null })));
+      // what opens it: a need you already meet gets a tick; a race open from the start says so (every tile the same height)
       const needs = r.unlock.length ? h('span', { class: 'dpl-needs' }, r.unlock.map(([u, l]) => h('span', { class: (st.lv.get(u) || 0) >= l ? 'met' : '', text: `${E.raceName(u)} ${l}` })))
-        : h('span', { class: 'dpl-needs', 'aria-hidden': 'true', text: ' ' });
+        : h('span', { class: 'dpl-needs dpl-needs-none', text: 'Open from the start' });
+      const needTip = r.unlock.length && !cur ? ` It opens with ${r.unlock.map(([u, l]) => `${E.raceName(u)} ${l}`).join(' and ')}.` : '';
       return h('button', { type: 'button', class: 'dpl-tile' + (cur ? '' : ' locked') + (to > cur ? ' planned' : '') + (U.sel === r.id ? ' sel' : ''), 'aria-pressed': String(U.sel === r.id),
-        'data-tip': cur ? `${r.name}: DLv ${cur}` + (next ? `, ${nf.format(pct)}% to the next` : '') + (to > cur ? `. The plan takes it to ${to}.` : '') : `${r.name} is locked` + (to ? `. The plan opens it${to > 1 ? ` and takes it to ${to}` : ''}.` : '.'),
-        onclick: () => { U.sel = U.sel === r.id ? null : r.id; render(); } },
+        'data-tip': cur ? `${r.name}: DLv ${cur}` + (next ? `, ${nf.format(pct)}% to the next` : '') + (to > cur ? `. The plan takes it to ${to}.` : '') : `${r.name} is locked.${needTip}` + (to ? ` The plan opens it${to > 1 ? ` and takes it to ${to}` : ''}.` : ''),
+        onclick: () => { U.sel = U.sel === r.id ? null : r.id; redraw(); } },
         // two columns: the race's orbs, then the rest (name and level, the level bar, what opens it)
         dplRaceOrbs(E, r),
         h('span', { class: 'dpl-tile-body' },
@@ -4484,42 +4548,49 @@
           bar, needs));
     };
     const grid = h('div', { class: 'dpl-map' },
-      h('span'), sides.map(([, label]) => h('span', { class: 'dpl-col-head', text: label })),
-      tiers.map((t) => [h('span', { class: 'dpl-row-head', 'data-tip': `Tier ${t}: DLv 1 to 10 takes ${t}× the points of tier 1`, text: `Tier ${t}` }),
+      h('span'), sides.map(([, label, cls]) => h('span', { class: 'dpl-col-head ' + cls, text: label })),
+      tiers.map((t) => [h('span', { class: 'dpl-row-head', 'data-tip': `Tier ${t}: DLv 1 to 10 takes ${nf.format(E.tierPoints(t))} Digitalize points` + (t > 1 ? `, ${t}× tier 1` : '') },
+        h('b', { text: `Tier ${t}` }), h('span', { class: 'dpl-mult', text: `${dpShort(E.tierPoints(t))} DP` })),
         sides.map(([side]) => h('div', { class: 'dpl-cell' }, [...E.races.values()].filter((r) => r.side === side && r.tier === t).map(tile)))]));
-    // the legend: the bar's two colours, then the two looks of a race's needs (the samples are drawn like the tiles' own)
-    const key = legend(['dpl-sw-on', 'Your levels'], ['dpl-sw-plan', 'Levels the plan adds']);
-    key.append(h('span', null, h('span', { class: 'dpl-needs' }, h('span', { class: 'met', text: 'Wild Bird 4' })), 'Need you have'),
-      h('span', null, h('span', { class: 'dpl-needs' }, h('span', { text: 'Avian 6' })), 'Need still to reach'));
-    const body = [h('section', { class: 'card dpl-map-card' }, grid, key)];
-    if (U.sel && E.races.has(U.sel)) body.push(dplRace(E, st, E.races.get(U.sel)));
-    return sect('Races', 'click one for its levels', null, ...body);
+    const body = [h('section', { class: 'card dpl-map-card' }, grid, legend(['dpl-sw-on', 'Your levels'], ['dpl-sw-plan', 'Levels the plan adds']))];
+    if (U.sel && E.races.has(U.sel)) body.push(dplRace(E, st, E.races.get(U.sel), need, redraw));
+    const open = [...E.races.values()].filter((r) => (st.lv.get(r.id) || 0) >= 1).length;
+    return sect('Races', `${open} of ${E.races.size} open · click one for its levels`, null, ...body);
   }
 
-  /** One race's ten levels: points, demons, passive and assists, each with a button to plan up to it. */
-  function dplRace(E, st, r) {
-    const U = S.dpl, cur = st.lv.get(r.id) || 0;
+  /**
+   * One race's ten levels: points, demons, passive and assists, each with a button to plan up to it. The levels you
+   * have are dimmed, the one you are at is marked, and the ones the plan adds are tinted.
+   */
+  function dplRace(E, st, r, need, redraw) {
+    const U = S.dpl, cur = st.lv.get(r.id) || 0, to = Math.max(need.get(r.id) || 0, cur);
+    const next = cur >= 1 && cur < E.P.cap ? r.xp[cur - 1] : 0, pct = next ? Math.min(100, ((st.pts.get(r.id) || 0) / next) * 100) : 0;
     const rows = Array.from({ length: E.P.cap }, (_, k) => k + 1).map((l) => {
       const ds = r.gated.filter((d) => d.level === l), ex = r.extend.filter(([x]) => x === l), as = r.assists.find(([x]) => x === l);
-      return h('tr', { class: l <= cur ? 'dpl-have' : '' },
-        h('td', { class: 'num', text: String(l) }),
+      return h('tr', { class: l <= cur ? 'dpl-have' : l <= to ? 'dpl-plan-row' : '' },
+        h('td', { class: 'num' }, l === cur ? h('span', { class: 'dpl-here', 'data-tip': 'Your level now' + (next ? `, ${nf.format(pct)}% to the next` : ''), text: '●' }) : null, String(l)),
         h('td', { class: 'num', text: l === 1 ? '—' : nf.format(r.xp[l - 2]) }),
         h('td', null, ds.length ? h('span', { class: 'dpl-pics' }, ds.map((d) => h('span', { class: 'dpl-mini' }, dplPic(d), h('span', { text: d.name })))) : null),
-        h('td', null, ex.map(([, , name, text, who]) => h('div', { 'data-tip': name, text: `${text}${who === 'demon' ? ' (demon)' : ''}` }))),
-        h('td', null, as ? as[1].map(([, t]) => t).join(' / ') : ''),
-        h('td', null, l > cur ? h('button', { type: 'button', class: 'btn btn-sm btn-ghost', onclick: () => {
+        h('td', null, ex.map(([, , name, text, who]) => h('span', { class: 'tag' + (who === 'demon' ? ' tag-demon' : ''), 'data-tip': `${name}, for ${who === 'demon' ? 'your demon' : 'you'}`, text: `${text}${who === 'demon' ? ' (demon)' : ''}` }))),
+        h('td', { class: 'dpl-assist' }, as ? as[1].map(([, t], i) => [i ? h('span', { class: 'dpl-or', text: 'or' }) : null, h('span', { text: t })]) : null),
+        h('td', { class: 'dpl-act' }, l > cur ? h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'data-tip': `Add ${r.name} DLv ${l} as a goal`, onclick: () => {
           const g = U.goals.find((x) => x.k === 'race' && x.race === r.id && !x.why);
           if (g) g.level = l; else U.goals.push({ k: 'race', race: r.id, level: l });
-          dplGoalsSave(); render();
+          dplGoalsSave(); redraw();
         } }, 'Plan to here') : h('span', { class: 'card-sub', text: 'have' })));
     });
     const others = [...E.demons.values()].filter((d) => d.opts.some(([x]) => x === r.id) && d.race !== r.id);
     const own = [...E.demons.values()].filter((d) => d.race === r.id && !d.gate);
     return h('section', { class: 'card dpl-race' },
-      h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: `${r.name} · Tier ${r.tier}` }),
-        h('span', { class: 'card-sub', text: [cur ? `you have DLv ${cur}` : 'locked', r.unlock.length ? `opens with ${r.unlock.map(([u, l]) => `${E.raceName(u)} ${l}`).join(' + ')}` : 'open from the start', `DLv 1 to 10: ${nf.format(r.cum[E.P.cap])} points`].join(' · ') })),
+      h('div', { class: 'dpl-race-head' }, dplRaceOrbs(E, r),
+        h('div', { class: 'dpl-goal-text' }, h('h3', { class: 'card-title', text: r.name }),
+          h('span', { class: 'card-sub', text: [cur ? `you have DLv ${cur}` + (next && pct >= 1 ? ` (${nf.format(pct)}% to ${cur + 1})` : '') : 'locked',
+            r.unlock.length ? `opens with ${r.unlock.map(([u, l]) => `${E.raceName(u)} ${l}`).join(' + ')}` : 'open from the start'].join(' · ') })),
+        h('span', { class: 'toolbar-spacer' }),
+        h('span', { class: 'tag', 'data-tip': `DLv 1 to 10 takes ${nf.format(r.cum[E.P.cap])} Digitalize points`, text: `Tier ${r.tier} · ${dpShort(r.cum[E.P.cap])} DP` }),
+        h('button', { type: 'button', class: 'dpl-x', 'aria-label': 'Close this race', onclick: () => { U.sel = null; redraw(); } }, icon('x'))),
       h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl dpl-tbl' },
-        h('thead', null, h('tr', null, ['DLv', 'Points to reach', 'Demons it opens', 'Passive learned', 'Assist choice', ''].map((t) => h('th', { text: t })))),
+        h('thead', null, h('tr', null, ['DLv', 'Points to reach', 'Demons it opens', 'Boost learned', 'Assist: pick one', ''].map((t, i) => h('th', { class: i < 2 ? 'num' : null, text: t })))),
         h('tbody', null, rows))),
       own.length ? h('div', { class: 'dpl-line' }, h('span', { class: 'dpl-key', text: 'Its other demons' }),
         h('span', { class: 'dpl-pics' }, own.map((d) => h('span', { class: 'dpl-mini', 'data-tip': `Opened by ${d.opts.map(([x, l]) => `${E.raceName(x)} ${l}`).join(' or ')}` }, dplPic(d), h('span', { text: d.name }))))) : null,

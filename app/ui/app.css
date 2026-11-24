@@ -1234,76 +1234,134 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* ---------- Digitalize Planner ---------- */
-/* One data colour: the digitalize pink (--demon) for the levels the plan adds; your own levels in the text colour. */
+/* The digitalize pink (--demon) is what the plan adds to a race; your own levels are in the text colour. A race's side
+   (Law, Neutral, Chaos) wears the alignment colours, as everywhere else in the app: the map's column names, and in the
+   plan each step's card, number, line to the next step and part of the points bar (--side). */
 .page-dpl .note.warn { color: var(--over-ink); }
-.tag.dpl-kind { flex: none; min-width: 52px; justify-content: center; }
-.fus-opt.dpl-have { opacity: .55; cursor: default; }
-.fus-opt.dpl-have:hover { background: none; }
-.dpl-check.dpl-check-none { border-color: transparent; }
-.dpl-goals { display: flex; flex-wrap: wrap; gap: 8px; }
-.dpl-goal { display: inline-flex; align-items: center; gap: 8px; padding: 4px 4px 4px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); min-width: 0; }
-.dpl-goal .dcm-icon { margin: 0 0 0 -6px; }
-.dpl-goal-text { display: grid; line-height: 1.25; min-width: 0; }
-.dpl-goal-text b { font-size: 13px; }
-.dpl-lvl { width: auto; height: 26px; padding: 0 6px; font-size: 12px; }
-.dpl-x { all: unset; box-sizing: border-box; width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 6px; color: var(--text-3); cursor: pointer; }
+.dpl-rest { display: contents; }
+.slot-icon.dpl-orbs { width: 34px; height: 34px; image-rendering: auto; }
+.dpl-x { all: unset; box-sizing: border-box; flex: none; width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 6px; color: var(--text-3); cursor: pointer; }
 .dpl-x:hover { background: var(--hover); color: var(--text); }
 .dpl-x:focus-visible { outline: 2px solid var(--focus); }
 .dpl-x .icon { width: 14px; height: 14px; }
-.dpl-sum { display: flex; flex-wrap: wrap; gap: 10px 28px; }
-.dpl-stat { display: grid; gap: 2px; }
-.dpl-stat b { font: 600 20px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
-.dpl-stat-list { flex: 1 1 240px; align-content: start; font-size: 13px; }
-.dpl-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.dpl-step { border: 1px solid var(--border); border-left: 3px solid var(--demon); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
-.dpl-step-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.dpl-n { width: 22px; height: 22px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--surface-2); color: var(--text-2); }
-.dpl-step-name b { font-size: 14px; }
-.dpl-dp { font-weight: 600; font-variant-numeric: tabular-nums; }
-.dpl-line { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: start; font-size: 12px; }
-.dpl-key { color: var(--text-3); padding-top: 2px; }
-.dpl-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.dpl-tags .tag { height: auto; min-height: 18px; white-space: normal; padding: 2px 7px; line-height: 1.3; }
-.dpl-pics { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-.dpl-mini { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
-.dpl-mini .dcm-icon { width: 22px; height: 22px; margin: 0; }
-.dpl-mini .dcm-icon img { width: 22px; height: 22px; }
-.dpl-map-card { overflow-x: auto; }
-.dpl-map { display: grid; grid-template-columns: 58px repeat(3, minmax(180px, 1fr)); gap: 8px; align-items: start; }
-.dpl-col-head { font-size: 12px; font-weight: 600; color: var(--text-2); text-align: center; }
-.dpl-row-head { font-size: 12px; color: var(--text-3); padding-top: 10px; }
-.dpl-cell { display: grid; gap: 6px; }
-.dpl-tile { all: unset; box-sizing: border-box; display: grid; gap: 5px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; min-width: 0; }
-.dpl-tile:hover { background: var(--hover); }
-.dpl-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
-.dpl-tile.locked { border-style: dashed; }
-.dpl-tile.locked .dpl-tile-head b { color: var(--text-2); }
-.dpl-tile.planned { border-color: color-mix(in srgb, var(--demon) 55%, transparent); }
-.dpl-tile.sel { box-shadow: 0 0 0 2px var(--focus); }
-.dpl-tile-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
-.dpl-lv { font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; }
-.dpl-tile.planned .dpl-lv { color: var(--text); font-weight: 600; }
-.dpl-bar { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
-.dpl-bar i { height: 5px; border-radius: 2px; background: var(--grid); }
-.dpl-bar i.on, .swatch.dpl-sw-on { background: var(--text-2); }
-.dpl-bar i.plan, .swatch.dpl-sw-plan { background: var(--demon); }
-.dpl-needs { display: flex; flex-wrap: nowrap; gap: 2px 8px; font-size: 11px; line-height: 15px; color: var(--text-3); overflow: hidden; white-space: nowrap; }
-.dpl-needs .met { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--text-3); }
-.dpl-tbl td { font-size: 12px; }
-.dpl-tbl tr.dpl-have td { color: var(--text-3); }
-.dpl-tbl tr.dpl-have .dcm-icon { opacity: .6; }
-.dpl-rest { display: contents; }
+
+/* The boost search: a list you tick in. The ones you have are listed last, dimmed, and can't be ticked. */
+.tag.dpl-kind { flex: none; min-width: 52px; justify-content: center; }
 .dpl-menu { max-height: 380px; padding-top: 0; }
 .dpl-menu-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -4px 2px; background: var(--surface); border-bottom: 1px solid var(--border); min-height: 34px; box-sizing: border-box; }
 .dpl-check { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); display: inline-grid; place-items: center; }
 .dpl-check.ticked { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .dpl-check .icon { width: 14px; height: 14px; }
 .dpl-check.ticked .icon circle { display: none; }
-.slot-icon.dpl-orbs { width: 34px; height: 34px; image-rendering: auto; }
-.dpl-goal-title { display: inline-flex; align-items: center; gap: 6px; }
+.dpl-check.dpl-check-none { border-color: transparent; }
+.fus-opt.dpl-have { opacity: .55; cursor: default; }
+.fus-opt.dpl-have:hover { background: none; }
+
+/* Goals: one card per boost (the race's orbs, the boost, its race, the level to reach), in an even grid. */
+.dpl-goals, .dpl-suggs { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.dpl-goal { display: flex; align-items: center; gap: 10px; padding: 8px 6px 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); min-width: 0; }
+.dpl-goal.done { opacity: .6; }
+.dpl-goal .dcm-icon { margin: 0; }
+.dpl-goal-text { flex: 1; display: grid; gap: 1px; line-height: 1.25; min-width: 0; }
+.dpl-goal-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.dpl-goal-title b { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dpl-goal-title .tag { height: 16px; font-size: 10px; min-width: 0; padding: 0 6px; }
-.dpl-tile-head { align-items: center; }
-.dpl-tile-head > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dpl-tile { grid-template-columns: 34px 1fr; column-gap: 9px; align-items: center; }
-.dpl-tile .dpl-orbs { width: 34px; height: 34px; }
+.dpl-lvl { flex: none; width: auto; height: 26px; padding: 0 6px; font-size: 12px; }
+/* no goals yet: a headline and a few boosts to click */
+.dpl-empty { display: grid; gap: 6px; }
+.dpl-empty-title { margin: 0; font: 600 15px/1.3 var(--font-display); }
+.dpl-suggs { margin-top: 6px; }
+.dpl-sugg { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px dashed var(--border-strong); border-radius: 10px; cursor: pointer; min-width: 0; }
+.dpl-sugg:hover { background: var(--hover); border-style: solid; border-color: color-mix(in srgb, var(--demon) 55%, transparent); }
+.dpl-sugg:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.dpl-sugg-plus { flex: none; display: inline-grid; color: var(--text-3); }
+.dpl-sugg-plus .icon { width: 16px; height: 16px; }
+.dpl-sugg:hover .dpl-sugg-plus { color: var(--demon); }
+
+/* The plan: the totals, each step's share of the points as one bar, then the steps down a numbered line. */
+.dpl-plan-card { gap: 14px; }
+/* the totals: one row of labels, one row of values under it, the values on one baseline (big numbers and the list of races alike) */
+.dpl-sum { display: grid; grid-auto-flow: column; grid-template-rows: auto auto; grid-template-columns: max-content max-content minmax(0, 1fr); gap: 2px 32px; align-items: baseline; }
+.dpl-stat { display: contents; }
+.dpl-stat b { font: 600 26px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.dpl-stat-list > span:last-child { font-size: 13px; }
+.dpl-dpbar { display: flex; gap: 2px; height: 10px; }
+.dpl-dpbar i, .dpl-step { --side: var(--text-3); }
+.dpl-dpbar i.law, .dpl-step.law { --side: var(--law); }
+.dpl-dpbar i.neutral, .dpl-step.neutral { --side: var(--neutral); }
+.dpl-dpbar i.chaos, .dpl-step.chaos { --side: var(--chaos); }
+.dpl-dpbar i { min-width: 5px; border-radius: 3px; background: var(--side); }   /* the 2px gap keeps same-side neighbours apart */
+.dpl-dpbar i:hover, .dpl-dpbar i:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.dpl-steps { position: relative; list-style: none; margin: 0; padding: 0 0 0 38px; display: grid; gap: 10px; }
+.dpl-step { position: relative; display: grid; gap: 8px; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--side) 28%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--side) 9%, var(--surface-2)); }
+/* the line from a step's number down to the next one, 4px clear of both numbers; under the last, to the card's foot */
+.dpl-step::before { content: ''; position: absolute; left: -26px; top: 44px; bottom: -20px; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--side) 60%, transparent); }
+.dpl-step:last-child::before { bottom: 0; }
+.dpl-n { position: absolute; left: -38px; top: 14px; width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--side); color: var(--surface); }
+.dpl-step-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* the head's tags: lower-case text sits low in the font's line box, so it is lifted 1px to look centred */
+.dpl-step-head .tag { padding-bottom: 1px; }
+/* "Mitama-fused demon": the cyan of the game's Mitama mark (as on the demon pictures), apart from the pink demon boosts */
+.tag.dpl-mitama { border-color: color-mix(in srgb, #7dcfff 65%, var(--text-3)); background: color-mix(in srgb, #7dcfff 16%, transparent); color: var(--text); }
+.dpl-step-name { display: grid; gap: 1px; line-height: 1.25; }
+.dpl-step-name b { font-size: 14px; }
+.dpl-step-lv { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.dpl-arrow { color: var(--demon); font-weight: 600; }
+.dpl-dp { font: 600 15px/1.2 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dpl-line { display: grid; grid-template-columns: 96px 1fr; gap: 8px; align-items: start; font-size: 12px; }
+.dpl-key { color: var(--text-3); padding-top: 2px; }
+.dpl-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.dpl-tags .tag, .dpl-tbl td .tag { height: auto; min-height: 18px; white-space: normal; padding: 2px 7px; line-height: 1.3; }
+.dpl-pics { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.dpl-mini { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+.dpl-mini .dcm-icon { width: 22px; height: 22px; margin: 0; }
+.dpl-mini .dcm-icon img { width: 22px; height: 22px; }
+.card.dpl-done { grid-template-columns: auto 1fr; align-items: center; }
+.dpl-done > .icon { width: 28px; height: 28px; color: var(--demon); }
+.dpl-done .note { margin: 2px 0 0; }
+
+/* Races: a tile per race, by side (columns) and tier (rows). A locked race is dashed and its orbs greyed. */
+.dpl-map-card { overflow-x: auto; }
+.dpl-map { display: grid; grid-template-columns: 64px repeat(3, minmax(190px, 1fr)); gap: 8px 10px; align-items: start; }
+.dpl-col-head { padding-bottom: 5px; border-bottom: 2px solid color-mix(in srgb, currentColor 45%, transparent); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; text-align: center; color: var(--text-2); }
+.dpl-col-head.law { color: var(--law); }
+.dpl-col-head.neutral { color: var(--neutral); }
+.dpl-col-head.chaos { color: var(--chaos); }
+.dpl-row-head { display: grid; gap: 1px; padding-top: 10px; font-size: 12px; color: var(--text-2); }
+.dpl-row-head b { font-weight: 600; }
+.dpl-mult { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dpl-cell { display: grid; gap: 6px; }
+.dpl-tile { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 34px 1fr; column-gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; min-width: 0; }
+.dpl-tile:hover { background: var(--hover); }
+.dpl-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.dpl-tile.locked { border-style: dashed; }
+.dpl-tile.locked .dpl-tile-head b { color: var(--text-2); }
+.dpl-tile.locked .dpl-orbs { filter: grayscale(1); opacity: .5; }
+.dpl-tile.planned { border-style: solid; border-color: color-mix(in srgb, var(--demon) 55%, transparent); background: color-mix(in srgb, var(--demon) 6%, var(--surface)); }
+.dpl-tile.planned .dpl-orbs { filter: none; opacity: 1; }
+.dpl-tile.sel { border-style: solid; border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
 .dpl-tile-body { display: grid; gap: 5px; min-width: 0; }
+.dpl-tile-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+.dpl-tile-head > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dpl-lv { font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; }
+.dpl-tile.planned .dpl-lv { color: var(--text); font-weight: 600; }
+.dpl-bar { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+.dpl-bar i { height: 6px; border-radius: 2px; background: var(--grid); }
+.dpl-bar i.on, .swatch.dpl-sw-on { background: var(--text-2); }
+.dpl-bar i.plan, .swatch.dpl-sw-plan { background: var(--demon); }
+.dpl-needs { display: flex; flex-wrap: nowrap; gap: 2px 8px; font-size: 11px; line-height: 15px; color: var(--text-3); overflow: hidden; white-space: nowrap; }
+.dpl-needs .met { color: var(--text-2); }
+.dpl-needs .met::before { content: '\2713'; margin-right: 3px; }   /* a tick: a need you already meet */
+
+/* One race's levels: yours dimmed, the one you are at marked with a dot, the plan's tinted. */
+.dpl-race-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dpl-race-head .card-title { margin: 0; font-size: 15px; }
+.dpl-tbl td { font-size: 12px; vertical-align: middle; }
+.dpl-tbl td .tag { display: inline-flex; margin: 1px 4px 1px 0; }
+.dpl-tbl tr.dpl-have td { color: var(--text-3); }
+.dpl-tbl tr.dpl-have .dcm-icon, .dpl-tbl tr.dpl-have .tag { opacity: .6; }
+.dpl-tbl tr.dpl-plan-row td { background: color-mix(in srgb, var(--demon) 11%, transparent); }
+.dpl-here { margin-right: 6px; font-size: 8px; vertical-align: 2px; color: var(--demon); }
+.dpl-assist { color: var(--text-2); }
+.dpl-or { margin: 0 6px; font-size: 11px; color: var(--text-3); }
+.dpl-tbl td.dpl-act { width: 1%; text-align: right; white-space: nowrap; }
