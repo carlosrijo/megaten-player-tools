@@ -1150,8 +1150,24 @@ impl Dashboard {
                 }));
                 if let Some(n) = &item_name {
                     part.insert("item_name".into(), json!(n));
-                    if let Some(t) = data.item_text(p.item_id)? {
-                        part.insert("item_tip".into(), json!(t)); // the item's own description, for the hover tooltip
+                    // the tooltip's effects: a Demon Force stack entry lists all its tokusei in the game's words ("* " before each, as the
+                    // game's tooltip has it); an epitaph shows its skill's description without the first line (the demon's own flavour)
+                    let tables = data.demons()?;
+                    let stack = tables.force_stack_item.iter().find(|&(_, &i)| i == p.item_id).map(|(&s, _)| s);
+                    if let Some(toks) = stack.and_then(|s| tables.force_stack_tokusei.get(&s)) {
+                        let mut lines: Vec<String> = Vec::new();
+                        for &tid in toks {
+                            if let Some(text) = data.tokusei_text(tid)? {
+                                lines.extend(text.split('\n').enumerate().map(|(i, l)| if i == 0 { format!("* {l}") } else { l.to_string() }));
+                            }
+                        }
+                        if !lines.is_empty() {
+                            part.insert("item_tip".into(), json!(lines.join("\n")));
+                        }
+                    } else if let Some(text) = if p.skill_id > 0 { data.skill_text(p.skill_id)? } else { None } {
+                        if let Some((_, effects)) = text.split_once('\n') {
+                            part.insert("tip".into(), json!(effects.trim()));
+                        }
                     }
                 }
                 if p.toggle {

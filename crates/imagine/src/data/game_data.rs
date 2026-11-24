@@ -445,7 +445,7 @@ pub struct GameData {
     exp_client: OnceLock<IndexMap<i32, ExpertiseDef>>,
     rank_client: OnceLock<RankData>,
     skill_text: OnceLock<HashMap<i32, String>>,
-    item_text: OnceLock<HashMap<i32, String>>,
+    tokusei_text: OnceLock<HashMap<i32, String>>,
     skill_icons: OnceLock<HashMap<i32, Option<String>>>,
     skill_names: OnceLock<IndexMap<i32, Option<String>>>,
     enchants: OnceLock<IndexMap<i32, Enchant>>,
@@ -496,7 +496,7 @@ impl GameData {
             exp_client: OnceLock::new(),
             rank_client: OnceLock::new(),
             skill_text: OnceLock::new(),
-            item_text: OnceLock::new(),
+            tokusei_text: OnceLock::new(),
             skill_icons: OnceLock::new(),
             skill_names: OnceLock::new(),
             enchants: OnceLock::new(),
@@ -849,18 +849,18 @@ impl GameData {
         Ok(t.get(&skill_id).cloned())
     }
 
-    /// The game's own description of a demon item (reference\item-text.tsv, the client's CItemData: the Demon Force items and the
-    /// demon equipment items), with real line breaks; `None` if the game has none.
-    pub fn item_text(&self, item_id: i32) -> Result<Option<String>> {
-        let t = once(&self.item_text, || {
+    /// The game's own text of a tokusei (reference\tokusei-client-text.tsv, the client's CMessageData_Charastic: "Summoner Curative
+    /// Received +20%"), with real line breaks; `None` if the client has none.
+    pub fn tokusei_text(&self, tokusei_id: i32) -> Result<Option<String>> {
+        let t = once(&self.tokusei_text, || {
             let mut res = HashMap::new();
-            if let Some(lines) = reference_lines("item-text.tsv")? {
+            if let Some(lines) = reference_lines("tokusei-client-text.tsv")? {
                 for line in &lines {
                     let r: Vec<&str> = line.split('\t').collect();
                     if r.len() >= 3 {
                         if let Some(id) = crate::fmt::parse_i32(r[0]) {
                             if !r[2].trim().is_empty() {
-                                res.insert(id, r[2].replace("\\n", "\n").trim().to_string());
+                                res.insert(id, r[2].replace("\\n", "\n").trim_end().to_string());
                             }
                         }
                     }
@@ -868,7 +868,7 @@ impl GameData {
             }
             Ok(res)
         })?;
-        Ok(t.get(&item_id).cloned())
+        Ok(t.get(&tokusei_id).cloned())
     }
 
     /// The client's icon name for a skill (e.g. "icon_SD01_0002a"); `None` if it has none. From reference\skill-icons.tsv
