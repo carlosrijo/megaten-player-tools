@@ -237,7 +237,6 @@ impl DigitalizeSave {
         let saved = DigitalizeSave::load(store)?;
         let progress = demon_reader::read_progress(mem);
         let demons = demon_reader::read_demons(mem, false);
-        pipeline::note_demons(store, &demons, now)?; // the demons seen, and which one is summoned now (the Overview shows it)
         let mut demon: Option<DemonRecord> = None;
         if let Some(p) = progress.as_ref().filter(|p| p.digitalized()) {
             demon = demons.iter().find(|d| d.object_id == p.digitalized_demon).cloned();
@@ -251,6 +250,9 @@ impl DigitalizeSave {
                 }
             }
         }
+        // the demons seen, and which one is summoned now (the Overview shows it); of two demons of one kind and level, the
+        // list keeps this one's record
+        pipeline::note_demons(store, &demons, demon.as_ref().map(|d| d.object_id), now)?;
         let Some(demon) = demon else { return Ok(None) };
         let active = progress.as_ref().is_some_and(|p| p.digitalized() && demon.object_id == p.digitalized_demon);
         let assists = match &progress {
