@@ -237,7 +237,10 @@ game or your saved data. It starts from your character as last read (take a snap
   +45 on a weapon). "Replace the whole piece" changes Slots 1 to 3 at once; a piece can also be taken off. Mods stay as
   they are.
 - **Picking**: the list shows what each choice gives for that part. Search a name or an effect ("rapid", "limit break
-  power"): searching an effect puts the pieces that give the most of it first. The highlighted row (arrow keys or the
+  power"): searching an effect puts the pieces that give the most of it first. A stat works by the names the app shows
+  (STR, MAG, CLS-R, LNG-R, P.Def, M.Def, HP, ...) or in full ("Strength", "close range"): it lists the pieces that raise
+  that stat itself first, most first (MAG is the Magic stat, not Magic Damage); the line it found is in bold, and a
+  piece whose set bonus gives it comes after the pieces that give it themselves. The highlighted row (arrow keys or the
   pointer) shows what it would change before you pick it; Enter picks.
 - **Picked before**: everything you pick stays as a chip under its dropdown. Click a chip to use it again (handy to
   flip between two or three candidates), the x takes it off the list. Undo still goes back to what you wear.
