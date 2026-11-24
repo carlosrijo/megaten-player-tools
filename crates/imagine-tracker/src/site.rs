@@ -8,7 +8,9 @@
 //!   1. `--dev`: the repo's app\ui folder on disk (page edits need no rebuild);
 //!   2. the copy embedded in the exe;
 //!   3. a file that is not embedded (the pictures made locally from the game client: app\ui\*-icons, which are the
-//!      game's own art and never shipped) from disk: <exe folder>\ui\..., then <repo root>\app\ui\...
+//!      game's own art and never shipped) from disk: <exe folder>\ui\..., then <repo root>\app\ui\...;
+//!   4. for those pictures, a copy made from the player's own game folder (build::page_icons: reference\page-icons.tsv
+//!      says which client file each one is; kept in <data>\cache\page-icons\).
 //! The data host serves only the data folder.
 
 use rust_embed::RustEmbed;
@@ -96,7 +98,8 @@ impl Site {
                 return Some(s);
             }
         }
-        None
+        // 4. a Tools page's game picture: made from the player's own game folder the first time it is asked for
+        imagine::build::page_icons::png(&self.data_dir, &rel).map(|b| Served { body: Cow::Owned(b), mime: "image/png" })
     }
 }
 

@@ -27,8 +27,17 @@ first run, in PowerShell in the exe's folder:
 It must match the release's value (capital or small letters do not matter). If it does not, the file is not the one
 released: delete it and download it again from the release page, never from a copy someone passed on.
 
-The release has no pictures from the game (demon, enemy and DCM icons): those are the game's own art, made locally
-from the client with the commands below, so those pages show names without icons.
+The release has no pictures from the game: they are the game's own art. The app makes the Tools pages' pictures
+(Gear, Demon and Skill Database, DCM Locator, Dungeon Explorer) from the player's own game folder the first time a
+page shows them, and keeps them in `data\cache\page-icons`. It needs to have seen the game running once (to know
+where it is installed); until then those pages show names without pictures.
+
+`reference\page-icons.tsv` says which file of the game's `Interface` folder each picture is. After the page builders
+below make new pictures, make it again from them (it compares pixels, so renamed pictures are found too):
+
+```
+imagine-reader page-icons --client <game folder>
+```
 
 ### Making a release
 

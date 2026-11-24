@@ -207,6 +207,11 @@ pub fn client_dir(store: &Store, pid: u32) -> Option<PathBuf> {
     dir
 }
 
+/// [`client_dir`] without remembering the answer (for callers that look again later while it is unknown).
+pub fn find_client_dir_uncached(store: &Store) -> Option<PathBuf> {
+    find_client_dir(store, 0)
+}
+
 fn find_client_dir(store: &Store, pid: u32) -> Option<PathBuf> {
     let run = || -> std::io::Result<Option<PathBuf>> {
         let exes: Vec<Option<PathBuf>> = if pid > 0 {
