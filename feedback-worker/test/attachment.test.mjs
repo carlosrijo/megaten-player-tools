@@ -82,4 +82,12 @@ test('a send with files: stored for 180 days, named in the issue; a test send ke
   const t = await (await send(true)).json();
   assert.match(t.attachment, /^test-[a-z0-9]{16}$/);
   assert.equal(stored[1].o.expirationTtl, 3600);
+
+  // the store refuses (the free plan's 1,000 writes a day): the feedback still goes, the issue says so
+  kv.put = async () => { throw new Error('KV put() limit exceeded for the day.'); };
+  const f = await (await send(false)).json();
+  assert.equal(f.number, 9);
+  assert.equal(f.filesStored, false);
+  assert.match(made.body, /Diagnostics files were sent \(2 files, 29 KB\) but \*\*could not be stored\*\*/);
+  assert.doesNotMatch(made.body, /Diagnostics attached/);
 });

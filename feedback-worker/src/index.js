@@ -86,20 +86,33 @@ export default {
     const att = checkAttachment(input.attachment, input.attachmentInfo);
     if (att.error) return fail(400, att.error, origin);
     if (att.envelope) checked.attachment = { id: newId(checked.test), files: att.files, bytes: att.bytes };
-    const issue = makeIssue(checked);
+    let issue = makeIssue(checked);
 
     // a filled-in hidden field: a bot. Answer as if it worked, open nothing.
     if (checked.honeypot) return reply(200, { ok: true, number: 0, url: '' }, origin);
 
     try {
       const token = await installationToken(env);   // in test mode too: proves the key and the app's install work
-      // the files first (a test send's for an hour), so the issue never names files that aren't there
-      if (att.envelope) await storeAttachment(env, checked.attachment.id, att.envelope, checked.test);
-      if (checked.test) return reply(200, { ok: true, test: true, issue, attachment: checked.attachment ? checked.attachment.id : null }, origin);
+      // the files first (a test send's for an hour), so the issue never names files that aren't there. When they can't
+      // be stored (the free plan's 1,000 writes a day, or KV is down), the feedback still goes: the issue says the
+      // files were sent but not kept, instead of the whole send failing.
+      let filesStored = null;
+      if (att.envelope) {
+        try {
+          await storeAttachment(env, checked.attachment.id, att.envelope, checked.test);
+          filesStored = true;
+        } catch (e) {
+          console.error(`attachment not stored: ${String(e && e.message || e)}`);
+          checked.attachment = { failed: true, files: att.files, bytes: att.bytes };
+          issue = makeIssue(checked);
+          filesStored = false;
+        }
+      }
+      if (checked.test) return reply(200, { ok: true, test: true, issue, filesStored, attachment: filesStored ? checked.attachment.id : null }, origin);
       const res = await gh(`https://api.github.com/repos/${env.REPO}/issues`, token, { method: 'POST', body: JSON.stringify(issue) });
       if (!res.ok) throw new Error(`GitHub said ${res.status} to the new issue: ${(await res.text()).slice(0, 300)}`);
       const made = await res.json();
-      return reply(200, { ok: true, number: made.number, url: made.html_url }, origin);
+      return reply(200, { ok: true, number: made.number, url: made.html_url, ...(filesStored === null ? {} : { filesStored }) }, origin);
     } catch (e) {
       console.error(String(e && e.stack || e));
       return fail(502, 'The feedback service could not reach GitHub just now. Try again in a few minutes.', origin);

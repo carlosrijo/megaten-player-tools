@@ -63,8 +63,10 @@ export function makeIssue(f) {
   for (const s of f.sections) lines.push(`### ${s.page}`, '', quiet(s.text), '');
   if (f.attachment) {
     const a = f.attachment, kb = a.bytes ? `, ${Math.max(1, Math.round(a.bytes / 1024))} KB` : '';
-    lines.push(`📎 **Diagnostics attached**, encrypted (only BABEL's developer can open them): \`${a.id}\``
-      + (a.files ? ` (${a.files} file${a.files === 1 ? '' : 's'}${kb})` : ''), '');
+    const count = a.files ? ` (${a.files} file${a.files === 1 ? '' : 's'}${kb})` : '';
+    lines.push(a.failed
+      ? `📎 Diagnostics files were sent${count} but **could not be stored** (the feedback service's daily limit, or a storage error), so none are attached.`
+      : `📎 **Diagnostics attached**, encrypted (only BABEL's developer can open them): \`${a.id}\`${count}`, '');
   }
   lines.push('---', `*Sent from BABEL's feedback form (${k.word.toLowerCase()}).*`);
   if (f.contact) lines.push('', `**Contact:** ${quiet(f.contact)}`);
