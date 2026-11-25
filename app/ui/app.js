@@ -122,6 +122,11 @@
     const settings = { character: 'Rubito', csv: 'C:\\Users\\…\\smt-stats\\rubito-stats.csv', theme: store.get('theme') || 'system', dataDir: '…\\imagine-reader\\data', csvExists: true };
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const fake = { active: 'Rubito', scanned: false, clients: [], characters: [{ name: 'Rubito', hasData: true, inGame: false, folder: '', level: 0 }] };
+    // ?char=<name>: start as another saved character; only their levels (data\characters\<name>\expertise-ranks.json) load
+    if (Q.get('char') && Q.get('char') !== 'Rubito') {
+      fake.active = Q.get('char');
+      fake.characters.push({ name: fake.active, hasData: true, inGame: false, folder: '', level: 0 });
+    }
     const fakeClients = [{ pid: 7224, folder: 'client2', character: 'Rubito', level: 95 }, { pid: 30184, folder: 'client1', character: 'Rokujuu', level: 97 }];
     const fakeState = () => {
       fake.characters.forEach((c) => { const g = fake.clients.find((x) => x.character === c.name); c.inGame = !!g; c.folder = g ? g.folder : ''; c.level = g ? g.level : 0; c.picture = fakePic[c.name] || null; });
@@ -161,6 +166,7 @@
           let [snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks] = empty ? [[], [], [], [], null, null, {}, []] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {}), get('../../data/dash/digi-unlocks.json', [])]);
+          if (empty && Q.get('empty') !== '1') ranks = await get(`../../data/characters/${encodeURIComponent(fake.active)}/expertise-ranks.json`, null);
           // the summoned demon comes with the page data (dash\summoned.json); here the stand-in list's summoned one
           snapshots = snapshots.filter((x) => !fakeGone.has(x.taken_at));   // deleted here: gone until the page is reloaded
           const summoned = empty ? null : (await this.call('compDemons', { cached: true })).find((d) => d.summoned) || null;
