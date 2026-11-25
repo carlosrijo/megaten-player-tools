@@ -7,11 +7,19 @@ version = "0.7.0"
 edition = "2024"
 license = "MIT"
 
+# Two optimized builds:
+#   cargo build --release         everyday build (target\release, what the desktop shortcut and rebuild-app.ps1 use)
+#   cargo build --profile dist    the shipped exe (target\dist; tools\publish-portable.ps1 and the release workflow)
+# Both are optimized for size; only "dist" adds whole-program LTO in one codegen unit. That last step made every release
+# build relink everything in one thread: a one-line change in crates\imagine took 98 s to rebuild, a page change 44 s.
+# Without it (and with incremental on) they take 4-23 s and 3 s, a clean build 60 s instead of 107 s; the everyday
+# BABEL.exe is about 1.4 MB bigger (10.8 MB instead of 9.4 MB), the shipped one is unchanged (HANDOVER.md, "Build").
 [profile.release]
 # "z" (smallest code) instead of 3: the tracker exe goes from 10.3 MB to 8.4 MB.
 opt-level = "z"
-lto = "fat"
-codegen-units = 1
+lto = false
+codegen-units = 16
+incremental = true
 # Symbols stay in the build, and on MSVC that means a separate .pdb beside the exe: the exe itself only carries the
 # .pdb's file name, so it does not grow (measured in HANDOVER.md, "Troubleshooting"). tools\publish-portable.ps1 keeps
 # the .pdb out of the release and the release workflow stores it as an artifact: with it a crash report's
@@ -19,3 +27,11 @@ codegen-units = 1
 # for that (functions, files, lines; no variables) and keeps the .pdb at about 27 MB.
 strip = false
 debug = "line-tables-only"
+
+# The shipped exe: the everyday release build plus whole-program LTO in one codegen unit (smaller and a little faster,
+# but a much slower build). Same symbols setup, so target\dist\BABEL.pdb is written beside it.
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+incremental = false

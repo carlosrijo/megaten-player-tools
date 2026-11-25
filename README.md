@@ -71,6 +71,9 @@ target\release\BABEL.exe
 inside it) and the command line reader (`imagine-reader.exe`). After a change, with the app possibly open:
 `pwsh -NoProfile -File tools\rebuild-app.ps1` closes it, builds both and opens it again (Windows locks a running
 program, so a build with the app open fails to replace it).
+`--release` is the everyday build (no link-time optimization, so a change rebuilds in seconds); the exe players get is
+built with `cargo build --profile dist` (in `target\dist`: smaller, about two minutes), which `tools\publish-portable.ps1`
+does for you.
 
 "BABEL": one window with Overview, Bonuses, Gear (opens on "By piece", each piece with its icon from the game; hovering an icon shows a game-style tooltip), Expertise, Digitalize and History, a digitalize demon picker on the Overview ("No demon" is the normal view, a demon is the digitalized one, for every page),
 and a **Take snapshot** button (F5) that runs the same read-only snapshot as the command line and then refreshes the page.
