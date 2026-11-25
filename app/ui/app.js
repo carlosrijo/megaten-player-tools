@@ -429,7 +429,8 @@
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
     // Demon Rank: which demons, the level they are compared at ('base', '1' or '99'), the column sorted (an index of RANK_COLS) and its direction (1 = highest first)
     rank: { q: '', kind: 'own', race: '', at: 'base', mt: false, sort: 0, dir: 1 },
-    ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null },   // only: a demon id a link opened
+    ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null,   // only: a demon id a link opened
+      variants: store.get('ddb-variants') !== '0' },   // list the variants (Lucky, Inexperienced ...) too; saved for next time
     // Skill Database: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
     skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), shown: 200, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
     // Build Planner: the character as read (init, base), the build being tried and its result (build, cur), what is open
@@ -3098,7 +3099,8 @@
       'Demons, stats, affinities, skills, tarot and soul are the IMAGINE client\'s. Where each spawns comes from the public server data, so IMAGINE may have changed it. Variants (Lucky, Inexperienced, Open-minded and the like) are listed on their own, with how to get them. Dungeon and boss copies of a demon are not: they show under “Enemy only”.')));
     const all = D.data.demons;
     const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : !x.contract.length);
-    const inPick = (x) => (!D.race || x.race === D.race) && (!D.align || x.align === D.align);   // the Race and Alignment dropdowns
+    // the Race and Alignment dropdowns, and "Show variants" (a demon a link opened is shown even when it is a variant)
+    const inPick = (x) => (!D.race || x.race === D.race) && (!D.align || x.align === D.align) && (D.variants || !x.variant);
     const races = [...new Set(all.map((x) => x.race))].sort();
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Which demons' });
     const body = h('tbody'), count = h('p', { class: 'note' }), onlyBar = h('div');
@@ -3115,6 +3117,7 @@
       onlyBar.replaceChildren(...(only ? [h('div', { class: 'notice ddb-only' }, icon('info'), h('span', null, 'Showing only ', h('b', { text: only.name }), '.'),
         h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.only = null; drawChips(); draw(); } }, 'Show all demons'))] : []));
       const rows = only ? [only] : all.filter((x) => inKind(x, D.kind) && inPick(x) && words.every((w) => x.hay.includes(w))).sort(SORTS[D.sort] || SORTS.level);
+      const hidden = only || D.variants ? 0 : all.filter((x) => x.variant && inKind(x, D.kind) && words.every((w) => x.hay.includes(w))).length;
       rows.forEach((x) => {
         const open = D.open.has(x.id);
         const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
@@ -3132,14 +3135,17 @@
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 5 }, ddbDetail(x))));
       });
       if (!rows.length) body.append(h('tr', null, h('td', { colspan: 5, class: 'empty-row', text: words.length ? `Nothing matches “${D.q.trim()}”.` : 'No demon in this group.' })));
-      count.textContent = `Showing ${rows.length} of ${all.length} demons. ${all.filter((x) => x.contract.length).length} can be contracted somewhere. Data made on ${D.data.generatedAt}.`;
+      count.textContent = `Showing ${rows.length} of ${all.length} demons${hidden ? ` (${hidden} ${hidden === 1 ? 'variant' : 'variants'} hidden)` : ''}. ${all.filter((x) => x.contract.length).length} can be contracted somewhere. Data made on ${D.data.generatedAt}.`;
     };
     const sel = (label, value, options, onchange) => h('label', { class: 'gdb-check' }, label,
       h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
     page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, race, skill, feature, tarot or zone', (v) => { D.q = v; D.only = null; drawChips(); draw(); }),
       sel('Race', D.race, [['', 'All races']].concat(races.map((r) => [r, r])), (v) => { D.race = v; D.only = null; drawChips(); draw(); }),
       sel('Alignment', D.align, [['', 'All'], ['Law', 'Law'], ['Neutral', 'Neutral'], ['Chaos', 'Chaos']], (v) => { D.align = v; D.only = null; drawChips(); draw(); }),
-      sel('Sort', D.sort, [['level', 'Level'], ['name', 'Name'], ['race', 'Race']], (v) => { D.sort = v; draw(); })));
+      sel('Sort', D.sort, [['level', 'Level'], ['name', 'Name'], ['race', 'Race']], (v) => { D.sort = v; draw(); }),
+      h('label', { class: 'gdb-check', 'data-tip': 'Variants are versions of a demon with their own name, level, stats and skills (Lucky Pixie, Inexperienced Cerberus, Open-minded Ishtar ...)' },
+        h('input', { type: 'checkbox', checked: D.variants ? true : null, onchange: (ev) => { D.variants = ev.target.checked; D.only = null; store.set('ddb-variants', D.variants ? '1' : '0'); drawChips(); draw(); } }),
+        'Show variants')));
     page.append(chips, onlyBar);
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Demon' }), h('th', { scope: 'col', class: 'num', text: 'Lv' }), h('th', { scope: 'col', text: 'Alignment' }),

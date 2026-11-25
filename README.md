@@ -336,7 +336,8 @@ The list opens on the demons that can be contracted somewhere (284); "Not contra
 the rest (the variants an item, a fusion or an event gives are there). A variant is a demon type with its own name,
 level and stats that the game gives out. Dungeon and boss copies of a demon are not listed on their own: the places they appear, where they cannot be
 talked into a contract, are under "Enemy only". Search by name, race, skill, feature, tarot text or zone; filter by
-race and alignment (Law, Neutral, Chaos); sort by level, name or race. Demons, stats, skills, tarot and soul are the IMAGINE client's; spawns are the
+race and alignment (Law, Neutral, Chaos); sort by level, name or race. Untick "Show variants" to list only the
+compendium's demons (the page remembers the choice). Demons, stats, skills, tarot and soul are the IMAGINE client's; spawns are the
 public server data, so IMAGINE may have changed them.
 
 ### Tools: Skill Database
