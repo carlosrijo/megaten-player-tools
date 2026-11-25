@@ -328,6 +328,22 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .exp-sum-max { color: var(--text-3); font-size: 12px; white-space: nowrap; }
 .exp-sum-max.done { color: var(--exp); font-weight: 600; }
 .exp-sum-pt { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+/* Expertise page: the cap, one line per place that raises it, a chip per raise */
+.cap-list { display: grid; margin-top: 6px; }
+.cap-row { display: grid; grid-template-columns: 220px minmax(0, 1fr) 160px; align-items: center; gap: 0 12px; padding: 5px 0; border-top: 1px solid var(--border); }
+.cap-row:first-child { border-top: 0; }
+.cap-group { display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; }
+.cap-server { color: var(--text-3); font-size: 12px; }   /* a raise only NewMoon has, beside its place's name */
+.cap-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.cap-chip { gap: 6px; cursor: default; }
+.cap-chip b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.cap-got { border-color: transparent; background: color-mix(in srgb, var(--exp) 22%, transparent); color: var(--text); }
+.cap-open { color: var(--text-3); }
+.cap-ready { border-color: var(--exp); color: var(--text); }
+.cap-unknown { border-style: dashed; color: var(--text-3); }
+.exp-cap .exp-sum-pt.done { color: var(--exp); font-weight: 600; }
+.exp-cap .note { margin: 8px 0 0; }
+@media (max-width: 1100px) { .cap-row { grid-template-columns: 170px minmax(0, 1fr); } .cap-row .exp-sum-pt { grid-column: 2; text-align: left; } }
 @media (max-width: 1100px) { .exp-sum-row { grid-template-columns: 220px 48px 44px 76px; } .exp-sum-row .exp-icons-run { grid-column: 1 / -1; padding: 2px 0 4px; } }
 .sheet { padding: 12px 16px 6px; }
 .sheet-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px 32px; align-items: start; }   /* two columns when both fit with their labels in full, else one */

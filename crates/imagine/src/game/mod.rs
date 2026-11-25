@@ -3,4 +3,5 @@ pub mod types;
 pub mod client_reader;
 pub mod demon_reader;
 pub mod progress_reader;
+pub mod server;
 pub use types::*;
