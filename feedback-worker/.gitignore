@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+.dev.vars
+*.pem
+# the account's own ids: kept in the main checkout only (wrangler.example.toml is its shape)
+wrangler.toml

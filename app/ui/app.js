@@ -26,6 +26,7 @@
     check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.2 9.5"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    chat: '<path d="M4 5h16v11H10l-4.5 3.5V16H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
     book: '<path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 17a3 3 0 0 1 3-3h10.5"/>',
     fuse: '<circle cx="8" cy="8" r="3.5"/><circle cx="16" cy="8" r="3.5"/><path d="M8 11.5v1.5a4 4 0 0 0 4 4 4 4 0 0 0 4-4v-1.5M12 17v3.5"/>',
     horns: '<path d="M6.5 3.5c-.6 3 .4 5.4 2.6 6.6M17.5 3.5c.6 3-.4 5.4-2.6 6.6"/><circle cx="12" cy="14.5" r="6"/><path d="M9.6 14h.01M14.4 14h.01M10 17.2h4"/>',
@@ -246,6 +247,19 @@
           const n = (s) => checks.filter((x) => x.status === s).length;
           return { program: 'BABEL (browser preview)', windows: 'Windows', checkedAt: '', checks, text: 'Browser preview: nothing was checked.\r\n',
             summary: { pass: n('pass'), warn: n('warn'), fail: n('fail'), worst: 'fail', text: `${n('pass')} passed, ${n('warn')} warning, ${n('fail')} failed` } };
+        }
+        if (cmd === 'feedbackFiles') {   // what the files look like; the real ones come from the app
+          await wait(600);
+          const who = args && args.includeNames ? 'Rubito' : 'Character 1';
+          const f = (name, text) => ({ name, text, bytes: text.length });
+          return { includeNames: !!(args && args.includeNames), files: [
+            f('about.txt', 'BABEL (browser preview)\r\nStand-in files: the real ones come from the desktop app.\r\n'),
+            f('doctor.txt', 'Browser preview: nothing was checked.\r\n'),
+            f('logs/babel.log', `2026-11-25 10:00:00 INFO snapshot of ${who}: 412 values\r\n`.repeat(400)),
+            f('data/config.json', '{ "statsFolder": "%USERPROFILE%\\\\Documents\\\\smt-stats" }'),
+            f('data/characters.json', `[{ "Name": "${who}" }]`),
+            f('settings.json', '{ "Theme": "system" }'),
+            f('data-listing.txt', 'cache\\models\\D2_11_003a.json  182 KB  2026-11-24\r\n'.repeat(60)) ] };
         }
         if (cmd === 'saveBundle') { await wait(300); throw Object.assign(new Error('This is the browser preview: it can’t save a support bundle. Use the desktop app (BABEL.exe).'), { kind: 'user' }); }
         if (cmd === 'buildCheck') return Q.get('build') === 'old' ? { clients: 1, known: 0, unknown: [{ folder: 'client1', pid: 1, fingerprint: 'preview', same: false }] } : { clients: fake.clients.length, known: fake.clients.length, unknown: [] };
@@ -5733,6 +5747,221 @@
   }));
   $('#open-settings').addEventListener('click', () => { S.alignNote = ''; fillSettings(); fillAbout(); dlg.showModal(); });
   dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
+
+  // ---------- Send feedback ----------
+  // The form posts to the feedback service (feedback-worker\, a Cloudflare Worker), which opens a public GitHub issue as
+  // the "BABEL feedback" app: players need no GitHub account, and the app holds no GitHub key. The browser preview sends
+  // test: true, so the service checks everything and answers with the issue it would open, but opens none.
+  const FEEDBACK_URL = 'https://babel-feedback.babel-feedback.workers.dev/feedback';
+  const fbDlg = $('#feedback');
+  const fb = { kind: '', busy: false, sections: [] };   // sections: { page, text, el } in the order they were added
+  const fbAbout = () => (S.about ? { version: S.about.version, commit: S.about.commit, built: S.about.built, windows: S.about.windows, webview2: S.about.webview2 } : null);
+  // Sections: feedback on one page or tool each, picked from the sidebar's own list (PAGES and TOOLS)
+  const FB_ITEMS = PAGES.concat(TOOLS);
+  const fbName = (id) => (FB_ITEMS.find((p) => p[0] === id) || [])[1] || '';
+  // The picker is the app's own dropdown (a popover, as What changed's snapshot picker), not a native <select>: each
+  // page or tool with its sidebar icon, under the sidebar's own headings.
+  let fbMenus = 0;
+  function fbSectionEl(s) {
+    const id = 'fb-menu-' + (++fbMenus);
+    const ta = h('textarea', { class: 'input fb-message fb-section-text', maxlength: '4000', rows: '4', placeholder: 'What about this page or tool?' });
+    ta.addEventListener('input', () => { s.text = ta.value; });
+    s.label = h('span', { class: 'fb-pick-label' });
+    s.btn = h('button', { type: 'button', class: 'select snap-btn fb-pick', popovertarget: id, 'aria-haspopup': 'listbox' }, s.label, icon('chevron'));
+    const opt = ([pid, name, ic]) => h('button', { type: 'button', class: 'char fb-opt', 'data-page': pid,
+      onclick: () => { s.menu.hidePopover(); s.page = pid; $('#fb-error').textContent = ''; fbDrawSections(); ta.focus(); } },
+      icon(ic), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: name })), h('span', { class: 'char-line fb-opt-note' }));
+    s.menu = h('div', { class: 'menu fb-menu', id, popover: 'auto', 'aria-label': 'Page or tool',
+      ontoggle: (ev) => { if (ev.newState === 'open') fbOpenMenu(s); } },
+      h('div', { class: 'char-list' }, h('div', { class: 'list-head', text: 'Pages' }), ...PAGES.map(opt), h('div', { class: 'list-head', text: 'Tools (beta)' }), ...TOOLS.map(opt)));
+    const rm = h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Remove this page or tool', 'data-tip': 'Remove',
+      onclick: () => { fb.sections = fb.sections.filter((x) => x !== s); fbDrawSections(); $('#fb-add').focus(); } }, icon('trash'));
+    return h('div', { class: 'fb-section' }, h('div', { class: 'fb-section-head' }, s.btn, rm), ta, s.menu);
+  }
+  /** A section's dropdown, just opened: under its button (above it when there is no room below), as wide as the button,
+   *  the picked one (else the first free one) focused; arrow keys move through the ones that can be picked. */
+  function fbOpenMenu(s) {
+    const menu = s.menu, r = s.btn.getBoundingClientRect();
+    menu.style.width = Math.max(240, r.width) + 'px';
+    const w = menu.offsetWidth, hgt = menu.offsetHeight;
+    menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+    menu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
+    const list = menu.querySelector('.char-list');
+    const cur = menu.querySelector('.fb-opt[aria-current="true"]') || menu.querySelector('.fb-opt:not([disabled])');
+    if (cur) { list.scrollTop = cur.offsetTop - list.offsetTop - (list.clientHeight - cur.offsetHeight) / 2; cur.focus({ preventScroll: true }); }
+    if (!menu.dataset.keys) {
+      menu.dataset.keys = '1';
+      menu.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+        const rows = [...menu.querySelectorAll('.fb-opt:not([disabled])')], i = rows.indexOf(document.activeElement);
+        const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
+        if (next) { next.focus(); ev.preventDefault(); }
+      });
+    }
+    fbDlg.addEventListener('scroll', () => { if (menu.matches(':popover-open')) menu.hidePopover(); }, { once: true });   // its button moves away
+  }
+  function fbDrawSections() {
+    for (const s of fb.sections) if (!s.el) s.el = fbSectionEl(s);
+    $('#fb-sections').replaceChildren(...fb.sections.map((s) => s.el));
+    // a page or tool is picked once: the other sections' lists grey it out
+    const used = new Set(fb.sections.map((s) => s.page).filter(Boolean));
+    for (const s of fb.sections) {
+      const item = FB_ITEMS.find((p) => p[0] === s.page);
+      s.label.replaceChildren(...(item ? [icon(item[2]), h('span', { text: item[1] })] : [h('span', { class: 'fb-pick-empty', text: 'Pick a page or tool…' })]));
+      s.btn.setAttribute('aria-label', item ? `Page or tool: ${item[1]}` : 'Pick a page or tool');
+      s.menu.querySelectorAll('.fb-opt').forEach((o) => {
+        const taken = used.has(o.dataset.page) && o.dataset.page !== s.page;
+        o.disabled = taken;
+        o.setAttribute('aria-current', String(o.dataset.page === s.page));
+        o.querySelector('.fb-opt-note').textContent = taken ? 'Added' : '';
+      });
+    }
+    $('#fb-add').disabled = fb.sections.length >= FB_ITEMS.length;
+    $('#fb-add-help').hidden = fb.sections.length > 0;
+  }
+  // Attachments: the support bundle's files (the app takes personal details out), as the person picks them, encrypted
+  // here before they leave the PC: a fresh AES-256-GCM key locks the gzipped files, and the developer's public key
+  // (RSA-OAEP, SHA-256) locks that key. Only the private key in the developer's .secrets\ opens them
+  // (feedback-worker\open-files.ps1); the service and GitHub only ever see the locked envelope.
+  const FEEDBACK_FILES_KEY = 'MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAnnSP06wVggTaCZo6ppr5m+5f3QRqQHqmxbOI/WoeNDkgbfxwrjcc3IHJ2HSzljCJS0UuJuV3tN3s2KEdBBerduQlXmvjZxG/qyHTmbQx7RsIC5eR6cZR+B/GSAi3L2z6OcgxMlrV1Y45AFazdsjLgZTgb5XQ1CUQkApNRit1hdY6/YOXRT1MEa1hClo0koGJeHI038PHV7fybWrVWgn2XirIXwVcHRPNrEukPwk0VqQQzFDIn0qu4XaBqiXMr9fH5dXcuiSft/E/6yNjqExf3TISC2wcYODA2vqvgl05J1Fuxz2XEAxJEp9xDaNvyXKotYzemgeyKVU4WvHUSBT9j1acN372UlYXmCc93QQoexkNmUCArfAAjafe3pdicjZjq2sCmkArOe8j32Hal//P2KTW4bfAkXpLP6Y690MN/oMJsc1itbGm9ABbsax4AoMP65A3OHsyznfC6ETBCneeQBBPqPVdRzY5iGGzGUJXxksFVzQ3Pom3ccWB0hSYrG0xAgMBAAE=';
+  const FB_FILES_MAX = 14 * 1024 * 1024;   // the service's limit for the encrypted envelope (base64 characters)
+  const b64 = (buf) => { const u = new Uint8Array(buf instanceof ArrayBuffer ? buf : buf.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+  /** Lock `payload` (JSON) for the developer: { v, alg, key, iv, data } (feedback-worker\src\attachment.js says what each is). */
+  async function fbSeal(payload) {
+    const zipped = await new Response(new Blob([JSON.stringify(payload)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+    const pub = await crypto.subtle.importKey('spki', Uint8Array.from(atob(FEEDBACK_FILES_KEY), (c) => c.charCodeAt(0)), { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['encrypt']);
+    const aes = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aes, zipped);
+    const key = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pub, await crypto.subtle.exportKey('raw', aes));
+    return { v: 1, alg: 'RSA-OAEP-256+A256GCM', key: b64(key), iv: b64(iv), data: b64(data) };
+  }
+  // All of the bundle's files go, character names kept (they're encrypted). Gathering starts when the box is ticked (a
+  // self-check runs first, a few seconds), so they're usually ready by the time Send is pressed.
+  fb.files = null;   // { includeNames, files: [{ name, text, bytes }] } once gathered
+  fb.filesLoad = null;
+  fb.filesError = '';
+  function fbDrawFiles() {
+    const on = $('#fb-files').checked;
+    $('#fb-public-more').textContent = !on ? 'Nothing else goes with it: no snapshots, logs or files.'
+      : 'The attached files are not public: the issue only says that some are attached, and only BABEL’s developer can open them.';
+    $('#fb-files-error').textContent = on ? fb.filesError : '';
+  }
+  function fbLoadFiles() {
+    fb.files = null; fb.filesError = '';
+    fbDrawFiles();
+    const load = fb.filesLoad = host.call('feedbackFiles', { includeNames: true }).then((r) => {
+      if (load !== fb.filesLoad) return;
+      fb.files = { includeNames: !!r.includeNames, files: r.files || [] };
+    }).catch((e) => { if (load === fb.filesLoad) { fb.filesError = 'Couldn’t gather the files: ' + String(e && e.message || e); fbDrawFiles(); } });
+    return load;
+  }
+  $('#fb-files').addEventListener('change', () => { if ($('#fb-files').checked && (!fb.filesLoad || fb.filesError)) fbLoadFiles(); else fbDrawFiles(); });
+
+  $('#fb-add').addEventListener('click', () => {
+    // starts on the page you were looking at, unless it already has a section
+    const s = { page: fb.sections.some((x) => x.page === S.page) ? '' : S.page, text: '' };
+    fb.sections.push(s);
+    fbDrawSections();
+    if (s.page) s.el.querySelector('textarea').focus();
+    else { s.btn.focus(); s.menu.showPopover(); }   // nothing to start on: the list, open
+  });
+  function fbDraw() {
+    document.querySelectorAll('#fb-kind [data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === fb.kind)));
+    const n = $('#fb-message').value.trim().length;
+    $('#fb-count').textContent = n ? `${n} / 4000` : '';
+    $('#fb-send').disabled = fb.busy;
+    $('#fb-send').textContent = fb.busy ? 'Sending…' : 'Send';
+  }
+  function fbOpen() {
+    $('#fb-fields').hidden = false; $('#fb-done').hidden = true; $('#fb-error').textContent = '';
+    fbDraw();
+    fbDlg.showModal();
+    if (!S.about) fillAbout();
+    // "Attach diagnostics files" is ticked to start with: gather them now, so they're ready by the time Send is pressed
+    if ($('#fb-files').checked && (!fb.filesLoad || fb.filesError)) fbLoadFiles();
+    fbDrawFiles();
+    (fb.kind ? $('#fb-message') : fbDlg.querySelector('#fb-kind button')).focus();
+  }
+  function fbClear() {
+    fb.kind = ''; ['#fb-title', '#fb-message', '#fb-contact', '#fb-website'].forEach((s) => { $(s).value = ''; });
+    fb.sections = []; fbDrawSections();
+    $('#fb-files').checked = true; fb.files = null; fb.filesLoad = null; fb.filesError = ''; fbDrawFiles();   // gathered again next time it opens
+  }
+  $('#open-feedback').addEventListener('click', fbOpen);
+  $('#fb-close').addEventListener('click', () => fbDlg.close());   // what was written stays until it is sent
+  $('#fb-cancel').addEventListener('click', () => fbDlg.close());
+  fbDlg.addEventListener('click', (ev) => { if (ev.target === fbDlg) fbDlg.close(); });
+  document.querySelectorAll('#fb-kind [data-kind]').forEach((b) => b.addEventListener('click', () => { fb.kind = b.dataset.kind; $('#fb-error').textContent = ''; fbDraw(); }));
+  $('#fb-message').addEventListener('input', fbDraw);
+  $('#fb-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (fb.busy) return;
+    const err = $('#fb-error'), message = $('#fb-message').value.trim();
+    if (!fb.kind) { err.textContent = 'Pick what it is: something’s wrong, an idea or a question.'; return; }
+    const unpicked = fb.sections.find((s) => !s.page);
+    if (unpicked) { err.textContent = 'Pick a page or tool for each section, or remove the empty one.'; unpicked.btn.focus(); return; }
+    const blank = fb.sections.find((s) => !s.text.trim());
+    if (blank) { err.textContent = `Write something about ${fbName(blank.page)}, or remove it.`; blank.el.querySelector('textarea').focus(); return; }
+    const sections = fb.sections.map((s) => ({ page: fbName(s.page), text: s.text.trim() }));
+    if (message.length + sections.reduce((n, s) => n + s.text.length, 0) < 10) {
+      err.textContent = 'Write a little more: at least 10 characters.'; (fb.sections.length ? fb.sections[0].el.querySelector('textarea') : $('#fb-message')).focus(); return;
+    }
+    const attach = $('#fb-files').checked;
+    if (attach && fb.filesError) { err.textContent = 'The files couldn’t be gathered: untick “Attach diagnostics files”, or try again.'; return; }
+    err.textContent = '';
+    fb.busy = true; fbDraw();
+    if (!S.about) await fillAbout();   // sent at once after opening: the version wasn't read yet
+    const sent = { kind: fb.kind, title: $('#fb-title').value.trim(), message, sections, contact: $('#fb-contact').value.trim(),
+      about: fbAbout(), website: $('#fb-website').value, test: !host.native };
+    try {
+      if (attach) {
+        $('#fb-send').textContent = 'Gathering files…';
+        if (!fb.filesLoad) fbLoadFiles();
+        if (!fb.files) await fb.filesLoad;   // still gathering: wait for it
+        if (!fb.files) throw new Error(fb.filesError || 'Couldn’t gather the files.');
+        const files = fb.files.files;
+        if (files.length) {
+          $('#fb-send').textContent = 'Encrypting…';
+          sent.attachment = await fbSeal({ files: files.map(({ name, text }) => ({ name, text })), includeNames: fb.files.includeNames, made: new Date().toISOString() });
+          if (sent.attachment.data.length > FB_FILES_MAX) throw new Error('The diagnostics files are too big to send (10 MB at most once compressed). Untick “Attach diagnostics files” to send your message without them.');
+          sent.attachmentInfo = { files: files.length, bytes: files.reduce((n, f) => n + f.bytes, 0) };
+        }
+        $('#fb-send').textContent = 'Sending…';
+      }
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), sent.attachment ? 60000 : 20000);
+      let r;
+      try { r = await fetch(FEEDBACK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sent), signal: ctl.signal }); }
+      finally { clearTimeout(timer); }
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j || !j.ok) throw new Error((j && j.error) || `The feedback service answered ${r.status}.`);
+      fbShowDone(j);
+      fbClear();
+    } catch (e) {
+      const offline = e && (e.name === 'AbortError' || e instanceof TypeError);
+      err.textContent = offline ? 'Couldn’t reach the feedback service. Check your internet connection and try again; your message is still here.'
+        : String(e && e.message || e);
+    } finally { fb.busy = false; fbDraw(); }
+  });
+  function fbShowDone(j) {
+    const done = $('#fb-done');
+    if (j.test) {
+      // the browser preview: what would have been opened (an attachment is kept for an hour, to try opening it)
+      done.replaceChildren(
+        h('div', { class: 'notice' }, icon('info'), h('div', null, h('b', { text: 'Browser preview: no issue was opened. ' }),
+          'The service checked it and would open this issue:' + (j.attachment ? ` The encrypted files are kept for an hour as ${j.attachment}.` : ''))),
+        h('div', { class: 'fb-issue' }, h('div', { class: 'fb-issue-title', text: j.issue.title }), h('div', { class: 'field-help', text: 'Labels: ' + j.issue.labels.join(', ') }), h('pre', { text: j.issue.body })),
+        h('div', { class: 'field-row' }, h('button', { type: 'button', class: 'btn btn-primary', text: 'Close', onclick: () => fbDlg.close() })));
+    } else {
+      const who = S.state.active || S.settings.character || '';
+      const kids = [h('div', { class: 'notice' }, icon('check'), h('b', { text: `Thanks for the feedback${who ? ' ' + who : ''}!` }))];
+      const row = h('div', { class: 'field-row' });
+      if (j.number) row.append(h('button', { type: 'button', class: 'btn', text: 'Open on GitHub', onclick: () => host.call('openIssue', { number: j.number }).catch(() => {}) }));
+      row.append(h('button', { type: 'button', class: 'btn btn-primary', text: 'Close', onclick: () => fbDlg.close() }));
+      done.replaceChildren(...kids, row);
+    }
+    $('#fb-fields').hidden = true; done.hidden = false;
+  }
   document.querySelectorAll('[data-theme-choice]').forEach((b) => b.addEventListener('click', () => {
     applyTheme(b.dataset.themeChoice);
     host.call('saveSettings', { theme: b.dataset.themeChoice }).catch(() => {});

@@ -57,6 +57,24 @@ A tag with a dash (`v1.1.0-beta.1`) makes a pre-release. To try the build first,
 `pwsh -NoProfile -File tools\publish-portable.ps1` (gives `dist\BABEL.exe`, and `dist-symbols\BABEL.pdb`: the debug
 symbols of that exe, which are never shipped; the workflow keeps them as a second artifact, for reading crash reports).
 
+### Feedback from players
+
+The app's **Send feedback** button (top bar) posts to a small Cloudflare Worker (`feedback-worker\`, free plan), which
+opens a GitHub issue as the "BABEL feedback" GitHub App (Issues only, this repo only), labelled `feedback` and
+`bug` / `enhancement` / `question`. Players need no GitHub account; the app holds no GitHub key.
+
+- Attached diagnostics files are encrypted in the app with the public key in `app.js` (`FEEDBACK_FILES_KEY`) and kept
+  180 days in the Worker's KV store. Open one with the id from its issue:
+  `pwsh -NoProfile -File feedback-worker\open-files.ps1 <id>` (files land in `.secrets\feedback-files\<id>\`).
+- Secrets stay in `.secrets\` (git-ignored): the GitHub App's key (loaded into Cloudflare with
+  `feedback-worker\set-key.ps1`) and `feedback-files-private.pem`. Without that file nobody can open attachments:
+  keep a copy somewhere safe.
+- Change the Worker: `cd feedback-worker`, `npm install`, `npm test`, `npx wrangler deploy` (wrangler signed in with
+  `npx wrangler login`). The browser preview of the app only sends test requests (no issue; files kept an hour).
+- `feedback-worker\wrangler.toml` (the account's ids) is git-ignored and kept in the main checkout only;
+  `wrangler.example.toml` is its shape. A new setup: a Cloudflare account, `npx wrangler kv namespace create
+  FEEDBACK_FILES`, a GitHub App with Issues read/write installed on this repo, then fill in the copy and deploy.
+
 ## Desktop app
 
 The program is written in Rust (`crates\`, a Cargo workspace). It needs Rust (rustup, stable, `x86_64-pc-windows-msvc`)

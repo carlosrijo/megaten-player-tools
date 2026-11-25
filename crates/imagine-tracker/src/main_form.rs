@@ -507,6 +507,16 @@ impl MainForm {
                 Ok("true".to_string())
             }
 
+            "openIssue" => {
+                // The issue the feedback form just opened, in the default browser. Only its number comes from the page;
+                // the address is always the project's own issues.
+                let n = jsonx::num(args.get("number")).filter(|n| *n >= 1.0 && *n < 1e9 && n.fract() == 0.0);
+                if let Some(n) = n {
+                    winutil::explorer(&format!("\"https://github.com/carlosrijo/megaten-player-tools/issues/{}\"", n as u64));
+                }
+                Ok("true".to_string())
+            }
+
             "assistant" => {
                 // The demon in the page's corner: its 3D model as one JSON text, made from the client's own files the
                 // first time (Build\DemonModel.cs) and kept in <data>\cache\models. "null" while the game's folder
@@ -659,6 +669,12 @@ impl MainForm {
                 let result = self.guarded(|| Ok(support::save_bundle(&self.data_dir, include_names, &out)?.to_string()))?;
                 *self.last_bundle.lock().unwrap_or_else(|p| p.into_inner()) = Some(out);
                 Ok(result)
+            }
+
+            // the support bundle's files as text, for the feedback form to attach (it encrypts them; nothing is written)
+            "feedbackFiles" => {
+                let include_names = support::bundle_request(args)?;
+                self.guarded(|| Ok(support::feedback_files(&self.data_dir, include_names).to_string()))
             }
 
             // is each running client the build the reader was made for (the page warns, once, when not)

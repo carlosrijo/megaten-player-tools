@@ -1,0 +1,14 @@
+{
+  "name": "babel-feedback",
+  "private": true,
+  "description": "Turns feedback sent from the BABEL app into GitHub issues (Cloudflare Worker)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

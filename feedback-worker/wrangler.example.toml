@@ -1,0 +1,32 @@
+# The feedback service: BABEL's "Send feedback" form posts here and this Worker opens a GitHub issue with it.
+# Cloudflare Workers free plan (no card).
+#
+# This is the shape of wrangler.toml, without the account's own ids. The real wrangler.toml sits beside it in the main
+# checkout and is git-ignored; a worktree has none, and the scripts here (open-files, set-key) then use the main
+# checkout's. To deploy from a worktree: copy the main checkout's wrangler.toml in, or run
+# npx wrangler deploy --config <main checkout>\feedback-worker\wrangler.toml
+# Setting it up from nothing: README.md, "Feedback from players".
+name = "babel-feedback"   # with the account's workers.dev subdomain, the address in app.js FEEDBACK_URL: never rename
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+REPO = "carlosrijo/megaten-player-tools"
+# The "BABEL feedback" GitHub App (Issues: read and write, installed on the repo above only): its App ID (the app's
+# settings page) and the installation's id (the number at the end of github.com/settings/installations/<id>). The
+# app's private key is the secret, set with set-key.ps1 (wrangler secret put GITHUB_APP_KEY).
+APP_ID = "<app id>"
+INSTALLATION_ID = "<installation id>"
+
+# Attachments: the diagnostics files a player sent, encrypted in the app (only the private key in the developer's
+# .secrets\ opens them). Stored under "files/<id>", deleted by Cloudflare after 180 days (an hour for test sends).
+# Made with: npx wrangler kv namespace create FEEDBACK_FILES (it prints the id).
+[[kv_namespaces]]
+binding = "FEEDBACK_FILES"
+id = "<kv namespace id>"
+
+# At most 2 sends a minute from one address (the Workers rate limiting binding; period is 10 or 60 seconds).
+[[ratelimits]]
+name = "PER_IP"
+namespace_id = "1001"
+simple = { limit = 2, period = 60 }
