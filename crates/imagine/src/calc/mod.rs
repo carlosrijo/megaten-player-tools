@@ -7,5 +7,6 @@ pub mod enchant_text;
 pub mod item_effects;
 pub mod gear_effects;
 pub mod character_extras;
+pub mod expertise_cap;
 pub mod digitalize;
 pub mod summoner;

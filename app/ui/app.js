@@ -1891,9 +1891,12 @@
     draw();
   }
 
+  /** Expertise points as the Expertise page shows them: the game's number / 100, with no ".00pt" (the user's request). */
+  const expPt = (v) => (n0(v) / 100).toLocaleString('en-US', { maximumFractionDigits: 2 });
+
   /**
    * The Expertise page's opening summary, in the Overview Expertise band's style (the user's request): a top line with
-   * the counts at the left and points / cap at the right (points / 100, "pt", as the game's Expertise window) over a thin
+   * the counts at the left and points / cap at the right (points / 100, as the game's Expertise window) over a thin
    * bar; then one compact line per raised expertise, regular ones by points and then the chains: its name and class-rank
    * (orange), how far it is to its highest class (max_class from the client's ExpertClassData; Class <max> Rank 0 is
    * "Max"), its points (chains cost none), and one run of the icons of every skill its reached ranks give (passives,
@@ -1901,7 +1904,7 @@
    */
   function expSummary(rows) {
     const R = S.data.ranks || {}, P = R.points || null, all = (R.ranks || []).filter((r) => n0(r.points) > 0);
-    const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
+    const pt = expPt;
     const card = h('section', { class: 'card exp-sum' });
     const wrap = sect('Summary', null, null, card);
     if (!all.length) { card.append(h('p', { class: 'note', text: 'No expertise read yet. Take a snapshot.' })); return wrap; }
@@ -1914,8 +1917,8 @@
       plural(chains.length, 'chain', 'chains'), plural(counted, 'passive counted', 'passives counted')].join(' · ');
     const free = P && P.cap ? n0(P.cap) - n0(P.total) : 0;
     card.append(h('div', { class: 'exp-top' }, h('span', { class: 'exp-sum-counts', text: counts }),
-      P ? h('div', { class: 'band-points', 'data-tip': P.cap ? `Cap ${pt(P.cap)} = 17000.00pt + 1000.00pt per 10 levels (level ${P.level})`
-          + (P.level === 99 ? ' + 1000.00pt at 99' : '') + ` + ${P.extension} expansions × 1000.00pt` : null },
+      P ? h('div', { class: 'band-points', 'data-tip': P.cap ? `Cap ${pt(P.cap)} = 17,000 + 1,000 per 10 levels (level ${P.level})`
+          + (P.level === 99 ? ' + 1,000 at 99' : '') + ` + ${P.extension} expansions × 1,000` : null },
         h('span', { class: 'band-pts', text: P.cap ? `${pt(P.total)} / ${pt(P.cap)} · ${free > 0 ? pt(free) + ' free' : 'at the cap'}` : `${pt(P.total)}, no cap` }),
         P.cap ? h('span', { class: 'band-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (n0(P.total) / n0(P.cap)) * 100))}%` })) : null) : null));
     const line = (r) => {
@@ -1947,11 +1950,65 @@
     return wrap;
   }
 
+  /**
+   * The Expertise page's cap section: what the cap is made of (the level's part, then the raises) and, one line per
+   * place that raises it, a chip per raise: taken (orange), still open (outline), ready to claim (a Shiho reward whose
+   * race already has the DLevel) or not known (dashed: the Black Frost exchanges leave nothing the app can read).
+   * expertise-ranks.json points.raises (calc::expertise_cap): NewMoon's raises are only there on NewMoon. What the
+   * game's cap holds beyond the raises found is "other"; when it is 0 the unknown ones can't have been taken.
+   */
+  function expCap() {
+    const P = (S.data.ranks || {}).points || null, X = P && P.raises;
+    if (!P || P.cap == null) return null;
+    const pt = expPt, k = (n) => pt(n * 100000), lvl = n0(P.level);
+    const base = 1700000 + Math.floor(lvl / 10) * 100000 + (lvl === 99 ? 100000 : 0);
+    const next = lvl < 90 ? Math.floor(lvl / 10) * 10 + 10 : lvl < 99 ? 99 : null;
+    const card = h('section', { class: 'card exp-sum exp-cap' });
+    const head = `${pt(base)} for level ${lvl}` + (next ? ` (${k(1)} more at level ${next})` : '') + ` + ${k(n0(P.extension))} from raises`;
+    if (!X) {
+      card.append(h('p', { class: 'note', text: `${head}. Take a snapshot to see which raises you have.` }));
+      return sect('Expertise cap', pt(P.cap), null, card);
+    }
+    const other = X.other, known = (s) => s.got != null || other === 0;   // nothing unexplained: the unknown ones weren't taken
+    const list = X.sources, max = list.reduce((a, s) => a + n0(s.amount), 0);
+    const open = list.filter((s) => !(s.got === true)).reduce((a, s) => a + (known(s) ? n0(s.amount) : 0), 0);
+    const taken = n0(P.extension), ready = list.filter((s) => s.ready);
+    card.append(h('div', { class: 'exp-top' }, h('span', { class: 'exp-sum-counts', text: head }),
+      h('div', { class: 'band-points', 'data-tip': `Every raise there is: ${k(max)}` + (X.newmoon ? ', NewMoon’s own included' : '') },
+        h('span', { class: 'band-pts', text: `${k(taken)} of ${k(max)} raised` + (open ? ` · ${k(open)} still to get` : '') }),
+        h('span', { class: 'band-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (taken / (max || 1)) * 100))}%` })))));
+    const groups = [];
+    list.forEach((s) => { const g = groups.find((x) => x.name === s.group); if (g) g.list.push(s); else groups.push({ name: s.group, list: [s], newmoon: s.newmoon }); });
+    const chip = (s) => {
+      const state = s.got === true ? 'got' : s.ready ? 'ready' : known(s) ? 'open' : 'unknown';
+      const said = { got: 'You have it', ready: 'Ready to claim: one of these races has the DLevel', open: 'Not taken yet', unknown: 'The game data doesn’t say whether you have it' }[state];
+      return h('span', { class: `tag cap-chip cap-${state}`, 'data-tip': `${s.name} · ${k(s.amount)}\n${s.how}\n${said}` },
+        (s.short ?? s.name) ? h('span', { text: s.short ?? s.name }) : null, h('b', { text: `+${(n0(s.amount) * 1000).toLocaleString('en-US')}` }));
+    };
+    card.append(h('div', { class: 'cap-list' }, groups.map((g) => {
+      const got = g.list.filter((s) => s.got === true).reduce((a, s) => a + n0(s.amount), 0), all = g.list.reduce((a, s) => a + n0(s.amount), 0);
+      return h('div', { class: 'cap-row' },
+        h('span', { class: 'cap-group' }, h('span', { text: g.name }), g.newmoon ? h('span', { class: 'cap-server', text: 'NewMoon' }) : null),
+        h('span', { class: 'cap-chips' }, g.list.map(chip)),
+        h('span', { class: 'exp-sum-pt' + (got === all ? ' done' : ''), text: `${k(got)} / ${k(all)}` }));
+    })));
+    const notes = [];
+    if (ready.length) notes.push(`${ready.length === 1 ? 'One Shiho reward is' : `${ready.length} Shiho rewards are`} ready to claim: ${k(ready.reduce((a, s) => a + n0(s.amount), 0))}.`);
+    if (other > 0) notes.push(`${k(other)} of your cap isn’t matched to a raise above` + (X.newmoon ? ' (the Black Frost exchanges leave nothing the app can read: most likely those).' : '.'));
+    if (other < 0) notes.push(`The raises found add up to ${k(-other)} more than the game’s cap: one of them is read wrong.`);
+    if (X.newmoon == null) notes.push('NewMoon’s own raises show when the app sees the game is on NewMoon (the game folder’s server list and the client’s connection).');
+    if (list.some((s) => s.got == null && !/^Black Frost/.test(s.name))) notes.push('Some raises couldn’t be read from the game: take a snapshot with the character logged in.');
+    notes.forEach((t) => card.append(h('p', { class: 'note', text: t })));
+    return sect('Expertise cap', pt(P.cap), null, card);
+  }
+
   function pageExpertise() {
     const rows = S.data.expertise.filter((r) => !isDlevel(r) && !isExtra(r));
     const page = h('div', { class: 'page' });
     page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and your other learned passives. Digitalization Levels are on the Digitalize page; the quest bonus and Demonic Compendium are on Bonuses.'));
     page.append(expSummary(rows));
+    const cap = expCap();
+    if (cap) page.append(cap);
     // the expertise share of each bonus, without what the Digitalization Levels, quest bonus and compendium put into it
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, round2(n0(r.expertise) - shareOf(r, ['dlevel', 'quest', 'compendium']))]).filter(([, v]) => v);
     page.append(sect('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, null,

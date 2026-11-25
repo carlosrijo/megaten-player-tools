@@ -736,6 +736,15 @@ fn extras(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result
                 let level = character_extras::clan_level(data, Some(&st))?.map(|l| l.to_string()).unwrap_or_else(|| "?".to_string());
                 console::write_line(&format!("Clan: {}, level {level} (its bonuses are the learned clan skills, on the Expertise tab)", st.clan_name.as_deref().unwrap_or("none")));
             }
+            // Demonic Compendium Ver. 2.0 is valuable 251, read with the valuables unless --compendium-v2 says otherwise
+            if !opts.contains_key("compendium-v2") {
+                if let Some(has) = demon_reader::read_progress(&gm).and_then(|p| p.has_valuable(251)) {
+                    if Some(has) != book_v2 {
+                        changed = true;
+                    }
+                    book_v2 = Some(has);
+                }
+            }
             if !opts.contains_key("quests") {
                 let done = demon_reader::read_progress(&gm).and_then(|p| p.completed_quests);
                 if let Some(qc) = character_extras::quest_bonus_count(done)? {

@@ -246,6 +246,8 @@ pub fn read_assists(mem: &GameMemory) -> Option<Vec<i32>> {
 ///    points cap by 100,000 (CharacterManager::GetMaxExpertisePoints); -1 = no cap. Found on Rubito: +456 = 34, and
 ///    1,700,000 + 9 x 100,000 (level 95) + 34 x 100,000 = 6,000,000, the "60000.00pt" his Expertise window shows
 ///    (52000.00pt = his 5,200,000 points). One subject so far. None when outside -1..127.
+///  * `valuables`: the character's valuables (the Valuables window, key items and the server's progress flags), see
+///    [`valuables_of`]. None when the mask is empty (not received yet).
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Progress {
     pub assists: Vec<i32>,
@@ -257,9 +259,15 @@ pub struct Progress {
     pub completed_quests: Option<IndexSet<i32>>,
     pub level: Option<i32>,
     pub expertise_extension: Option<i32>,
+    pub valuables: Option<IndexSet<i32>>,
 }
 
 impl Progress {
+    /// Whether the character holds valuable `id`; None when the valuables couldn't be read.
+    pub fn has_valuable(&self, id: i32) -> Option<bool> {
+        self.valuables.as_ref().map(|v| v.contains(&id))
+    }
+
     pub fn digitalized(&self) -> bool {
         self.digitalized_demon != 0
     }
@@ -288,6 +296,7 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
     let mut quests: Option<IndexSet<i32>> = None;
     let mut level: Option<i32> = None;
     let mut ext: Option<i32> = None;
+    let mut valuables: Option<IndexSet<i32>> = None;
     for (r, buf) in mem.scan() {
         if r.base < 0x02000000 {
             continue;
@@ -323,6 +332,7 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
             quests = read_quests(mem, u32_at(&b, 0x624) as i64, i32_at(&b, 0x628));
             let e = b[456] as i8 as i32; // one signed byte (-1 = no cap): Rokujuu had 0x00190016 here for 22
             ext = if (-1..=127).contains(&e) { Some(e) } else { None };
+            valuables = valuables_of(&b[VALUABLES_AT..VALUABLES_AT + 128]);
             let st = mem.read(u32_at(buf, pp + 12) as i64, 136);
             level = st.and_then(|st| {
                 let lv = st[132] as i32;
@@ -340,7 +350,30 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
         completed_quests: quests,
         level,
         expertise_extension: ext,
+        valuables,
     })
+}
+
+/// Where the valuables mask sits in the progress object.
+const VALUABLES_AT: usize = 500;
+
+/// The valuables: a 128-byte bit mask at progress +500, valuable id n = byte n / 8, bit n % 8 (the server's
+/// CharacterProgress.Valuables and CharacterManager::ConvertIDToMaskValues; it arrives with the login). Found on
+/// 2026-11-25 with a fresh login on Rubito and Rokujuu, Valuables window open: the only 128 bytes of the object
+/// holding Demonic Compendium Ver. 2.0 (251), Digitalize System Novice (686) and Shiho's expertise releases
+/// (659/660), different on the two characters (102 and 108 valuables). Checked: the expertise-cap valuables plus the
+/// cap quests add up exactly to each one's ExpertiseExtension (Rubito 34, Rokujuu 22; see calc::expertise_cap).
+/// None when no bit is set (not received yet).
+pub(crate) fn valuables_of(mask: &[u8]) -> Option<IndexSet<i32>> {
+    let mut res = IndexSet::new();
+    for (i, b) in mask.iter().enumerate() {
+        for s in 0..8 {
+            if b & (1 << s) != 0 {
+                res.insert((i * 8 + s) as i32);
+            }
+        }
+    }
+    if res.is_empty() { None } else { Some(res) }
 }
 
 /// The object id of the demon the character is digitalized with, from the progress object's bytes (0 = not digitalized):

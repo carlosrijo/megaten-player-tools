@@ -35,7 +35,7 @@ pub struct Store {
 }
 
 const PROFILE_NOTE_TAIL: &str = ". alignment: for 'If Player is LAW/NEUTRAL/CHAOS' gear conditions; toggles: switch skills that are on; \
-quest_count / compendium_count (from the game once its Quest Completion Bonuses / Demonic Compendium window has been opened, else set by hand) and compendium_v2 (by hand): for the quest and compendium bonuses.";
+quest_count / compendium_count (from the game once its Quest Completion Bonuses / Demonic Compendium window has been opened, else set by hand) and compendium_v2 (from the game's valuables, else by hand): for the quest and compendium bonuses.";
 
 fn now_minute() -> String {
     chrono::Local::now().format("%Y-%m-%d %H:%M").to_string()

@@ -30,7 +30,8 @@ pub struct ProgressState {
     /// unless the caller sets it (from the user, or CharacterExtras.CompendiumCount on the 512-byte devil-book mask).
     pub compendium_count: Option<i32>,
     /// Whether the account has Demonic Compendium v2 (valuable 251): the server gives no compendium bonus without
-    /// it. Not read from memory; None = assumed yes when a count is given.
+    /// it. Not read here: the caller passes it (the profile's, saved from the valuables, demon_reader::Progress); None
+    /// = assumed yes when a count is given.
     pub has_compendium_v2: Option<bool>,
 }
 

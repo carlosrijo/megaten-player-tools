@@ -191,7 +191,7 @@ fn store_files_like_csharp() {
     assert!(st.load_set_table().unwrap().is_none());
     assert_eq!(st.tooltips_level().unwrap(), 0);
 
-    let note = "Updated <ts>. alignment: for 'If Player is LAW/NEUTRAL/CHAOS' gear conditions; toggles: switch skills that are on; quest_count / compendium_count (from the game once its Quest Completion Bonuses / Demonic Compendium window has been opened, else set by hand) and compendium_v2 (by hand): for the quest and compendium bonuses.";
+    let note = "Updated <ts>. alignment: for 'If Player is LAW/NEUTRAL/CHAOS' gear conditions; toggles: switch skills that are on; quest_count / compendium_count (from the game once its Quest Completion Bonuses / Demonic Compendium window has been opened, else set by hand) and compendium_v2 (from the game's valuables, else by hand): for the quest and compendium bonuses.";
     st.save_counts(Some(3), Some(4), Some(false), false, false).unwrap();
     let text = no_ts(&std::fs::read_to_string(st.profile_path()).unwrap());
     assert_eq!(

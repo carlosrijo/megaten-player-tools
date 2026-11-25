@@ -11,7 +11,7 @@ use regex::Regex;
 use serde_json::{Value, json};
 
 use crate::Result;
-use crate::calc::character_extras;
+use crate::calc::{character_extras, expertise_cap};
 use crate::calc::effect::rx;
 use crate::calc::item_effects::{affinity_cap_label, affinity_name, title};
 use crate::context::Context;
@@ -21,7 +21,7 @@ use crate::data::stat_labels;
 use crate::data::store::Store;
 use crate::fmt;
 use crate::game::progress_reader::{self, ProgressState};
-use crate::game::{client_reader, demon_reader};
+use crate::game::{client_reader, demon_reader, server};
 use crate::memory::{self, GameMemory};
 use crate::user_error;
 
@@ -504,8 +504,10 @@ impl Expertise {
             let (q, book, v2) = store.counts()?;
             let quest_count = character_extras::quest_bonus_count(prog.as_ref().and_then(|p| p.completed_quests.as_ref()).map(|s| s.iter().copied()))?;
             let book_count = progress_reader::read_compendium_count(&mem);
-            if quest_count.is_some() || book_count.is_some() {
-                store.save_counts(quest_count.or(q), book_count.or(book), v2, quest_count.is_some(), book_count.is_some())?;
+            // Demonic Compendium Ver. 2.0 is valuable 251: read with the valuables, kept as it was when they can't be
+            let v2_game = prog.as_ref().and_then(|p| p.has_valuable(251));
+            if quest_count.is_some() || book_count.is_some() || (v2_game.is_some() && v2_game != v2) {
+                store.save_counts(quest_count.or(q), book_count.or(book), v2_game.or(v2), quest_count.is_some(), book_count.is_some())?;
             }
         }
         let existing = || -> Result<Option<Value>> { if store.expertise_ranks_path().exists() { Ok(Some(json::load(store.expertise_ranks_path())?)) } else { Ok(None) } };
@@ -547,13 +549,20 @@ impl Expertise {
         // cap: CharacterManager::GetMaxExpertisePoints = 1,700,000 + floor(level / 10) x 100,000 (+100,000 at level 99)
         // + ExpertiseExtension x 100,000; extension -1 = no cap. The game shows points / 100 ("52000.00pt").
         let total: i64 = pts.iter().filter(|(k, _)| **k <= 37).map(|(_, v)| (*v).max(0) as i64).sum();
-        let points = match prog.as_ref().and_then(|p| p.level.zip(p.expertise_extension)) {
+        let mut points = match prog.as_ref().and_then(|p| p.level.zip(p.expertise_extension)) {
             Some((lvl, ext)) => {
                 let cap: i64 = (1_700_000 + lvl / 10 * 100_000 + if lvl == 99 { 100_000 } else { 0 }) as i64 + (ext.max(0) as i64) * 100_000;
                 obj(json!({ "total": total, "cap": if ext < 0 { Value::Null } else { json!(cap) }, "level": lvl, "extension": ext }))
             }
             None => obj(json!({ "total": total, "cap": Value::Null })),
         };
+        // What raised the cap (calc::expertise_cap), with NewMoon's own raises when the client plays on NewMoon (the
+        // game folder's server list and the client's connection, game::server)
+        if let Some(p) = prog.as_ref() {
+            let server = server::connected_server(&proc);
+            let raises = expertise_cap::report(data, p, server.as_ref().map(|s| s.is_newmoon()), server.as_ref().map(|s| s.title.as_str()))?;
+            points.insert("raises".into(), raises);
+        }
         json::save(
             store.expertise_ranks_path(),
             &json!({
