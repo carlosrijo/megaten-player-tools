@@ -964,6 +964,17 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .sim-build-slot img { width: 24px; height: 24px; image-rendering: pixelated; }
 .sim-build-slot.none { opacity: .5; }
 .sim-build-slot.changed { box-shadow: 0 0 0 1.5px var(--accent); }
+/* a changed piece's tooltip on a build card: the usual sections; where the build differs from the base, the base's comes first and the build's is under it in a card: outlined in the ring's purple, headed "Changes to" (a filled band with a line under it), its text in the readable purple of the focus ring. The card's sides sit OUTSIDE the text column (negative side margins as wide as its padding), so what is in it stays in line with the section headings and the lines above. */
+.tt-new { margin: 6px -8px 4px; padding: 0 8px 7px; border-radius: 7px; box-shadow: inset 0 0 0 1.5px var(--accent); overflow: hidden; }
+.tt-new-cap { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); margin-bottom: 3px; }
+.tt-new .tt-new-cap { margin: 0 -8px 6px; padding: 4px 8px; background: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text); border-bottom: 1.5px solid var(--accent); }   /* the band is the outline's purple thinned out (a whole band of it at full strength reads much brighter than the thin outline), and the line under it is the outline itself */
+.tt-new .tt-head { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+.tt-cmp > .tt-new:has(.tt-head) { margin-bottom: 8px; }
+.tt-head.tt-head-was { padding-bottom: 6px; margin-bottom: 0; border-bottom: 0; }
+/* a section's source in a piece tooltip: the picture(s) of the piece, crystal or set pieces it comes from, then the name */
+.tt-src { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 2px 0 3px; }
+.tt-src-pic { width: 22px; height: 22px; flex: none; image-rendering: pixelated; border-radius: 4px; background: var(--surface-2); }
+.tt-src span { min-width: 0; flex: 1 1 60%; }
 .sim-build .dgt-add b.good { color: var(--good); } .sim-build .dgt-add b.bad { color: var(--bad); }
 .sim-new { align-content: center; justify-items: center; text-align: center; gap: 14px; min-height: 190px; padding: 20px 14px; border-style: dashed; border-color: var(--border-strong); background: transparent; }
 /* "Share" and "Import build": the code in a box, and what a pasted code holds (one line per piece, the ranks as tags) */

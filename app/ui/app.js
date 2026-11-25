@@ -1576,8 +1576,43 @@
       ...s.parts.map(({ row, part }) => h('div', { class: 'tt-line', text: `* ${row.bonus} ${part.value === null || part.value === undefined ? '' : fmt(part.value, row.unit, true)}${isTrue(part.digi) ? ' (digitalized)' : ''}` }))]);
     box.append(...sets, ...secs.map((b, i) => ({ b, i })).sort((x, y) => rank(x.b) - rank(y.b) || x.i - y.i).flatMap((x) => x.b.filter(noSetLine)));
     if (!lines.length) box.append(h('div', { class: 'tt-line', text: 'No tooltip was read for this piece.' }));
+    gearTipPics(box, g);
     return box;
   };
+  /**
+   * Puts pictures in a worn piece's tooltip sections: the piece lending the basic features or the characteristics,
+   * the two crystals, a set's pieces. The page's gear data has only the piece's own picture; the others come with the
+   * Build Planner's reading of the shown character (host "simInit": the same pieces, with a picture per part), asked
+   * once and kept. When that isn't in yet, the tooltip shows without them and gets them when it arrives; with no
+   * reader behind the page (or a character never read) it simply stays as it was. The game's text already names the
+   * crystal and the set's pieces: there the picture joins that line.
+   */
+  function gearTipPics(box, g) {
+    const me = S.meta.character || '';
+    if (!me || !g.item_id) return;
+    const put = (init) => {
+      const res = init && init.result, x = res && (res.slots || []).find((r) => !r.empty && r.id === g.item_id && String(r.slot).toLowerCase() === String(g.slot).toLowerCase());
+      if (!x || box.dataset.pics) return;
+      box.dataset.pics = '1';
+      const pics = (list) => (list || []).filter(Boolean).map((src) => h('img', { class: 'tt-src-pic', src, alt: '' }));
+      const mine = simPlain(x.name);
+      const sets = (res.sets || []).filter((s) => s.kind === 'set' && mine && String(s.name || '').includes(mine));
+      let setAt = 0;
+      [...box.querySelectorAll('.tt-sec')].forEach((sec) => {
+        const title = sec.textContent.trim().toLowerCase(), next = sec.nextElementSibling;
+        const line = (icons, name) => { if (icons.some(Boolean)) sec.after(h('div', { class: 'tt-line tt-why tt-src' }, pics(icons), h('span', { text: name }))); };
+        const into = (icons) => { if (next && next.classList.contains('tt-line') && icons.some(Boolean)) { next.classList.add('tt-src'); next.prepend(...pics(icons)); } };
+        if (title.startsWith('set bonus')) into((sets[setAt++] || {}).icons || []);
+        else if (title === 'appearance bonus') line([x.icon], x.name);
+        else if (title === 'basic features') line([x.basic ? x.basic_icon : x.icon], x.basic || x.name);
+        else if (title === 'characteristics') line([x.special ? x.special_icon : x.icon], x.special || x.name);
+        else if (title === 'tarot fusion') into([x.tarot_icon]);
+        else if (title === 'soul fusion') into([x.soul_icon]);
+      });
+    };
+    const ready = S.sim.bases.get(simBaseKey(me));
+    if (ready) put(ready.init); else simBase(me).then((entry) => put(entry.init)).catch(() => { /* no reader, or nothing read for this character: no pictures */ });
+  }
   // The hover tooltip of any other bonus source: its icon and name, and the game's description when it is a skill.
   // A summoned demon's Demon Force entry or epitaph is headed by its item's name (the note then leaves that name out).
   const sourceTip = (p, iconOf) => () => h('div', { class: 'tt' },
@@ -3631,30 +3666,83 @@
    */
   const simPieceTip = (x, res, note) => () => {
     const box = h('div', { class: 'tt' }), L = x.lines || {};
-    box.append(tipHead(gearIcon({ icon: x.icon }), x.name, [x.slot, note].filter(Boolean).join(' · ')));
+    box.append(tipHead(gearIcon({ icon: x.icon }), x.empty ? 'Nothing worn' : x.name, [x.slot, note].filter(Boolean).join(' · ')));
+    if (x.empty) return box;
     let any = false;
-    const sec = (title, from, list, mark) => {
-      if (!from && !(list && list.length)) return;
+    // A section: its heading, then what it comes from as a picture and a name (the piece itself, the piece lending
+    // that part, the crystal, a set's pieces), then its lines. `always`: shown even with no lines (a part taken from
+    // another piece, or a crystal, that adds nothing is still what the piece is made of).
+    const sec = (title, from, list, o) => {
+      const { mark = '', icons = [], always = false } = o || {};
+      if (!always && !(list && list.length)) return;
       any = true;
       box.append(h('div', { class: 'tt-sec', text: title }));
-      if (from) box.append(h('div', { class: 'tt-line tt-why', text: from }));
-      (list || []).forEach((l) => box.append(h('div', { class: 'tt-line', text: (mark || '') + simLineText(l) + (l.n ? ` (${l.n})` : '') })));
+      if (from) box.append(h('div', { class: 'tt-line tt-why tt-src' }, icons.filter(Boolean).map((src) => h('img', { class: 'tt-src-pic', src, alt: '' })), h('span', { text: from })));
+      (list || []).forEach((l) => box.append(h('div', { class: 'tt-line', text: mark + simLineText(l) + (l.n ? ` (${l.n})` : '') })));
     };
     const mine = simPlain(x.name);
     (res.sets || []).filter((s) => s.kind === 'set' && mine && String(s.name || '').includes(mine)).forEach((s) =>
-      sec(s.active ? 'Set bonus' : `Set bonus · ${s.worn} worn, not complete`, `Pieces: ${s.name}`, s.lines, '* '));
-    sec('Appearance Bonus', '', L.appearance);
-    sec('Basic Features', x.basic ? `Of ${x.basic}` : '', L.item);
+      sec(s.active ? 'Set bonus' : `Set bonus · ${s.worn} worn, not complete`, `Pieces: ${s.name}`, s.lines, { mark: '* ', icons: s.icons || [], always: true }));
+    sec('Appearance Bonus', x.name, L.appearance, { icons: [x.icon] });
+    sec('Basic Features', x.basic || x.name, L.item, { icons: [x.basic ? x.basic_icon : x.icon], always: !!x.basic });
     // fusion great-success bonuses, as the Gear page marks them
     (x.fuse || []).filter((f) => n0(f.bonus)).forEach((f) => {
       any = true;
       box.append(h('div', { class: 'tt-line' }, `${f.stat}: `, h('span', { class: 'tt-fuse', text: `+${fmt(f.bonus)} from fusion` }), isTrue(f.max) ? h('span', { class: 'tt-max', text: 'MAX' }) : null));
     });
-    sec('Characteristics', x.special ? `Of ${x.special}` : '', L.characteristic);
-    sec('Tarot Fusion', x.tarot || '', L.tarot);
-    sec('Soul Fusion', x.soul || '', L.soul);
+    sec('Characteristics', x.special || x.name, L.characteristic, { icons: [x.special ? x.special_icon : x.icon], always: !!x.special });
+    sec('Tarot Fusion', x.tarot || '', L.tarot, { icons: [x.tarot_icon], always: !!x.tarot });
+    sec('Soul Fusion', x.soul || '', L.soul, { icons: [x.soul_icon], always: !!x.soul });
     sec('Modification Slot', '', L.mod);
     if (!any) box.append(h('div', { class: 'tt-line', text: 'It adds nothing by itself.' }));
+    return box;
+  };
+  /**
+   * The hover tooltip of a piece a build changes: one tooltip with the usual sections (set bonus, appearance bonus,
+   * basic features, characteristics, tarot, soul, mods). A section that is the same for the base and the build is
+   * written once. One that is not shows the base's first, as the character wears it, and under it what the build has
+   * there instead, in a card outlined in the purple of the ring around the picture and headed "Changes to". The name on top works the same
+   * way when the piece itself is another. Both sides are what the reader worked out (simPieceTip), so they read alike.
+   * `was`, `now`: the slot in the base's result and in the build's (`empty` = nothing worn there).
+   */
+  const simPieceCompare = (who, was, baseRes, now, res) => () => {
+    // each side's tooltip, taken apart: its sections by heading (a set by its pieces, as a piece can be in several)
+    const parts = (tt) => {
+      const map = new Map(); let cur = null;
+      [...tt.children].forEach((el) => {
+        if (el.classList.contains('tt-head')) return;
+        if (el.classList.contains('tt-sec')) { cur = { title: el.textContent, nodes: [] }; map.set(el.textContent.replace(/ · .*$/, ''), cur); return; }
+        if (!cur) return;
+        if (/^Set bonus/.test(cur.title) && !cur.nodes.length) { map.delete(cur.title.replace(/ · .*$/, '')); map.set('Set bonus: ' + el.textContent, cur); }
+        cur.nodes.push(el);
+      });
+      map.forEach((p) => { p.text = p.title + ' | ' + p.nodes.map((n) => n.textContent).join(' | '); });
+      return map;
+    };
+    const A = simPieceTip(was, baseRes, '')(), B = simPieceTip(now, res, '')();
+    const pa = parts(A), pb = parts(B);
+    /** What the build has instead, under the base's: a purple-outlined card headed "Changes to", its text in purple. */
+    const fresh = (...kids) => h('div', { class: 'tt-new' }, h('div', { class: 'tt-new-cap', text: 'Changes to' }), kids);
+    const gone = (text) => h('div', { class: 'tt-line tt-why', text });
+    const box = h('div', { class: 'tt tt-cmp' });
+    // the name on top: once when it is the same piece, else the base's and under it the build's
+    const headA = A.querySelector('.tt-head'), headB = B.querySelector('.tt-head');
+    if (headA.textContent === headB.textContent) box.append(headB);
+    else { headA.classList.add('tt-head-was'); box.append(h('div', { class: 'tt-new-cap', text: `${who} wears` }), headA, fresh(headB)); }
+    // the sections in the tooltip's own order: the sets first, then the fixed ones; one only a side has keeps its place
+    const fixed = ['Appearance Bonus', 'Basic Features', 'Characteristics', 'Tarot Fusion', 'Soul Fusion', 'Modification Slot'];
+    const keys = [...new Set([...pa.keys(), ...pb.keys()])];
+    const order = (k) => { const i = fixed.indexOf(k); return i < 0 ? -1 : i; };
+    keys.sort((x, y) => order(x) - order(y));
+    keys.forEach((k) => {
+      const x = pa.get(k), y = pb.get(k);
+      if (x && y && x.text === y.text) { box.append(h('div', { class: 'tt-sec', text: y.title }), ...y.nodes); return; }
+      box.append(h('div', { class: 'tt-sec', text: (x || y).title }));
+      if (x) box.append(...x.nodes);
+      // a set complete on one side only words its heading differently: the build's heading goes in its block
+      box.append(fresh(x && y && x.title !== y.title ? h('div', { class: 'tt-line tt-why', text: y.title }) : null, y ? y.nodes : gone(now.empty ? 'Nothing worn' : 'None')));
+    });
+    if (!keys.length) box.append(h('div', { class: 'tt-line', text: 'Neither adds anything by itself.' }));
     return box;
   };
   /** One saved build as a card: its name, its base, how far it is from that base, and the biggest differences it makes. */
@@ -3683,11 +3771,13 @@
     const wornNow = entry && at.who && at.who === simActive() && S.v && S.v.gear ? S.v.gear : [];
     const col = h('span', { class: 'sim-build-col' }, Array.from({ length: 15 }, (_, k) => {
       const x = res && res.slots[k] && !res.slots[k].empty ? res.slots[k] : null;
-      const box = h('span', { class: 'sim-build-slot' + (x ? '' : ' none') + (x && changed.has(k) ? ' changed' : '') },
+      const box = h('span', { class: 'sim-build-slot' + (x ? '' : ' none') + (res && changed.has(k) ? ' changed' : '') },
         x && x.icon ? h('img', { src: x.icon, alt: '' }) : null);
+      // a ringed piece (or a ringed slot the build leaves empty) shows the two side by side: the base's, and the build's
+      if (res && changed.has(k) && res.slots[k]) return withTip(box, simPieceCompare(at.who, (entry.init.result.slots || [])[k] || { slot: res.slots[k].slot, empty: true }, entry.init.result, res.slots[k], res));
       if (!x) return box;
-      const worn = changed.has(k) ? null : wornNow.find((g) => g.kind !== 'set' && g.item_id === x.id && String(g.slot).toLowerCase() === String(x.slot).toLowerCase());
-      return withTip(box, worn ? gearTip(worn) : simPieceTip(x, res, changed.has(k) ? `not what ${at.who} wears` : ''));
+      const worn = wornNow.find((g) => g.kind !== 'set' && g.item_id === x.id && String(g.slot).toLowerCase() === String(x.slot).toLowerCase());
+      return withTip(box, worn ? gearTip(worn) : simPieceTip(x, res, ''));
     }));
     // what it changes: your stats first, then combat, then the rest; within each, the biggest first
     const rank = { Stats: 0, Combat: 1, Affinity: 2, Other: 3 };

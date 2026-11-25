@@ -367,12 +367,14 @@ fn gear_database_matches_the_csharp_file() {
     // damage stats: one effect line says "Support Magic damage Taken" where it said RATE_SUPPORT_TAKEN: +8 bytes. Since the
     // stats the client words only for the summoner got their names (Ailment Resistance with its sign turned, Curative
     // Boost, Curative Received) and EQUIPPED_WEAPON_TYPE conditions name the weapon class ("Axe equipped" for "Equipped
-    // Weapon Type 29"): +3,323 bytes, only in those lines.
+    // Weapon Type 29"): +3,323 bytes, only in those lines. Since status effects go by the game's names (referencestatus-names.tsv:
+    // "Immune to Stun" for "Immune to status 10", "Charm success rate" for "Status 4 success rate"): -2,600 bytes, only
+    // in those lines.
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (3753741, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (3751141, GEARDB_FNV));
 }
 
 /// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods") after its
 /// `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 17706717497178937754;
+const GEARDB_FNV: u64 = 17079864666555525593;
