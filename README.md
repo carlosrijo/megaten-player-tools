@@ -48,6 +48,10 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+Before the tag, write what is new for players in `release-notes\v1.0.0.md` (plain words, a short bullet list) and
+commit it with the release: the workflow puts that file at the top of the release page, above the SHA-256. Without
+the file the release page has only the SHA-256 and a link to the full list of changes.
+
 A tag with a dash (`v1.1.0-beta.1`) makes a pre-release. To try the build first, run the Release workflow by hand
 (Actions > Release > Run workflow) and download the exe from the run, or build it here:
 `pwsh -NoProfile -File tools\publish-portable.ps1` (gives `dist\BABEL.exe`, and `dist-symbols\BABEL.pdb`: the debug

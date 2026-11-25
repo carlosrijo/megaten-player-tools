@@ -1,6 +1,6 @@
 # Release: build the portable BABEL.exe (one file, nothing to install; see tools/publish-portable.ps1).
 #
-#   Push a version tag   ->  builds the exe and publishes a GitHub release with it (notes made from the commits):
+#   Push a version tag   ->  builds the exe and publishes a GitHub release with it (notes from release-notes/<tag>.md):
 #       git tag v1.2.0
 #       git push origin v1.2.0
 #     A tag with a dash (v1.2.0-beta.1) makes a pre-release.
@@ -79,7 +79,11 @@ jobs:
           # The SHA-256 goes in the notes too, so a player can check the exe against the page without downloading the
           # .sha256 file (README.md, "Check the download"). --notes is put above the generated notes.
           $h = (Get-Content dist/BABEL.exe.sha256 -Raw).Split(' ')[0].Trim()
-          $notes = @(
+          # What's new: release-notes/<tag>.md, written by hand for players (README.md, "Making a release"). It goes first;
+          # the SHA-256 block follows it. With no such file the release has only the SHA-256 block and the compare link.
+          $notesFile = "release-notes/$tag.md"
+          $whatsNew = if (Test-Path $notesFile) { (Get-Content $notesFile -Raw).Trim() + "`n`n" } else { '' }
+          $notes = $whatsNew + (@(
             '### Check the download'
             ''
             'SHA-256 of `BABEL.exe`:'
@@ -95,7 +99,8 @@ jobs:
             '```'
             ''
             'The two must match (capital or small letters do not matter). If they do not, do not run the exe.'
-          ) -join "`n"
+          ) -join "`n")
+          # --generate-notes still adds the "Full Changelog" compare link under the notes.
           $flags = @('--title', "BABEL $tag", '--notes', $notes, '--generate-notes')
           if ($tag -like '*-*') { $flags += '--prerelease' }
           gh release create $tag dist/BABEL.exe dist/BABEL.exe.sha256 @flags
