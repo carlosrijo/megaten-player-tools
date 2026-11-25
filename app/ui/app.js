@@ -367,7 +367,7 @@
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
     // Demon Rank: which demons, the level they are compared at ('base', '1' or '99'), the column sorted (an index of RANK_COLS) and its direction (1 = highest first)
-    rank: { q: '', kind: 'contract', race: '', at: 'base', mt: false, sort: 0, dir: 1 },
+    rank: { q: '', kind: 'own', race: '', at: 'base', mt: false, sort: 0, dir: 1 },
     ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null },   // only: a demon id a link opened
     // Skill Database: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
     skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), shown: 200, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
@@ -2665,7 +2665,7 @@
       if (d) d.demons.forEach((x) => {
         const sk = (id) => d.skills[id] || { name: 'A skill the game data does not name', desc: '' };
         x.hay = [x.name, x.race, x.align, ...x.traits.concat(x.mt ? x.mt.traits : []).map((t) => sk(t).name), ...x.skills.map(([id]) => sk(id).name),
-          ...[x.tarot, x.soul].filter(Boolean).flatMap((e) => [e.name, ...e.lines]), ...x.contract.map((c) => c.zone)].join(' ').toLowerCase();
+          ...[x.tarot, x.soul].filter(Boolean).flatMap((e) => [e.name, ...e.lines]), ...x.contract.map((c) => c.zone), x.variantOf || '', ...(x.get || []).map((g) => g.text)].join(' ').toLowerCase();
       });
       if (S.page === 'ddb' || S.page === 'skills' || S.page === 'rank') render();
     });
@@ -2706,7 +2706,8 @@
       x.gender && !/^(None|Na)$/i.test(x.gender) ? h('span', { class: 'tag', text: x.gender }) : null,
       x.fusion ? h('span', { class: 'tag', 'data-tip': 'The game\'s fusion picks it by level within its race.', text: 'Normal fusion' }) : null,
       x.mitama ? h('span', { class: 'tag', text: 'Mitama' }) : null,
-      x.counted ? null : h('span', { class: 'tag tag-off', 'data-tip': 'The compendium lists it but does not count it toward its totals.', text: 'Not counted in the compendium' })));
+      x.variant ? h('span', { class: 'tag', 'data-tip': 'A version of a demon with its own name, level, stats and skills. The compendium counts it with the demon it is a version of, not on its own.', text: x.variantOf ? `Variant of ${x.variantOf}` : 'Variant' }) : null,
+      x.counted || x.variant ? null : h('span', { class: 'tag tag-off', 'data-tip': 'The compendium lists it but does not count it toward its totals.', text: 'Not counted in the compendium' })));
 
     // Normal or Mitama-fused: Mitama fusion turns it into another demon type with its own features, stats and
     // affinities (x.mt; skills only when they differ). The view switches everything below that the Mitama form changes.
@@ -2767,6 +2768,10 @@
     if (dcm) where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'DCM' }), h('b', { text: dcm.lines && dcm.lines[0] ? `${dcm.lines[0].kind}: ${dcm.lines[0].text}` : 'No source in the game data' }),
       h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:10px', onclick: () => { S.dcm.q = x.name; S.dcm.kind = 'all'; S.dcm.open = new Set([dcm.id]); go('dcm'); } }, 'Open in DCM Locator')));
     if (x.fusion) where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Fusion' }), h('span', null, `Normal two-demon fusion: a ${x.race} result picked by level`)));
+    // a variant: an exchange item, a special fusion or a gift (demon-db.json "get"), each with what the game data says about it
+    (x.get || []).forEach((g) => where.append(h('li', null, h('span', { class: 'gdb-kind', text: g.kind }), h('span', null, h('b', { text: g.text }),
+      g.note ? h('div', { class: 'note', text: g.note }) : null,
+      g.from ? (g.from.length ? h('ul', { class: 'gdb-list gdb-sub-list' }, g.from.map((f) => h('li', { text: f }))) : h('div', { class: 'note', text: 'The data does not say where this item comes from.' })) : null))));
     box.append(block('Where to get it', where.childNodes.length ? where : h('span', { class: 'zero', text: 'The game data names no place to contract it, no fusion by level and no DCM.' })));
     if (x.enemy.length) box.append(block('Enemy only', h('div', { class: 'note', style: 'margin-bottom:4px', text: 'It appears here too, but cannot be talked into a contract (dungeon and boss versions).' }),
       h('ul', { class: 'gdb-list ddb-enemy' }, x.enemy.map((c) => h('li', null, c.zone, h('span', { class: 'src-count', text: ddbLv(c) }))))));
@@ -2781,7 +2786,7 @@
       return page;
     }
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
-      'Demons, stats, affinities, skills, tarot and soul are the IMAGINE client\'s. Where each spawns comes from the public server data, so IMAGINE may have changed it. Dungeon and boss copies of a demon are not listed on their own: they show under “Enemy only”.')));
+      'Demons, stats, affinities, skills, tarot and soul are the IMAGINE client\'s. Where each spawns comes from the public server data, so IMAGINE may have changed it. Variants (Lucky, Inexperienced, Open-minded and the like) are listed on their own, with how to get them. Dungeon and boss copies of a demon are not: they show under “Enemy only”.')));
     const all = D.data.demons;
     const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : !x.contract.length);
     const inPick = (x) => (!D.race || x.race === D.race) && (!D.align || x.align === D.align);   // the Race and Alignment dropdowns
@@ -2806,7 +2811,7 @@
         const toggle = () => { if (D.open.has(x.id)) D.open.delete(x.id); else D.open.add(x.id); draw(); };
         const c0 = x.contract[0];
         const where = c0 ? h('span', null, c0.zone, h('span', { class: 'src-count', text: ddbLv(c0) + (x.contract.length > 1 ? ` · and ${x.contract.length - 1} more` : '') }))
-          : h('span', { class: 'zero', text: x.fusion ? 'Fusion only' : '—' });
+          : h('span', { class: 'zero', text: x.fusion ? 'Fusion only' : x.get && x.get.length ? ({ Gift: 'Event or NPC gift' }[x.get[0].kind] || x.get[0].kind) : '—' });
         const ench = [x.tarot && x.tarot.lines[0], x.soul && x.soul.lines[0]].filter(Boolean);
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
@@ -2851,7 +2856,7 @@
     }
     const d = S.ddb.data, all = d.demons;
     const hasDcm = (x) => !!(S.dcm.data && S.dcm.data.items.some((it) => it.devilId === x.id));
-    const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : x.contract.length > 0 || x.fusion || hasDcm(x));
+    const inKind = (x, k) => (k === 'all' ? true : k === 'contract' ? x.contract.length > 0 : x.contract.length > 0 || x.fusion || hasDcm(x) || !!(x.get && x.get.length));
     const races = [...new Set(all.map((x) => x.race))].sort();
     const names = d.statNames.slice(0, 12).concat('Crit');
     const tips = { 'Max HP': 'Max HP', 'Max MP': 'Max MP', 'CLS-R': 'Close-range attack', 'LNG-R': 'Long-range attack', Spell: 'Spell power', Support: 'Support power',

@@ -4,6 +4,7 @@ pub mod csv;
 pub mod dashboard;
 pub mod demon_db;
 pub mod demon_model;
+pub mod demon_variants;
 pub mod doctor;
 pub mod digi_planner;
 pub mod digitalize_demon;

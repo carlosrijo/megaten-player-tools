@@ -7,7 +7,8 @@
 //!   IMAGINE_DUNGEONS_INPUT   folder with zone.xml, DevilData.xml, citem.tsv, CEventMessageData.xml, CItemData.xml
 //!   IMAGINE_STORE            the server's datastore folder
 //!   IMAGINE_CLIENT           the game folder (for the pictures)
-//! The JSON must match byte for byte, except the generation date.
+//! The JSON must match byte for byte, except the generation date. The Demon Database is the exception: the Rust builder
+//! lists the variants the C# one never had, so it is checked demon by demon (`demons_match_csharp_and_add_variants`).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -31,6 +32,32 @@ fn run(args: &[&std::ffi::OsStr]) {
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
 }
 
+/// The C# reader listed only the compendium's demons. The Rust one lists those unchanged (same stats, skills, features,
+/// tarot and soul; where they can be contracted may move to a variant that spawns as its own type, and a demon can gain a
+/// Mitama form from another id of the same demon) and adds the variants players can own, each marked `variant`.
+fn demons_match_csharp_and_add_variants(golden: &Path, made: &Path) {
+    let cs: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(golden).expect("C# output")).expect("C# json");
+    let rs: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(made).expect("Rust output")).expect("Rust json");
+    let rust: std::collections::HashMap<i64, &serde_json::Value> = rs["demons"].as_array().unwrap().iter().map(|d| (d["id"].as_i64().unwrap(), d)).collect();
+    let moved = ["contract", "enemy", "mt", "get", "variant", "variantOf"];
+    for c in cs["demons"].as_array().unwrap() {
+        let r = rust.get(&c["id"].as_i64().unwrap()).unwrap_or_else(|| panic!("{} is missing from the Rust output", c["name"]));
+        for (k, v) in c.as_object().unwrap() {
+            if !moved.contains(&k.as_str()) {
+                assert!(&r[k] == v, "{} differs in {k}", c["name"]);
+            }
+        }
+    }
+    let in_cs: std::collections::HashSet<i64> = cs["demons"].as_array().unwrap().iter().map(|d| d["id"].as_i64().unwrap()).collect();
+    for (id, d) in &rust {
+        assert!(in_cs.contains(id) || d["variant"] == true, "{} is new but not a variant", d["name"]);
+    }
+    assert!(rust.values().any(|d| d["name"] == "Open-minded Ishtar"), "Open-minded Ishtar is listed");
+    for (k, v) in cs["skills"].as_object().unwrap() {
+        assert!(rs["skills"][k] == *v, "skill {k} differs");
+    }
+}
+
 fn same(golden: &Path, made: &Path) {
     let a = std::fs::read_to_string(golden).expect("C# output");
     let b = std::fs::read_to_string(made).expect("Rust output");
@@ -49,7 +76,7 @@ fn databases_match_the_csharp_output() {
     run(&["skilldb".as_ref(), "--decoded".as_ref(), decoded.as_os_str(), "--client".as_ref(), client.as_os_str(), "--out".as_ref(), o("skill-db.json").as_os_str()]);
     same(&golden.join("skilldb").join("skill-db.json"), &o("skill-db.json"));
     run(&["demondb".as_ref(), "--decoded".as_ref(), decoded.as_os_str(), "--store".as_ref(), store.as_os_str(), "--client".as_ref(), client.as_os_str(), "--out".as_ref(), o("demon-db.json").as_os_str()]);
-    same(&golden.join("demondb").join("demon-db.json"), &o("demon-db.json"));
+    demons_match_csharp_and_add_variants(&golden.join("demondb").join("demon-db.json"), &o("demon-db.json"));
     run(&["dungeons".as_ref(), "--decoded".as_ref(), dun.as_os_str(), "--datastore".as_ref(), store.as_os_str(), "--client".as_ref(), client.as_os_str(), "--out".as_ref(), o("dungeons.json").as_os_str()]);
     same(&golden.join("dungeons").join("dungeons.json"), &o("dungeons.json"));
     let _ = std::fs::remove_dir_all(&tmp);
