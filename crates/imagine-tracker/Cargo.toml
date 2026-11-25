@@ -7,7 +7,7 @@ description = "BABEL: the desktop window (WebView2) around the read-only IMAGINE
 
 [dependencies]
 anyhow = "1.0.105"
-imagine = { version = "0.8.3", path = "../imagine" }
+imagine = { version = "0.8.4", path = "../imagine" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", features = ["preserve_order"] }
 base64 = "0.22.1"
