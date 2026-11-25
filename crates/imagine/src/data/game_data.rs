@@ -157,6 +157,43 @@ pub fn item_class_name(id: i32) -> Option<&'static str> {
         .map(String::as_str)
 }
 
+/// The game's name for a status effect (reference\status-names.tsv, the client's CStatusData): 10 "Stun", 32 "Instant
+/// Death", 844 "Panic"... It is the number the server's STATUS_NULL and STATUS_INFLICT_ADJUST tokusei have as their
+/// Value when it is positive (SkillManager: "nullified by direct ID"). `None` when the client has no name for it.
+pub fn status_name(id: i32) -> Option<&'static str> {
+    static NAMES: OnceLock<HashMap<i32, String>> = OnceLock::new();
+    NAMES
+        .get_or_init(|| {
+            let mut m = HashMap::new();
+            for line in reference_lines("status-names.tsv").ok().flatten().unwrap_or_default() {
+                if line.is_empty() || line.starts_with('#') {
+                    continue;
+                }
+                let r: Vec<&str> = line.split('\t').collect();
+                if let (Some(id), Some(name)) = (r.first().and_then(|s| crate::fmt::parse_i32(s)), r.get(1).filter(|n| !n.trim().is_empty())) {
+                    m.insert(id, name.trim().to_string());
+                }
+            }
+            m
+        })
+        .get(&id)
+        .map(String::as_str)
+}
+
+/// What a STATUS_NULL / STATUS_INFLICT_ADJUST tokusei's Value names, in words (never the number): a status by the
+/// game's name; -1 the status ailments as a whole (the server reads a negative Value as "every status of main category
+/// -Value - 1", and category 0 is the ailments: Stone, Sleep, Charm, Poison...); anything else, said plainly.
+pub fn status_target(value: i32) -> String {
+    match value {
+        -1 => "status ailments".to_string(),
+        v if v > 0 => match status_name(v) {
+            Some(name) => name.to_string(),
+            None => "a status the game data has no name for".to_string(),
+        },
+        _ => "a group of statuses the game data does not name".to_string(),
+    }
+}
+
 // ---------- small parsing helpers (C# int.Parse throws, int.TryParse does not) ----------
 
 /// `int.Parse(s)`: an error where C# threw FormatException/OverflowException.

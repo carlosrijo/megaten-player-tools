@@ -822,6 +822,17 @@ impl Simulator {
         }
     }
 
+    /// The picture of a crystal fused in as tarot or soul (the crystal's own item), or None.
+    fn crystal_icon(&self, id: i32, tarot: bool) -> Result<Option<String>> {
+        if id <= 0 {
+            return Ok(None);
+        }
+        match self.data().enchant_sides()?.get(&(id, tarot)).map(|side| side.crystal_item).filter(|&item| item > 0) {
+            Some(item) => self.icon(item),
+            None => Ok(None),
+        }
+    }
+
     /// Who can wear a piece: "Male" or "Female" (the item list's gender, else the mark in its name), None for anyone or not known.
     fn sex_of(&self, id: i32) -> Result<Option<&'static str>> {
         let Some(n) = self.data().items()?.get(&id) else { return Ok(None) };
@@ -892,6 +903,12 @@ impl Simulator {
             o.insert("special".into(), if special_of(w) == w.id { Value::Null } else { json!(self.item_name(special_of(w))?) });
             o.insert("tarot".into(), if w.tarot > 0 { json!(self.crystal_name(w.tarot, true)?) } else { Value::Null });
             o.insert("soul".into(), if w.soul > 0 { json!(self.crystal_name(w.soul, false)?) } else { Value::Null });
+            // the pictures of what each part comes from (the page's piece tooltip): the pieces lending their basic
+            // features and characteristics (none when it is the piece itself: "icon" above), and the two crystals
+            o.insert("basic_icon".into(), if basic_of(w) == w.id { Value::Null } else { json!(self.icon(basic_of(w))?) });
+            o.insert("special_icon".into(), if special_of(w) == w.id { Value::Null } else { json!(self.icon(special_of(w))?) });
+            o.insert("tarot_icon".into(), json!(self.crystal_icon(w.tarot, true)?));
+            o.insert("soul_icon".into(), json!(self.crystal_icon(w.soul, false)?));
             let max = Self::fuse_at_max(&fx, w)?;
             let now = fx.fuse_bonus(w)?;
             let limit = !max.is_empty() && now.len() == max.len() && now.iter().all(|f| f.2);
@@ -916,6 +933,8 @@ impl Simulator {
             sets.push(obj(json!({
                 "kind": if x.fusion { "fusion" } else { "set" }, "name": RE_SEX_MARKS.replace_all(&x.pieces, ""), "worn": x.worn, "active": x.active,
                 "lines": rows_value(self.lines(&x.effects)?),
+                // a gear set's pieces as pictures, in the set's order (a fusion set is made of crystals: none here)
+                "icons": if x.fusion { Vec::new() } else { x.piece_ids.iter().filter(|&&p| p > 0).map(|&p| self.icon(p)).collect::<Result<Vec<_>>>()? },
             })));
         }
 

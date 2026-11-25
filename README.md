@@ -354,6 +354,11 @@ game or your saved data. It starts from your character as last read (take a snap
   it a name; from then on it keeps every change you make to it. A build can be renamed (click its name), duplicated
   and deleted. Saved builds are also listed under **Build Planner** in the left bar; the small arrow there folds the list.
   A build is a whole plan: when your gear changes, it is compared with your new gear. Each card names its base.
+  On the left of a card are the build's pieces as pictures, one box per slot; a piece that differs from what the base
+  character wears has a purple ring. Hovering a picture shows the piece's tooltip, with the picture of what each
+  section comes from (the piece lending the basic features or the characteristics, the crystals, a set's pieces; the
+  Gear page's tooltips have them too). For a ringed piece, a section the build changes shows what the character wears
+  and, under it, a "Changes to" card with what the build has there.
 - **Sharing builds**: the share button on a build (its card, or beside its name in the editor) gives a short text code
   (`BABEL1-…`, about 130 to 300 characters) to paste to another player. They press "Import build" on the builds page,
   paste it, see the pieces and expertise ranks it holds, choose what to show it on (one of their characters, or "No

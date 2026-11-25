@@ -586,12 +586,19 @@ impl ItemEffects {
                 "TECH_ATTACK_RATE" | "TECH_ATTACK_POWER" | "PURSUIT_RATE" | "PURSUIT_POWER" | "DIGITALIZE_POINT_RATE" | "DIGITALIZE_LENGTH" | "MP_COST_ADJUST" | "HP_COST_ADJUST"
                 | "BOOST_WEAPON" | "CLENCH_CHANCE" => lab = stat_labels::name(id, 0),
                 "STATUS_NULL" => {
-                    output.push(mk(format!("Immune to status {}", num(a.value)), None, false, &cond));
+                    // the Value is a status's id (or a whole group): said by the game's name, never as the number
+                    output.push(mk(format!("Immune to {}", crate::data::game_data::status_target(a.value as i32)), None, false, &cond));
                     continue;
                 }
                 "STATUS_INFLICT_ADJUST" => {
                     output.push(mk(
-                        if a.value == 0.0 { "Status ailment success rate".to_string() } else { format!("Status {} success rate", num(a.value)) },
+                        if a.value == 0.0 || a.value == -1.0 {
+                            "Status ailment success rate".to_string()
+                        } else {
+                            let what = crate::data::game_data::status_target(a.value as i32);
+                            // a named status: "Charm success rate"; one the data can't name: a plain sentence
+                            if crate::data::game_data::status_name(a.value as i32).is_some() { format!("{what} success rate") } else { format!("Success rate of {what}") }
+                        },
                         Some(a.modifier.unwrap_or(0.0)),
                         true,
                         &cond,

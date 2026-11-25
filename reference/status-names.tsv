@@ -1,0 +1,1779 @@
+#id	name (client CStatusData: the status effects as the game names them; the id is what the server's STATUS_NULL and STATUS_INFLICT_ADJUST tokusei name in Value)
+1	Stone
+3	Sleep
+4	Charm
+5	Panic
+6	至福
+7	Blaze
+8	Freeze
+9	Electroshock
+10	Stun
+11	Muddle
+12	Mute
+13	Block
+14	Berserk
+15	Daze
+16	Blindness
+17	Paralyze
+18	Bind
+19	Poison
+20	Breakdown
+21	Shock
+22	Curse
+24	Fly
+25	Shock
+26	Shock
+28	疫病
+31	Unequipify
+32	Instant Death
+33	Drunk
+35	Stagger
+36	Astaroth's Feather
+37	Earthquake
+38	Poison
+39	Mute
+41	Charm
+42	Hypothermia
+43	Petrify
+44	Depression
+45	Arousal
+46	Incantation Extension
+47	Cooldown Extension
+48	Climax
+49	Blood Bolt
+50	CLS-R/LNG-R/Spell Damage Taken Up
+51	Tarunda
+52	Makanda
+53	Sukunda
+54	Rakunda
+55	Samanda
+71	Tarukaja
+72	Sukukaja
+73	Makakaja
+74	Rakukaja
+75	Samakaja
+76	Tarundaon
+77	Makandaon
+78	Sukundaon
+79	Rakundaon
+80	Samandaon
+81	Tarukajaon
+82	Sukukajaon
+83	Makakajaon
+84	Rakukajaon
+85	Samakajaon
+86	Enraged
+87	Crucifixion
+88	Ataraxia
+101	Tetrakarn
+102	Makarakarn
+103	Tetraja
+105	Rest
+106	Meditation
+107	鬼人降臨
+109	HP Regeneracy
+110	MP Regeneracy
+111	Ailment Resistance Up
+113	Movement Speed Up
+114	Experience Up
+115	Expertise Up
+116	Max HP Up
+117	Max MP Up
+119	Strength Up
+120	Magic Up
+121	Vitality Up
+122	Intelligence Up
+123	Speed Up
+124	Luck Up
+125	Strength +5 Up
+126	Magic +5 Up
+127	Vitality +5 Up
+128	Intelligence +5 Up
+129	Speed +5 Up
+130	Luck +5 Up
+131	Movement Speed +50% Up
+132	Vitality +10 Up
+133	Intelligence +10 Up
+134	Luck +10 Up
+135	Cursed
+136	Nausea
+137	Nausea
+138	Nausea
+139	Nausea
+140	Critical Rate Up
+141	Limit Break Chance Up
+142	Limit Break Chance Up (5 Minutes)
+144	Foul Mood
+145	Kappa's Satisfaction
+146	Kappa's Hero
+147	Kappa's Patience
+148	Kappa's Ecology
+156	Expertise Up EX
+157	Summoning Speed Up
+159	Skill Inheritance Up
+160	Movement Speed Up EX
+161	Experience Up EX
+162	Expertise Up EX
+164	Skill Inheritance Up EX
+165	Close-Range Damage Dealt Up
+166	Spell Damage Dealt Up
+167	Long-Range Damage Dealt Up
+168	Close-Range Damage Taken Down
+169	Spell Damage Taken Down
+170	Long-Range Damage Taken Down
+171	Macca Up
+172	Magnetite Up
+173	Max HP Up EX
+174	Max MP Up EX
+175	Close-Range Damage Dealt Up EX
+176	Spell Damage Dealt Up EX
+177	Long-Range Damage Dealt Up EX
+178	Close-Range Damage Taken Down EX
+179	Spell Damage Taken Down EX
+180	Long-Range Damage Taken Down EX
+181	Experience Up EX
+182	Expertise Up EX
+183	Experience Up EX
+184	Expertise Up EX
+185	Movement Speed Up EX
+186	Close-Range Damage Dealt Up EX
+187	Spell Damage Dealt Up EX
+188	Long-Range Damage Dealt Up EX
+189	Close-Range Damage Taken Down EX
+190	Spell Damage Taken Down EX
+191	Long-Range Damage Taken Down EX
+192	Skill Inheritance Up EX
+193	Blessing
+194	Summon Synchro
+195	Seance
+196	Experience Up EX
+197	Null Many Ailments
+198	Skill Cost Down (HP)
+199	Skill Cost Down (MP)
+201	Slash Resist Down
+202	Thrust Resist Down
+203	Blunt Resist Down
+204	Handgun Resist Down
+205	Penetrate Resist Down
+206	Spread Resist Down
+207	Fire Resist Down
+208	Ice Resist Down
+209	Electric Resist Down
+210	Force Resist Down
+211	Expel Resist Down
+212	Death Resist Down
+213	Healing Received Down
+214	Dis-Armor (Slash)
+215	Dis-Armor (Thrust)
+216	Dis-Armor (Blunt)
+217	Dis-Armor (Handgun)
+218	Dis-Armor (Penetrate)
+219	Dis-Armor (Spread)
+220	Close-Range Damage Taken Down
+221	Spell Damage Taken Down
+222	Long-Range Damage Taken Down
+223	Bethel Up Squared
+224	Bethel Up
+225	Slash Resist Down (Persistent)
+226	Thrust Resist Down (Persistent)
+227	Blunt Resist Down (Persistent)
+228	Handgun Resist Down (Persistent)
+229	Penetrate Resist Down (Persistent)
+230	Spread Resist Down (Persistent)
+231	Fire Resist Down (Persistent)
+232	Ice Resist Down (Persistent)
+233	Electric Resist Down (Persistent)
+234	Force Resist Down (Persistent)
+235	Almighty Resist Down (Persistent)
+236	Expel Resist Down (Persistent)
+237	Death Resist Down (Persistent)
+238	Mystic Resist Down (Persistent)
+239	Nerve Resist Down (Persistent)
+240	Mind Resist Down (Persistent)
+241	Suicide Resist Down (Persistent)
+242	Drain Fire (Persistent)
+243	Drain Ice (Persistent)
+244	Drain Electric (Persistent)
+245	Drain Force (Persistent)
+246	樹蔭の冥感
+247	始生の加護
+251	Slash Resist Up
+252	Thrust Resist Up
+253	Blunt Resist Up
+254	Handgun Resist Up
+255	Penetrate Resist Up
+256	Spread Resist Up
+257	Fire Resist Up
+258	Ice Resist Up
+259	Electric Resist Up
+260	Force Resist Up
+261	Expel Resist Up
+262	Death Resist Up
+263	Healing Received Up
+264	Cerberus' Support
+265	Jack Frost's Support
+266	Little Demon Lilim's Support
+267	Tam Lin's Support
+268	質実剛健
+269	延年転寿
+270	心願成就
+271	Close-Range Damage Dealt Correction
+272	Spell Damage Dealt Correction
+273	Fire Boost
+274	Ice Boost
+275	Electric Boost
+276	Final Critical Chance +50%
+277	Limit Break Boost
+278	Pursuit Boost
+279	Magic Book Boost
+280	Tetrakarn (Lucifuge)
+281	Makarakarn (Lucifuge)
+282	Force Boost
+283	Technical Attack Boost (R)
+301	Null Slash
+302	Null Thrust
+303	Null Blunt
+304	Null Handgun
+305	Null Penetrate
+306	Null Spread
+307	Null Fire
+308	Null Ice
+309	Null Electric
+310	Null Force
+311	Null Expel
+312	Null Death
+313	Null Curative
+314	Illusion Killer
+315	All Attributes Up
+316	All Attributes Up (Demon)
+317	All Attributes Up (Demon)
+351	Repel Slash
+352	Repel Thrust
+353	Repel Blunt
+354	Repel Handgun
+355	Repel Penetrate
+356	Repel Spread
+357	Repel Fire
+358	Repel Ice
+359	Repel Electric
+360	Repel Force
+361	Repel Expel
+362	Repel Death
+363	Repel Curative
+364	Summon Synchro
+365	Summon Synchro
+366	Aurora at Night
+367	Aurora at Night
+368	Aurora at Night
+369	Aurora at Night
+371	Drain Slash
+372	Drain Thrust
+373	Drain Blunt
+374	Drain Handgun
+375	Drain Penetrate
+376	Drain Spread
+377	Drain Fire
+378	Drain Ice
+379	Drain Electric
+380	Drain Force
+381	Drain Expel
+382	Drain Death
+383	Fire Resistance Up Squared
+384	Ice Resistance Up Squared
+391	物理ブースト▲
+392	魔法ブースト▲
+393	恐怖
+394	烙印
+395	パニックマジック
+396	捧魂の法
+397	魂捧げの夜伽
+401	Ill Sword
+402	Ill Magic
+403	Ill Gun
+404	Virus
+405	Virus 2
+406	Total Beatdown
+407	Close-Range Guard Crushed
+408	Long-Range Guard Crushed
+409	Spell Guard Crushed
+410	Assault
+411	Ironclad
+412	Super Armor
+413	Skill Incantation + Cost Halved
+414	Null Skill Incantation + Cost
+415	Null Hit Delay
+416	Cooldown Extension
+417	Incantation Extension
+418	Movement Speed Reduction
+419	Close-Range Damage Dealt Down
+420	Spell Damage Dealt Down
+421	Long-Range Damage Dealt Down
+422	Assault
+423	Ironclad
+424	Firewall
+425	Command of the Tyrant
+426	Toast
+427	Death Smiles
+428	Dubhe
+429	Merak
+430	Phecda
+431	Megrez
+432	Alioth
+433	Mizar
+434	Alkaid
+435	Deadly Smile
+436	Null Blaze
+437	Null Freeze
+438	Null Electroshock
+439	Null Stun
+440	Enhanced Fire
+441	Enhanced Ice
+442	Enhanced Electric
+443	Enhanced Force
+444	Enhanced Expel
+445	Enhanced Death
+446	Close-Range Guard Crushed
+447	Long-Range Guard Crushed
+448	Spell Guard Crushed
+449	斬撃ブースト
+450	突撃ブースト
+451	打撃ブースト
+452	貫通ブースト
+453	散弾ブースト
+454	回復ブースト
+455	補助ブースト
+456	魔力ブースト
+457	神経ブースト
+458	精神ブースト
+459	自爆ブースト
+460	射撃ブースト
+461	万能ブースト(デバッグ)
+463	Toast (Top)
+464	Toast (Shoes)
+465	Movement Speed Up (30 Days)
+466	Toast (Gloves)
+491	ノックバックを無効▼
+492	大凍結
+493	大スタン
+501	HP Regeneracy EX
+502	MP Regeneracy EX
+503	Training
+504	Training
+505	Valor
+506	Blessing
+507	Regular (Suginami Branch)
+508	VIP (Suginami Branch)
+525	Training
+526	Blessing
+527	Blessing
+528	Experience Up EX
+529	Blessing
+551	Movement Speed Up EX
+552	Friendship Up
+553	Friendship Up EX
+554	Friendship Up EX
+555	Friendship Up EX
+556	Strength Up
+557	Magic Up
+558	Vitality Up
+559	Intelligence Up
+560	Speed Up
+561	Luck Up
+562	Strength Up EX
+563	Magic Up EX
+564	Vitality Up EX
+565	Intelligence Up EX
+566	Speed Up EX
+567	Luck Up EX
+568	Expertise Up EX
+569	Expertise Up EX
+570	Veteran
+571	Fire Imbuement
+572	Ice Imbuement
+573	Thunder Imbuement
+574	Sonic Imbuement
+575	Light Imbuement
+576	Dark Imbuement
+577	Ark Imbuement
+579	Corona Incense
+580	Blizzard Incense
+581	Lightning Incense
+582	Hurricane Incense
+583	Breath Incense
+584	Luck Incense
+585	Apocalypse Incense
+586	Arcane Incense
+587	Astral Incense
+588	Nerve Incense
+589	Mana Imbuement
+590	Astral Imbuement
+591	Nerve Imbuement
+592	Negotiation Success Rate Up
+593	IR: Swordsmith
+594	IR: Arms Maker
+595	Friendship Up EX
+596	Friendship Up EX
+597	Friendship Up EX
+598	Max HP Up EX
+599	Max MP Up EX
+600	Beef Bowl
+601	Effort
+602	Learning
+603	Critical Up Squared
+604	Ailment Resistance Up Squared
+605	Expertise Up Squared
+606	Macca Up Squared
+607	Magnetite Up Squared
+608	Critical Defense Up Squared
+609	Experience Up Squared (Party)
+610	Max HP Up Squared (Party)
+611	Max MP Up Squared (Party)
+612	Experience Up Squared
+613	Experience Up Squared (Demon)
+614	Expertise Up Cubed
+615	Experience Up (3x)
+616	Expertise Up (3x)
+617	Magnetite Up Squared (Evaluation)
+618	Experience Up (Demon)
+619	Experience Up
+620	Anti-Heavenly Angel PG (Offense)
+621	Anti-Heavenly Angel PG (Defense)
+622	ECO PG
+623	Demon Partner Reinforcement PG
+624	Expertise Support
+625	Negotiation Success Rate Up
+626	Movement Speed Up
+627	Experience Up
+628	Expertise Up
+629	Experience Up Squared
+630	Experience Up Squared (Demon)
+631	Expertise Up Cubed
+632	Experience Up Cubed
+633	Experience Up Cubed (Demon)
+634	Expertise Up Cubed
+635	Hustle Boost
+636	Experience Up Squared
+637	Experience Up Squared (Demon)
+638	Expertise Up Cubed
+639	Critical Rate Up
+640	Limit Break Chance + Power Up
+641	(WD) Limit Break Chance + Power Up
+642	(WD) Critical Rate Up
+643	(WD)Close-Range/Long-Range/Spell Up
+644	Recovery Drop
+645	真那伽の香（小）
+646	羅国の香（小）
+647	伽羅の香（小）
+648	Experience Up Squared
+649	Experience Up Squared (Demon)
+650	Expertise Up Cubed
+651	HP/MP Regeneracy
+652	Magatama (Vimana α)
+653	Magatama (Vimana β)
+654	Restrained
+655	Scolding
+656	Experience Up Squared
+657	Experience Up Squared (Demon)
+658	エキスパート▲▲▲
+659	Experience Up Squared
+660	Experience Up Squared (Demon)
+661	エキスパート▲▲▲
+662	デジタライズポイント▲▲▲
+663	デジタライズポイント▲▲▲
+801	Mounting
+804	Fae Blade
+805	Demon Sword
+806	Evil Gun
+807	Motorbike
+808	Double Fusion Success Rate Up
+809	Yagiya Trader
+810	Evil Aroma (Charm)
+811	Evil Aroma (Seduce)
+812	Evil Aroma (Bewitch)
+813	Soul Points Up (20%)
+814	Soul Points Up (50%)
+815	Soul Points Up (100%)
+816	COMP Tuning
+817	COMP Tuning
+818	Novice DB Boot Pack (30 Days)
+819	Miasma Suppression (Slash)
+820	Miasma Suppression (Thrust)
+821	Miasma Suppression (Blunt)
+822	Miasma Suppression (Handgun)
+823	Miasma Suppression (Penetrate)
+824	Miasma Suppression (Spread)
+825	Miasma Suppression (Fire)
+826	Miasma Suppression (Ice)
+827	Miasma Suppression (Electric)
+828	Miasma Suppression (Force)
+829	Miasma Suppression (Almighty)
+830	Miasma Suppression (Mystic)
+835	Experience Up (Party, 10 Minutes)
+837	Summon Synchro
+838	Summon Synchro
+839	Summon Synchro
+840	Soul Points Up (50%)
+841	Soul Points Up (100%)
+842	Experience Up
+844	Panic
+845	Panic
+846	Charm
+847	Daze
+848	Daze
+849	Poison
+850	Muddle
+851	Mute
+852	Experience Up
+853	Assault
+854	Refined Chocolate
+855	Gourmet Chocolate
+856	Legendary Chocolate
+857	Soul Gem ~ Divine Protection (GP)
+858	Negotiation Success Rate Up
+859	Friendship Up
+860	ククノチノタマビコ
+861	Die Hard
+862	Soul Gem ~ Divine Protection (WM)
+863	Physical Defense Up
+864	Magical Defense Up
+866	Luster Candy
+868	回復効果▼
+869	ＤＢブートパック３０ｄａｙｓ
+872	ソウルポイント▲
+873	ソウルポイント▲
+874	ソウルジェム（ＢＣ）の加護
+875	キャロットジュース▲
+876	獣の眼光
+877	王の威光
+901	Stealth
+902	Squelch
+903	Hiding
+904	Ability Boost
+905	デジタライズ中（男）
+906	デジタライズ待機中
+907	デジタライズ中（女）
+908	Evil Retention
+909	Soul Points UP
+910	Digitalization Points UP
+911	デジタライズエフェクト
+912	悪魔降伏
+913	壅塞
+914	雪合戦体力
+915	スロットル全開
+916	近接ダメージ増加20▲
+917	射撃ダメージ増加20▲
+918	魔法ダメージ増加20▲
+919	デジタライズポイント▲▲
+1003	Law Donation
+1004	Chaos Donation
+1020	Serene Aura
+1021	Sorrowful Aura
+1023	Expertise Up (1 Hour)
+1025	Experience Up (Party, 1 Hour)
+1026	Experience Up EX (Party, 1 Hour)
+1027	Experience Up (1 Hour)
+1028	Anti-Fiend
+1032	Misfortune
+1033	Bad Luck
+1034	Luck
+1035	Good Luck
+1036	Great Fortune
+1037	Misfortune
+1038	Bad Luck
+1039	Luck
+1040	Good Luck
+1041	Great Fortune
+1042	Extreme Misfortune
+1043	Misfortune
+1044	Bad Luck
+1045	Luck
+1046	Good Luck
+1047	Great Fortune
+1048	Magnificent Fortune
+1049	Obligatory Valentine's Chocolate
+1050	True Valentine's Chocolate
+1053	Access Allowed - α
+1054	COMP Expansion Card α (30 Days)
+1055	COMP Expansion Card α (1 Day)
+1056	COMP Expansion Card α (2 Hours)
+1057	Access Allowed - μ
+1058	Limit Break Etarna α
+1059	Limit Break Etarna α-II
+1060	Limit Break Etarna α-III
+1061	Attack Etarna α
+1062	Attack Etarna α-II
+1063	Attack Etarna α-III
+1064	Defense Etarna α
+1065	Defense Etarna α-II
+1066	Defense Etarna α-III
+1067	Raptus Etarna α
+1068	Raptus Etarna α-II
+1069	Raptus Etarna α-III
+1070	Cost-Cut Etarna α
+1071	Cost-Cut Etarna α-II
+1072	Cost-Cut Etarna α-III
+1073	Sequential Etarna α
+1074	Sequential Etarna α-II
+1075	Sequential Etarna α-III
+1076	COMP Expansion α (Auto-Loot)
+1077	Majesty COMP
+1078	COMP Expansion (Item Collection 2)
+1079	Majesty COMP α
+1080	Access Allowed - θ
+1081	Access Allowed - ι
+1082	Access Allowed - κ
+1083	Entry Permit (VIP Room)
+1084	Entry Permit (VIP Room)
+1085	COMP Expansion Card (Denshi Kairo)
+1086	Denshi Kairo Assist
+1087	COMP Expansion Card α (3 Days)
+1088	COMP Expansion Card α (7 Days)
+1089	Merry Christmas! (Item Collection)
+1101	F's Card: 72 (Demon)
+1102	F's Card: 720 (Demon)
+1103	G's Card: 72 (Demon)
+1104	G's Card: 720 (Demon)
+1105	M's Card: 72 (Demon)
+1106	M's Card: 720 (Demon)
+1107	M's Card II: 72 (Demon)
+1108	M's Card II: 720 (Demon)
+1109	Grilled Cheese
+1110	Strength Up
+1111	Magic Up
+1112	Speed Up
+1113	Vitality Up
+1114	Intelligence Up
+1116	Experience Up
+1117	Experience Up (Demon)
+1118	Expertise Up
+1119	F's Card: X72 (Demon)
+1120	F's Card: X720 (Demon)
+1121	G's Card: X72 (Demon)
+1122	G's Card: X720 (Demon)
+1123	M's Card: X72 (Demon)
+1124	M's Card: X720 (Demon)
+1125	M's Card II: X72 (Demon)
+1126	M's Card II: X720 (Demon)
+1127	Experience Up (Demon)
+1128	Experience Up
+1130	Offensive Power Up (Demon)
+1131	Offensive Power Up
+1132	Men's Knuckle: April Issue
+1133	Men's Knuckle: June Issue (+HP)
+1134	Men's Knuckle: June Issue (+MP)
+1135	F's Card: X24 (Demon)
+1136	Men's Knuckle: September Issue
+1137	Men's Knuckle: October Issue (Str.)
+1138	Men's Knuckle: October Issue (Mgc.)
+1139	Men's Knuckle: October Issue (Spd.)
+1140	Men's Knuckle: October Issue (Vit.)
+1141	Men's Knuckle: October Issue (Int.)
+1142	Men's Knuckle: November Issue
+1143	Men's Knuckle: December Issue
+1144	ジアイの言の葉
+1145	至高の名言・天
+1146	至高の名言・地
+1147	至高の名言・人
+1148	Men's Knuckle October Issue (Luck)
+1149	砂幻陵探索サポーター
+1150	Technical Attack Chance + Power Up
+1151	All Attributes Up (Player)
+1152	All Attributes Up (Player)
+1153	G's Card: X24 (Demon)
+1154	M's Card: X24 (Demon)
+1155	M's Card II: X24 (Demon)
+1156	Merry Christmas!
+1157	符術高揚（斬撃）
+1158	符術高揚（突撃）
+1159	符術高揚（打撃）
+1160	符術高揚（射撃）
+1161	符術高揚（貫通）
+1162	符術高揚（散弾）
+1163	符術高揚（火炎）
+1164	符術高揚（氷結）
+1165	符術高揚（電撃）
+1166	符術高揚（衝撃）
+1167	符術高揚（破魔）
+1168	符術高揚（呪殺）
+1169	符術高揚（魔力）
+1170	符術高揚（神経）
+1171	符術高揚（精神）
+1172	鬼道の書物
+1173	符術高揚（斬撃突撃打撃）
+1174	符術高揚（射撃貫通散弾）
+1175	符術高揚（火炎氷結電撃衝撃）
+1176	符術高揚（破魔呪殺）
+1177	符術高揚（魔力神経精神）
+1178	Macca Up Squared (Bodhi Tree)
+1179	地神の注連縄
+1180	8th Anniversary Box
+1181	8th Anniversary Box Collection
+1182	Tyrant's Roar
+1183	Super Mounting
+1184	Thanks for All DB.
+1185	9th Anniversary Collection
+1186	Thanks for All DB.2
+1187	9th Anniversary Collection 2
+1188	Thanks for All DB.3
+1189	9th Anniversary Collection 2
+2001	Newbie Items Permit
+2003	Licensee Items Permit
+2005	Expert Items Permit
+2007	Training
+2008	Training EX
+2009	Maturity
+2011	Fighter 24
+2012	Fighter 72
+2013	Fighter 720
+2014	Gunner 24
+2015	Gunner 72
+2016	Gunner 720
+2017	Magician T1-24
+2018	Magician T1-72
+2019	Magician T1-720
+2020	Magician T2-24
+2021	Magician T2-72
+2022	Magician T2-720
+2034	Entry to Diaspora Suginami Barred
+2035	For WC Event Judgment
+2036	For Quest Judgment (Archbishop)
+2037	For Event Judgment (Saburo)
+2038	Entry to Diaspora Shinagawa Barred
+2039	Poison
+2040	Muddle
+2041	Paralyze
+2042	Charm
+2043	Panic
+2044	Mute
+2045	Stone
+2046	Daze
+2047	Bind
+2048	Experience Up
+2049	Expertise Up
+2050	All Attributes Up
+2051	Close-Range Damage Dealt Increased
+2052	Long-Range Damage Dealt Increased
+2053	Spell Damage Dealt Increased
+2054	Fire Damage Dealt Up
+2055	Fire Resist Up
+2056	Ice Damage Dealt Up
+2057	Ice Resist Up
+2058	Electric Damage Dealt Up
+2059	Electric Resist Up
+2060	Force Damage Dealt Up
+2061	Force Resist Up
+2062	Poison
+2063	Daze
+2064	Blaze
+2065	Panic
+2066	Curse
+2067	Nausea
+2069	Weaken
+2070	Weaken
+2071	Weaken
+2072	Weaken
+2073	Weaken
+2074	Frail
+2075	Frail
+2076	Frail
+2077	Frail
+2078	Frail
+2079	Max HP Down
+2080	Max HP Down
+2081	Max HP Down
+2082	Max HP Down
+2083	Max HP Down
+2084	Max MP Down
+2085	Max MP Down
+2086	Max MP Down
+2087	Max MP Down
+2088	Max MP Down
+2089	Physical Defense Down
+2090	Physical Defense Down
+2091	Physical Defense Down
+2092	Physical Defense Down
+2093	Physical Defense Down
+2094	Magic Defense Down
+2095	Magic Defense Down
+2096	Magic Defense Down
+2097	Magic Defense Down
+2098	Magic Defense Down
+2099	Kakyo Castle event: Judge
+2100	UB Champion
+2101	Hourai Event: Judge
+2102	Instance Active
+2103	Donation System
+2104	Evening Vigil
+2105	Evening Vigil
+2106	Access: Headless Rider
+2107	Access: Strongest Man in Ikebukuro
+2108	Access: Money Man
+2109	Access: Secret Information Broker
+2110	Shape of Love
+2111	High Tension
+2112	Shape of True Love
+2113	Club Hourai VIP
+2114	Shinjuku Showdown Badge
+2115	HP Code
+2116	MP Code
+2117	Attack Code
+2118	Defense Code
+2119	For CoC Event Judgment
+2120	Secret Room Available
+2121	Bloody Poem
+2122	Sorrow of the Dead
+2123	ウズメノマジナイ
+2124	ウズメノマジナイ
+2125	ウズメノマジナイ
+2126	ウズメノマジナイ
+2127	ウズメノマジナイ
+2128	ウズメノマジナイ
+2129	ウズメノマジナイ
+2130	ウズメノマジナイ
+2131	ウズメノタタリ
+2134	Great Blaze
+2135	Blood Loss
+2136	Blood Loss
+2137	Blood Loss
+2138	Blood Loss
+2140	オニ特製ジュース
+2147	DM Extension Program (1 Day)
+2148	Entering Meditation
+2149	Four Contemplations
+2150	Four Formless Heavens
+2151	Samadhi 108
+2152	Nirvana is Life and Death
+2153	Fighter X24
+2154	Fighter X72
+2155	Fighter X720
+2156	Gunner X24
+2157	Gunner X72
+2158	Gunner X720
+2159	Magician T1-X24
+2160	Magician T1-X72
+2161	Magician T1-X720
+2162	Magician T2-X24
+2163	Magician T2-X72
+2164	Magician T2-X720
+2165	Intensive Break
+2166	Conceited Crash
+2167	Aurora of Eternal Night
+2168	Aurora of Eternal Night
+2169	Aurora of Eternal Night
+2170	Aurora of Eternal Night
+2171	Fleur Drop
+2172	Fleur Drop
+2173	Movement Speed Up
+2174	Damage Dealt Increased
+2175	Healing Received Decreased
+2176	Flash Freeze
+2177	Demon Disguise
+2178	Unable to Summon
+2179	DM Extension Program (3 Days)
+2180	DM Extension Program (7 Days)
+2181	DM Extension Program (30 Days)
+2182	DM Extension Program (2 Hours)
+2183	Experience Up EX (Up to Level 30)
+2184	Experience Up EX (Up to Level 50)
+2185	Experience Up EX (Up to Level 80)
+2186	Demon Disguise
+2187	Blessing
+2188	Hero's Encouragement
+2189	Beautiful Form
+2190	Offense Up
+2191	Critical Up
+2192	Element Up
+2193	Cheer for Energy
+2194	Cheer for Vigor
+2195	Cheer for Growth
+2198	Loving Cheer
+2199	Loving Cheer
+2200	Loving Cheer
+2201	Loving Cheer
+2202	Loving Cheer
+2203	Loving Cheer
+2204	Loving Cheer
+2205	Loving Cheer
+2206	Loving Cheer
+2207	Loving Cheer
+2208	Loving Cheer
+2209	Loving Cheer
+2210	Loving Cheer
+2211	Loving Cheer
+2212	Loving Cheer
+2213	Loving Cheer
+2214	Loving Cheer
+2215	Loving Cheer
+2216	Loving Cheer
+2217	Loving Cheer
+2218	Loving Cheer
+2219	Loving Cheer
+2220	Loving Cheer
+2221	Loving Cheer
+2222	Loving Cheer
+2223	Loving Cheer
+2224	Solid Vermilion
+2225	Fleur Drop
+2226	Fleur Drop
+2227	爪櫛の加護
+2228	敵愾高揚
+2229	白羽の矢
+2230	白羽の矢
+2231	白羽の矢
+2232	白羽の矢
+2233	白羽の矢
+2234	白羽の矢
+2235	Nightvision Soul
+2236	Lost Blue Soul
+2237	Weakening
+2238	G.S.P.C.
+2239	Almighty Resistance Reduced
+2240	Fire Resistance Reduced
+2241	Electric Resistance Reduced
+2242	Force Resistance Reduced
+2243	Crash Conceal
+2244	Guillotine Fake
+2245	Guillotine Fake
+2246	Guillotine Fake
+2247	Trishula Strike
+2248	Pashupatastra Strike
+2249	Endless Light (Protection)
+2250	Endless Light (Recovery Conversion)
+2251	Endless Light (Recovery Conversion)
+2252	G.S.P.C. 6th P.S. 1
+2253	Dissolution
+2255	Horror
+2256	G.S.P.C. 6th P.S. 2
+2257	Beast Eyes
+2258	Focus
+2259	Concentrate
+2260	Incantation Extension
+2261	Offense Up
+2262	Ironclad
+2263	Offense Down
+2264	Curse
+2265	修練の混乱
+2266	Critical Up
+2267	修練の緊縛
+2268	Drunk
+2269	Close-Range Guard Crushed
+2270	Super Armor
+2273	ダークゾーン弱
+2274	ダークゾーン中
+2275	ダークゾーン強
+2276	Damage Trap
+2277	[GM] Encouragement
+2278	Cat's Eye
+2279	Sealed Illusion Freed (No. 30)
+2280	Sealed Illusion Freed (No. 15)
+2281	Sealed Illusion Freed (No. 30)
+2282	Sealed Illusion Freed (No. 15)
+2283	Sealed Illusion Freed (No. 69)
+2284	Sealed Illusion Freed (No. 28)
+2285	Sealed Illusion Freed (No. 55)
+2286	Sealed Illusion Freed (No. 57)
+2287	Sealed Illusion Freed (No. 29)
+2288	Previous Vision
+2289	Fleur Drop
+2290	Fleur Drop
+2291	Fleur Drop
+2292	Huge Electroshock
+2293	Douman's Spell
+2294	Technical Attack Guaranteed
+2295	Close-Range Up
+2296	Offensive Power Up
+2297	Experience Up
+2298	Experience Up (Demon)
+2299	Stamina Up
+2300	Long-Range Up
+2301	Combat Power Up
+2302	Max HP -99%
+2303	Max MP -99%
+2304	Strength -999
+2305	Magic -999
+2306	Speed -999
+2307	Intelligence -999
+2308	Vitality -999
+2309	Luck -999
+2310	Cait Sith's Fatigue
+2311	Alp's Temptation
+2312	Magic of Thoth
+2313	Magic of Thoth
+2314	Magic of Thoth
+2315	【Ｔｒｅａｔ】▲
+2316	Mission Reward Up
+2317	Mission Reward Down
+2318	Movement Speed Up
+2319	Movement Speed Down
+2320	Nausea
+2321	スピリッツオブアート
+2322	Fire Weakness
+2323	Ice Weakness
+2324	Electric Weakness
+2325	Force Weakness
+2326	其の命、叛逆の罰を
+2327	其、彼の声を
+2328	絶てよ、まほろばの糸を
+2329	讃えよ、宇宙の意思を
+2330	喚けよ、汝に末魔の嘆きを
+2331	山羊屋共通優待券
+2333	All Attributes Up EX
+2334	若駒奮起
+2335	若駒突撃
+2336	若駒高揚
+2337	Movement Speed Up (Horse)
+2338	絵馬素材奉納
+2339	絵馬素材奉納
+2340	絵馬素材奉納
+2341	絵馬素材奉納
+2342	絵馬素材奉納
+2343	絵馬素材奉納
+2344	絵馬素材奉納
+2345	絵馬奉納
+2346	絵馬奉納
+2347	絵馬奉納
+2348	絵馬奉納
+2349	絵馬奉納
+2350	絵馬奉納
+2351	絵馬奉納
+2352	絵馬奉納
+2353	若駒の嘶き
+2354	Doors 01-06 Beckon
+2355	Maximum HP Up 30%
+2356	1% Null All
+2357	1% Drain All
+2358	Consecutive Skill Uses +1
+2359	Consecutive Skill Uses +2
+2360	Incantation Down
+2361	Healing Received Down
+2362	Damage Taken Up
+2363	HP Continuous Decrease
+2364	MP Continuous Decrease
+2365	3% Null All
+2366	3% Drain All
+2367	5% Null All
+2368	5% Drain All
+2369	Graviton Charge
+2370	Maximum HP Up 50%
+2371	Maximum HP Up 150%
+2372	Maximum HP Up 300%
+2373	Maximum HP Up 600%
+2374	Maximum HP Up 1000%
+2375	Offensive Power Up 10%
+2376	Offensive Power Up 50%
+2377	Offensive Power Up 100%
+2378	Offensive Power Up 200%
+2379	Offensive Power Up 300%
+2380	Technical Attack 20%
+2381	Fighter 720 (Enemy Only)
+2382	Gunner 720 (Enemy Only)
+2383	Magician T1-720 (Enemy Only)
+2384	Rest
+2385	Null Knockback
+2386	Offensive Power Up Cubed
+2389	Critical Rate Down
+2391	Oni Comes Calling!
+2392	Cu Chulainn Sounds the Alarum!
+2393	Yoshitsune Crashes the Party!
+2394	Enter Kresnik!
+2395	Mitama Combo
+2396	Barred from DESTINY
+2397	Yagimiya's Support
+2398	Close-Range Damage Dealt Up
+2399	Spell Damage Dealt Up
+2400	Long-Range Damage Dealt Up
+2401	Max HP Up
+2402	Max MP Up
+2403	HP Regeneracy
+2404	MP Regeneracy
+2405	Critical Rate Up
+2406	Technical Attack Chance + Power Up
+2407	Slash Weakness
+2408	Thrust Weakness
+2409	Blunt Weakness
+2410	Handgun Weakness
+2411	Penetrate Weakness
+2412	Spread Weakness
+2413	Experience Up
+2414	Experience Up (Demon)
+2415	Using Menorah Detector
+2416	All Resistances Lowered Lv. 1
+2417	All Resistances Lowered Lv. 2
+2418	Draconic Aura
+2419	Dragon Drive
+2420	移動不能(ﾓｰｼｮﾝﾅｼ)
+2421	Intensive Attack
+2422	Physical Defense Up (Enemy Only)
+2423	Magical Defense Up (Enemy Only)
+2424	TIGERCAT
+2425	All Resistances Lowered Lv. 3
+2426	All Resistances Lowered Lv. 4
+2427	All Resistances Lowered Lv. 5
+2428	All Resistances Lowered Lv. 6
+2429	All Resistances Lowered Lv. 7
+2430	Login Item Received
+2431	明王の書物
+2432	普遍化する律動の力
+2433	体得の助力
+2434	鬼道の助力
+2435	霊魂流出中
+2436	入場判定用付与（5分）
+2437	Kappa's Continuous Strikes
+2438	Dreaming
+2439	電痕
+2440	不快指数増加
+2441	Ridiculous Moisture
+2442	Dual Heartbeat - Yang
+2443	Dual Heartbeat - Yin
+2444	？？遁？
+2445	？？遁甲
+2446	天？遁甲
+2447	天一遁甲
+2448	風雲霧
+2449	水煙霧
+2450	Debug_Patrecarm
+2451	Null Shock
+2452	Sage
+2453	Protection of the Bodhi Tree
+2454	煩悩退散
+2455	Null All
+2456	Titania's Support
+2457	Nyx's Support
+2458	Ishtar's Support
+2459	Gabriel's Support
+2460	Moh Shuvuu's Support
+2461	Cannot Obtain Digitalize Points (1
+2462	Test
+2463	Magical Golden Apples Acquired
+2465	鞍馬山への通行手形
+2466	諸魔退散
+2467	Nyx's Patronage
+2468	Poison Area
+2469	Judgment Area
+2470	Ares' War Shout - One
+2471	Ares' War Shout - Two
+2472	Ares' War Shout - Three
+2473	Ares Verified
+2474	High Spirits
+2475	Death Check Status Change
+2476	Reverse Pentagram Seal I
+2477	Reverse Pentagram Seal II
+2478	Reverse Pentagram Seal III
+2479	Yagigami's Support
+2480	Yagigami's Rewards Restricted
+2481	Debug_Status Infliction Chance Up
+2483	Persistent Null Fire
+2484	Persistent Null Ice
+2485	Persistent Null Electric
+2486	Persistent Null Force
+2487	Persistent Null Close-Range
+2488	Persistent Null Long-Range
+2489	Persistent Null Expel/Death
+2490	Persistent Null Mystic/Nerve/Mind
+2491	Persistent Null Miscellaneous
+2492	Divine Punishment
+2493	Stigma
+2494	Awe
+2495	Praise
+2496	Zeal
+2497	Worship
+2498	Chapter of Annihilation
+2499	Chapter of Inspiration (Cooldowns)
+2500	Chapter of Inspiration (Skill Uses)
+2501	Chapter of Protection
+2502	Chapter of Crushing Blows
+2503	Bow of the Rainbow
+2504	Overeating 1
+2505	Overeating 2
+2506	Overeating 3
+2507	Overeating 4
+2508	Overeating 5
+2509	Overeating 6
+2510	Overeating 7
+2511	炎上状態
+2512	色即是空
+2513	力の簒奪
+2514	Minus Aura
+2515	Ziotite Activity
+2516	Gaboatto Pain
+2517	Blizaton Pain
+2518	Candeon Pain
+2519	Cyclone Pain
+2520	The Farthest One
+2521	Death Sentence
+2522	Thy Clothing is Powerless
+2523	Damage Dealt Increased
+2524	Greatly Reduced Damage Taken
+2525	Technical Attack Boost
+2526	Absolute Critical
+2527	Null Bad Status
+2528	Greatly Reduced Physical Damage
+2529	Greatly Reduced Magical Damage
+2530	Physical Defense Reduced
+2531	Magical Defense Reduced
+2532	Critical Defense Reduced
+2533	Cannot Move
+2534	Scapegoat
+2535	Super Armor
+2536	Fought Azura
+2537	Fought Setsu
+2538	Fought Kuroe
+2539	トートのおまじない
+2540	地下遺構探索サポーター
+2541	駐屯地探索サポーター
+2542	坑道探索サポーター
+2543	Fleur Drop
+2544	Fleur Drop
+2545	Faith in the Dark God
+2546	Nigredo
+2547	Blackening
+2548	短命の誓約
+2549	Protection of Ame no Uzume
+2550	Protection of Kushinada-Hime
+2551	Protection of Onamuchi
+2552	Amulet of Kuy?
+2553	Unable to Act
+2554	Close
+2555	Abyss Climax
+2556	Eternal Super Armor
+2557	Ziotite Obtained
+2558	Affinity Release: Fire
+2559	Affinity Release: Ice
+2560	Affinity Release: Electric
+2561	Affinity Release: Force
+2562	Affinity Release: Close-Range
+2563	Affinity Release: Long-Range
+2564	Affinity Release: Expel/Death)
+2565	Affinity Release: Mystic/Nerve/Mind
+2566	ノジーとの免罪符交換制限用
+2567	ヒトミとの免罪符交換制限用
+2568	Critical Rate 100%
+2569	Limit Break Chance 100%
+2570	Limit Break Cap +5000
+2571	Movement Speed Up
+2572	アヤ用20時間制限時間
+2573	サキュバス用20時間制限時間
+2574	Soul Point Gain Prohibited
+2575	Slime Secured!
+2901	Corona Cannon Temporarily Usable
+2902	Mahamaon Temporarily Usable
+2903	Abyss Tower Beckons
+2904	Sandy Hell
+2905	地神の紙垂守り
+2906	Judgment
+2907	Invitation to the Danse Macabre
+2908	Black Death
+2909	活性化する意志の輝き
+2910	Full Resistance
+2911	Null All Temporarily
+2912	Movement Speed Down
+2981	Damage Taken Amp
+2982	Cooldown + Incantation Extension
+2983	Physical Damage Suppression
+2984	Magical Damage Suppression
+2985	Special Move Suppression
+2986	Spell Suppression
+2987	Transcendence
+2988	Special Move Suppression
+2989	Spell Suppression
+3001	Hard Cameo: Pixie
+3002	Hard Cameo: High Pixie
+3003	Hard Cameo: Hua Po
+3004	Hard Cameo: Alice
+3005	Hard Cameo: Slime
+3006	Hard Cameo: Mou-Ryou
+3007	Hard Cameo: Chatterskull
+3008	Hard Cameo: Poltergeist
+3009	Hard Cameo: Kaiwan
+3010	Hard Cameo: Shiisa
+3011	Hard Cameo: Pa Bil Sag
+3012	Hard Cameo: Mothman
+3013	Hard Cameo: Jack Frost
+3014	Hard Cameo: Jack O' Lantern
+3015	Hard Cameo: Cait Sith
+3016	Hard Cameo: Garm
+3017	Hard Cameo: Kaichi
+3018	Hard Cameo: Surt
+3019	Hard Cameo: Nozuchi
+3020	Hard Cameo: Andras
+3021	Hard Cameo: Mot
+3022	Cameo Ring: Pixie
+3023	Cameo Ring: High Pixie
+3024	Cameo Ring: Hua Po
+3025	Cameo Ring: Alice
+3026	Cameo Ring: Slime
+3027	Cameo Ring: Mou-Ryou
+3028	Cameo Ring: Chatterskull
+3029	Cameo Ring: Poltergeist
+3030	Cameo Ring: Kaiwan
+3031	Cameo Ring: Shiisa
+3032	Cameo Ring: Pa Bil Sag
+3033	Cameo Ring: Mothman
+3034	Cameo Ring: Jack Frost
+3035	Cameo Ring: Jack O' Lantern
+3036	Cameo Ring: Cait Sith
+3037	Cameo Ring: Garm
+3038	Cameo Ring: Kaichi
+3039	Cameo Ring: Surt
+3040	Cameo Ring: Nozuchi
+3041	Cameo Ring: Andras
+3042	Cameo Ring: Mot
+3043	Cameo Ring: Gyuki
+3044	Hard Cameo: Gyuki
+3045	Cameo Ring: Nandi
+3046	Hard Cameo: Nandi
+3047	Cameo Ring: Shiva
+3048	Cameo Ring: Vishnu
+3049	Trance
+3050	Cameo Ring: Demi-Fiend
+3051	Cameo Ring: Holy Night Angel
+3052	Cameo Ring: Holy Night Angel
+3053	Special Cameo: Parallel
+3054	Special Cameo: Parallel
+3055	Special Cameo: Parallel
+3056	Special Cameo: Episode
+3057	Special Cameo: Episode
+3058	Special Cameo: Episode
+3059	Special Cameo: Episode
+3060	Special Cameo: Episode
+3061	Special Cameo: Episode
+3062	Special Cameo: Episode
+3063	Special Cameo: Episode
+3064	Special Cameo: Punks
+3065	Special Cameo: Punks
+3066	Special Cameo: Punks
+3067	Special Cameo: Fruit
+3068	Special Cameo: Fruit
+3069	Special Cameo: Fruit
+3070	Special Cameo: Fruit
+3071	Special Cameo: Fruit
+3072	Special Cameo: Punks
+3073	Special Cameo: Punks
+3074	Special Cameo: Punks
+3075	Special Cameo: Seth
+4001	Opportunity for Turnabout
+4002	A Slight Problem (Muddle)
+4003	A Slight Problem (Poison)
+4004	A Slight Problem (Stone)
+4005	Element Chance (Fire)
+4006	Element Chance (Ice)
+4007	Element Chance (Electric)
+4008	Element Chance (Force)
+4009	Demon Chance
+4010	Demon Chance
+4011	Demon Chance
+4012	Demon Chance
+4013	Demon Chance
+4014	Demon Chance
+4015	Demon Chance
+4016	Demon Chance
+4017	Demon Chance
+4018	Demon Chance
+4019	Stealth Chance
+4103	Antiheat
+4104	Anticold
+4105	Antivolt
+4106	Antisonic
+4107	Antistrike
+4108	Antishot
+4109	Heat Guard
+4110	Cold Guard
+4111	Volt Guard
+4112	Sonic Guard
+4201	Debug Max HP Up No. 1
+4202	Debug Max HP Up No. 2
+4203	Debug Max HP Up No. 3
+4204	Debug Max HP Up No. 4
+4205	Debug Max HP Up No. 5
+4206	Debug Max HP Up No. 6
+4207	Debug Max HP Up No. 7
+4208	Debug Max HP Up No. 8
+4209	Debug Max HP Up No. 9
+4210	Debug Max HP Up No. 10
+4211	Debug Max HP Up No. 11
+4212	Debug Max HP Up No. 12
+4213	Debug Max HP Up No. 13
+4214	Debug Max HP Up No. 14
+4215	Debug Max HP Up No. 15
+4216	Debug Max HP Up No. 16
+4217	Debug Max HP Up No. 17
+4218	Debug Max HP Up No. 18
+4219	Debug Max HP Up No. 19
+4220	Debug Max HP Up No. 20
+4221	Debug Max HP Up No. 21
+4222	Debug Max HP Up No. 22
+4223	Debug Max HP Up No. 23
+4224	Debug Max HP Up No. 24
+4225	Debug Max HP Up No. 25
+4226	Debug Max HP Up No. 26
+4227	Debug Max HP Up No. 27
+4228	Debug Max HP Up No. 28
+4229	Debug Max HP Up No. 29
+4230	Debug Max HP Up No. 30
+4231	Debug Max HP Up No. 31
+4232	Debug Max HP Up No. 32
+4233	Debug Max HP Up No. 33
+4234	Debug Max HP Up No. 34
+4235	Debug Max HP Up No. 35
+4236	Debug Max HP Up No. 36
+4237	Debug Max HP Up No. 37
+4238	Debug Max HP Up No. 38
+4239	Debug Max HP Up No. 39
+4240	Debug Max HP Up No. 40
+4241	Debug Max HP Up No. 41
+4242	Debug Max HP Up No. 42
+4243	Debug Max HP Up No. 43
+4244	Debug Max HP Up No. 44
+4245	Debug Max HP Up No. 45
+4246	Debug Max HP Up No. 46
+4247	Debug Max HP Up No. 47
+4248	Debug Max HP Up No. 48
+4249	Debug Max HP Up No. 49
+4250	Debug Max HP Up No. 50
+4251	Debug Max HP Up No. 51
+4252	Debug Max HP Up No. 52
+4253	Debug Max HP Up No. 53
+4254	Debug Max HP Up No. 54
+4255	Debug Max HP Up No. 55
+4256	Debug Max HP Up No. 56
+4257	Debug Max HP Up No. 57
+4258	Debug Max HP Up No. 58
+4259	Debug Max HP Up No. 59
+4260	Debug Max HP Up No. 60
+4261	Debug Max HP Up No. 61
+4262	Debug Max HP Up No. 62
+4263	Debug Max HP Up No. 63
+4264	Debug Max HP Up No. 64
+4265	Debug Max HP Up No. 65
+4266	Debug Max HP Up No. 66
+4267	Debug Max HP Up No. 67
+4268	Debug Max HP Up No. 68
+4269	Debug Max HP Up No. 69
+4270	Debug Max HP Up No. 70
+4271	Debug Max HP Up No. 71
+4272	Debug Max HP Up No. 72
+4273	Debug Max HP Up No. 73
+4274	Debug Max HP Up No. 74
+4275	Debug Max HP Up No. 75
+4276	Debug Max HP Up No. 76
+4277	Debug Max HP Up No. 77
+4278	Debug Max HP Up No. 78
+4279	Debug Max HP Up No. 79
+4280	Debug Max HP Up No. 80
+4281	Debug Max HP Up No. 81
+4282	Debug Max HP Up No. 82
+4283	Debug Max HP Up No. 83
+4284	Debug Max HP Up No. 84
+4285	Debug Max HP Up No. 85
+4286	Debug Max HP Up No. 86
+4287	Debug Max HP Up No. 87
+4288	Debug Max HP Up No. 88
+4289	Debug Max HP Up No. 89
+4290	Debug Max HP Up No. 90
+4291	Debug Max HP Up No. 91
+4292	Debug Max HP Up No. 92
+4293	Debug Max HP Up No. 93
+4294	Debug Max HP Up No. 94
+4295	Debug Max HP Up No. 95
+4296	Debug Max HP Up No. 96
+4297	Debug Max HP Up No. 97
+4298	Debug Max HP Up No. 98
+4299	Debug Max HP Up No. 99
+4300	Debug Max HP Up No. 100
+4301	Debug Max HP Up No. 101
+4302	Debug Max HP Up No. 102
+4303	Debug Max HP Up No. 103
+4304	Debug Max HP Up No. 104
+4305	Debug Max HP Up No. 105
+4306	Debug Max HP Up No. 106
+4307	Debug Max HP Up No. 107
+4308	Debug Max HP Up No. 108
+4309	Debug Max HP Up No. 109
+4310	Debug Max HP Up No. 110
+4311	Debug Max HP Up No. 111
+4312	Debug Max HP Up No. 112
+4313	Debug Max HP Up No. 113
+4314	Debug Max HP Up No. 114
+4315	Debug Max HP Up No. 115
+4316	Debug Max HP Up No. 116
+4317	Debug Max HP Up No. 117
+4318	Debug Max HP Up No. 118
+4319	Debug Max HP Up No. 119
+4320	Debug Max HP Up No. 120
+4321	Debug Max HP Up No. 121
+4322	Debug Max HP Up No. 122
+4323	Debug Max HP Up No. 123
+4324	Debug Max HP Up No. 124
+4325	Debug Max HP Up No. 125
+4326	Debug Max HP Up No. 126
+4327	Debug Max HP Up No. 127
+4328	Debug Max HP Up No. 128
+4329	Debug Max HP Up No. 129
+4330	Debug Max HP Up No. 130
+5000	Poison (Debug 1)
+5001	Poison (Debug 2)
+5002	Poison (Debug 3)
+5003	Movespeed Up (Logout Stops)
+5004	Movespeed Up (Not Canceled)
+5005	Movespeed Up Squared (Not Canceled)
+5006	Movespeed Up Squared (Logout Stops)
+5007	Incantation Extension EX (Debug)
+5008	Experience Up EX (Debug)
+5009	UB Runner-Up
+6001	Halahala
+6002	Purgatory Miasma
+6003	Slowed
+6004	Damage Dealt Down
+6005	Incantation Time Up
+6012	Slimed!
+6013	Deadly Poison
+6051	True Tarunda
+6052	True Makanda
+6053	True Sukunda
+6054	True Rakunda
+6055	True Samanda
+6056	Doomed!
+6057	Death's Door
+6058	Shock
+6059	Immunity
+6060	Boss Enraged
+6061	Der Freischutz
+6062	Demon Disguise: Hua Po
+6063	Demon Disguise: Mothman
+6064	Demon Disguise: Cerberus
+6065	Demon Disguise: Nyx
+6066	Demon Disguise: Alice
+6067	Demon Disguise: Jack Frost
+6068	Demon Disguise: Pyro Jack
+6069	Demon Disguise: Black Frost
+6070	Demon Disguise: Clotho
+6071	Demon Disguise: Lachesis
+6072	Demon Disguise: Atropos
+6073	Demon Disguise: Ara Mitama
+6074	Demon Disguise: Nigi Mitama
+6075	Demon Disguise: Kusi Mitama
+6076	Demon Disguise: Saki Mitama
+6077	Demon Disguise: Matador
+6078	Demon Disguise: David
+6079	Demon Disguise: Hell Biker
+6080	Demon Disguise: Daisoujou
+6081	Demon Disguise: Hua Po
+6082	Demon Disguise: Mothman
+6083	Demon Disguise: Cerberus
+6084	Demon Disguise: Nyx
+6085	Demon Disguise: Cu Chulainn
+6086	Demon Disguise: Jack Frost
+6087	Demon Disguise: Pyro Jack
+6088	Demon Disguise: Black Frost
+6089	Demon Disguise: Clotho
+6090	Demon Disguise: Lachesis
+6091	Demon Disguise: Atropos
+6092	Demon Disguise: Ara Mitama
+6093	Demon Disguise: Nigi Mitama
+6094	Demon Disguise: Kusi Mitama
+6095	Demon Disguise: Saki Mitama
+6096	Demon Disguise: Matador
+6097	Demon Disguise: David
+6098	Demon Disguise: Hell Biker
+6099	Demon Disguise: Daisoujou
+6100	Soft Serve: Lavender
+6101	Soft Serve: Watermelon
+6102	Soft Serve: Pumpkin
+6103	Soft Serve: Matcha
+6104	Soft Serve: Vanilla
+6106	Great Will's Curse
+6107	Wind Up
+6668	Force Trauma
+6669	Palladium
+7000	Something Went Wrong!
+7006	Accursed Ranger
+7010	Concentrated
+7011	Charged Megi
+7012	Momentum: Fire
+7013	Momentum: Ice
+7014	Momentum: Elec
+7015	Momentum: Almighty
+7016	Momentum: Force
+7017	Blood Bullet
+7020	Fleetfoot Aura
+7021	Super Armor +
+7022	Doping
+7023	Healing Enhancement
+7024	Physical Enhancement
+7025	Intensive Break Enhancement
+7026	Weakness
+7027	Wickedness
+7028	Demon Smile-Strength
+7030	Ragnarok
+7031	Bloodthirst
+7032	Yfirthirmandi
+7033	Yfirthirmandi: FULL
+7034	Rallying Cry
+7035	At World's End
+7036	Blood Rush
+7037	Freezing Bullet
+7038	Gracious HP Regen
+7039	Gracious MP Regen
+7040	Thunderous Bullet
+7041	Sonic Bullet
+7042	Grit
+7043	Full Grit
+7044	High Noon
+7045	Momentum: Mystic
+7046	Demon Smile-Magic
+7047	Demon Smile-Speed
+7048	Demon Smile-Support
+7049	Ranger's Curse
+7050	Curse of Four Wounds
+7051	Weakened Defense
+7052	Awakened
+7053	Fate's Burden
+7054	Fate's Burden (Weak)
+7055	Flame Weapon
+7056	Freezing Weapon
+7057	Thunder Weapon
+7058	Sonic Weapon
+7059	Undying Rage
+7060	Flame Bullet
+7061	Undying Rage CD
+7062	Gamble: Heads
+7063	Gamble: Tails
+7064	Hollow Point
+7065	Arcane Overdrive: Fire
+7066	Arcane Overdrive: Ice
+7067	Arcane Overdrive: Elec
+7068	Arcane Overdrive: Force
+7069	Arcane Overdrive: Mystic
+7070	Arcane Overdrive: Almighty
+7071	Ethereal: Fire
+7072	Ethereal: Ice
+7073	Ethereal: Elec
+7074	Ethereal: Force
+7075	Ethereal: Almighty
+7076	Ethereal: Mystic
+7077	Radiance
+7078	Radiant Super Armor
+7079	Radiant Null Fire
+7080	Radiant Null Ice
+7081	Radiant Null Electric
+7082	Radiant Null Force
+7083	Limit Break Power UP
+7084	Radiant Super Armor +
+7085	Hero's Radiance
+7086	Armor Break
+7087	Viper Scope
+7088	Disarmed
+7089	Killshot
+7090	Steel Focus
+7091	Ranger's Curse: Squall
+7092	Ranger's Curse: Mystic
+7093	Ranger's Curse: Charming
+7094	Ranger's Curse: Scorching
+7095	Ranger's Curse: Hailing
+7096	Ranger's Curse: Thunder
+7097	Ranger's Curse: Blinding
+7098	Full Killshot
+7099	Slow Cure Curse
+7100	Close-Range Guard Crushed
+7101	Long-Range Guard Crushed
+7102	Spell Guard Crushed
+7103	Cooldown Extension
+7104	Incantation Extension
+7105	Tarunda
+7106	Makanda
+7107	Sukunda
+7108	Rakunda
+7109	Samanda
+7110	Damage Hex
+7111	Cursebearer
+7112	Curse of Four Wounds
+7113	Inspiring Presence
+7114	Full Steel Focus
+7115	Steel Barrage
+7116	Arcane Focus
+7117	Full Arcane Focus
+7118	Arcane Surge
+7119	Steel Focus Debuff
+7120	Arcane Focus Debuff
+7121	Rampaging Whirlwind
+7122	Protective Vortex
+7123	Mass Taunt Angered
+7124	Serpent Coil
+7125	Full Momentum: Fire
+7126	Full Momentum: Ice
+7127	Full Momentum: Elec
+7128	Full Momentum: Almighty
+7129	Full Momentum: Force
+7130	Full Momentum: Mystic
+7131	Shielded Summon
+7132	Armed Summon
+7133	Beelzebub's Blessing
+7200	Ignited Flesh
+7201	Defense Shred
+7202	Corrosive Bile
+7203	Abbadon's Domain
+7204	Abaddon Weakened
+7205	Soulless
+7206	Beelzebub Empower
+7207	Beelzebub Weaken
+7208	Avarice
+7209	Abyssal Defense
+7210	Balance Violation Buff
+7211	Balance Violation Debuff
+7212	Enraged
+7213	Yin Overflow
+7214	Yang Overflow
+7215	Withered
+7216	Hunted
+7217	Slowed
+7218	Weakened
+7219	Pangu Alm Weakened 1
+7223	Drowning
+7224	Bleeding
+7225	Taunted
+7226	Arcane Burn: Fire
+7227	Arcane Burn: Ice
+7228	Arcane Burn: Elec
+7229	Arcane Burn: Force
+7230	Arcane Burn: Alm
+7231	Arcane Burn: Mystic
+7232	Stolen Essence
+7233	Cursebearer: FULL
+7234	Break Bullet
+7235	Full Protective Vortex
+7236	Coup de Grace
+7237	Coup de Grace: Full
+7238	Power Charge
+7239	Concentrated
+7240	High Noon
+7241	Stolen Essence
+7242	Full Rampaging Whirlwind
+7243	Taunted
+7244	Partner Synchro
+7245	Lifebreak
+7246	Hindered
+7247	Oppressed
+7248	Blessing of Heaven
+7249	Blessing of Earth
+7250	Blessing of Thunder
+7251	Blessing of Wind
+7252	Blessing of Water
+7253	Blessing of Fire
+7254	Blessing of Mountain
+7255	Blessing of Lake
+7256	Condemned
+7257	Hellbound Miasma
+7258	Death Aura
+7259	Challenge Mode Enemy Status
+7260	Rime Focus
+7261	Charmed
+7262	Halloween Blessing
+7263	Evil Aura
+7264	Plague
+7265	Famine
+7266	Devoured
+7267	Halloween Morale Lv.0
+7268	Halloween Morale Lv.1
+7269	Halloween Morale Lv.2
+7270	Halloween Morale Lv.3
+99999	Seth Barrier
