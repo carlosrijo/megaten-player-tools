@@ -140,6 +140,14 @@ Working on the app's page:
 - The assistant: `--capture` pictures leave it out unless the run adds `--query assistant=1`. In a plain browser it
   needs the model file first (`imagine-reader.exe model`, below); `?assistant=0` leaves it out, `?assistant=none`
   stands in for "the game's folder isn't known yet".
+- Feature flags: features still being tried out are off unless the run names them, `?features=a,b` in a browser,
+  `BABEL.exe --query features=a,b` for the app (nothing is saved; a plain start has them off). The list is at the top
+  of `app.js` (`FEATURES`):
+  - `assistant-picker`: Settings > Assistant gets "Same as my summoned demon" (on by default: the demon summoned in game stands there, read from the game every 5 seconds, read-only, about 30 ms; with none out, the last one stays) and a demon picker (the Demon Database's base demons and their Inexperienced variants, those with a picture; picking one switches the following off). Changing demon plays a summoning effect made of the game's own pieces (its effect models' pictures, smoke and sparkles, and its summoning sound System_syoukan.wav, tinted with the demon's CModelData colour; the timing is the page's own, the game's effect\eff files are not decoded). Every demon is drawn at one size, set so Black Frost looks as he always did, times the game's own size for the model (capped), standing on the box's floor; blended parts and layers the game fades (Alilat's glyph shell, drawn as added light) are drawn as such. The picked demon's
+    model is read from the game's files when it is picked (about 0.1 s; kept in memory only, not in
+    `data\cache\models`) and summoned in place of the one standing there. Which model a demon has comes from
+    `reference\devil-models.tsv` (the demon table's model id looked up in the client's model table, the Shield copy CModelData2.sbin: the older BinaryData\Client copy lacks 181 demons' models). In a plain
+    browser a demon needs its model file first: `imagine-reader.exe model <model>` (it writes `data\cache\models\<model>.json`).
 
 ### Tools: Demon Rank
 
@@ -513,6 +521,7 @@ Layouts are documented in `crates/imagine/src/game/client_reader.rs`.
 - `data/cache/` last stats, tooltip text per item, the set table, alignment. `data/cache/models/` the assistant's model,
   made from the game's files (the game's art: not in the repository).
 - `app/ui/assistant.js` draws the assistant (plain WebGL, no library).
+- `reference/devil-models.tsv` each demon's 3D model (the demon table's model id in the client's model table, Shield\CModelData2.sbin: file name, size, summoning circle size), for the assistant picker.
 - `reference/enchants-game.tsv` the client's own enchant table; `reference/devils-game.tsv`, `devil-growth.tsv`,
   `mitama-*.tsv`, `guardian-assist.tsv`, `guardian-levels.tsv`, `skills-digitize.tsv` the server's demon and digitalize tables;
   `tokusei-*.tsv`, `expertise-imagine.tsv`, `traits-unresolved.tsv` IMAGINE data from the client.

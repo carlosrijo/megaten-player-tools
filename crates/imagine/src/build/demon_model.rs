@@ -28,7 +28,54 @@ pub const FORMAT: i32 = 1;
 /// The assistant's model: Black Frost (demon 723; its icon is icon_D2_11_003a, named after the model).
 pub const ASSISTANT: &str = "D2_11_003a";
 pub const ASSISTANT_NAME: &str = "Black Frost";
+/// Its demon id (DevilData 723), for its row in reference\devil-models.tsv.
+pub const ASSISTANT_DEMON: i32 = 723;
 const FPS: i32 = 30;
+
+/// A demon's model in the game's own tables (reference\devil-models.tsv: DevilData's modelID looked up in the client's
+/// CModelData2): the model's file name (Devil\bone\<model>_Base.nif), the size the game draws it at, and the size of its
+/// summoning circle. `None` for a demon with no model.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DemonModelRef {
+    pub model: String,
+    pub scale: f64,
+    pub circle: f64,
+    /// the summoning effect's colour (CModelData color), 0-255 each
+    pub color: [u8; 3],
+}
+
+pub fn model_of_demon(demon: i32) -> Result<Option<DemonModelRef>> {
+    static TABLE: LazyLock<std::sync::Mutex<Option<HashMap<i32, DemonModelRef>>>> = LazyLock::new(|| std::sync::Mutex::new(None));
+    let mut t = TABLE.lock().map_err(|_| anyhow!("model table lock"))?;
+    if t.is_none() {
+        let mut m = HashMap::new();
+        for line in crate::data::game_data::reference_lines("devil-models.tsv")?.unwrap_or_default() {
+            if line.starts_with('#') {
+                continue;
+            }
+            let r: Vec<&str> = line.split('\t').collect();
+            if r.len() < 5 {
+                continue;
+            }
+            let (Some(id), Ok(scale), Ok(circle)) = (crate::fmt::parse_i32(r[0]), r[3].trim().parse::<f64>(), r[4].trim().parse::<f64>()) else { continue };
+            // it becomes a file name: letters, digits and _ only
+            let model = r[2].trim();
+            if model.is_empty() || !model.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                continue;
+            }
+            let mut color = [162u8, 70, 243];
+            if let Some(c) = r.get(5) {
+                let v: Vec<u8> = c.split(',').filter_map(|x| x.trim().parse().ok()).collect();
+                if v.len() == 3 {
+                    color = [v[0], v[1], v[2]];
+                }
+            }
+            m.insert(id, DemonModelRef { model: model.to_string(), scale, circle, color });
+        }
+        *t = Some(m);
+    }
+    Ok(t.as_ref().and_then(|m| m.get(&demon).cloned()))
+}
 
 pub fn cache_path(data_root: &Path, model: &str) -> PathBuf {
     data_root.join("cache").join("models").join(format!("{model}.json"))
@@ -721,10 +768,28 @@ pub fn export(client_dir: &Path, model: &str, mut log: Option<&mut dyn FnMut(&st
         let stop: f32 = seq.stop.max(seq.start);
         let frames = ((((stop - start) * FPS as f32) as f64 - 1e-4).ceil() as i32).wrapping_add(1).max(1);
         let mut tracks: Vec<String> = Vec::new();
+        let mut fades: Vec<String> = Vec::new();
         let mut moving = 0;
         for link in &seq.links {
             let Some(node_name) = &link.node else { continue };
             let Some(&node_id) = by_name.get(node_name) else { continue };
+            // A mesh fading in and out (NiAlphaController on its material: Alilat's glyph shell over its stone): its
+            // alpha every frame, as "fades" [{node, alpha}] beside the tracks (only in animations that have one).
+            if link.controller_type.as_deref() == Some("NiAlphaController") {
+                if let Some(alpha) = float_frames(kf, link.interpolator, start, stop, frames) {
+                    let mut j = Json { s: String::new(), bad: false };
+                    j.raw("{");
+                    j.key(true, "node");
+                    j.int(arena[node_id].index);
+                    j.key(false, "alpha");
+                    let at = bin.add_f32(&alpha);
+                    j.int(at);
+                    j.raw("}");
+                    bad |= j.bad;
+                    fades.push(j.s);
+                }
+                continue;
+            }
             if let Some(ct) = &link.controller_type {
                 if ct != "NiTransformController" {
                     continue;
@@ -830,6 +895,12 @@ pub fn export(client_dir: &Path, model: &str, mut log: Option<&mut dyn FnMut(&st
         j.raw("[");
         j.raw(&tracks.join(","));
         j.raw("]");
+        if !fades.is_empty() {
+            j.key(false, "fades");
+            j.raw("[");
+            j.raw(&fades.join(","));
+            j.raw("]");
+        }
         j.raw("}");
         bad |= j.bad;
         anims.push(j.s);
@@ -1134,6 +1205,7 @@ fn texture_png(nif: &NifFile, src: &NifSourceTexture, dir: &Path) -> Result<Opti
         rgba = match px.format {
             0 if px.bits_per_pixel == 24 => expand(&px.data, w, h, 3),
             1 if px.bits_per_pixel == 32 => expand(&px.data, w, h, 4),
+            1 if px.bits_per_pixel == 16 && px.channel_bits.starts_with(&[5, 5, 5, 1]) => expand_5551(&px.data, w, h),
             4 => dxt(&px.data, w, h, 1),
             5 => dxt(&px.data, w, h, 3),
             6 => dxt(&px.data, w, h, 5),
@@ -1148,6 +1220,90 @@ fn texture_png(nif: &NifFile, src: &NifSourceTexture, dir: &Path) -> Result<Opti
         return Ok(dds_to_png(&std::fs::read(path)?));
     }
     Ok(rgba.map(|r| tga::rgba_to_png(&r, w, h)))
+}
+
+/// A NiFloatInterpolator's value at every frame of an animation (30 a second from `start`), its keys read linearly;
+/// None when the block isn't one.
+fn float_frames(kf: &NifFile, interpolator: i32, start: f32, stop: f32, frames: i32) -> Option<Vec<f32>> {
+    let NifKind::FloatInterpolator(fi) = &kf.get::<NifBlock>(interpolator)?.kind else { return None };
+    let keys = match kf.get::<NifBlock>(fi.data).map(|b| &b.kind) {
+        Some(NifKind::FloatData(Some(k))) if !k.times.is_empty() && k.values.len() >= k.times.len() => Some(k),
+        _ => None,
+    };
+    let at = |time: f32| -> f32 {
+        let Some(k) = keys else { return fi.value };
+        let (t, v) = (&k.times, &k.values);
+        if time <= t[0] {
+            return v[0];
+        }
+        for i in 1..t.len() {
+            if time <= t[i] {
+                let span = t[i] - t[i - 1];
+                let a = if span > 0.0 { (time - t[i - 1]) / span } else { 1.0 };
+                return v[i - 1] + (v[i] - v[i - 1]) * a;
+            }
+        }
+        v[t.len() - 1]
+    };
+    Some((0..frames.max(1)).map(|f| at((start + f as f32 / FPS as f32).min(stop)).clamp(0.0, 1.0)).collect())
+}
+
+// ---------- the summoning effect ----------
+
+/// The pieces of the game's summoning effect the page draws when the assistant changes demon, as one JSON object:
+/// `{"textures":{name: PNG data URI},"sound": WAV data URI or null}`. They are the client's own files: the light pillar,
+/// lightning, glow and swirl models and the smoke and sparkle pictures of the effect G002_07_P00_01H (the effect the
+/// client picks next to the summoning sound, System_syoukan.wav "召喚", sound 2022), and that sound. How the effect plays
+/// them over time (effect\eff\*.eff) is not decoded: the page's timing is its own. `None` without the client's folder.
+pub fn summon_effect(client_dir: &Path) -> Result<Option<String>> {
+    let fx = client_dir.join("effect");
+    if !fx.is_dir() {
+        return Ok(None);
+    }
+    // the effect's models each hold one picture (NiPixelData); smoke and sparkles are loose .dds files
+    const MODELS: [(&str, &str); 5] = [
+        ("pillar", "Eg48_m0s0_H_T"),
+        ("lightning", "Eg52_m0s1_H_N"),
+        ("glow", "Eg32_m0s0_H_F"),
+        ("arc", "Eg42_m0s0_H_T"),
+        ("sparks", "Ec13_m0s1_H_T"),
+    ];
+    const PICTURES: [(&str, &str); 2] = [("smoke", "E004_01_a0p00c0H_F"), ("sparkle", "E020_02_a1p09c0H_F")];
+    let mut out = String::from("{\"textures\":{");
+    let mut first = true;
+    let mut add = |out: &mut String, name: &str, png: Option<Vec<u8>>| {
+        let Some(png) = png else { return };
+        if !first {
+            out.push(',');
+        }
+        first = false;
+        out.push_str(&format!("\"{name}\":\"data:image/png;base64,{}\"", base64(&png)));
+    };
+    for (name, file) in MODELS {
+        let path = fx.join("model").join(format!("{file}.nif"));
+        let png = match path.is_file().then(|| NifFile::load(&path)) {
+            Some(Ok(nif)) => match nif.all::<NifSourceTexture>().next() {
+                Some(src) => texture_png(&nif, src, &fx.join("tex"))?,
+                None => None,
+            },
+            Some(Err(e)) if is_nif_error(&e) => None,
+            Some(Err(e)) => return Err(e),
+            None => None,
+        };
+        add(&mut out, name, png);
+    }
+    for (name, file) in PICTURES {
+        let path = fx.join("tex").join(format!("{file}.dds"));
+        add(&mut out, name, if path.is_file() { dds_to_png(&std::fs::read(&path)?) } else { None });
+    }
+    out.push_str("},\"sound\":");
+    let wav = client_dir.join("sound").join("se").join("System_syoukan.wav");
+    match std::fs::read(&wav).ok().filter(|b| b.len() > 12 && &b[..4] == b"RIFF" && &b[8..12] == b"WAVE") {
+        Some(b) => out.push_str(&format!("\"data:audio/wav;base64,{}\"", base64(&b))),
+        None => out.push_str("null"),
+    }
+    out.push('}');
+    Ok(Some(out))
 }
 
 /// A .dds picture (DXT1 / DXT3 / DXT5, or plain 32-bit BGRA) as PNG; None for anything else. The client keeps some
@@ -1200,6 +1356,29 @@ fn expand(d: &[u8], w: i32, h: i32, bytes: usize) -> Option<Vec<u8>> {
         o[i * 4 + 1] = d[i * bytes + 1];
         o[i * 4 + 2] = d[i * bytes + 2];
         o[i * 4 + 3] = if bytes == 4 { d[i * 4 + 3] } else { 255 };
+    }
+    Some(o)
+}
+
+/// 16-bit pixels (NiPixelData format 1 with 5,5,5,1 bit channels R,G,B,A) to RGBA. The channels sit in the order the
+/// file lists them from the lowest bit up, as the 32-bit RGBA format's bytes do (R in the lowest). Alilat's two
+/// pictures are kept this way.
+fn expand_5551(d: &[u8], w: i32, h: i32) -> Option<Vec<u8>> {
+    if w <= 0 || h <= 0 || w > 65536 || h > 65536 {
+        return None;
+    }
+    let n = (w as usize) * (h as usize);
+    if d.len() < n * 2 {
+        return None;
+    }
+    let five = |v: u16| ((v as u32 * 255 + 15) / 31) as u8;
+    let mut o = vec![0u8; n * 4];
+    for i in 0..n {
+        let v = u16::from_le_bytes([d[i * 2], d[i * 2 + 1]]);
+        o[i * 4] = five(v & 31);
+        o[i * 4 + 1] = five((v >> 5) & 31);
+        o[i * 4 + 2] = five((v >> 10) & 31);
+        o[i * 4 + 3] = if v >> 15 != 0 { 255 } else { 0 };
     }
     Some(o)
 }

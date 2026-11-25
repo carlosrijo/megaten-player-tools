@@ -666,7 +666,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .tip { position: fixed; inset: auto; margin: 0; overflow: visible; z-index: 50; pointer-events: none; max-width: 320px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: var(--shadow); border-radius: 8px; padding: 6px 9px; font-size: 12px; font-variant-numeric: tabular-nums; }
 
 /* ---------- the assistant (Black Frost in the corner) ---------- */
-.assistant { position: fixed; right: var(--assistant-right, 18px); bottom: var(--assistant-bottom, 2px); z-index: 30; width: 136px; height: 150px; cursor: pointer; animation: rise .3s ease-out; }
+.assistant { position: fixed; right: var(--assistant-right, 18px); bottom: var(--assistant-bottom, 2px); z-index: 30; width: 136px; height: 150px; cursor: pointer; user-select: none; animation: rise .3s ease-out; }
 .assistant[hidden] { display: none; }
 /* the floor under its feet, so it stands on the window instead of floating */
 .assistant::before { content: ""; position: absolute; left: 14%; right: 14%; bottom: 3px; height: 16px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .28), rgba(0, 0, 0, 0)); }
@@ -1417,3 +1417,14 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .dpl-assist { color: var(--text-2); }
 .dpl-or { margin: 0 6px; font-size: 11px; color: var(--text-3); }
 .dpl-tbl td.dpl-act { width: 1%; text-align: right; white-space: nowrap; }
+
+/* the assistant picker (feature "assistant-picker"): under the switch in Settings > Assistant */
+.assistant-pick { display: grid; gap: 4px; margin-top: 8px; max-width: 360px; }
+.assistant-pick[hidden] { display: none; }
+
+/* the summoning effect when the picker changes demon: the old one goes into the light, the new one comes out of it */
+.assistant canvas.summon-fx { position: absolute; pointer-events: none; z-index: 1; }
+.assistant canvas.summon-out { animation: summon-out .45s ease-in forwards; }
+.assistant canvas.summon-in { animation: summon-in .5s ease-out; }
+@keyframes summon-out { to { opacity: 0; filter: brightness(3); } }
+@keyframes summon-in { from { opacity: 0; filter: brightness(3.5); } 60% { opacity: 1; } to { opacity: 1; filter: none; } }

@@ -67,6 +67,11 @@
     get(k) { try { const v = localStorage.getItem('babel-' + k); return v !== null ? v : localStorage.getItem('nm-' + k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem('babel-' + k, v); } catch (e) { /* preferences only */ } },
   };
+  // Feature flags: features still being tried out are off unless the run turns them on by name, ?features=a,b
+  // (the app: BABEL.exe --query features=a,b). Nothing is saved: the next plain start has them off again.
+  //   assistant-picker   Settings > Assistant gets a demon picker: any demon from the game's files stands in the corner
+  const FEATURES = new Set((Q.get('features') || '').split(',').map((s) => s.trim()).filter(Boolean));
+  const feature = (name) => FEATURES.has(name);
   const num = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
   const n0 = (v) => Number(v) || 0;
   const round2 = (v) => Math.round(v * 100) / 100;
@@ -230,7 +235,24 @@
           return m.result;
         }
         // the assistant's model: the file the reader made (imagine-reader.exe model); ?assistant=none stands in for "game never seen"
-        if (cmd === 'assistant') return Q.get('assistant') === 'none' ? null : get('../../data/cache/models/D2_11_003a.json', null);
+        // { demon } (the picker): its model from reference\devil-models.tsv, the file made by "imagine-reader model <model>"
+        if (cmd === 'assistant') {
+          if (Q.get('assistant') === 'none') return null;
+          const id = args && args.demon > 0 ? args.demon : 723;
+          const tsv = await fetch('../../reference/devil-models.tsv').then((r) => (r.ok ? r.text() : '')).catch(() => '');
+          const row = tsv.split(/\r?\n/).map((l) => l.split('\t')).find((r) => r[0] === String(id));
+          if (!row && id !== 723) return null;
+          const m = await get(`../../data/cache/models/${row ? row[2] : 'D2_11_003a'}.json`, null);
+          return m ? { demon: args && args.demon > 0 ? id : 0, summon: { scale: row ? +row[3] : 1, circle: row ? +row[4] : 1 }, ...m } : null;
+        }
+        // the summoning effect's pieces: the file made by "imagine-reader model summon"
+        if (cmd === 'assistantSummon') return get('../../data/cache/models/summon.json', null);
+        // the summoned demon "in game": the saved one (dash\summoned.json); ?summon=<demon id> stands in for another
+        if (cmd === 'summonedDemon') {
+          if (Q.get('summon')) return { type: Number(Q.get('summon')) || 0, name: Q.get('summonName') || 'A demon' };
+          const s = await get('../../data/dash/summoned.json', null);
+          return s && s.type ? { type: s.type, name: s.name } : { type: 0 };
+        }
         if (cmd === 'getSettings' || cmd === 'pickCsv') return { ...settings };
         if (cmd === 'saveSettings') { Object.assign(settings, args); return { ...settings }; }
         // Troubleshooting: the stand-in has no build, game or files to look at, so it shows what the answers look like
@@ -5604,19 +5626,110 @@
   // The host makes its model out of the game's own files the first time (so it must have seen the game once, to know
   // where it is installed). On or off is a preference of this window; ?assistant=0 leaves it out for one run and
   // ?assistant=1 puts it in (the app's --capture runs leave it out unless asked).
-  const A = { el: $('#assistant'), view: null, state: 'off' };   // state: off | loading | on | missing | failed
+  const A = { el: $('#assistant'), view: null, state: 'off', note: null, swap: 0 };   // state: off | loading | on | missing | failed
   const assistantWanted = () => Q.get('assistant') !== '0' && (Q.get('assistant') === '1' || store.get('assistant') !== 'off');
+  // The picker (feature "assistant-picker"): another demon stands there instead, its model read from the game's files
+  // when it is picked and kept in memory only. Without the feature it is always Black Frost.
+  const PICKER = feature('assistant-picker');
+  const pickedDemon = () => (PICKER ? Number(store.get('assistant-demon')) || 0 : 0);
+  const assistantName = () => (pickedDemon() ? store.get('assistant-demon-name') || 'The demon' : 'Black Frost');
+  // "Same as my summoned demon" (on unless switched off): the demon summoned in game stands there and changes when you
+  // summon another. The game is read every few seconds (summonedDemon); while it can't be read, the demon summoned
+  // when it was last read (a snapshot, or "Load demons from the game"). With none summoned, the last one stays.
+  const following = () => PICKER && store.get('assistant-follow') !== 'off';
+  async function followSummoned(now) {
+    if (!following() || A.followBusy || (!now && document.hidden)) return;
+    A.followBusy = true;
+    try {
+      let live = null;
+      try { live = await host.call('summonedDemon'); } catch (e) { live = null; }
+      const last = S.data && S.data.summoned && S.data.summoned.type ? { type: S.data.summoned.type, name: S.data.summoned.name } : null;
+      const d = live && live.type > 0 ? live : !live ? last : null;   // live { type: 0 }: none out now, the last one stays
+      if (!d || !following() || !A.view || A.state === 'loading') return;
+      const want = d.type === 723 ? 0 : d.type;   // Black Frost is the default assistant
+      if (want === pickedDemon() || d.type === A.followFailed) return;   // one whose model can't be read is tried once
+      await switchAssistant({ id: d.type, name: d.name });
+      if (pickedDemon() !== want) A.followFailed = d.type;
+    } finally { A.followBusy = false; }
+  }
   function fillAssistant() {
-    const on = store.get('assistant') !== 'off';
+    const on = store.get('assistant') !== 'off', name = assistantName();
     $('#set-assistant').checked = on;
+    $('#assistant-switch-label').textContent = `Show ${name} in the corner`;
+    $('#assistant-view').setAttribute('aria-label', `${name}, the assistant. Click for a trick.`);
     $('#assistant-help').textContent = !on ? 'Off. Its model and animations come from your game’s own files.'
-      : A.state === 'loading' ? 'Getting its model from the game’s files…'
+      : A.state === 'loading' ? `Getting ${name}’s model from the game’s files…`
       : A.state === 'missing' ? 'Its model comes from the game’s own files, and the app doesn’t know yet where the game is installed. Start IMAGINE and it will show up.'
       : A.state === 'failed' ? 'It couldn’t be drawn here: this window has no 3D graphics (WebGL).'
-      : 'Its model and animations come from your game’s own files. Click it for a trick; it also reacts when you take a snapshot.';
+      : (A.note ? A.note + ' ' : '') + 'Its model and animations come from your game’s own files. Click it for a trick; it also reacts when you take a snapshot.';
+    if (PICKER) fillAssistantPick();
+  }
+  // the picker: a search field listing the compendium's demons (demon-db.json, with their pictures)
+  const AP = { list: null, loading: false, input: null };
+  function fillAssistantPick() {
+    const box = $('#assistant-pick');
+    box.hidden = false;
+    if (!AP.input) {
+      const ph = 'Search a demon';
+      const input = h('input', { class: 'input', type: 'search', placeholder: ph, 'aria-label': 'Assistant demon', spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
+      const menu = h('div', { class: 'fus-menu', role: 'listbox', hidden: true });
+      let hits = [], at = 0;
+      const draw = () => {
+        if (!AP.list) { menu.replaceChildren(h('div', { class: 'fus-opt empty', text: AP.loading ? 'Loading the demons…' : 'The demon list could not be loaded.' })); return; }
+        const q = input.value.trim().toLowerCase();
+        hits = AP.list.filter((d) => !q || d.hay.includes(q))
+          .sort((a, b) => (a.lname.startsWith(q) ? 0 : 1) - (b.lname.startsWith(q) ? 0 : 1) || a.name.localeCompare(b.name) || a.level - b.level).slice(0, 60);
+        at = Math.min(at, Math.max(0, hits.length - 1));
+        menu.replaceChildren(...(hits.length ? hits.map((d, i) => h('div', { class: 'fus-opt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(i === at),
+          onmousedown: (ev) => { ev.preventDefault(); pick(d); } },
+          h('span', { class: 'dcm-icon', 'aria-hidden': 'true' }, d.icon ? h('img', { src: d.icon, alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null),
+          h('span', { class: 'fus-opt-name', text: d.name }), h('span', { class: 'src-count', text: `${d.race} · Lv ${d.level}` })))
+          : [h('div', { class: 'fus-opt empty', text: 'No demon matches.' })]));
+        const on = menu.querySelector('.fus-opt.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+      };
+      // Enter pressed before the list is in picks the first match once it is
+      const listed = () => { draw(); if (AP.enterLater && !menu.hidden && hits[at]) { AP.enterLater = false; pick(hits[at]); } };
+      const open = () => { menu.hidden = false; input.setAttribute('aria-expanded', 'true'); loadAssistantList(listed); draw(); };
+      const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+      // a demon picked by hand stands there from now on: it no longer follows the summoned demon
+      const pick = (d) => { close(); input.value = d.name; input.blur(); store.set('assistant-follow', 'off'); fillAssistant(); switchAssistant(d); };
+      input.addEventListener('focus', () => { input.select(); open(); });
+      input.addEventListener('input', () => { at = 0; open(); });
+      input.addEventListener('blur', () => { close(); input.value = assistantName(); });
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'ArrowDown') { ev.preventDefault(); if (menu.hidden) open(); else { at = Math.min(at + 1, hits.length - 1); draw(); } }
+        else if (ev.key === 'ArrowUp') { ev.preventDefault(); at = Math.max(at - 1, 0); draw(); }
+        else if (ev.key === 'Enter') { if (!AP.list && AP.loading) { ev.preventDefault(); AP.enterLater = true; } else if (!menu.hidden && hits[at]) { ev.preventDefault(); pick(hits[at]); } }
+        else if (ev.key === 'Escape') { if (!menu.hidden) { ev.stopPropagation(); close(); } }
+      });
+      input.addEventListener('blur', () => { AP.enterLater = false; });
+      AP.input = input;
+      AP.follow = h('input', { type: 'checkbox', class: 'switch', role: 'switch', id: 'set-assistant-follow' });
+      AP.follow.addEventListener('change', () => { store.set('assistant-follow', AP.follow.checked ? 'on' : 'off'); fillAssistant(); if (AP.follow.checked) followSummoned(true); });
+      AP.label = h('span', { class: 'field-help' });
+      box.append(h('label', { class: 'switch-row' }, h('span', { text: 'Same as my summoned demon' }), AP.follow),
+        AP.label, h('div', { class: 'fus-combo' }, h('div', { class: 'search' }, icon('search'), input), menu));
+    }
+    AP.follow.checked = following();
+    AP.label.textContent = following() ? 'Or pick one yourself (it then stops following your summoned demon)' : 'Which demon stands there';
+    if (document.activeElement !== AP.input) AP.input.value = assistantName();
+    AP.input.disabled = A.state === 'loading';
+  }
+  function loadAssistantList(then) {
+    if (AP.list || AP.loading) return;
+    AP.loading = true;
+    fetch('demon-db.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      AP.loading = false;
+      // every base demon and its Inexperienced variant; the other variants (Accomplished, Deformed, Vermillion…) are left out,
+      // and so are demons without a picture (the game's files have no model for most of them either)
+      AP.list = d && Array.isArray(d.demons) ? d.demons.filter((x) => x.icon && (!x.variantOf || /^Inexperienced /.test(x.name))).map((x) => ({ id: x.id, name: x.name, lname: x.name.toLowerCase(), race: x.race, level: x.level, icon: x.icon, hay: `${x.name} ${x.race}`.toLowerCase() })) : null;
+      then();
+    });
   }
   // Clicks go to the box it stands in (its canvas is bigger, for the animations, and lets clicks through).
   A.el.addEventListener('click', () => { if (A.view) A.view.poke(); });
+  // a press on it starts no text selection (quick clicks would select the nearest text on the page, under it)
+  A.el.addEventListener('mousedown', (ev) => ev.preventDefault());
   // Holding the right button and dragging sideways turns it around (left and right only); the way it is left facing is kept.
   let turning = null;
   A.el.addEventListener('contextmenu', (ev) => ev.preventDefault());
@@ -5639,30 +5752,123 @@
   A.el.addEventListener('pointercancel', endTurn);
   // it sits on top of the page: the wheel over it still scrolls the page
   A.el.addEventListener('wheel', (ev) => { $('#main').scrollBy({ top: ev.deltaY }); }, { passive: true });
+  /** A demon's model from the host: 0 is the default assistant (Black Frost). null when it can't be had. */
+  async function assistantModel(demon) {
+    try { return await host.call('assistant', demon ? { demon } : {}); } catch (e) { return null; }
+  }
+  /** Stand the model on the #assistant-view canvas; false when it can't be drawn. `place` moves the box to fit it. */
+  function mountAssistant(model, place) {
+    const yaw = parseFloat(store.get('assistant-yaw'));   // the way it was left facing
+    let view = null;
+    try { view = window.NMAssistant.mount($('#assistant-view'), model, Number.isFinite(yaw) ? { yaw } : {}); } catch (e) { view = null; }
+    if (!view) return false;
+    A.view = view;
+    if (place !== false) placeAssistant();
+    return true;
+  }
+  /** Far enough from the window's edges that its widest and lowest animation fits the way it faces now. (Turned
+   *  another way an animation can reach further: its canvas has the room, and only the window's own edge can cut it.) */
+  function placeAssistant() {
+    if (!A.view) return;
+    // Placed by how it stands idle, never closer to the edge than Black Frost is (44 px): a demon with a wide move (a
+    // rush) would otherwise stand far from the corner; that move may be cut by the window's edge for a moment.
+    document.body.style.setProperty('--assistant-right', Math.max(44, A.view.home.standR + 4) + 'px');
+    // Raised at most as much as Black Frost needs (about 20 px): a big demon whose animation dips below its feet would
+    // otherwise stand far above the window's bottom; its deepest pose may be cut by the window's edge for a moment.
+    document.body.style.setProperty('--assistant-bottom', Math.max(2, Math.min(24, A.view.home.b)) + 'px');
+  }
+  /** Its canvas gave up its 3D context for good (dispose): the next model gets a new one. */
+  function freshAssistantCanvas() {
+    const old = $('#assistant-view'), fresh = old.cloneNode(false);
+    fresh.removeAttribute('style'); fresh.className = ''; old.replaceWith(fresh);
+  }
   async function startAssistant() {
     if (A.view || A.state === 'loading' || !window.NMAssistant) return;
     A.state = 'loading'; fillAssistant();
-    let model = null;
-    try { model = await host.call('assistant'); } catch (e) { model = null; }
+    let model = await assistantModel(pickedDemon());
+    if (!model && pickedDemon()) {   // the picked demon's model can't be read (any more): Black Frost again
+      A.note = `${assistantName()}’s model couldn’t be read from the game’s files, so Black Frost is back.`;
+      store.set('assistant-demon', ''); store.set('assistant-demon-name', '');
+      model = await assistantModel(0);
+    }
     if (!assistantWanted()) { A.state = 'off'; fillAssistant(); return; }   // switched off while it loaded
     if (!model) { A.state = 'missing'; fillAssistant(); return; }
     A.el.hidden = false;
-    const yaw = parseFloat(store.get('assistant-yaw'));   // the way it was left facing
-    try { A.view = window.NMAssistant.mount($('#assistant-view'), model, Number.isFinite(yaw) ? { yaw } : {}); } catch (e) { A.view = null; }
-    if (!A.view) { A.el.hidden = true; A.state = 'failed'; fillAssistant(); return; }
-    // Far enough from the window's edges that its widest and lowest animation fits the way it faces now. (Turned
-    // another way an animation can reach further: its canvas has the room, and only the window's own edge can cut it.)
-    document.body.style.setProperty('--assistant-right', Math.max(18, A.view.home.r + 4) + 'px');
-    document.body.style.setProperty('--assistant-bottom', Math.max(2, A.view.home.b) + 'px');
+    if (!mountAssistant(model)) { A.el.hidden = true; A.state = 'failed'; fillAssistant(); return; }
     A.state = 'on'; document.body.classList.add('has-assistant'); fillAssistant();
   }
   function stopAssistant() {
+    A.swap++;   // a switch still loading is dropped
+    endSummon();
     if (A.view) A.view.dispose();
     A.view = null; A.state = 'off'; A.el.hidden = true; document.body.classList.remove('has-assistant');
-    // its canvas gave up its 3D context for good: the next start gets a new one
-    const old = $('#assistant-view'), fresh = old.cloneNode(false);
-    fresh.removeAttribute('style'); old.replaceWith(fresh);
+    freshAssistantCanvas();
     fillAssistant();
+  }
+  // the game's summoning effect pieces, asked for once (null: the game's folder isn't known, the switch is plain)
+  let summonFx;
+  async function assistantFx() {
+    if (summonFx === undefined) { try { summonFx = await host.call('assistantSummon'); } catch (e) { summonFx = null; } }
+    return summonFx;
+  }
+  /** A summoning still playing: the old demon and the effect go at once (another pick, or switched off). */
+  function endSummon() {
+    const s = A.summoning;
+    if (!s) return;
+    A.summoning = null;
+    s.arrive();
+    s.fx.remove();
+  }
+  /** The picker chose a demon: read its model from the game's files and summon it in place of the one standing there. */
+  async function switchAssistant(d) {
+    const was = { id: store.get('assistant-demon') || '', name: store.get('assistant-demon-name') || '' };
+    const isDefault = d.id === 723;   // Black Frost is the default assistant (the kept model file)
+    store.set('assistant-demon', isDefault ? '' : String(d.id)); store.set('assistant-demon-name', isDefault ? '' : d.name);
+    A.note = null;
+    if (!A.view) { fillAssistant(); if (assistantWanted() && A.state !== 'loading') startAssistant(); return; }   // off: only remembered
+    const token = ++A.swap;
+    A.state = 'loading'; fillAssistant();
+    const [model, fx] = await Promise.all([assistantModel(isDefault ? 0 : d.id), assistantFx()]);
+    if (token !== A.swap) return;   // switched off, or another demon picked meanwhile
+    if (!model) {
+      store.set('assistant-demon', was.id); store.set('assistant-demon-name', was.name);
+      A.state = 'on'; A.note = `${d.name}’s model couldn’t be read from the game’s files, so ${assistantName()} stays.`; fillAssistant();
+      return;
+    }
+    endSummon();
+    // the old demon keeps its canvas until the new one arrives; the new one gets a fresh canvas, hidden till then
+    const old = A.view, oldCanvas = $('#assistant-view');
+    A.view = null;
+    oldCanvas.removeAttribute('id');
+    const fresh = oldCanvas.cloneNode(false);
+    fresh.removeAttribute('style'); fresh.className = ''; fresh.id = 'assistant-view';
+    oldCanvas.after(fresh);
+    const box = { w: A.el.clientWidth, h: A.el.clientHeight };
+    const gone = () => { old.dispose(); oldCanvas.remove(); };
+    if (!mountAssistant(model, false)) { gone(); A.el.hidden = true; A.state = 'failed'; document.body.classList.remove('has-assistant'); fillAssistant(); return; }
+    A.state = 'on'; fillAssistant();
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!fx || still) { gone(); placeAssistant(); return; }
+    // the effect: a canvas over the box, wider and taller (the light comes from above), its ground at the box's feet
+    fresh.style.visibility = 'hidden';
+    oldCanvas.classList.add('summon-out');
+    const fxCanvas = h('canvas', { class: 'summon-fx', 'aria-hidden': 'true' });
+    const W = Math.round(box.w * 2.4), H = Math.round(box.h * 2.1), below = 24;
+    Object.assign(fxCanvas.style, { left: Math.round((box.w - W) / 2) + 'px', top: (box.h + below - H) + 'px', width: W + 'px', height: H + 'px' });
+    A.el.append(fxCanvas);
+    let arrived = false;
+    const arrive = () => {
+      if (arrived) return;
+      arrived = true;
+      gone(); placeAssistant();
+      fresh.style.visibility = ''; fresh.classList.add('summon-in');
+      setTimeout(() => fresh.classList.remove('summon-in'), 600);
+    };
+    const s = { fx: fxCanvas, arrive };
+    A.summoning = s;
+    const rgb = model.summon && Array.isArray(model.summon.color) ? model.summon.color : null;
+    await window.NMAssistant.summon(fxCanvas, fx, { box, ground: H - below - 6, color: rgb, circle: model.summon ? model.summon.circle : 1.5, arrive });
+    if (A.summoning === s) { A.summoning = null; fxCanvas.remove(); }
   }
   const assistantReact = (what) => { if (A.view) A.view.react(what); };
 
@@ -5895,7 +6101,9 @@
       const going = startAssistant();
       // asked for by name (a picture is about to be taken): wait until it stands there
       if (Q.get('assistant') === '1') await Promise.race([going.then(() => new Promise((r) => setTimeout(r, 400))), new Promise((r) => setTimeout(r, 5000))]);
+      if (PICKER) going.then(() => followSummoned(true));
     }
+    if (PICKER) setInterval(() => followSummoned(false), 5000);   // summoned another demon in game: it comes here too
     requestAnimationFrame(() => requestAnimationFrame(() => host.call('ready').catch(() => {})));
     if (host.native) {
       setInterval(pollStatus, 5000);
