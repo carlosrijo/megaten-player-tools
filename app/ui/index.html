@@ -43,6 +43,9 @@
         <button type="button" class="btn btn-ghost btn-square" id="snap-help" aria-label="Before a snapshot" data-tip="What to open in game before a snapshot">
           <span data-icon="info" aria-hidden="true"></span>
         </button>
+        <button type="button" class="btn btn-ghost btn-square" id="open-feedback" aria-label="Send feedback" data-tip="Send feedback: a bug, an idea or a question">
+          <span data-icon="chat" aria-hidden="true"></span>
+        </button>
         <button type="button" class="btn btn-ghost btn-square" id="open-settings" aria-label="Settings" data-tip="Settings">
           <span data-icon="sliders" aria-hidden="true"></span>
         </button>
@@ -152,6 +155,70 @@
       </div>
 
       <p class="dlg-note"><span data-icon="shield" aria-hidden="true"></span>This app only reads the game's memory. It never writes to the game or changes anything in it.</p>
+    </form>
+  </dialog>
+
+  <!-- Send feedback: app.js "feedback" posts it to the feedback service (feedback-worker\), which opens a GitHub issue -->
+  <dialog class="dlg dlg-feedback" id="feedback" aria-labelledby="feedback-title">
+    <form class="dlg-body" id="fb-form" novalidate>
+      <div class="dlg-head">
+        <h2 id="feedback-title">Send feedback</h2>
+        <button type="button" class="btn btn-ghost btn-square" id="fb-close" aria-label="Close"><span data-icon="x" aria-hidden="true"></span></button>
+      </div>
+
+      <div id="fb-fields" class="fb-fields">
+        <div class="field">
+          <span class="field-label" id="fb-kind-label">What is it?</span>
+          <div class="seg" id="fb-kind" role="group" aria-labelledby="fb-kind-label">
+            <button type="button" data-kind="bug" aria-pressed="false"><span class="fb-emoji" aria-hidden="true">🐞</span>Something’s wrong</button>
+            <button type="button" data-kind="idea" aria-pressed="false"><span class="fb-emoji" aria-hidden="true">💡</span>An idea</button>
+            <button type="button" data-kind="question" aria-pressed="false"><span class="fb-emoji" aria-hidden="true">❓</span>A question</button>
+          </div>
+        </div>
+
+        <label class="field">
+          <span class="field-label">Title <span class="field-opt">(optional)</span></span>
+          <input class="input" id="fb-title" maxlength="100" autocomplete="off" placeholder="A few words on what it’s about">
+        </label>
+
+        <label class="field">
+          <span class="field-label">Your message</span>
+          <textarea class="input fb-message" id="fb-message" maxlength="4000" rows="5" placeholder="What happened, or what you’d like. For a bug: what you did, what you expected and what you saw."></textarea>
+          <span class="field-help fb-count" id="fb-count"></span>
+        </label>
+
+        <!-- one section per page or tool (the sidebar's list): app.js "Send feedback" draws them -->
+        <div class="fb-sections" id="fb-sections"></div>
+        <div class="field">
+          <button type="button" class="btn btn-sm" id="fb-add"><span class="btn-icon" data-icon="plus" aria-hidden="true"></span>Add page/tool</button>
+          <span class="field-help" id="fb-add-help">About one page or tool in particular? Add it, pick it, and write about it there. Add as many as you like.</span>
+        </div>
+
+        <label class="field">
+          <span class="field-label">How to reach you <span class="field-opt">(optional)</span></span>
+          <input class="input" id="fb-contact" maxlength="60" autocomplete="off" placeholder="Your GitHub or Discord name">
+          <span class="field-help">Only if you’d like a reply. It’s shown publicly with your message, so never put an email address or a password here.</span>
+        </label>
+
+        <div class="field">
+          <label class="check-row"><input type="checkbox" id="fb-files" checked><span>📎 Attach diagnostics files</span></label>
+          <span class="field-help">The app’s setup check, logs, crash reports and settings, and your saved characters. Encrypted on your PC before they’re sent: only BABEL’s developer can open them. Not GitHub, not Cloudflare, not anyone reading the issue. Never your spreadsheets, anything read from the game, or pictures. Deleted after 180 days.</span>
+          <span class="field-help fb-error" id="fb-files-error" role="status"></span>
+        </div>
+
+        <!-- people never see this field; form-filling bots fill it in, and the service drops what they send -->
+        <input type="text" class="fb-hp" id="fb-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+        <div class="notice"><span data-icon="info" aria-hidden="true"></span><div>Your feedback becomes a <b>public issue</b> on BABEL’s GitHub page, where anyone can read it, with the app’s version and your Windows version. <span id="fb-public-more">Nothing else goes with it: no snapshots, logs or files.</span></div></div>
+
+        <div class="field-row">
+          <button type="submit" class="btn btn-primary" id="fb-send">Send</button>
+          <button type="button" class="btn" id="fb-cancel">Cancel</button>
+          <span class="field-help fb-error" id="fb-error" role="alert"></span>
+        </div>
+      </div>
+
+      <div id="fb-done" class="fb-done" role="status" hidden></div>
     </form>
   </dialog>
 

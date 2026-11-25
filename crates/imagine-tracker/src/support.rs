@@ -70,6 +70,27 @@ pub fn save_bundle(data_dir: &Path, include_names: bool, out: &Path) -> Result<V
     }))
 }
 
+/// The support bundle's files as text (the Windows user name taken out, as in the saved bundle), for the feedback form's
+/// "Attach diagnostics files": the page encrypts them before anything leaves the PC (it asks with character names kept).
+/// Nothing is written.
+pub fn feedback_files(data_dir: &Path, include_names: bool) -> Value {
+    let report = run_doctor(data_dir, false);
+    let input = bundle::Input {
+        data_dir,
+        config_path: config::file_path(),
+        settings_path: Some(AppSettings::file_path()),
+        include_names,
+        report: &report,
+        about: about::report_block(Some(&webview2_text())),
+    };
+    let files = bundle::entries(&input);
+    log::write(log::Level::Info, &format!("feedback form: {} support files gathered, character names {}", files.len(), if include_names { "included" } else { "left out" }));
+    json!({
+        "includeNames": include_names,
+        "files": files.iter().map(|(n, t)| json!({ "name": n, "text": t, "bytes": t.len() })).collect::<Vec<_>>(),
+    })
+}
+
 /// Is every running client the build the memory layouts were made for? Reads the exes (cached), not the game's memory.
 /// `unknown` lists the ones that are not (a changed exe counts too); the page warns once per `fingerprint`.
 pub fn build_check() -> Value {

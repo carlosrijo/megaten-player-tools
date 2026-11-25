@@ -59,7 +59,43 @@ pub fn write(out: &Path, input: &Input) -> Result<Summary> {
 }
 
 /// [`write`] with the redactor given (tests use a made-up user).
-pub fn write_with(out: &Path, input: &Input, mut redactor: Redactor) -> Result<Summary> {
+pub fn write_with(out: &Path, input: &Input, redactor: Redactor) -> Result<Summary> {
+    let entries = entries_with(input, redactor);
+    let partial = out.with_extension("zip.partial");
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let result = (|| -> Result<()> {
+        let file = std::fs::File::create(&partial)?;
+        let mut zip = zip::ZipWriter::new(file);
+        let now = Local::now();
+        let stamp = zip::DateTime::from_date_and_time(now.year() as u16, now.month() as u8, now.day() as u8, now.hour() as u8, now.minute() as u8, now.second() as u8)
+            .unwrap_or_default();
+        let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated).last_modified_time(stamp);
+        for (name, text) in &entries {
+            zip.start_file(name.as_str(), options)?;
+            zip.write_all(text.as_bytes())?;
+        }
+        zip.finish()?;
+        Ok(())
+    })();
+    if let Err(e) = result {
+        let _ = std::fs::remove_file(&partial);
+        return Err(e);
+    }
+    std::fs::rename(&partial, out).inspect_err(|_| {
+        let _ = std::fs::remove_file(&partial);
+    })?;
+    Ok(Summary { files: entries.iter().map(|(n, t)| (n.clone(), t.len() as u64)).collect(), zip_bytes: std::fs::metadata(out).map(|m| m.len()).unwrap_or(0) })
+}
+
+/// The bundle's files (name in the zip, text), with personal details taken out as in [`write`], without writing anything:
+/// the feedback form attaches the ones the person picks (encrypted in the page before they are sent).
+pub fn entries(input: &Input) -> Vec<(String, String)> {
+    entries_with(input, Redactor::for_this_pc())
+}
+
+fn entries_with(input: &Input, mut redactor: Redactor) -> Vec<(String, String)> {
     // which names to hide: the ones the check saw, then any the saved files name
     let mut names: Vec<String> = input.report.names.clone();
     let characters = read_text(&input.data_dir.join("characters.json"));
@@ -123,33 +159,7 @@ pub fn write_with(out: &Path, input: &Input, mut redactor: Redactor) -> Result<S
         entries.push(("settings.json".into(), clean(&t)));
     }
     entries.push(("data-listing.txt".into(), clean(&listing(input.data_dir))));
-
-    let partial = out.with_extension("zip.partial");
-    if let Some(dir) = out.parent() {
-        std::fs::create_dir_all(dir)?;
-    }
-    let result = (|| -> Result<()> {
-        let file = std::fs::File::create(&partial)?;
-        let mut zip = zip::ZipWriter::new(file);
-        let now = Local::now();
-        let stamp = zip::DateTime::from_date_and_time(now.year() as u16, now.month() as u8, now.day() as u8, now.hour() as u8, now.minute() as u8, now.second() as u8)
-            .unwrap_or_default();
-        let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated).last_modified_time(stamp);
-        for (name, text) in &entries {
-            zip.start_file(name.as_str(), options)?;
-            zip.write_all(text.as_bytes())?;
-        }
-        zip.finish()?;
-        Ok(())
-    })();
-    if let Err(e) = result {
-        let _ = std::fs::remove_file(&partial);
-        return Err(e);
-    }
-    std::fs::rename(&partial, out).inspect_err(|_| {
-        let _ = std::fs::remove_file(&partial);
-    })?;
-    Ok(Summary { files: entries.iter().map(|(n, t)| (n.clone(), t.len() as u64)).collect(), zip_bytes: std::fs::metadata(out).map(|m| m.len()).unwrap_or(0) })
+    entries
 }
 
 fn read_text(p: &Path) -> Option<String> {
