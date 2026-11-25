@@ -1388,13 +1388,13 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 /* The boost search: a list you tick in. The ones you have are listed last, dimmed, and can't be ticked. */
 .tag.dpl-kind { flex: none; min-width: 52px; justify-content: center; }
 /* a race's tier in its chip: the higher the tier, the bluer (Tokyo Night blue at tier 5) */
-/* text colour only, in big steps from grey (tier 1) to full blue (tier 5), so neighbouring tiers are told apart at a glance */
-.dpl-tier { margin-left: 4px; font-weight: 700; color: color-mix(in srgb, var(--law) var(--tier-ink, 0%), var(--text-3)); }
-.dpl-tier[data-tier="1"] { --tier-ink: 0%; }
-.dpl-tier[data-tier="2"] { --tier-ink: 25%; }
-.dpl-tier[data-tier="3"] { --tier-ink: 50%; }
-.dpl-tier[data-tier="4"] { --tier-ink: 75%; }
-.dpl-tier[data-tier="5"] { --tier-ink: 100%; }
+/* a loot-rarity ladder in Tokyo Night colours: grey, cyan, blue, purple, orange */
+.dpl-tier { margin-left: 4px; font-weight: 700; color: var(--text-3); }
+.dpl-tier[data-tier="1"] { color: #a9b1d6; }
+.dpl-tier[data-tier="2"] { color: #7dcfff; }
+.dpl-tier[data-tier="3"] { color: #7aa2f7; }
+.dpl-tier[data-tier="4"] { color: #bb9af7; }
+.dpl-tier[data-tier="5"] { color: #ff9e64; }
 .dpl-menu { max-height: 380px; padding-top: 0; }
 .dpl-menu-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -4px 2px; background: var(--surface); border-bottom: 1px solid var(--border); min-height: 34px; box-sizing: border-box; }
 .dpl-check { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); display: inline-grid; place-items: center; }
