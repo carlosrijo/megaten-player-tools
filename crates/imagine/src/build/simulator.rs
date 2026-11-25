@@ -61,6 +61,7 @@ use super::expertise::Expertise;
 use super::gear_db;
 use super::item_icons;
 use super::pipeline::{self, BlankSets};
+use super::share_code::{self, Piece, Shared};
 
 /// `Simulator.ToJson(o)`: compact JSON, relaxed escaping.
 pub fn to_json(o: &Value) -> String {
@@ -1046,6 +1047,175 @@ impl Simulator {
         Ok(to_json(&Value::Object(self.result(&b, &build)?)))
     }
 
+    // ---------- sharing a build (share_code.rs) ----------
+
+    /// The build the page sends, as a code holds it: whole (every slot, every expertise with points), numbers only.
+    fn shared_of(spec: Option<&Value>, level: i32, alignment: &str) -> Shared {
+        let mut slots: [Option<Piece>; share_code::SLOTS] = Default::default();
+        let given = match spec.at("slots") {
+            Some(Value::Array(a)) => Some(a),
+            _ => None,
+        };
+        for (k, slot) in slots.iter_mut().enumerate() {
+            let n = given.and_then(|a| a.get(k)).filter(|v| !v.is_null());
+            let id = json::int(n.at("id"));
+            if id <= 0 {
+                continue;
+            }
+            let own = |v: i32| if v > 0 { v } else { id };
+            let (fuse, mods) = (ints(n.at("fuse"), 3), ints(n.at("mods"), 5));
+            *slot = Some(Piece {
+                id,
+                basic: own(json::int(n.at("basic"))),
+                special: own(json::int(n.at("special"))),
+                tarot: json::int(n.at("tarot")).max(0),
+                soul: json::int(n.at("soul")).max(0),
+                fuse: [fuse[0], fuse[1], fuse[2]],
+                mods: [mods[0], mods[1], mods[2], mods[3], mods[4]],
+            });
+        }
+        let mut points: std::collections::BTreeMap<i32, i32> = std::collections::BTreeMap::new();
+        if let Some(Value::Object(pts)) = spec.at("points") {
+            for (key, v) in pts {
+                if let Some(id) = crate::fmt::parse_i32(key) {
+                    points.insert(id, json::int(Some(v)));
+                }
+            }
+        }
+        let cap = json::num(spec.at("cap")).filter(|c| *c >= 0.0).map(|c| if c > f64::from(i32::MAX) { i32::MAX } else { c as i32 });
+        Shared {
+            level: level.clamp(1, share_code::MAX_LEVEL),
+            alignment: share_code::ALIGNMENTS.iter().position(|a| a.eq_ignore_ascii_case(alignment)).unwrap_or(0),
+            cap,
+            slots,
+            points: points.into_iter().filter(|&(_, pts)| pts > 0).collect(),
+        }
+    }
+
+    /// Whether every number of a build names something the game data has, where it can go: pieces of the slot's kind,
+    /// crystals that kind of piece takes on that side, fusion bonuses up to the game's MAX, expertises a character can
+    /// raise, no further than their top rank. `Some(what is wrong)` when not. A code read from a stranger is only ever
+    /// used after this.
+    fn vet(&self, s: &Shared) -> Result<Option<String>> {
+        let data = self.data();
+        let items = data.items()?;
+        let sides = data.enchant_sides()?;
+        for (k, p) in s.slots.iter().enumerate() {
+            let Some(p) = p else { continue };
+            let slot = SLOT_NAMES[k];
+            let equip_type = client_reader::equip_type_of_slot(wide(k));
+            let Some(kind) = usize::try_from(equip_type).ok().and_then(|t| EQUIP_TYPE_NAMES.get(t)) else {
+                return Ok(Some(format!("the {slot} slot takes no piece")));
+            };
+            let fits = |id: i32| items.get(&id).is_some_and(|node| json::str(node.at("equipType")).as_deref() == Some(*kind));
+            if !fits(p.id) {
+                return Ok(Some(format!("the piece in the {slot} slot is not a {slot} piece in the game data")));
+            }
+            if !fits(p.basic) || !fits(p.special) {
+                return Ok(Some(format!("the {slot} piece carries the features of something that is not a {slot} piece in the game data")));
+            }
+            let bit = 1i32.wrapping_shl(equip_type as u32);
+            let takes = |id: i32, tarot: bool| id == 0 || sides.get(&(id, tarot)).is_some_and(|side| side.mask & bit != 0);
+            if !takes(p.tarot, true) || !takes(p.soul, false) {
+                return Ok(Some(format!("the {slot} piece has a tarot or soul fusion the game data has no crystal for")));
+            }
+            if p.fuse.iter().any(|v| !(0..=MAX_FUSE).contains(v)) {
+                return Ok(Some(format!("the {slot} piece has a fusion bonus above the game’s MAX")));
+            }
+            if p.mods.iter().any(|v| !(0..=0xFFFF).contains(v)) {
+                return Ok(Some(format!("the {slot} piece has a mod the game has no number for")));
+            }
+        }
+        let defs = data.expertises_client()?;
+        for &(id, pts) in &s.points {
+            match defs.get(&id) {
+                Some(d) if !d.is_chain && d.max_class > 0 => {
+                    if pts > d.max_class.saturating_mul(100_000) {
+                        return Ok(Some(format!("{} is above its top rank", d.name)));
+                    }
+                }
+                _ => return Ok(Some("it has points in an expertise the game data doesn’t let a character raise".to_string())),
+            }
+        }
+        Ok(None)
+    }
+
+    /// The build with each piece's mods as the piece can have them (see `clean`). After `vet`: the pieces are real.
+    fn tidied(&self, mut s: Shared) -> Result<Shared> {
+        for (k, slot) in s.slots.iter_mut().enumerate() {
+            if let Some(p) = slot {
+                let w = WornItem {
+                    id: p.id,
+                    tarot: p.tarot,
+                    soul: p.soul,
+                    basic: p.basic,
+                    special: p.special,
+                    mods: p.mods.to_vec(),
+                    fuse: p.fuse.to_vec(),
+                    durability: 1,
+                    max_durability: 1,
+                };
+                let mods = self.clean(w, k)?.mods;
+                for (i, m) in p.mods.iter_mut().enumerate() {
+                    *m = mods.get(i).copied().unwrap_or(0);
+                }
+            }
+        }
+        Ok(s)
+    }
+
+    /// "Share": the build the page sends (as `save_build` takes it, on its base) as a code for another player:
+    /// { code }. The base's level and alignment go with it; the base's name, the build's name and its demon do not.
+    pub fn share(&self, spec: Option<&Value>) -> Result<String> {
+        let shared = {
+            let mut st = lock(&self.state);
+            let b = self.load(&mut st, spec)?;
+            Self::shared_of(spec, b.level, &b.alignment)
+        };
+        if let Some(why) = self.vet(&shared)? {
+            return Err(user_error(format!("This build can’t be shared: {why}.")));
+        }
+        let code = share_code::encode(&self.tidied(shared)?)?;
+        Ok(to_json(&json!({ "code": code })))
+    }
+
+    /// "Import build": a code another player gave, as a build for the page: { build: { slots, points, cap, level,
+    /// alignment } }, in the page's own format, or a user error saying in plain words why not. Nothing is saved here and
+    /// nothing of the code reaches the page but numbers that passed `share_code::decode` and `vet`. The points list
+    /// every expertise a character can raise (0 where the code has none): a build is whole.
+    pub fn import(&self, args: Option<&Value>) -> Result<String> {
+        let code = match args.at("code") {
+            Some(Value::String(s)) => s.as_str(),
+            _ => "",
+        };
+        let shared = share_code::decode(code)?;
+        if self.vet(&shared)?.is_some() {
+            return Err(user_error(
+                "That build code names a piece, a crystal or an expertise rank this version of BABEL doesn’t have. It may have been made with a newer version.",
+            ));
+        }
+        let shared = self.tidied(shared)?;
+        let slots: Vec<Value> = shared
+            .slots
+            .iter()
+            .map(|p| match p {
+                None => Value::Null,
+                Some(p) => json!({ "id": p.id, "basic": p.basic, "special": p.special, "tarot": p.tarot, "soul": p.soul, "fuse": p.fuse, "mods": p.mods }),
+            })
+            .collect();
+        let mut ids: Vec<i32> = self.data().expertises_client()?.values().filter(|d| !d.is_chain && d.max_class > 0).map(|d| d.id).collect();
+        ids.sort_unstable();
+        let mut points = Row::new();
+        for id in ids {
+            let pts = shared.points.iter().find(|p| p.0 == id).map_or(0, |p| p.1);
+            points.insert(id.to_string(), json!(pts));
+        }
+        Ok(to_json(&json!({ "build": {
+            "slots": slots, "points": points, "cap": shared.cap,
+            "level": shared.level, "alignment": share_code::ALIGNMENTS[shared.alignment],
+        } })))
+    }
+
     /// What can go in a slot (0..14, ClientReader.SlotNames), with what each choice gives: every item of that kind (its
     /// basic features, its characteristics, its appearance bonus and the sets it belongs to), and the crystals that
     /// kind of piece takes as tarot and as soul fusion (with the fusion sets they belong to).
@@ -1288,6 +1458,8 @@ fn model(b: &Base, s: &Sums, demon: Option<&[i32; 12]>, resid: &[i32; 12], core_
 // read at that time. A build saved before bases existed has no "base": the page takes the character it is showing.
 
 static BUILDS_LOCK: Mutex<()> = Mutex::new(());
+/// Expertise ids are small numbers (the game has under a hundred); a saved build keeps no other key.
+const MAX_SAVED_EXPERTISE_ID: i32 = 999;
 
 /// `owner`: whose builds the ones without a "base" are: saved before builds had bases, when this file was the list of
 /// the character whose folder is the data folder itself. They get that character as their base.
@@ -1341,23 +1513,27 @@ pub fn save_build(path: &std::path::Path, b: Option<&Value>, owner: Option<&str>
         Some(Value::Array(a)) => Some(a),
         _ => None,
     };
+    // Every number is held to what a build can have at all (the same limits as a shared code, share_code.rs), so
+    // nothing the page sends, an imported build included, puts a number in the file that the game has no use for.
+    let held = |v: i32| v.clamp(0, share_code::MAX_NUMBER);
+    let held_list = |n: Option<&Value>, count: usize| -> Vec<i32> { ints(n, count).into_iter().map(held).collect() };
     for k in 0..15 {
         let n = in_slots.and_then(|a| a.get(k)).filter(|v| !v.is_null());
         let id = json::int(n.at("id"));
-        slots.push(match n.filter(|_| id > 0) {
+        slots.push(match n.filter(|_| id > 0 && id <= share_code::MAX_NUMBER) {
             None => Value::Null,
             Some(n) => json!({
-                "id": id, "basic": json::int_or(n.at("basic"), id), "special": json::int_or(n.at("special"), id),
-                "tarot": json::int(n.at("tarot")).max(0), "soul": json::int(n.at("soul")).max(0),
-                "fuse": ints(n.at("fuse"), 3), "mods": ints(n.at("mods"), 5),
+                "id": id, "basic": held(json::int_or(n.at("basic"), id)), "special": held(json::int_or(n.at("special"), id)),
+                "tarot": held(json::int(n.at("tarot"))), "soul": held(json::int(n.at("soul"))),
+                "fuse": held_list(n.at("fuse"), 3), "mods": held_list(n.at("mods"), 5),
             }),
         });
     }
     let mut points = Row::new();
     if let Some(Value::Object(pts)) = b.at("points") {
         for (key, v) in pts {
-            if let Some(eid) = crate::fmt::parse_i32(key) {
-                points.insert(eid.to_string(), json!(json::int(Some(v)).max(0)));
+            if let Some(eid) = crate::fmt::parse_i32(key).filter(|id| (0..=MAX_SAVED_EXPERTISE_ID).contains(id)) {
+                points.insert(eid.to_string(), json!(json::int(Some(v)).clamp(0, share_code::MAX_POINTS)));
             }
         }
     }
@@ -1378,7 +1554,7 @@ pub fn save_build(path: &std::path::Path, b: Option<&Value>, owner: Option<&str>
     entry.insert("slots".into(), Value::Array(slots));
     entry.insert("points".into(), Value::Object(points));
     entry.insert("cap".into(), match json::num(b.at("cap")) {
-        Some(cap) if cap >= 0.0 => json!(cap as i64),
+        Some(cap) if cap >= 0.0 => json!((cap as i64).min(i64::from(share_code::MAX_CAP))),
         _ => Value::Null,
     });
     let who = json::str(b.at("base")).unwrap_or_default().trim().to_string();

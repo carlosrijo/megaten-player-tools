@@ -2,18 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <!-- What the page may load and run: its own files and nothing else. No script written into the page runs (so text
+       that ever got shown as markup by mistake still could not run), nothing is fetched from the internet, and the page
+       can't be sent anywhere else. Pictures also come from the app's data folder (data.imagine.app is that folder, not
+       a website) and from pictures made in the page itself (data:, blob:). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://data.imagine.app; connect-src 'self' https://data.imagine.app; font-src 'self'; media-src 'self' https://data.imagine.app; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BABEL</title>
-  <script>
-    // Pick light or dark before the first paint (app.js keeps it up to date afterwards).
-    // Inside the app the window already tells the page which scheme to use (Windows' own, unless Settings says
-    // otherwise), so only the media query is asked. The stored copy is for the plain-browser stand-in.
-    try {
-      var inApp = !!(window.chrome && window.chrome.webview);
-      var t = new URLSearchParams(location.search).get('theme') || (inApp ? 'system' : (localStorage.getItem('babel-theme') || localStorage.getItem('nm-theme'))) || 'system';
-      document.documentElement.dataset.theme = (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) ? 'dark' : 'light';
-    } catch (e) { document.documentElement.dataset.theme = 'light'; }
-  </script>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -210,6 +206,17 @@
     </div>
   </dialog>
 
+
+  <!-- the Build Planner's "Share" and "Import build": a build as a text code, and such a code back as a build (app.js fills it) -->
+  <dialog class="dlg sim-code" id="sim-code" aria-labelledby="sim-code-title">
+    <div class="dlg-body">
+      <div class="dlg-head">
+        <h2 id="sim-code-title"></h2>
+        <button type="button" class="btn btn-ghost btn-square" id="sim-code-close" aria-label="Close"><span data-icon="x" aria-hidden="true"></span></button>
+      </div>
+      <div class="sim-code-body" id="sim-code-body"></div>
+    </div>
+  </dialog>
 
   <!-- the Build Planner's demon picker: the build's digitalize demon, from its base's COMP demons (a dropdown under the name in the demon band) -->
   <div class="menu" id="sim-demons" popover aria-label="Digitalize demon of the build">

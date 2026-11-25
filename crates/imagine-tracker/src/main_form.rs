@@ -590,7 +590,7 @@ impl MainForm {
 
             // ---- the Simulator tool: what another build would give (Build\Simulator.cs). Reads saved files only, writes
             //      nothing, so it is not "busy" work: it just waits its turn behind a snapshot. ----
-            "simInit" | "simulate" | "simCatalog" | "simDemons" | "simBuilds" | "simSaveBuild" | "simDeleteBuild" => {
+            "simInit" | "simulate" | "simCatalog" | "simDemons" | "simBuilds" | "simSaveBuild" | "simDeleteBuild" | "simShareCode" | "simImportCode" => {
                 let e = self.require_active("No character is selected yet. Log in to the game, then pick the character.")?;
                 if self.no_writes() && matches!(cmd, "simSaveBuild" | "simDeleteBuild") {
                     return Err(user_error("Not saving builds during a capture run."));
