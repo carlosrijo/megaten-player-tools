@@ -248,8 +248,11 @@ pub fn read_assists(mem: &GameMemory) -> Option<Vec<i32>> {
 ///    (52000.00pt = his 5,200,000 points). One subject so far. None when outside -1..127.
 ///  * `valuables`: the character's valuables (the Valuables window, key items and the server's progress flags), see
 ///    [`valuables_of`]. None when the mask is empty (not received yet).
+///  * `active_quests`: the quests in progress with their step and counters, see [`read_active_quests`]; None when the
+///    map can't be read whole.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Progress {
+    pub active_quests: Option<Vec<ActiveQuest>>,
     pub assists: Vec<i32>,
     pub skills: Option<IndexSet<i32>>,
     pub digitalized_demon: u32,
@@ -297,6 +300,7 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
     let mut level: Option<i32> = None;
     let mut ext: Option<i32> = None;
     let mut valuables: Option<IndexSet<i32>> = None;
+    let mut active: Option<Vec<ActiveQuest>> = None;
     for (r, buf) in mem.scan() {
         if r.base < 0x02000000 {
             continue;
@@ -330,6 +334,7 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
             digi = digitalized_demon_of(&b);
             (levels, points) = read_levels(mem, u32_at(&b, 128) as i64, i32_at(&b, 132));
             quests = read_quests(mem, u32_at(&b, 0x624) as i64, i32_at(&b, 0x628));
+            active = read_active_quests(mem, u32_at(&b, 0x598) as i64, i32_at(&b, 0x59C));
             let e = b[456] as i8 as i32; // one signed byte (-1 = no cap): Rokujuu had 0x00190016 here for 22
             ext = if (-1..=127).contains(&e) { Some(e) } else { None };
             valuables = valuables_of(&b[VALUABLES_AT..VALUABLES_AT + 128]);
@@ -341,6 +346,7 @@ fn search_progress(mem: &GameMemory) -> Option<Progress> {
         }
     }
     result.map(|assists| Progress {
+        active_quests: active,
         assists,
         skills,
         digitalized_demon: digi,
@@ -410,6 +416,103 @@ fn read_quests(mem: &GameMemory, head: i64, size: i32) -> Option<IndexSet<i32>> 
         stack.push(u32_at(&nb, 8) as i64);
     }
     if res.len() as i32 == size { Some(res) } else { None }
+}
+
+/// What the game has of the character's quests: in progress (see [`read_active_quests`]), completed (see
+/// [`read_quests`]; None until the client has the list) and the valuables (the hidden quest flags among them).
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct QuestState {
+    pub active: Option<Vec<ActiveQuest>>,
+    pub completed: Option<IndexSet<i32>>,
+    pub valuables: Option<IndexSet<i32>>,
+}
+
+/// Where the own character's progress object is (one pass over memory, a few hundred ms), for [`read_quest_state`]
+/// to read again cheaply. None when there is none, or two characters disagree.
+pub fn find_progress_at(mem: &GameMemory) -> Option<i64> {
+    let mut found: Option<i64> = None;
+    for (r, buf) in mem.scan() {
+        if r.base < 0x02000000 {
+            continue;
+        }
+        let buf: &[u8] = &buf;
+        let mut p = 0usize;
+        while let Some(pp) = find_u32(buf, RECORD_VTABLE, p) {
+            p = pp + 4;
+            if pp + 28 > buf.len() || (u32_at(buf, pp + 8) & 0x100) == 0 {
+                continue;
+            }
+            let prog = u32_at(buf, pp + 24) as i64;
+            if prog < 0x10000 || mem.read(prog, 4).is_none_or(|b| u32_at(&b, 0) != PROGRESS_VTABLE) {
+                continue;
+            }
+            if found.is_some_and(|f| f != prog) {
+                return None;
+            }
+            found = Some(prog);
+        }
+    }
+    found
+}
+
+/// The quests as the progress object at `at` has them now; None when `at` is no longer a progress object (the
+/// character logged out: find it again).
+pub fn read_quest_state(mem: &GameMemory, at: i64) -> Option<QuestState> {
+    let b = mem.read(at, 0x630)?;
+    if u32_at(&b, 0) != PROGRESS_VTABLE {
+        return None;
+    }
+    Some(QuestState {
+        active: read_active_quests(mem, u32_at(&b, 0x598) as i64, i32_at(&b, 0x59C)),
+        completed: read_quests(mem, u32_at(&b, 0x624) as i64, i32_at(&b, 0x628)),
+        valuables: valuables_of(&b[VALUABLES_AT..VALUABLES_AT + 128]),
+    })
+}
+
+/// A quest in progress: its id, the step it is at (the game's phase, 0-based) and its progress counters, one per
+/// objective of that step in the quest's order (kills so far).
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ActiveQuest {
+    pub id: i32,
+    pub step: i32,
+    pub counters: Vec<i32>,
+}
+
+/// How many counters a quest node holds (+20 .. +36).
+const QUEST_COUNTERS: usize = 5;
+
+/// The quests in progress (the quest window's Current Quests, episode quests too): a std::map {head, size} at progress
+/// +0x598, one 72-byte node per accepted quest. Node +12 quest id (u16; the upper half is junk), +18 the current step
+/// (u8, 0-based), +20 the progress counters (u32 each, one per objective). Found 2026-11-25 (notes\memory-map
+/// \quests-and-npcs.md): 11 nodes = the 11 quests in the window; The Bright Ball That Opens the Door at step 7 = its
+/// 8th objective; Shibuya Yagiya Support 1 counters 7, 13, 5 = the window's Bucca-boo 7/10, Ocypete 13/20, High
+/// Pixie 5/5; accepting Act 3 (904) added its node at step 0. None when the map can't be read whole.
+pub fn read_active_quests(mem: &GameMemory, head: i64, size: i32) -> Option<Vec<ActiveQuest>> {
+    if head < 0x10000 || !(0..=500).contains(&size) {
+        return None;
+    }
+    if size == 0 {
+        return Some(Vec::new());
+    }
+    let hb = mem.read(head, 8)?;
+    let mut res: Vec<ActiveQuest> = Vec::new();
+    let mut seen: IndexSet<i64> = IndexSet::new();
+    let mut stack: Vec<i64> = vec![u32_at(&hb, 4) as i64];
+    while let Some(n) = stack.pop() {
+        if n < 0x10000 || n == head || !seen.insert(n) || seen.len() as i64 > size as i64 + 1 {
+            continue;
+        }
+        let nb = mem.read(n, 20 + 4 * QUEST_COUNTERS)?;
+        let counters = (0..QUEST_COUNTERS).map(|i| i32_at(&nb, 20 + 4 * i)).collect();
+        res.push(ActiveQuest { id: u16_at(&nb, 12) as i32, step: nb[18] as i32, counters });
+        stack.push(u32_at(&nb, 0) as i64);
+        stack.push(u32_at(&nb, 8) as i64);
+    }
+    if res.len() as i32 != size {
+        return None;
+    }
+    res.sort_by_key(|q| q.id);
+    Some(res)
 }
 
 /// The learned-skill map (progress +412/+416): skill id -> switched on. Node +12 skill id, +16 the id again, then the

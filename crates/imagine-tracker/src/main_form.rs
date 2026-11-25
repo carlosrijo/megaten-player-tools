@@ -61,6 +61,8 @@ pub struct MainForm {
     last_bundle: Mutex<Option<PathBuf>>,
     /// the log level of this run, by name
     log_level: String,
+    /// where the active character's progress object was found (client pid, address, when), for questProgress
+    quest_at: Mutex<Option<(u32, i64, std::time::Instant)>>,
 }
 
 impl MainForm {
@@ -96,6 +98,7 @@ impl MainForm {
             scan: Mutex::new(None),
             page_log: support::PageLog::new(),
             last_bundle: Mutex::new(None),
+            quest_at: Mutex::new(None),
             log_level: level_name,
         })
     }
@@ -593,6 +596,39 @@ impl MainForm {
                 .to_string())
             }
 
+            "questProgress" => {
+                // The active character's quests right now, read from its client (read-only, one pass for its progress
+                // object): { active: [{ id, step, counters }] (step 0-based, counters one per objective), completed:
+                // [ids] or null (the client only has that list once Quest Completion Bonuses has been opened), flags:
+                // [valuable ids] or null (the game's hidden quest flags among them) }. "null" when it can't be told (no
+                // character, its client isn't running, or it isn't logged in). The Quest Guide asks every few seconds
+                // while it is open, so it is logged quietly.
+                let Some(name) = self.active_entry().and_then(|e| e.name.clone()) else { return Ok("null".to_string()) };
+                let proc = match imagine::game::client_reader::find_client(&name) {
+                    Ok(p) => p,
+                    Err(e) if imagine::error::is_user_error(&e) => return Ok("null".to_string()),
+                    Err(e) => return Err(e),
+                };
+                use imagine::game::demon_reader as dr;
+                let mem = imagine::memory::GameMemory::new(proc.id())?;
+                // finding the progress object takes a pass over the game's memory (~400 ms); reading it again ~1 ms, so
+                // where it is is kept for this client until it stops being one (logout, another character), and looked
+                // up again each minute: a freed object keeps its vtable, so a stale address could still look right
+                let pid = proc.id();
+                let known = self.quest_at.lock().unwrap().filter(|(p, _, t)| *p == pid && t.elapsed().as_secs() < 60).map(|(_, at, _)| at);
+                let mut p = known.and_then(|at| dr::read_quest_state(&mem, at));
+                if p.is_none() {
+                    let at = dr::find_progress_at(&mem);
+                    *self.quest_at.lock().unwrap() = at.map(|a| (pid, a, std::time::Instant::now()));
+                    p = at.and_then(|a| dr::read_quest_state(&mem, a));
+                }
+                let Some(p) = p else { return Ok("null".to_string()) };
+                let active = p.active.as_ref().map(|v| v.iter().map(|q| json!({ "id": q.id, "step": q.step, "counters": q.counters })).collect::<Vec<_>>());
+                let completed = p.completed.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
+                let flags = p.valuables.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
+                Ok(json!({ "active": active, "completed": completed, "flags": flags }).to_string())
+            }
+
             "assistantSummon" => {
                 // The game's summoning effect pieces (pictures from its effect models, its summoning sound) for the
                 // assistant picker's change of demon (a feature behind a flag). Only read; "null" while the game's
@@ -956,7 +992,7 @@ fn log_command(cmd: &str, ms: u128, r: &std::thread::Result<Result<String>>) {
     if name == "log" {
         return;
     }
-    let quiet = matches!(name.as_str(), "status" | "summonedDemon");
+    let quiet = matches!(name.as_str(), "status" | "summonedDemon" | "questProgress");
     match r {
         Ok(Ok(_)) => log::write(if quiet { Level::Debug } else { Level::Info }, &format!("command {name}: ok ({ms} ms)")),
         Ok(Err(e)) if imagine::error::is_user_error(e) => log::write(Level::Info, &format!("command {name}: user error: {e} ({ms} ms)")),

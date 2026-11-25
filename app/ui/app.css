@@ -948,6 +948,18 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .q-answers { display: grid; gap: 4px; }
 .q-answer { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; }
 .q-not { color: var(--text-3); }
+/* live progress from the game: the step you are on in the app's purple, steps behind you dimmed */
+.q-live-tag { margin-left: 8px; border-color: var(--accent-edge); background: var(--accent); color: var(--accent-ink); }
+.q-done-tag { margin-left: 8px; }
+.q-steps > li.q-now { box-shadow: inset 3px 0 0 var(--accent); padding-left: 40px; margin-left: -6px; }
+.q-steps > li.q-now::before { left: 6px; background: var(--accent); color: var(--accent-ink); }
+.q-steps > li.q-past > * { opacity: .55; }
+.q-step-title .q-live-tag { margin-left: 0; }
+.q-step-title .q-live-tag:not(:first-child) { margin-left: 8px; }
+.q-count { font-weight: 600; margin-left: 6px; }
+.q-goal-met .q-count::after { content: " ✓"; }
+.q-talks > li.q-talk-done > :not(:first-child) { opacity: .55; }
+.q-live-note { margin: 0 0 8px; }
 .q-fx { color: var(--text-2); }
 .q-tree { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
 .q-tree .q-tree { margin-top: 6px; padding-left: 14px; border-left: 1px solid var(--border); }

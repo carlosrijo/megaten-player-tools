@@ -213,6 +213,12 @@ higher); a change that depends on your current alignment says so.
 Where a step can be done in more than one way (for example a Law or a Chaos answer) every way is shown with what it
 changes. Search by quest, person, place or item; the chips filter by kind of quest.
 
+With the game running and the character logged in, the guide follows your own progress (read from the game every few
+seconds while it is open, read-only): an **In progress** group with your quests, a "Step 2 of 4" mark on each, the step
+you are on highlighted with your kill counts (7/10), and which talks of a multi-talk step you have done. Quests you
+have finished are marked "Done" once the game has the list, which is after Quest Completion Bonuses (Menu > Quest >
+View Quest Bonuses) has been opened once.
+
 The quest names, objective text and counts are the game's own. The steps come from the public server's event files
 (468 quests have them; the rest show the game's objective text only), so IMAGINE may have changed them. Valuables
 (key items) are shown with the name in the game data, which is Japanese.
