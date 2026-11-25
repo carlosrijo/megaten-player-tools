@@ -960,6 +960,11 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .q-goal-met .q-count::after { content: " ✓"; }
 .q-talks > li.q-talk-done > :not(:first-child) { opacity: .55; }
 .q-live-note { margin: 0 0 8px; }
+/* the zone you are in (live): outlined in the app's purple, beside the filled "You are here" of the step */
+.q-here-tag { margin-left: 8px; border-color: var(--accent); color: var(--text); }
+/* what has to happen before a step's talk: "first ... then ..." */
+.q-before { margin: 0 0 4px; padding: 0; list-style: none; display: grid; gap: 6px; }
+.q-before > li { display: grid; gap: 3px; padding-bottom: 6px; border-bottom: 1px dashed var(--border); }
 .q-fx { color: var(--text-2); }
 .q-tree { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
 .q-tree .q-tree { margin-top: 6px; padding-left: 14px; border-left: 1px solid var(--border); }

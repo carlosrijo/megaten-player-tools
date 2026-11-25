@@ -425,7 +425,15 @@ pub struct QuestState {
     pub active: Option<Vec<ActiveQuest>>,
     pub completed: Option<IndexSet<i32>>,
     pub valuables: Option<IndexSet<i32>>,
+    /// The zone the character is in (the server's zone id, as in its zone-<id>.xml): progress +1712 (u32), the same
+    /// value as the status object +124. Found 2026-11-25 with a 1-second watcher while the user played: it followed
+    /// every zone change (200101 -> 110101 -> 30101 -> 5555562 -> 50101 -> 200101), and 50101 was the zone of the NPCs
+    /// in view. None when it reads 0.
+    pub zone: Option<i32>,
 }
+
+/// Where the current zone id sits in the progress object.
+const ZONE_AT: usize = 1712;
 
 /// Where the own character's progress object is (one pass over memory, a few hundred ms), for [`read_quest_state`]
 /// to read again cheaply. None when there is none, or two characters disagree.
@@ -458,11 +466,13 @@ pub fn find_progress_at(mem: &GameMemory) -> Option<i64> {
 /// The quests as the progress object at `at` has them now; None when `at` is no longer a progress object (the
 /// character logged out: find it again).
 pub fn read_quest_state(mem: &GameMemory, at: i64) -> Option<QuestState> {
-    let b = mem.read(at, 0x630)?;
+    let b = mem.read(at, ZONE_AT + 4)?;
     if u32_at(&b, 0) != PROGRESS_VTABLE {
         return None;
     }
+    let zone = u32_at(&b, ZONE_AT);
     Some(QuestState {
+        zone: if zone > 0 && zone < 100_000_000 { Some(zone as i32) } else { None },
         active: read_active_quests(mem, u32_at(&b, 0x598) as i64, i32_at(&b, 0x59C)),
         completed: read_quests(mem, u32_at(&b, 0x624) as i64, i32_at(&b, 0x628)),
         valuables: valuables_of(&b[VALUABLES_AT..VALUABLES_AT + 128]),

@@ -217,7 +217,13 @@ With the game running and the character logged in, the guide follows your own pr
 seconds while it is open, read-only): an **In progress** group with your quests, a "Step 2 of 4" mark on each, the step
 you are on highlighted with your kill counts (7/10), and which talks of a multi-talk step you have done. Quests you
 have finished are marked "Done" once the game has the list, which is after Quest Completion Bonuses (Menu > Quest >
-View Quest Bonuses) has been opened once.
+View Quest Bonuses) has been opened once. It also knows the zone you are in: people and places of a step that are in
+that zone are marked "In your zone", quests whose current step has something to do there get a "Here" mark, and the
+**To do here** group lists them.
+
+When a step's person can only be reached a certain way, the guide says what comes first: who takes you there (Act 3:
+Curse of the Gods: talk to DB Saito in TMG Building, "Go to the Heliport"), and what makes the person appear (walk to
+the spot, answer, defeat DB Kisugi; then he is there to talk to).
 
 The quest names, objective text and counts are the game's own. The steps come from the public server's event files
 (468 quests have them; the rest show the game's objective text only), so IMAGINE may have changed them. Valuables

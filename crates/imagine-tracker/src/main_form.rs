@@ -600,7 +600,8 @@ impl MainForm {
                 // The active character's quests right now, read from its client (read-only, one pass for its progress
                 // object): { active: [{ id, step, counters }] (step 0-based, counters one per objective), completed:
                 // [ids] or null (the client only has that list once Quest Completion Bonuses has been opened), flags:
-                // [valuable ids] or null (the game's hidden quest flags among them) }. "null" when it can't be told (no
+                // [valuable ids] or null (the game's hidden quest flags among them), zone: the zone id the character is
+                // in, or null }. "null" when it can't be told (no
                 // character, its client isn't running, or it isn't logged in). The Quest Guide asks every few seconds
                 // while it is open, so it is logged quietly.
                 let Some(name) = self.active_entry().and_then(|e| e.name.clone()) else { return Ok("null".to_string()) };
@@ -626,7 +627,7 @@ impl MainForm {
                 let active = p.active.as_ref().map(|v| v.iter().map(|q| json!({ "id": q.id, "step": q.step, "counters": q.counters })).collect::<Vec<_>>());
                 let completed = p.completed.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
                 let flags = p.valuables.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
-                Ok(json!({ "active": active, "completed": completed, "flags": flags }).to_string())
+                Ok(json!({ "active": active, "completed": completed, "flags": flags, "zone": p.zone }).to_string())
             }
 
             "assistantSummon" => {

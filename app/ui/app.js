@@ -258,11 +258,11 @@
         if (cmd === 'assistantSummon') return get('../../data/cache/models/summon.json', null);
         // the summoned demon "in game": the saved one (dash\summoned.json); ?summon=<demon id> stands in for another
         // the character's quests "in game": a sample (Demonization with two of its four talks done, Shibuya Yagiya
-        // Support 1 with the window's counters, Act 13 at Uriel); ?quests=none: no game, ?completed=none: list not loaded
+        // Support 1 with the window's counters, Act 13 at Uriel, Act 3 at the heliport; in Shinjuku Babel, ?zone=<id> for another); ?quests=none: no game, ?completed=none: list not loaded
         if (cmd === 'questProgress') {
           if (Q.get('quests') === 'none') return null;
-          return { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }],
-            completed: Q.get('completed') === 'none' ? null : [1, 2, 3, 4, 5, 901], flags: [82, 84] };
+          return { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }],
+            completed: Q.get('completed') === 'none' ? null : [1, 2, 3, 4, 5, 901], flags: [82, 84], zone: Number(Q.get('zone')) || 50101 };
         }
         if (cmd === 'summonedDemon') {
           if (Q.get('summon')) return { type: Number(Q.get('summon')) || 0, name: Q.get('summonName') || 'A demon' };
@@ -2566,18 +2566,25 @@
     const w = ws[0];
     const at = questAt;
     let sentence;
+    // what has to happen first (getting there, the person appearing): "First ... Then ..." before the step's own talk
+    const before = (w.before || []).map((b, i) => h('li', null,
+      h('div', { class: 'q-do' }, h('span', { class: 'q-or', text: i ? 'then' : 'first' }), h('span', null,
+        b.kind === 'npc' ? ['Talk to ', h('b', { text: b.who }), at(b), '.'] : [h('b', { text: b.kind === 'spot' ? 'Walk to the spot' : 'Examine the quest object' }), at(b), '.'], hereTag(b))),
+      b.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: b.asks })) : null,
+      questAnswers(b), questRow('You fight', b.fights), b.result ? h('div', { class: 'q-hint', text: b.result }) : null));
     if (w.talks) sentence = [h('b', { text: w.do }), ':'];   // the people follow as a list
     else if (w.who) {
       const seen = new Set(), people = ws.filter((x) => { const k = x.who + at(x); return !seen.has(k) && seen.add(k); });
       sentence = ['Talk to ', people.map((x, i) => [i ? (i === people.length - 1 ? ' or ' : ', ') : '', h('b', { text: x.who }), at(x)]), '.'];
     } else sentence = [h('b', { text: w.do }), w.kind === 'event' ? '' : at(w), '.'];
     return h('div', { class: 'q-way' },
-      h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, h('span', null, sentence)),
+      before.length ? h('ol', { class: 'q-before' }, before) : null,
+      h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, before.length ? h('span', { class: 'q-or', text: 'then' }) : null, h('span', null, sentence), hereTag(w)),
       w.talks ? h('ol', { class: 'q-talks' }, w.talks.map((t) => {
         // done once the game holds the hidden flag this talk sets (live)
         const did = t.flag && S.quest.live && S.quest.live.flags.has(t.flag);
         return h('li', { class: did ? 'q-talk-done' : null },
-          h('div', null, h('b', { text: t.who }), at(t), did ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null), questAnswers(t));
+          h('div', null, h('b', { text: t.who }), at(t), did ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null, did ? null : hereTag(t)), questAnswers(t));
       })) : null,
       w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
       w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
@@ -2606,6 +2613,16 @@
   // the hidden quest flags among them (a talk of a multi-talk step is done once its flag is held). ----
   const questLive = (q) => (S.quest.live ? S.quest.live.active.get(q.id) || null : null);
   const questDone = (q) => !!(S.quest.live && S.quest.live.completed && S.quest.live.completed.has(q.id));
+  // the zone the character is in (live), and whether a place of the guide is it
+  const questHere = (x) => !!(x && x.zoneId && S.quest.live && S.quest.live.zone && x.zoneId === S.quest.live.zone);
+  const hereTag = (x) => (questHere(x) ? h('span', { class: 'tag q-here-tag', text: 'In your zone' }) : null);
+  /** Every place a step sends you: its ways, what comes before them, and the talks of a multi-talk step. */
+  const stepPlaces = (s) => (s.ways || []).flatMap((w) => [w, ...(w.before || []), ...(w.talks || [])]);
+  /** A quest in progress whose current step has something to do in the zone you are in. */
+  const questHereNow = (q) => {
+    const a = questLive(q);
+    return !!a && q.steps.some((s) => s.phase === a.step && stepPlaces(s).some(questHere));
+  };
   function questLiveTick() {
     const D = S.quest;
     if (D.liveBusy || S.page !== 'quests' || document.hidden) return;
@@ -2615,7 +2632,7 @@
       const raw = JSON.stringify(r && r.active ? r : null);
       if (raw === D.liveRaw) return;
       D.liveRaw = raw;
-      D.live = r && r.active ? { active: new Map(r.active.map((x) => [x.id, x])), completed: r.completed ? new Set(r.completed) : null, flags: new Set(r.flags || []) } : null;
+      D.live = r && r.active ? { active: new Map(r.active.map((x) => [x.id, x])), completed: r.completed ? new Set(r.completed) : null, flags: new Set(r.flags || []), zone: r.zone || null } : null;
       // the first time the game shows quests in progress, open on them (unless another group was picked)
       if (D.live && D.live.active.size && !D.typeTouched && D.type === 'available') D.type = 'progress';
       if (!D.live && D.type === 'progress') D.type = 'available';
@@ -2632,6 +2649,8 @@
     }
     return questDone(q) ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null;
   }
+  /** "Here" when the step you are on is in the zone you are in. */
+  const questHereBadge = (q) => (questHereNow(q) ? h('span', { class: 'tag q-here-tag', text: 'Here' }) : null);
   /** A goal of the step you are on with the game's counter: "Defeat 10 × Bucca-boo  7/10". */
   function questGoal(s, i, g, a) {
     const c = a && s.phase === a.step && s.goalCount && s.goalCount[i];
@@ -2670,17 +2689,20 @@
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
       'Quest names, objectives and kill or collect counts are the game\'s own. The steps (who to talk to, what to pick, rewards) come from the public server\'s event files, so IMAGINE may have changed them. Valuables are shown with the name the game data has, which is Japanese.')));
     const quests = D.data.quests;
-    const inType = (q, t) => (t === 'progress' ? !!questLive(q) : t === 'available' ? q.type !== 'Inactive' : q.type === t);
+    const inType = (q, t) => (t === 'here' ? questHereNow(q) : t === 'progress' ? !!questLive(q) : t === 'available' ? q.type !== 'Inactive' : q.type === t);
+    // zone id -> its name, from the places the guide names
+    const zoneNames = new Map();
+    quests.forEach((q) => q.steps.forEach((s) => stepPlaces(s).forEach((x) => { if (x.zoneId && x.where && !zoneNames.has(x.zoneId)) zoneNames.set(x.zoneId, x.where); })));
     // the game's own progress: a status line, and an "In progress" group first while the game has quests in progress
     const liveLine = h('p', { class: 'note q-live-note' });
     const drawLive = () => {
       const L = D.live;
       liveLine.textContent = !L ? 'Not following the game right now: with IMAGINE running and the character logged in, the quests you have in progress are marked here, with the step you are on.'
-        : `Following the game: ${L.active.size} quest${L.active.size === 1 ? '' : 's'} in progress.` + (L.completed ? ` ${quests.filter(questDone).length} finished.` : ' To see which quests you have finished, open Quest Completion Bonuses in game once (Menu > Quest > View Quest Bonuses).');
+        : `Following the game: ${L.active.size} quest${L.active.size === 1 ? '' : 's'} in progress${L.zone && zoneNames.has(L.zone) ? `, you are in ${zoneNames.get(L.zone)}` : ''}.` + (L.completed ? ` ${quests.filter(questDone).length} finished.` : ' To see which quests you have finished, open Quest Completion Bonuses in game once (Menu > Quest > View Quest Bonuses).');
     };
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of quest' });
     const body = h('tbody');
-    const drawChips = () => chips.replaceChildren(...(D.live ? [['progress', 'In progress'], ...QUEST_TYPES] : QUEST_TYPES).map(([id, label]) =>
+    const drawChips = () => chips.replaceChildren(...(D.live ? [['progress', 'In progress'], ...(quests.some(questHereNow) || D.type === 'here' ? [['here', 'To do here']] : []), ...QUEST_TYPES] : QUEST_TYPES).map(([id, label]) =>
       h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.type === id), onclick: () => { D.type = id; D.typeTouched = true; drawChips(); draw(); } },
         label, h('span', { class: 'count', text: quests.filter((q) => inType(q, id)).length }))));
     const draw = () => {
@@ -2693,7 +2715,7 @@
         const where = [x.zone, x.grid ? `(${x.grid})` : ''].filter(Boolean).join(' ');
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
-            h('span', { class: 'chev' }, icon('chevron')), h('span', null, x.title, x.walkthrough ? null : h('span', { class: 'src-count', text: 'objective only' }), questBadge(x)))),
+            h('span', { class: 'chev' }, icon('chevron')), h('span', null, x.title, x.walkthrough ? null : h('span', { class: 'src-count', text: 'objective only' }), questBadge(x), questHereBadge(x)))),
           h('td', null, x.client || h('span', { class: 'zero', text: '—' }), where ? h('span', { class: 'src-count', text: where }) : null),
           h('td', null, h('span', { class: 'tag', text: x.type }))));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 }, questDetail(x))));
