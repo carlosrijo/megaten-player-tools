@@ -980,7 +980,10 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .qt-card.hidden { background: none; }
 .qt-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; user-select: none; }
 .qt-card.hidden .qt-head { cursor: default; padding: 6px 12px; }
-.qt-head:hover { background: var(--surface-2); }
+/* closed, the whole card opens it (its head and the line of what comes next), so all of it lights up; open, only the
+   head closes it */
+.qt-card.open .qt-head:hover, .qt-card:not(.open):not(.hidden):hover { background: var(--surface-2); }
+.qt-card:not(.open):not(.hidden) .qt-peek { cursor: pointer; }
 .qt-card.hidden .qt-head:hover { background: none; }
 .qt-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .qt-head .chev { flex: none; display: inline-flex; transition: transform .15s; color: var(--text-3); }

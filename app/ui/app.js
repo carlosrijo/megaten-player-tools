@@ -2778,7 +2778,7 @@
           h('b', { text: L ? 'Following the game' : 'Not following the game' }),
           L ? h('div', { class: 'qt-facts' }, facts) : h('div', { class: 'note', text: 'With IMAGINE running and this character logged in, your quests in progress show here, with the step you are on.' }),
           L && !L.completed ? h('div', { class: 'note', text: 'To count the quests you have finished, open Quest Completion Bonuses in game once (Menu > Quest > View Quest Bonuses).' }) : null),
-        h('button', { type: 'button', class: 'btn btn-sm', onclick: panelOpen }, icon('flag'), 'Open the panel over the game'));
+        h('button', { type: 'button', class: 'btn btn-sm btn-primary', onclick: panelOpen }, icon('flag'), 'Open the panel over the game'));
     };
     const card = (q, a, isHidden) => {
       const s = q.steps.find((x) => x.phase === a.step);
@@ -2805,7 +2805,7 @@
             s ? h('div', { class: 'qt-next' }, questBlocks(s, q)) : h('p', { class: 'note', text: `The game has this quest at its step ${a.step + 1}, which the guide has no step for.` }),
             s && !q.walkthrough ? h('p', { class: 'note', text: 'The server\'s event files do not cover this quest: only the game\'s own objective text is known.' }) : null,
             h('div', { class: 'qt-foot' }, h('button', { type: 'button', class: 'link-btn', onclick: () => openInQuestDb(q.title) }, 'Open in Quest Database')))
-          : h('div', { class: 'qt-peek', text: trackerPeek(s) }));
+          : h('div', { class: 'qt-peek', text: trackerPeek(s), onclick: toggle }));
     };
     const draw = () => {
       const L = D.live;
