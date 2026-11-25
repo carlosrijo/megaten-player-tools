@@ -39,6 +39,10 @@
     trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 10.5v6M14 10.5v6"/>',
     share: '<path d="M12 15V4M8 7.5l4-4 4 4"/><path d="M5 12.5v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/>',
     download: '<path d="M12 4v11M8 11.5l4 4 4-4"/><path d="M5 15v3.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V15"/>',
+    flag: '<path d="M5.5 21V4"/><path d="M5.5 4.5h11.5l-2.2 4.2 2.2 4.3H5.5"/>',
+    // shown / hidden (the quest panel); panel.js has the same two
+    eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+    'eye-off': '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>',
   };
   function icon(name) {
     const s = document.createElementNS(SVG, 'svg');
@@ -259,6 +263,11 @@
         // the summoned demon "in game": the saved one (dash\summoned.json); ?summon=<demon id> stands in for another
         // the character's quests "in game": a sample (Demonization with two of its four talks done, Shibuya Yagiya
         // Support 1 with the window's counters, Act 13 at Uriel, Act 3 at the heliport; in Shinjuku Babel, ?zone=<id> for another); ?quests=none: no game, ?completed=none: list not loaded
+        // the quest panel: in the browser, a small popup with panel.html (it uses the same sample)
+        if (cmd === 'panel') {
+          if (!args || args.open !== false) window.open('panel.html' + location.search, 'babel-panel', 'width=380,height=300');
+          return true;
+        }
         if (cmd === 'questProgress') {
           if (Q.get('quests') === 'none') return null;
           return { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }],
@@ -354,7 +363,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['quests', 'Quest Guide', 'book'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['quests', 'Quest Database', 'book'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -2452,13 +2461,15 @@
     return page;
   }
 
-  // ---------- Tools: Quest Guide ----------
+  // ---------- Tools: Quest Database (and the Quest Tracker below, which uses the same data) ----------
   // quest-guide.json is made by tools\questexport: the game's quest tables for the text and needs, the server's event
   // files for the steps (who to talk to, where, what to pick, what you get). It sits beside this file.
   const QUEST_TYPES = [['available', 'Available'], ['Normal', 'Normal'], ['Repeatable', 'Repeatable'], ['Event', 'Event'], ['I-Time', 'I-Time'], ['Episode', 'Episode'], ['Inactive', 'Inactive']];
   function loadQuests() {
     if (S.quest.state !== 'idle') return;
     S.quest.state = 'loading';
+    // the people's pictures (npc-pictures.json beside this file); the names show without them until it loads
+    fetch('npc-pictures.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((f) => { S.quest.faces = f; if (f && S.quest.data && (S.page === 'quests' || S.page === 'tracker')) render(); });
     fetch('quest-guide.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
       S.quest.data = d; S.quest.state = d ? 'ready' : 'failed';
       if (d) d.quests.forEach((q) => {
@@ -2466,7 +2477,7 @@
         q.steps.forEach((s) => { words.push(s.objective || '', ...(s.goals || [])); (s.ways || []).forEach((w) => words.push(w.do, w.who || '', w.where || '', ...(w.talks || []).flatMap((t) => [t.who, t.where]), ...(w.get || []), ...(w.lose || []), ...(w.needs || []))); });
         q.hay = words.join(' ').toLowerCase();
       });
-      if (S.page === 'quests') render();
+      if (S.page === 'quests' || S.page === 'tracker') render();
     });
   }
   /**
@@ -2506,6 +2517,12 @@
     return h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('div', { class: 'q-answers' }, lines,
       x.oldText ? h('div', { class: 'q-hint', text: 'Worded as before the game update of 19 November; the game may word these answers differently now (often in Japanese).' }) : null));
   }
+  /** A person's name, with their picture before it when there is one (npc-pictures.json: the NPC's hNPCData id -> the
+   *  picture: their own model's, or the Demon Database's for one drawn as a demon). */
+  const questWho = (x) => {
+    const src = x.npc != null && S.quest.faces ? S.quest.faces[x.npc] : null;
+    return src ? h('span', { class: 'q-who' }, h('img', { class: 'q-face', src, alt: '', onerror: (e) => e.target.remove() }), h('b', { text: x.who })) : h('b', { text: x.who });
+  };
   const questAt = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
   const questRow = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
   /** What you need, fight, get, hand over and what changes for a way. What changes is one line each: an alignment change
@@ -2555,7 +2572,7 @@
     }
     return h('div', { class: 'q-way' },
       h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null,
-        h('span', null, ['Talk to ', h('b', { text: w.who }), questAt(w), '. Your answers decide what happens:'])),
+        h('span', null, ['Talk to ', questWho(w), questAt(w), '. Your answers decide what happens:'])),
       w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
       w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
       lead ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('div', { class: 'q-answer' }, ...lead)) : null,
@@ -2569,22 +2586,22 @@
     // what has to happen first (getting there, the person appearing): "First ... Then ..." before the step's own talk
     const before = (w.before || []).map((b, i) => h('li', null,
       h('div', { class: 'q-do' }, h('span', { class: 'q-or', text: i ? 'then' : 'first' }), h('span', null,
-        b.kind === 'npc' ? ['Talk to ', h('b', { text: b.who }), at(b), '.'] : [h('b', { text: b.kind === 'spot' ? 'Walk to the spot' : 'Examine the quest object' }), at(b), '.'], hereTag(b))),
+        b.kind === 'npc' ? ['Talk to ', questWho(b), at(b), '.'] : [h('b', { text: b.kind === 'spot' ? 'Walk to the spot' : 'Examine the quest object' }), at(b), '.'], hereTag(b))),
       b.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: b.asks })) : null,
       questAnswers(b), questRow('You fight', b.fights), b.result ? h('div', { class: 'q-hint', text: b.result }) : null));
     if (w.talks) sentence = [h('b', { text: w.do }), ':'];   // the people follow as a list
     else if (w.who) {
       const seen = new Set(), people = ws.filter((x) => { const k = x.who + at(x); return !seen.has(k) && seen.add(k); });
-      sentence = ['Talk to ', people.map((x, i) => [i ? (i === people.length - 1 ? ' or ' : ', ') : '', h('b', { text: x.who }), at(x)]), '.'];
+      sentence = ['Talk to ', people.map((x, i) => [i ? (i === people.length - 1 ? ' or ' : ', ') : '', questWho(x), at(x)]), '.'];
     } else sentence = [h('b', { text: w.do }), w.kind === 'event' ? '' : at(w), '.'];
     return h('div', { class: 'q-way' },
       before.length ? h('ol', { class: 'q-before' }, before) : null,
       h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, before.length ? h('span', { class: 'q-or', text: 'then' }) : null, h('span', null, sentence), hereTag(w)),
       w.talks ? h('ol', { class: 'q-talks' }, w.talks.map((t) => {
         // done once the game holds the hidden flag this talk sets (live)
-        const did = t.flag && S.quest.live && S.quest.live.flags.has(t.flag);
+        const did = S.page === 'tracker' && t.flag && S.quest.live && S.quest.live.flags.has(t.flag);
         return h('li', { class: did ? 'q-talk-done' : null },
-          h('div', null, h('b', { text: t.who }), at(t), did ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null, did ? null : hereTag(t)), questAnswers(t));
+          h('div', null, questWho(t), at(t), did ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null, did ? null : hereTag(t)), questAnswers(t));
       })) : null,
       w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
       w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
@@ -2608,13 +2625,14 @@
     return out;
   }
   // ---- live progress: the character's quests as the game has them (page command questProgress), read every few
-  // seconds while the Quest Guide is open. In progress: the quest's step (0-based, the `phase` of the guide's steps) and
+  // seconds while the Quest Tracker is open. In progress: the quest's step (0-based, the `phase` of the guide's steps) and
   // its counters; completed: only once the game has the list (Quest Completion Bonuses opened); flags: valuables held,
   // the hidden quest flags among them (a talk of a multi-talk step is done once its flag is held). ----
   const questLive = (q) => (S.quest.live ? S.quest.live.active.get(q.id) || null : null);
   const questDone = (q) => !!(S.quest.live && S.quest.live.completed && S.quest.live.completed.has(q.id));
   // the zone the character is in (live), and whether a place of the guide is it
-  const questHere = (x) => !!(x && x.zoneId && S.quest.live && S.quest.live.zone && x.zoneId === S.quest.live.zone);
+  // (only the Quest Tracker marks places and talks with what the game says; the Quest Database stays a plain guide)
+  const questHere = (x) => S.page === 'tracker' && !!(x && x.zoneId && S.quest.live && S.quest.live.zone && x.zoneId === S.quest.live.zone);
   const hereTag = (x) => (questHere(x) ? h('span', { class: 'tag q-here-tag', text: 'In your zone' }) : null);
   /** Every place a step sends you: its ways, what comes before them, and the talks of a multi-talk step. */
   const stepPlaces = (s) => (s.ways || []).flatMap((w) => [w, ...(w.before || []), ...(w.talks || [])]);
@@ -2625,7 +2643,7 @@
   };
   function questLiveTick() {
     const D = S.quest;
-    if (D.liveBusy || S.page !== 'quests' || document.hidden) return;
+    if (D.liveBusy || S.page !== 'tracker' || document.hidden) return;
     D.liveBusy = true;
     Promise.resolve(host.call('questProgress')).catch(() => null).then((r) => {
       D.liveBusy = false;
@@ -2633,46 +2651,31 @@
       if (raw === D.liveRaw) return;
       D.liveRaw = raw;
       D.live = r && r.active ? { active: new Map(r.active.map((x) => [x.id, x])), completed: r.completed ? new Set(r.completed) : null, flags: new Set(r.flags || []), zone: r.zone || null } : null;
-      // the first time the game shows quests in progress, open on them (unless another group was picked)
-      if (D.live && D.live.active.size && !D.typeTouched && D.type === 'available') D.type = 'progress';
-      if (!D.live && D.type === 'progress') D.type = 'available';
-      if (S.page === 'quests' && D.onLive) D.onLive();
+      if (S.page === 'tracker' && D.onLive) D.onLive();
     });
   }
   setInterval(questLiveTick, 5000);
-  /** "Step 2 of 4" for a quest in progress, "Done" for a finished one. */
-  function questBadge(q) {
-    const a = questLive(q);
-    if (a) {
-      const steps = q.steps.filter((s) => s.phase >= 0), i = steps.findIndex((s) => s.phase === a.step);
-      return h('span', { class: 'tag q-live-tag', text: i >= 0 ? `Step ${i + 1} of ${steps.length}` : 'In progress' });
-    }
-    return questDone(q) ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null;
+  // ---- the quest panel (panel.html, a small window the app keeps above the game) ----
+  // It lists every quest in progress; the ones hidden from it are in localStorage babel-panel-hidden, which the panel
+  // reads and writes too (same profile).
+  const panelHiddenIds = () => { try { return JSON.parse(store.get('panel-hidden') || '[]'); } catch (e) { return []; } };
+  const panelHidden = (q) => panelHiddenIds().includes(q.id);
+  function panelHide(q, hide) {
+    const ids = panelHiddenIds().filter((id) => id !== q.id);
+    if (hide) ids.push(q.id);
+    store.set('panel-hidden', JSON.stringify(ids));
   }
-  /** "Here" when the step you are on is in the zone you are in. */
-  const questHereBadge = (q) => (questHereNow(q) ? h('span', { class: 'tag q-here-tag', text: 'Here' }) : null);
-  /** A goal of the step you are on with the game's counter: "Defeat 10 × Bucca-boo  7/10". */
-  function questGoal(s, i, g, a) {
-    const c = a && s.phase === a.step && s.goalCount && s.goalCount[i];
-    if (!c || c[2] !== 'kill') return h('li', { text: g });
-    const have = Math.min(n0(a.counters[c[0]]), c[1]);
-    return h('li', { class: have >= c[1] ? 'q-goal-met' : null }, g, h('span', { class: 'q-count', text: ` ${have}/${c[1]}` }));
-  }
+  const panelOpen = () => Promise.resolve(host.call('panel', { open: true })).catch(() => null);
   function questDetail(q) {
     const box = h('div', { class: 'q-detail' });
-    const a = questLive(q), done = questDone(q);
     if (q.needs.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Before you can start' }), h('span', null, q.needs.join(' · '))));
     if (!q.walkthrough) box.append(h('p', { class: 'note', text: 'The server\'s event files do not cover this quest, so only the game\'s own objective text is shown.' }));
-    if (a && !q.steps.some((s) => s.phase === a.step)) box.append(h('p', { class: 'note', text: `You have this quest at the game's step ${a.step + 1}, which the guide has no step for.` }));
     const ol = h('ol', { class: 'q-steps' });
-    q.steps.forEach((s) => {
-      const now = a && s.phase === a.step, past = done || (a && s.phase < a.step);
-      ol.append(h('li', { class: now ? 'q-now' : past ? 'q-past' : null },
-        /^Step /.test(s.label) && !now ? null : h('div', { class: 'q-step-title' }, /^Step /.test(s.label) ? null : s.label, now ? h('span', { class: 'tag q-live-tag', text: 'You are here' }) : null),   // the number is already in the circle
-        s.objective ? h('p', { class: 'q-objective', text: s.objective }) : null,
-        s.goals && s.goals.length ? h('ul', { class: 'q-goals' }, s.goals.map((g, i) => questGoal(s, i, g, a))) : null,
-        questBlocks(s, q)));
-    });
+    q.steps.forEach((s) => ol.append(h('li', null,
+      /^Step /.test(s.label) ? null : h('div', { class: 'q-step-title', text: s.label }),   // the number is already in the circle
+      s.objective ? h('p', { class: 'q-objective', text: s.objective }) : null,
+      s.goals && s.goals.length ? h('ul', { class: 'q-goals' }, s.goals.map((g) => h('li', { text: g }))) : null,
+      questBlocks(s, q))));
     if (q.steps.length) box.append(ol);
     else box.append(h('p', { class: 'note', text: 'The data has no steps or objective text for this quest.' }));
     if (q.unlocks && q.unlocks.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Opens' }), h('span', null, q.unlocks.join(' · '))));
@@ -2689,21 +2692,11 @@
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
       'Quest names, objectives and kill or collect counts are the game\'s own. The steps (who to talk to, what to pick, rewards) come from the public server\'s event files, so IMAGINE may have changed them. Valuables are shown with the name the game data has, which is Japanese.')));
     const quests = D.data.quests;
-    const inType = (q, t) => (t === 'here' ? questHereNow(q) : t === 'progress' ? !!questLive(q) : t === 'available' ? q.type !== 'Inactive' : q.type === t);
-    // zone id -> its name, from the places the guide names
-    const zoneNames = new Map();
-    quests.forEach((q) => q.steps.forEach((s) => stepPlaces(s).forEach((x) => { if (x.zoneId && x.where && !zoneNames.has(x.zoneId)) zoneNames.set(x.zoneId, x.where); })));
-    // the game's own progress: a status line, and an "In progress" group first while the game has quests in progress
-    const liveLine = h('p', { class: 'note q-live-note' });
-    const drawLive = () => {
-      const L = D.live;
-      liveLine.textContent = !L ? 'Not following the game right now: with IMAGINE running and the character logged in, the quests you have in progress are marked here, with the step you are on.'
-        : `Following the game: ${L.active.size} quest${L.active.size === 1 ? '' : 's'} in progress${L.zone && zoneNames.has(L.zone) ? `, you are in ${zoneNames.get(L.zone)}` : ''}.` + (L.completed ? ` ${quests.filter(questDone).length} finished.` : ' To see which quests you have finished, open Quest Completion Bonuses in game once (Menu > Quest > View Quest Bonuses).');
-    };
+    const inType = (q, t) => (t === 'available' ? q.type !== 'Inactive' : q.type === t);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of quest' });
     const body = h('tbody');
-    const drawChips = () => chips.replaceChildren(...(D.live ? [['progress', 'In progress'], ...(quests.some(questHereNow) || D.type === 'here' ? [['here', 'To do here']] : []), ...QUEST_TYPES] : QUEST_TYPES).map(([id, label]) =>
-      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.type === id), onclick: () => { D.type = id; D.typeTouched = true; drawChips(); draw(); } },
+    const drawChips = () => chips.replaceChildren(...QUEST_TYPES.map(([id, label]) =>
+      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.type === id), onclick: () => { D.type = id; drawChips(); draw(); } },
         label, h('span', { class: 'count', text: quests.filter((q) => inType(q, id)).length }))));
     const draw = () => {
       body.replaceChildren();
@@ -2715,21 +2708,128 @@
         const where = [x.zone, x.grid ? `(${x.grid})` : ''].filter(Boolean).join(' ');
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
-            h('span', { class: 'chev' }, icon('chevron')), h('span', null, x.title, x.walkthrough ? null : h('span', { class: 'src-count', text: 'objective only' }), questBadge(x), questHereBadge(x)))),
+            h('span', { class: 'chev' }, icon('chevron')), h('span', null, x.title, x.walkthrough ? null : h('span', { class: 'src-count', text: 'objective only' })))),
           h('td', null, x.client || h('span', { class: 'zero', text: '—' }), where ? h('span', { class: 'src-count', text: where }) : null),
           h('td', null, h('span', { class: 'tag', text: x.type }))));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 }, questDetail(x))));
       });
       if (!rows.length) body.append(h('tr', null, h('td', { colspan: 3, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No quest in this group.' })));
     };
-    page.append(liveLine);
     page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a quest, person, place or item', (v) => { D.q = v; draw(); }), chips));
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Quest' }), h('th', { scope: 'col', text: 'Client and place' }), h('th', { scope: 'col', text: 'Kind' }))), body)));
     page.append(h('p', { class: 'note', text: `${quests.length} quests, ${quests.filter((x) => x.walkthrough).length} with steps from the event files. Data made on ${D.data.generatedAt}. Numbers in brackets are the map grid position. Alignment runs from −10,000 (Law) to +10,000 (Chaos): −5,000 or lower is Law, +5,000 or higher is Chaos, Neutral in between.` }));
-    // the game's progress changed: redraw the list and the line in place (keeps the search box and what is open)
-    D.onLive = () => { drawLive(); drawChips(); draw(); };
-    drawLive(); drawChips(); draw();
+    drawChips(); draw();
+    return page;
+  }
+  // ---------- Tools: Quest Tracker ----------
+  // The quests the character has in progress, read from the game every few seconds while this page is open (page command
+  // questProgress, see questLiveTick), each with the step it is at and what to do next, from the same quest-guide.json as
+  // the Quest Database. Hiding a quest here hides it in the quest panel too (babel-panel-hidden, same list); which cards
+  // are open is kept in tracker-open (id -> open; otherwise open when its step has something to do in your zone).
+  function trackerOpenMap() { try { return JSON.parse(store.get('tracker-open') || '{}') || {}; } catch (e) { return {}; } }
+  /** One line saying what comes next, for a closed card. */
+  function trackerPeek(s) {
+    const w = s && (s.ways || [])[0];
+    if (!w) return s && s.objective ? s.objective : 'The guide has no instructions for this step.';
+    const at = questAt;
+    if (w.talks) {
+      const left = w.talks.filter((t) => !(t.flag && S.quest.live && S.quest.live.flags.has(t.flag)));
+      return `${w.do}: ${left.map((t) => t.who).join(', ')}`;
+    }
+    const first = (w.before || []).find((b) => !(S.quest.live && S.quest.live.zone && S.quest.live.zone === w.zoneId && b.zoneId !== w.zoneId));
+    if (first) return `First: ${first.kind === 'npc' ? `talk to ${first.who}` : first.kind === 'spot' ? 'walk to the spot' : 'examine the quest object'}${at(first)}`;
+    return w.who ? `Talk to ${w.who}${at(w)}` : `${w.do}${at(w)}`;
+  }
+  /** A kill goal of the step you are on, with the game's counter as a bar. */
+  function trackerGoal(s, i, g, a) {
+    const c = s.goalCount && s.goalCount[i];
+    if (!c || c[2] !== 'kill') return h('div', { class: 'qt-goal' }, h('span', { text: g }));
+    const have = Math.min(n0(a.counters[c[0]]), c[1]), met = have >= c[1];
+    return h('div', { class: 'qt-goal' + (met ? ' met' : '') },
+      h('span', { text: g }), h('span', { class: 'qt-count', text: `${have}/${c[1]}${met ? ' ✓' : ''}` }),
+      h('span', { class: 'qt-bar', 'aria-hidden': 'true' }, h('span', { style: `width:${Math.round((have / c[1]) * 100)}%` })));
+  }
+  function pageTracker() {
+    const D = S.quest, page = h('div', { class: 'page page-tracker' });
+    loadQuests();
+    page.append(pageHead('Your quests in progress, read from the game, with the step you are on and what to do next.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The quest list could not be loaded (quest-guide.json is missing beside the page).' : 'Loading the quests…' }));
+      return page;
+    }
+    const quests = D.data.quests, byId = new Map(quests.map((q) => [q.id, q]));
+    // zone id -> its name, from the places the guide names
+    if (!D.zoneNames) {
+      D.zoneNames = new Map();
+      quests.forEach((q) => q.steps.forEach((s) => stepPlaces(s).forEach((x) => { if (x.zoneId && x.where && !D.zoneNames.has(x.zoneId)) D.zoneNames.set(x.zoneId, x.where); })));
+    }
+    const status = h('div', { class: 'qt-status' }), list = h('div', { class: 'qt-list' });
+    let showHidden = false;
+    const drawStatus = () => {
+      const L = D.live;
+      const facts = !L ? [] : [
+        h('span', { class: 'qt-fact' }, h('b', { text: String(L.active.size) }), ` quest${L.active.size === 1 ? '' : 's'} in progress`),
+        L.completed ? h('span', { class: 'qt-fact' }, h('b', { text: String(quests.filter(questDone).length) }), ' finished') : null,
+        L.zone && D.zoneNames.has(L.zone) ? h('span', { class: 'qt-fact' }, 'you are in ', h('b', { text: D.zoneNames.get(L.zone) })) : null];
+      status.replaceChildren(
+        h('span', { class: 'qt-dot-live' + (L ? ' on' : '') }),
+        h('div', { class: 'qt-status-text' },
+          h('b', { text: L ? 'Following the game' : 'Not following the game' }),
+          L ? h('div', { class: 'qt-facts' }, facts) : h('div', { class: 'note', text: 'With IMAGINE running and this character logged in, your quests in progress show here, with the step you are on.' }),
+          L && !L.completed ? h('div', { class: 'note', text: 'To count the quests you have finished, open Quest Completion Bonuses in game once (Menu > Quest > View Quest Bonuses).' }) : null),
+        h('button', { type: 'button', class: 'btn btn-sm', onclick: panelOpen }, icon('flag'), 'Open the panel over the game'));
+    };
+    const card = (q, a, isHidden) => {
+      const s = q.steps.find((x) => x.phase === a.step);
+      const steps = q.steps.filter((x) => x.phase >= 0), idx = steps.findIndex((x) => x.phase === a.step);
+      const here = questHereNow(q), map = trackerOpenMap();
+      const open = !isHidden && (q.id in map ? map[q.id] : here);
+      const toggle = () => { if (isHidden) return; const m = trackerOpenMap(); m[q.id] = !open; store.set('tracker-open', JSON.stringify(m)); draw(); };
+      const hide = (ev) => { ev.stopPropagation(); panelHide(q, !isHidden); draw(); };
+      return h('section', { class: 'qt-card' + (here ? ' here' : '') + (open ? ' open' : '') + (isHidden ? ' hidden' : '') },
+        h('div', { class: 'qt-head', role: isHidden ? null : 'button', tabindex: isHidden ? null : '0', 'aria-expanded': isHidden ? null : String(open), onclick: toggle,
+          onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } } },
+          isHidden ? null : h('span', { class: 'chev' }, icon('chevron')),
+          h('div', { class: 'qt-title' }, h('b', { text: q.title }), h('span', { class: 'qt-sub', text: [q.type, q.client].filter(Boolean).join(' · ') })),
+          here ? h('span', { class: 'tag q-here-tag', text: 'here' }) : null,
+          h('span', { class: 'qt-steps', title: idx >= 0 ? `Step ${idx + 1} of ${steps.length}` : 'In progress' },
+            steps.map((x, j) => h('span', { class: 'qt-pip' + (j < idx ? ' done' : j === idx ? ' now' : '') })),
+            h('span', { class: 'qt-stepno', text: idx >= 0 ? `${idx + 1}/${steps.length}` : '…' })),
+          // the icon is what a click does: the crossed-out eye hides, the eye shows again
+          h('button', { type: 'button', class: 'icon-btn qt-hide', title: isHidden ? 'Show this quest again' : 'Hide this quest (here and in the panel)', 'aria-label': isHidden ? 'Show this quest again' : 'Hide this quest', onclick: hide }, icon(isHidden ? 'eye' : 'eye-off'))),
+        isHidden ? null : open
+          ? h('div', { class: 'qt-body' },
+            s && s.objective ? h('p', { class: 'qt-objective', text: s.objective }) : null,
+            s && s.goals && s.goals.length ? h('div', { class: 'qt-goals' }, s.goals.map((g, i) => trackerGoal(s, i, g, a))) : null,
+            s ? h('div', { class: 'qt-next' }, questBlocks(s, q)) : h('p', { class: 'note', text: `The game has this quest at its step ${a.step + 1}, which the guide has no step for.` }),
+            s && !q.walkthrough ? h('p', { class: 'note', text: 'The server\'s event files do not cover this quest: only the game\'s own objective text is known.' }) : null,
+            h('div', { class: 'qt-foot' }, h('button', { type: 'button', class: 'link-btn', onclick: () => openInQuestDb(q.title) }, 'Open in Quest Database')))
+          : h('div', { class: 'qt-peek', text: trackerPeek(s) }));
+    };
+    const draw = () => {
+      const L = D.live;
+      if (!L) { list.replaceChildren(h('div', { class: 'qt-empty' }, icon('flag'), h('p', { text: 'No quests to show yet: BABEL reads them from the game while you play.' }))); return; }
+      const hid = new Set(panelHiddenIds());
+      const mine = [...L.active.values()].filter((a) => byId.has(a.id)).map((a) => ({ q: byId.get(a.id), a, here: questHereNow(byId.get(a.id)) }))
+        .sort((x, y) => (y.here - x.here) || x.q.title.localeCompare(y.q.title));
+      const hiddenQ = mine.filter((x) => hid.has(x.q.id)), shownQ = mine.filter((x) => !hid.has(x.q.id));
+      const out = [];
+      if (hiddenQ.length) {
+        const toggle = () => { showHidden = !showHidden; draw(); };
+        out.push(h('button', { type: 'button', class: 'qt-hidden-head', 'aria-expanded': String(showHidden), onclick: toggle },
+          h('span', { class: 'chev' + (showHidden ? ' open' : '') }, icon('chevron')), icon('eye-off'), `Hidden (${hiddenQ.length})`));
+        if (showHidden) out.push(h('div', { class: 'qt-hidden' }, hiddenQ.map((x) => card(x.q, x.a, true))));
+      }
+      out.push(...shownQ.map((x) => card(x.q, x.a, false)));
+      if (!shownQ.length) out.push(h('p', { class: 'note', text: mine.length ? 'Every quest in progress is hidden: open “Hidden” above to show one again.' : 'No quest in progress.' }));
+      list.replaceChildren(...out);
+    };
+    page.append(status, list);
+    page.append(h('p', { class: 'note', text: 'Read from the game every few seconds while this page is open (only read, never changed). The steps are the Quest Database\'s: from the public server\'s event files, so IMAGINE may have changed some.' }));
+    // the game's progress changed: redraw in place
+    D.onLive = () => { drawStatus(); draw(); };
+    drawStatus(); draw();
     questLiveTick();
     return page;
   }
@@ -5718,17 +5818,19 @@
     const kids = [demonPic(E, d), h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: d.label }), h('span', { class: 'fus-chip-sub', text: `${d.raceName} · Lv ${lvl === undefined ? d.lvl : lvl}` })), tag || null];
     return onclick ? h('button', { type: 'button', class: 'fus-chip', 'data-tip': `How to make ${d.label}`, onclick: () => onclick(d) }, kids) : h('span', { class: 'fus-chip' }, kids);
   }
-  /** A line that names a quest (Quest “Act 13: …”): the line, and a button that opens that quest in the Quest Guide. */
+  /** Open the Quest Database on the quests with this title (searched for, and opened). */
+  function openInQuestDb(title) {
+    const D = S.quest, found = D.data ? D.data.quests.filter((q) => q.title === title) : [];
+    D.q = title; D.type = found.length && found.every((q) => q.type === 'Inactive') ? 'Inactive' : 'available'; D.open = new Set(found.map((q) => q.id));
+    go('quests');
+  }
+  /** A line that names a quest (Quest “Act 13: …”): the line, and a button that opens that quest in the Quest Database. */
   function questLine(text) {
     const m = /Quest “([^”]+)”/.exec(text || '');
     if (!m) return text;
     loadQuests();   // so the quest can be opened, not only searched for, when the button is clicked
     const title = m[1];
-    return [text, h('button', { type: 'button', class: 'btn btn-sm q-link', onclick: () => {
-      const D = S.quest, found = D.data ? D.data.quests.filter((q) => q.title === title) : [];
-      D.q = title; D.type = found.length && found.every((q) => q.type === 'Inactive') ? 'Inactive' : 'available'; D.open = new Set(found.map((q) => q.id));
-      go('quests');
-    } }, 'Open in Quest Guide')];
+    return [text, h('button', { type: 'button', class: 'btn btn-sm q-link', onclick: () => openInQuestDb(title) }, 'Open in Quest Database')];
   }
   function pluginLine(E, sp) {
     if (!sp || !sp.plugin) return null;
@@ -5882,7 +5984,7 @@
     return box;
   }
 
-  const RENDER = { sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, dplan: pageDigiPlan, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
+  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, dplan: pageDigiPlan, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;

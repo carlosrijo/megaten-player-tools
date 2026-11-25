@@ -34,6 +34,13 @@ pub enum UserEvent {
     Resize { w: i32, h: i32, reply: Reply<()> },
     /// `Close()`
     Close,
+    /// The quest panel (a small always-on-top window over the game, panel.html): open it (near the game window `near`,
+    /// when known) or hide it.
+    Panel { open: bool, near: Option<isize> },
+    /// A message for the quest panel's page (the live quest progress, as JSON text).
+    PanelPost(String),
+    /// The panel's page asks to be moved: start dragging its window with the mouse button that is down.
+    PanelDrag,
 }
 
 #[derive(Clone)]
@@ -98,5 +105,17 @@ impl Ui {
 
     pub fn close(&self) {
         let _ = self.send(UserEvent::Close);
+    }
+
+    pub fn panel(&self, open: bool, near: Option<isize>) {
+        let _ = self.send(UserEvent::Panel { open, near });
+    }
+
+    pub fn panel_post(&self, json: String) {
+        let _ = self.send(UserEvent::PanelPost(json));
+    }
+
+    pub fn panel_drag(&self) {
+        let _ = self.send(UserEvent::PanelDrag);
     }
 }

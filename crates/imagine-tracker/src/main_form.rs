@@ -197,6 +197,39 @@ impl MainForm {
         });
     }
 
+    /// The active character's quests right now, read from its client (read-only, one pass for its progress object):
+    /// { active: [{ id, step, counters }] (step 0-based, counters one per objective), completed: [ids] or null (the
+    /// client only has that list once Quest Completion Bonuses has been opened), flags: [valuable ids] or null (the
+    /// game's hidden quest flags among them), zone: the zone id the character is in, or null }. "null" when it can't be
+    /// told (no character, its client isn't running, or it isn't logged in). For the Quest Tracker (page command
+    /// questProgress) and the quest panel (main.rs reads it while the panel is open).
+    pub fn quest_progress(&self) -> Result<String> {
+        let Some(name) = self.active_entry().and_then(|e| e.name.clone()) else { return Ok("null".to_string()) };
+        let proc = match imagine::game::client_reader::find_client(&name) {
+            Ok(p) => p,
+            Err(e) if imagine::error::is_user_error(&e) => return Ok("null".to_string()),
+            Err(e) => return Err(e),
+        };
+        use imagine::game::demon_reader as dr;
+        let mem = imagine::memory::GameMemory::new(proc.id())?;
+        // finding the progress object takes a pass over the game's memory (~400 ms); reading it again ~1 ms, so where
+        // it is is kept for this client until it stops being one (logout, another character), and looked up again each
+        // minute: a freed object keeps its vtable, so a stale address could still look right
+        let pid = proc.id();
+        let known = self.quest_at.lock().unwrap().filter(|(p, _, t)| *p == pid && t.elapsed().as_secs() < 60).map(|(_, at, _)| at);
+        let mut p = known.and_then(|at| dr::read_quest_state(&mem, at));
+        if p.is_none() {
+            let at = dr::find_progress_at(&mem);
+            *self.quest_at.lock().unwrap() = at.map(|a| (pid, a, std::time::Instant::now()));
+            p = at.and_then(|a| dr::read_quest_state(&mem, a));
+        }
+        let Some(p) = p else { return Ok("null".to_string()) };
+        let active = p.active.as_ref().map(|v| v.iter().map(|q| json!({ "id": q.id, "step": q.step, "counters": q.counters })).collect::<Vec<_>>());
+        let completed = p.completed.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
+        let flags = p.valuables.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
+        Ok(json!({ "active": active, "completed": completed, "flags": flags, "zone": p.zone }).to_string())
+    }
+
     fn active_entry(&self) -> Option<CharacterEntry> {
         let s = self.st();
         s.active.as_ref().and_then(|n| s.chars.find(n)).cloned()
@@ -596,38 +629,25 @@ impl MainForm {
                 .to_string())
             }
 
-            "questProgress" => {
-                // The active character's quests right now, read from its client (read-only, one pass for its progress
-                // object): { active: [{ id, step, counters }] (step 0-based, counters one per objective), completed:
-                // [ids] or null (the client only has that list once Quest Completion Bonuses has been opened), flags:
-                // [valuable ids] or null (the game's hidden quest flags among them), zone: the zone id the character is
-                // in, or null }. "null" when it can't be told (no
-                // character, its client isn't running, or it isn't logged in). The Quest Guide asks every few seconds
-                // while it is open, so it is logged quietly.
-                let Some(name) = self.active_entry().and_then(|e| e.name.clone()) else { return Ok("null".to_string()) };
-                let proc = match imagine::game::client_reader::find_client(&name) {
-                    Ok(p) => p,
-                    Err(e) if imagine::error::is_user_error(&e) => return Ok("null".to_string()),
-                    Err(e) => return Err(e),
+            // the Quest Tracker asks every few seconds while it is open, so it is logged quietly (see quest_progress)
+            "questProgress" => self.quest_progress(),
+
+            "panel" => {
+                // { open }: show the quest panel (a small window over the game: panel.html) or hide it. It opens at the
+                // active character's game window when that is running. While it is open the app reads the quest
+                // progress itself and sends it to the panel (main.rs), so it keeps going when this window is minimised.
+                let open = args.get("open").and_then(Value::as_bool).unwrap_or(true);
+                let near = if open {
+                    self.active_entry()
+                        .and_then(|e| e.name.clone())
+                        .and_then(|n| imagine::game::client_reader::find_client(&n).ok())
+                        .map(|p| p.main_window_handle())
+                        .filter(|h| *h != 0)
+                } else {
+                    None
                 };
-                use imagine::game::demon_reader as dr;
-                let mem = imagine::memory::GameMemory::new(proc.id())?;
-                // finding the progress object takes a pass over the game's memory (~400 ms); reading it again ~1 ms, so
-                // where it is is kept for this client until it stops being one (logout, another character), and looked
-                // up again each minute: a freed object keeps its vtable, so a stale address could still look right
-                let pid = proc.id();
-                let known = self.quest_at.lock().unwrap().filter(|(p, _, t)| *p == pid && t.elapsed().as_secs() < 60).map(|(_, at, _)| at);
-                let mut p = known.and_then(|at| dr::read_quest_state(&mem, at));
-                if p.is_none() {
-                    let at = dr::find_progress_at(&mem);
-                    *self.quest_at.lock().unwrap() = at.map(|a| (pid, a, std::time::Instant::now()));
-                    p = at.and_then(|a| dr::read_quest_state(&mem, a));
-                }
-                let Some(p) = p else { return Ok("null".to_string()) };
-                let active = p.active.as_ref().map(|v| v.iter().map(|q| json!({ "id": q.id, "step": q.step, "counters": q.counters })).collect::<Vec<_>>());
-                let completed = p.completed.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
-                let flags = p.valuables.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
-                Ok(json!({ "active": active, "completed": completed, "flags": flags, "zone": p.zone }).to_string())
+                self.ui.panel(open, near);
+                Ok(json!(open).to_string())
             }
 
             "assistantSummon" => {

@@ -131,6 +131,16 @@ pub fn set_outer_bounds(hwnd: HWND, x: i32, y: i32, w: i32, h: i32) {
     }
 }
 
+/// Another window's outer rectangle (the game's, for placing the quest panel over it); None when it is gone or minimised.
+pub fn window_rect(raw: isize) -> Option<RECT> {
+    let mut r = RECT::default();
+    unsafe {
+        GetWindowRect(hwnd_of(raw), &mut r).ok()?;
+    }
+    // a minimised window sits at -32000
+    if r.right - r.left < 100 || r.left <= -30000 { None } else { Some(r) }
+}
+
 pub fn outer_size(hwnd: HWND) -> (i32, i32) {
     let mut r = RECT::default();
     unsafe {

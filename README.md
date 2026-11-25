@@ -197,37 +197,52 @@ To record what players confirmed on IMAGINE, add notes to `app\ui\dcm-notes.json
 (`"notes": { "<item id>": ["Sold by X in Y for Z"] }`; the item id is shown at the bottom of an opened row).
 They appear first, marked "IMAGINE note".
 
-### Tools: Quest Guide
+### Tools: Quest Database
 
-Under **Tools** in the left bar. Lists every quest (680; 665 without the inactive ones) and, when opened, what to do
-step by step: who to talk to and where (zone and map grid position), which dialogue choices to pick, what you need,
-what you get and give, and the kill or collect counts. For each question the answer to pick is shown with the other
-answers that work as well and the ones that do not move the quest on, worded as the game words them now (since the
-update of 19 November several answers are in Japanese in game, and the guide shows them that way). When a step needs several talks (Act 1:
-Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with their answers and whether the order matters.
-When your answers decide the outcome (Uriel in Act 13: Envoy for the Messian Church moves your alignment to a
-different place for each line of answers, and one of them also gives you Inexperienced Uriel) the talk is shown as a
-tree of answers, each branch with what it gives and what it does to your alignment. Alignment changes say whether they
-add to it, set it, or move it part of the way to a value, and which side that is (Law −5,000 or lower, Chaos +5,000 or
-higher); a change that depends on your current alignment says so.
-Where a step can be done in more than one way (for example a Law or a Chaos answer) every way is shown with what it
-changes. Search by quest, person, place or item; the chips filter by kind of quest.
-
-With the game running and the character logged in, the guide follows your own progress (read from the game every few
-seconds while it is open, read-only): an **In progress** group with your quests, a "Step 2 of 4" mark on each, the step
-you are on highlighted with your kill counts (7/10), and which talks of a multi-talk step you have done. Quests you
-have finished are marked "Done" once the game has the list, which is after Quest Completion Bonuses (Menu > Quest >
-View Quest Bonuses) has been opened once. It also knows the zone you are in: people and places of a step that are in
-that zone are marked "In your zone", quests whose current step has something to do there get a "Here" mark, and the
-**To do here** group lists them.
-
-When a step's person can only be reached a certain way, the guide says what comes first: who takes you there (Act 3:
-Curse of the Gods: talk to DB Saito in TMG Building, "Go to the Heliport"), and what makes the person appear (walk to
-the spot, answer, defeat DB Kisugi; then he is there to talk to).
+Under **Tools** in the left bar, next to the other databases. Lists every quest (680; 665 without the inactive ones)
+and, when opened, what to do step by step: who to talk to and where (zone and map grid position), which dialogue
+choices to pick, what you need, what you get and give, and the kill or collect counts. For each question the answer to
+pick is shown with the other answers that work as well and the ones that do not move the quest on, worded as the game
+words them now (since the update of 19 November several answers are in Japanese in game, and the guide shows them that
+way). When a step needs several talks (Act 1: Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with
+their answers and whether the order matters. When your answers decide the outcome (Uriel in Act 13: Envoy for the
+Messian Church moves your alignment to a different place for each line of answers, and one of them also gives you
+Inexperienced Uriel) the talk is shown as a tree of answers, each branch with what it gives and what it does to your
+alignment. Alignment changes say whether they add to it, set it, or move it part of the way to a value, and which side
+that is (Law −5,000 or lower, Chaos +5,000 or higher); a change that depends on your current alignment says so.
+People show their picture before their name (Quest Database, Quest Tracker and the panel) when there is one: taken
+from their 3D model in the client, or, for someone who appears as a demon (Uriel, Surt), that demon's Demon Database
+picture. People made of separate body parts, like most humans in the game, have no picture yet.
+When a step's person can only be reached a certain way, it says what comes first: who takes you there (Act 3: Curse of
+the Gods: talk to DB Saito in TMG Building, "Go to the Heliport"), and what makes the person appear (walk to the spot,
+answer, defeat DB Kisugi; then he is there to talk to). Where a step can be done in more than one way (for example a
+Law or a Chaos answer) every way is shown with what it changes. Search by quest, person, place or item; the chips
+filter by kind of quest.
 
 The quest names, objective text and counts are the game's own. The steps come from the public server's event files
 (468 quests have them; the rest show the game's objective text only), so IMAGINE may have changed them. Valuables
 (key items) are shown with the name in the game data, which is Japanese.
+
+### Tools: Quest Tracker
+
+Under **Tools** in the left bar. With the game running and the character logged in, it follows your own quests (read
+from the game every few seconds while the page is open; only read, never changed): one card for each quest in
+progress, those with something to do in the zone you are in first (marked "here" and opened). A card shows the step
+you are on (as a row of steps), and opened: the objective, your kill counts as bars (7/10), and everything about the
+step from the Quest Database (who to talk to, the answers, what comes first), with the people in your zone marked "In
+your zone" and the talks of a multi-talk step you have done marked "Done". Closed, it says in one line what comes
+next. "Open in Quest Database" shows the whole quest. The status line says how many quests are in progress, which
+zone you are in, and how many you have finished (once the game has that list, which is after Quest Completion Bonuses,
+Menu > Quest > View Quest Bonuses, has been opened once). Hide quests you don't want to see with the crossed-out eye:
+they move to the **Hidden** section at the top, where the eye shows them again.
+
+**The quest panel** keeps the next step in front of you while you play, with no alt-tabbing: a small window that stays
+above the game. Open it from the Quest Tracker ("Open the panel over the game"); it starts at the top right of the
+game window and can be dragged anywhere. It lists the same quests as the tracker (the hidden ones hidden too), one
+compact line each; click a quest to open or close it. An open quest shows the step you are on, who to talk to or where
+to go, the answers to pick, what comes first, and your kill counts. It updates every few seconds from the game, also
+while BABEL's own window is minimised, and never touches the game (IMAGINE has to run in a window or borderless:
+nothing can be shown over exclusive full screen).
 ### Tools: Gear Database
 
 Under **Tools** in the left bar. Every piece of gear in the game (10,270) with what it gives: stats, effects, appearance
