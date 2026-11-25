@@ -75,7 +75,7 @@ It shows `data\dash\*.json`, so it opens with the last saved data even when the 
 **Back and forward**: the arrows on either side of the page's name in the top bar (also Alt+Left / Alt+Right and the
 mouse's side buttons) go back to the page you came from, for example after a demon link opened the Demon Database
 or the Overview's expertise opened the Expertise page. The page comes back as you left it: its search, filters,
-opened rows and scroll position. Opening and closing a Simulator build counts as a step too. Hovering an arrow says
+opened rows and scroll position. Opening and closing a Build Planner build counts as a step too. Hovering an arrow says
 where it goes. The list lasts while the app is open (up to 50 steps).
 
 The info button beside **Take snapshot** (and the Overview before a character's first snapshot) lists what to open in
@@ -128,7 +128,7 @@ Working on the app's page:
 - `BABEL.exe --capture out.png [--page gear] [--theme dark|light] [--mode digi] [--size 1280x860]` saves a
   picture of the page and exits.
 - In a plain browser: `imagine-reader.exe serve --port 18765 [--data <copy of the data folder>]`, then
-  `http://localhost:18765/app/ui/index.html` (the same page, with the real calculation behind the Simulator).
+  `http://localhost:18765/app/ui/index.html` (the same page, with the real calculation behind the Build Planner).
   A stand-in for the app reads `data\dash`. Add `?empty=1` (first run), `?snap=fail` or `?snap=live` (snapshot results),
   `?game=1`, `?page=…`, `?theme=…`, `?mode=digi`.
 - The assistant: `--capture` pictures leave it out unless the run adds `--query assistant=1`. In a plain browser it
@@ -314,7 +314,7 @@ skills). Search by name, element, words of the description, expertise or demon; 
 modifier, stiffness or cooldown. Item uses, debug skills and the 777 skills the client only names in Japanese are left out.
 Destruction magic (Agi, Zio...) is a Shot skill in the game data; healing, support and curse spells are Curative.
 
-### Tools: Simulator
+### Tools: Build Planner
 
 Under **Tools** in the left bar. Try other gear and expertise ranks and watch your stats change, without touching the
 game or your saved data. It starts from your character as last read (take a snapshot first).
@@ -340,10 +340,10 @@ game or your saved data. It starts from your character as last read (take a snap
 - Every change has an Undo. **Reset to default** (top right of the gear list) goes back to your character as last
   read: gear, expertise ranks and point cap ("Undo reset" brings back what you had, until you change something else).
   The chips stay.
-- **Builds**: the Simulator opens on your builds: a "New build" card and one card per saved build (its name, how many
+- **Builds**: the Build Planner opens on your builds: a "New build" card and one card per saved build (its name, how many
   changes from what you wear, the pieces changed and the biggest differences). In a new build, "Save build…" gives
   it a name; from then on it keeps every change you make to it. A build can be renamed (click its name), duplicated
-  and deleted. Saved builds are also listed under **Simulator** in the left bar; the small arrow there folds the list.
+  and deleted. Saved builds are also listed under **Build Planner** in the left bar; the small arrow there folds the list.
   A build is a whole plan: when your gear changes, it is compared with your new gear. Each card names its base.
 - **Builds are independent of the character shown.** A new build starts empty ("No base"): its numbers are only what
   its pieces and expertise ranks give, for the level and alignment set under its name.
@@ -399,9 +399,9 @@ target\release\imagine-reader.exe rebuild    # rebuild page data from saved file
 target\release\imagine-reader.exe recalc     # recompute every CSV row's gear bonuses, then rebuild
 target\release\imagine-reader.exe gear-names # name every CSV row's gear the game's way (copies the CSV first), then rebuild
 target\release\imagine-reader.exe sets       # list set and appearance bonuses for the worn gear
-target\release\imagine-reader.exe simulate   # check the Simulator: the build as read must give back the readings and the saved bonus list
+target\release\imagine-reader.exe simulate   # check the Build Planner: the build as read must give back the readings and the saved bonus list
 target\release\imagine-reader.exe simulate --spec build.json   # the result of another build, as JSON (--init: the build as read; --catalog N: what fits slot N)
-target\release\imagine-reader.exe serve --port 18765           # the app's page in a browser, with a working Simulator (for testing)
+target\release\imagine-reader.exe serve --port 18765           # the app's page in a browser, with a working Build Planner (for testing)
 target\release\imagine-reader.exe alignment       # the character's alignment, read from the game (LAW/NEUTRAL/CHAOS overrides until the next snapshot)
 target\release\imagine-reader.exe demon           # list the COMP demons
 target\release\imagine-reader.exe demon Specter   # one demon in detail and what digitalizing with it gives

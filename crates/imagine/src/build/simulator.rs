@@ -396,7 +396,7 @@ impl Simulator {
         }
 
         if !store.tooltips_path().exists() || !store.last_stats_path().exists() {
-            return Err(user_error("The simulator starts from your character as the game last showed it. Take a snapshot first."));
+            return Err(user_error("The Build Planner starts from your character as the game last showed it. Take a snapshot first."));
         }
         let mut recs = store.load_tooltips()?;
         recs.sort_by_key(|r| r.index);
@@ -404,7 +404,7 @@ impl Simulator {
         let sets = if store.set_table_path().exists() { store.load_set_table()? } else { None };
         let (items, sets) = match (items, sets) {
             (Some(i), Some(s)) if !s.is_empty() => (i, s),
-            _ => return Err(user_error("The simulator needs each worn piece as the game holds it, which the saved snapshot doesn't have. Take a new snapshot with the game running.")),
+            _ => return Err(user_error("The Build Planner needs each worn piece as the game holds it, which the saved snapshot doesn't have. Take a new snapshot with the game running.")),
         };
 
         let last = json::load(store.last_stats_path())?;

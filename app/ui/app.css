@@ -26,7 +26,7 @@
   --menu-path: #0d2e43;     /* where a window is in the game's menu (first-snapshot steps): the navy inside the game's own
                                menu buttons (menu_icon_00.tga, as the bar shows it), the same in both themes */
   --on-menu-path: #edf0f1;  /* the white of the buttons' pictures */
-  --up: #3d7a12;            /* Simulator: a number that got better / worse. Tokyo Night Day's green and red, a step deeper so small text holds up on the light surface */
+  --up: #3d7a12;            /* Build Planner: a number that got better / worse. Tokyo Night Day's green and red, a step deeper so small text holds up on the light surface */
   --down: #c4264f;
   --base: #b5b3aa;          /* de-emphasised: a stat's own base */
   --accent: #4c1d95;        /* the app's own colour: deep purple, as in the logo (blue stays the "gear" data colour) */
@@ -880,9 +880,9 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .gdb-sub { padding-left: 22px; }
 .gdb-sub-list { margin: 3px 0 0; padding-left: 14px; font-size: 12.5px; color: var(--text-2); }
 
-/* ---------- Simulator (Tools): the build on the left, what it gives on the right ---------- */
+/* ---------- Build Planner (Tools): the build on the left, what it gives on the right ---------- */
 .page-sim { max-width: 1320px; }
-.page-sim, .sim-pick { --good: var(--up); --bad: var(--down); }   /* every "better / worse" in the Simulator in the same two colours */
+.page-sim, .sim-pick { --good: var(--up); --bad: var(--down); }   /* every "better / worse" in the Build Planner in the same two colours */
 .sim-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
 .sim-edit { display: grid; gap: 12px; min-width: 0; }
 /* The result scrolls by itself when it is taller than the window. Its scrollbar gets a fixed 10px that hangs out into

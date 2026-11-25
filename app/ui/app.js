@@ -203,7 +203,7 @@
           fake.align = fake.align || {}; fake.align[fake.active] = args.alignment;
           return { changed: true, rows: fake.active === 'Rubito' ? 5 : 0, changedRows: fake.active === 'Rubito' ? 3 : 0, backup: 'rubito-stats.backup-before-alignment-20261122-233212.csv' };
         }
-        // The Simulator's numbers and saved builds are the reader's own: the browser preview has them when it is
+        // The Build Planner's numbers and saved builds are the reader's own: the browser preview has them when it is
         // served by "imagine-reader serve" (src\Build\PreviewServer.cs), which answers these like the app does.
         if (cmd.startsWith('sim')) {
           const r = await fetch('/host/' + cmd, { method: 'POST', body: JSON.stringify(args || {}) }).catch(() => null);
@@ -286,7 +286,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['quests', 'Quest Guide', 'book'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Simulator', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['quests', 'Quest Guide', 'book'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -371,10 +371,10 @@
     ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null },   // only: a demon id a link opened
     // Skill Database: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
     skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), shown: 200, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
-    // Simulator: the character as read (init, base), the build being tried and its result (build, cur), what is open
+    // Build Planner: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
       // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
-      // (id null = the unsaved one), the cards' results, and whether the list under "Simulator" in the left bar is open
+      // (id null = the unsaved one), the cards' results, and whether the list under "Build Planner" in the left bar is open
       view: 'home', id: null, name: '', builds: [], cards: new Map(), jobs: Promise.resolve(), who: null,
       // the base of the build in the editor: a saved character's name, or '' for none (then level and align count);
       // inits / bases: what the reader said about each base, asked once per reading (the promise, and the answer)
@@ -584,7 +584,7 @@
   PAGES.forEach(([id, label, ic], i) => nav.append(h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': `${label} (Ctrl+${i + 1})`, onclick: () => go(id) },
     icon(ic), h('span', { class: 'nav-label', text: label }))));
   nav.append(h('div', { class: 'nav-head', text: 'Tools (beta)' }));
-  // The Simulator's saved builds hang under its entry (drawSimNav); the small arrow on the entry folds them away.
+  // The Build Planner's saved builds hang under its entry (drawSimNav); the small arrow on the entry folds them away.
   const simNavBox = h('div', { class: 'nav-sub', hidden: true });
   const simNavToggle = h('button', { type: 'button', class: 'nav-fold', hidden: true, 'aria-label': 'Show or hide your saved builds',
     onclick: () => { S.sim.navOpen = !S.sim.navOpen; store.set('sim-nav', S.sim.navOpen ? '1' : '0'); drawSimNav(); } }, icon('chevron'));
@@ -602,7 +602,7 @@
   }
 
   // ---------- back and forward ----------
-  // Every page change (the left bar, Ctrl+1..6, a link to another page, a Simulator build) leaves the page you were
+  // Every page change (the left bar, Ctrl+1..6, a link to another page, a Build Planner build) leaves the page you were
   // on in a list, so Back (the top bar's arrow, Alt+Left, the mouse's back button) brings it back as you left it:
   // its search, filters, opened rows and where it was scrolled to. Forward undoes a Back until you go somewhere new.
   // What a page keeps of itself: the fields of its S part that say what is shown (not its loaded data, and not the
@@ -649,7 +649,7 @@
     const main = $('#main');
     const scroll = () => { main.scrollTop = e.scroll; };
     S.page = e.page;
-    trail.quiet = true;   // (a Simulator build opening here is this step, not a new one)
+    trail.quiet = true;   // (a Build Planner build opening here is this step, not a new one)
     try {
       if (e.sim && e.sim.view === 'edit' && (S.sim.view !== 'edit' || S.sim.id !== e.sim.id)) simOpen(e.sim.id);
       else if (e.sim && e.sim.view === 'home' && S.sim.view === 'edit') simGoHome();
@@ -1732,7 +1732,7 @@
       : h('p', { class: 'note', text: none }),
     note ? h('p', { class: 'note', text: note }) : null);
   /** A skill's own icon from the game (32x32, shown smaller); an empty box of the same size when there is none, so names stay in line. */
-  const skillIcon = (r, folder) => {   // folder: another character's skill icons (the Simulator's imported base); else the shown character's
+  const skillIcon = (r, folder) => {   // folder: another character's skill icons (the Build Planner's imported base); else the shown character's
     const box = h('span', { class: 'skill-ico', 'aria-hidden': 'true' });
     if (r.icon && (folder || S.meta.skillIcons)) {
       const img = h('img', { src: (folder || S.meta.skillIcons) + r.icon + '.png', alt: '', loading: 'lazy' });
@@ -1920,7 +1920,7 @@
    * `pick` runs on a click; `on` marks the demon in use.
    * `compact` (the Overview's summoned demon): no bonus list or unlock tags, not a button, and `tag` after the name.
    */
-  function demonTile(d, on, pick, compact, tag, iconFolder) {   // iconFolder: another character's skill icons (the Simulator's imported base)
+  function demonTile(d, on, pick, compact, tag, iconFolder) {   // iconFolder: another character's skill icons (the Build Planner's imported base)
     const O = d.offer || null;
     const pic = h('span', { class: 'demon-pic ' + alignClass(O && O.alignment), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
     if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
@@ -3084,7 +3084,7 @@
     drawChips(); draw();
     return page;
   }
-  // ---------- Simulator (Tools): other gear and expertise ranks, and what they would give ----------
+  // ---------- Build Planner (Tools): other gear and expertise ranks, and what they would give ----------
   // The numbers come from the reader (host "simInit" / "simulate" / "simCatalog": src\Build\Simulator.cs), so they are
   // worked out by the same code as the rest of the app. The page only keeps the build being tried, asks for its result
   // after every change and shows it against the character as last read. Nothing is saved but the build being tried
@@ -3327,7 +3327,7 @@
       drawSimNav(); render();
     } catch (e) { toast('err', 'The build could not be deleted', String((e && e.message) || e)); }
   }
-  /** The saved builds under "Simulator" in the left bar; the one in the editor is marked instead of the entry itself. */
+  /** The saved builds under "Build Planner" in the left bar; the one in the editor is marked instead of the entry itself. */
   function drawSimNav() {
     const M = S.sim, list = M.builds || [], open = M.navOpen && list.length > 0;
     const editing = S.page === 'sim' && M.view === 'edit' && M.id ? M.id : null;
@@ -3441,7 +3441,7 @@
   }
   simDemonsMenu.addEventListener('toggle', (ev) => { if (ev.newState === 'open') { simPlace(simDemonsMenu, simDemonsFor); drawSimDemons(); } });
   $('#main').addEventListener('scroll', () => { if (simDemonsMenu.matches(':popover-open')) simDemonsMenu.hidePopover(); });   // its button moves away
-  /** The Simulator's first page: "New build", then every saved build as a card. */
+  /** The Build Planner's first page: "New build", then every saved build as a card. */
   function simHome(page) {
     const M = S.sim, builds = M.builds || [], n = simDraftCount();
     page.append(pageHead('Your builds. Open one to keep working on it, or start a new one. Nothing here touches the game or your saved snapshots.'));   // (no demon picker here: it is the editor's, and the cards follow what was picked there)
@@ -3454,7 +3454,7 @@
       builds.map(simCard)));
     page.append(h('p', { class: 'note', text: builds.length
       ? 'Each card compares the build with its base as last read (digitalized when the build has a demon); one with no base shows what it gives by itself. A saved build keeps every change you make to it.'
-      : 'No saved builds yet. Start a new one and press “Save build”: it then shows up here and under Simulator in the left bar.' }));
+      : 'No saved builds yet. Start a new one and press “Save build”: it then shows up here and under Build Planner in the left bar.' }));
     return page;
   }
   // What was picked before, per slot and part ("0:special" -> [{id, name}], newest first): shown as chips under each
@@ -3749,7 +3749,7 @@
     if (M.state !== 'ready') {
       page.append(pageHead(SIM_SUB));
       page.append(M.state === 'failed'
-        ? h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'The simulator can’t start. ' }), M.error, ' ',
+        ? h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'The Build Planner can’t start. ' }), M.error, ' ',
           h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:8px', onclick: () => { M.state = 'idle'; render(); } }, 'Try again')))
         : h('p', { class: 'note', text: 'Reading your build…' }));
       return page;
@@ -3811,7 +3811,7 @@
       const back = h('button', { type: 'button', class: 'btn btn-ghost sim-back', 'data-tip': 'All your builds', onclick: simGoHome }, h('span', { class: 'chev' }, icon('chevron')), 'Builds');
       if (!M.id && !M.naming) {
         simFill(headLeft, back, h('b', { class: 'sim-name-text', text: 'New build' }), h('span', { class: 'card-sub', text: 'not saved' }),
-          h('button', { type: 'button', class: 'btn btn-primary', 'data-tip': 'Keep this build: it gets a name, a card and a line under Simulator', onclick: () => { M.naming = true; drawTitle(); } }, 'Save build…'));
+          h('button', { type: 'button', class: 'btn btn-primary', 'data-tip': 'Keep this build: it gets a name, a card and a line under Build Planner', onclick: () => { M.naming = true; drawTitle(); } }, 'Save build…'));
         return;
       }
       if (!M.id) {
@@ -5166,7 +5166,7 @@
     S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [], summoned: d.summoned || null };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
-    S.sim.state = 'idle';   // the Simulator starts again from what was just loaded (the build being tried is kept)
+    S.sim.state = 'idle';   // the Build Planner starts again from what was just loaded (the build being tried is kept)
 
     simLoadBuilds();
     derive();
