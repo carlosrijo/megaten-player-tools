@@ -2963,6 +2963,62 @@
   const ddbAlign = (x) => h('span', { class: 'tag tag-align ' + alignClass(x.align), text: x.align });
   const ddbLv = (c) => (c.min === c.max ? `Lv ${c.min}` : `Lv ${c.min}–${c.max}`);
   const ddbMoon = (mask) => 'Moon: ' + [...Array(16).keys()].filter((i) => mask & (1 << i)).map((i) => (i === 0 ? 'new' : i === 8 ? 'full' : i < 8 ? `${i}/8 waxing` : `${16 - i}/8 waning`)).join(', ');
+  /** The Fusion Planner's demons for a Demon Database entry: its own id, and the ids the database merged into it (same
+   *  name, race and base level, such as Asura Cerberus 550 and 1302). Mitama-fused forms are the database's `mt`. */
+  const ddbFusionIds = (E, x) => E.demons.filter((f) => !f.mitamaFused && (f.id === x.id || (f.name === x.name && f.raceName === x.race && f.lvl === x.level)));
+  /** "Where to get it": every way the game data gives, first in a demon's details. Fusion comes from the Fusion
+   *  Planner's engine (fusion-data.json): how many recipes make it, a link to them, and each special fusion with the
+   *  plugin it needs and where to get that plugin. */
+  function ddbWhere(x, block) {
+    const where = h('ul', { class: 'gdb-list gdb-get' });
+    // the kind on the left, everything about it in one column beside it (notes and plugin boxes stay out of the kind's column)
+    const row = (kind, ...kids) => where.append(h('li', { class: 'ddb-get-row' }, h('span', { class: 'gdb-kind', text: kind }), h('div', { class: 'ddb-get-body' }, ...kids)));
+    x.contract.forEach((c) => row('Contract', h('b', { text: c.zone }), h('span', { class: 'gdb-rate', text: ddbLv(c) }),
+      c.moon ? h('span', { class: 'tag', style: 'margin-left:8px', text: ddbMoon(c.moon) }) : null, c.season ? h('span', { class: 'tag', style: 'margin-left:8px', text: c.season + ' event' }) : null));
+    const dcm = S.dcm.data && S.dcm.data.items.find((it) => it.devilId === x.id);
+    if (dcm) row('DCM', h('b', { text: dcm.lines && dcm.lines[0] ? `${dcm.lines[0].kind}: ${dcm.lines[0].text}` : 'No source in the game data' }),
+      h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:10px', onclick: () => { S.dcm.q = x.name; S.dcm.kind = 'all'; S.dcm.open = new Set([dcm.id]); go('dcm'); } }, 'Open in DCM Locator'));
+
+    // Fusion, from the planner's engine. Until it is loaded and has worked out every fusion once (about a second), say so.
+    loadFusion();
+    const U = S.fus, E = U.state === 'ready' ? U.eng : null;
+    let specials = null;
+    if (U.state === 'loading' || (E && !E.built())) {
+      row('Fusion', h('span', { class: 'note' }, h('span', { class: 'spin ink', style: 'margin-right:8px;vertical-align:-2px' }), 'Working out which fusions make it…'));
+      if (E) setTimeout(() => { if (!E.built()) { E.build(); if (S.page === 'ddb') render(); } }, 30);
+    } else if (E) {
+      const mine = ddbFusionIds(E, x), ids = new Set(mine.map((f) => f.id));
+      specials = E.F.specials.filter((sp) => ids.has(sp.result));
+      const R = mine.map((f) => E.recipes(f)), two = R.reduce((n, r) => n + r.two.length, 0), three = R.reduce((n, r) => n + r.three.length, 0);
+      const target = mine.find((f) => E.canMake(f));
+      if (target) {
+        const cheap = R.flatMap((r) => r.two)[0] || R.flatMap((r) => r.three)[0];
+        const ways = [two ? `${fmt(two)} two-demon ${two === 1 ? 'recipe' : 'recipes'}` : '', three ? `${fmt(three)} ${three === 1 ? 'tri-fusion' : 'tri-fusions'}` : '',
+          specials.length ? `${specials.length} special ${specials.length === 1 ? 'fusion' : 'fusions'}` : ''].filter(Boolean);
+        row('Fusion', h('span', null, h('b', { text: 'Can be fused' }), h('span', { class: 'src-count', text: ways.join(' · ') }),
+          cheap ? h('div', { class: 'note', text: `Cheapest at base levels: ${cheap.map((d) => `${d.label} (Lv ${d.lvl})`).join(' + ')}` }) : null),
+          h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:10px', onclick: () => {
+            Object.assign(U, { view: 'reverse', target, trail: [], with: '', shown2: 30, shown3: 30 }); go('fusion'); } }, 'Open in Fusion Planner'));
+      }
+      // each special fusion: its demons and the plugin it needs; then each plugin once, with the ways to get it
+      const plugName = (sp) => { const p = E.F.plugins[String(sp.plugin)]; return p && p.name ? `Needs the key item “${p.name}”` : 'Needs a fusion plugin'; };
+      specials.forEach((sp) => row('Special fusion', h('span', null,
+        h('b', { text: sp.src.map(([id, variant]) => { const d = E.byId.get(id); return (d ? d.name : 'A demon the data does not name') + (variant ? ' (or a variant of it)' : ''); }).join(' + ') }),
+        h('div', { class: 'note', text: sp.plugin ? plugName(sp) : 'No plugin needed.' }))));
+      [...new Map(specials.filter((sp) => sp.plugin).map((sp) => [sp.plugin, sp])).values()].forEach((sp) => row('Plugin', pluginLine(E, sp)));
+    } else if (x.fusion) row('Fusion', h('span', null, `Normal two-demon fusion: a ${x.race} result picked by level`));   // the fusion data is missing
+
+    // a variant: an exchange item, a special fusion or a gift (demon-db.json "get"), each with what the game data says about
+    // it. Special fusions are left out when the planner's list above has them (it also says where to get the plugin).
+    (x.get || []).filter((g) => !(specials && specials.length && g.kind === 'Special fusion')).forEach((g) => row(g.kind, h('span', null, h('b', { text: g.text }),
+      g.note ? h('div', { class: 'note', text: g.note }) : null,
+      g.from ? (g.from.length ? [g.from.length > 1 ? h('div', { class: 'any-one', text: `The item comes from any one of these ${g.from.length}:` }) : null,
+        h('ul', { class: 'gdb-list gdb-sub-list' }, g.from.map((f) => h('li', null, questLine(f))))] : h('div', { class: 'note', text: 'The data does not say where this item comes from.' })) : null)));
+    // every line is a separate way to get the demon (a "+" inside one is fused together): say that any one is enough
+    const n = where.childNodes.length;
+    return block('Where to get it', n ? h('div', null, n > 1 ? h('p', { class: 'any-one', text: 'Each line is a separate way to get it: any one is enough.' }) : null, where)
+      : h('span', { class: 'zero', text: 'The game data names no place to contract it, no fusion and no DCM.' }));
+  }
   function ddbDetail(x) {
     const D = S.ddb, d = D.data, box = h('div', { class: 'q-detail ddb-detail' });
     const sk = (id) => d.skills[id] || { name: 'A skill the game data does not name', desc: '' };
@@ -2973,6 +3029,7 @@
       x.mitama ? h('span', { class: 'tag', text: 'Mitama' }) : null,
       x.variant ? h('span', { class: 'tag', 'data-tip': 'A version of a demon with its own name, level, stats and skills. The compendium counts it with the demon it is a version of, not on its own.', text: x.variantOf ? `Variant of ${x.variantOf}` : 'Variant' }) : null,
       x.counted || x.variant ? null : h('span', { class: 'tag tag-off', 'data-tip': 'The compendium lists it but does not count it toward its totals.', text: 'Not counted in the compendium' })));
+    box.append(ddbWhere(x, block));
 
     // Normal or Mitama-fused: Mitama fusion turns it into another demon type with its own features, stats and
     // affinities (x.mt; skills only when they differ). The view switches everything below that the Mitama form changes.
@@ -3025,19 +3082,6 @@
     const crystal = (x.tarot || x.soul || {}).crystal;
     if (crystal) box.append(h('p', { class: 'note', text: `Both come from ${crystal}.` }));
 
-    // Where to get it
-    const where = h('ul', { class: 'gdb-list gdb-get' });
-    x.contract.forEach((c) => where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Contract' }), h('b', { text: c.zone }), h('span', { class: 'gdb-rate', text: ddbLv(c) }),
-      c.moon ? h('span', { class: 'tag', style: 'margin-left:8px', text: ddbMoon(c.moon) }) : null, c.season ? h('span', { class: 'tag', style: 'margin-left:8px', text: c.season + ' event' }) : null)));
-    const dcm = S.dcm.data && S.dcm.data.items.find((it) => it.devilId === x.id);
-    if (dcm) where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'DCM' }), h('b', { text: dcm.lines && dcm.lines[0] ? `${dcm.lines[0].kind}: ${dcm.lines[0].text}` : 'No source in the game data' }),
-      h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:10px', onclick: () => { S.dcm.q = x.name; S.dcm.kind = 'all'; S.dcm.open = new Set([dcm.id]); go('dcm'); } }, 'Open in DCM Locator')));
-    if (x.fusion) where.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Fusion' }), h('span', null, `Normal two-demon fusion: a ${x.race} result picked by level`)));
-    // a variant: an exchange item, a special fusion or a gift (demon-db.json "get"), each with what the game data says about it
-    (x.get || []).forEach((g) => where.append(h('li', null, h('span', { class: 'gdb-kind', text: g.kind }), h('span', null, h('b', { text: g.text }),
-      g.note ? h('div', { class: 'note', text: g.note }) : null,
-      g.from ? (g.from.length ? h('ul', { class: 'gdb-list gdb-sub-list' }, g.from.map((f) => h('li', { text: f }))) : h('div', { class: 'note', text: 'The data does not say where this item comes from.' })) : null))));
-    box.append(block('Where to get it', where.childNodes.length ? where : h('span', { class: 'zero', text: 'The game data names no place to contract it, no fusion by level and no DCM.' })));
     if (x.enemy.length) box.append(block('Enemy only', h('div', { class: 'note', style: 'margin-bottom:4px', text: 'It appears here too, but cannot be talked into a contract (dungeon and boss versions).' }),
       h('ul', { class: 'gdb-list ddb-enemy' }, x.enemy.map((c) => h('li', null, c.zone, h('span', { class: 'src-count', text: ddbLv(c) }))))));
     return box;
@@ -5211,7 +5255,7 @@
     fetch('fusion-data.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
       S.fus.eng = d ? fusionEngine(d) : null;
       S.fus.state = d ? 'ready' : 'failed';
-      if (S.page === 'fusion') render();
+      if (S.page === 'fusion' || S.page === 'ddb') render();   // the Demon Database's "Where to get it" uses it too
     });
   }
 
@@ -5505,13 +5549,26 @@
     const kids = [demonPic(E, d), h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: d.label }), h('span', { class: 'fus-chip-sub', text: `${d.raceName} · Lv ${lvl === undefined ? d.lvl : lvl}` })), tag || null];
     return onclick ? h('button', { type: 'button', class: 'fus-chip', 'data-tip': `How to make ${d.label}`, onclick: () => onclick(d) }, kids) : h('span', { class: 'fus-chip' }, kids);
   }
+  /** A line that names a quest (Quest “Act 13: …”): the line, and a button that opens that quest in the Quest Guide. */
+  function questLine(text) {
+    const m = /Quest “([^”]+)”/.exec(text || '');
+    if (!m) return text;
+    loadQuests();   // so the quest can be opened, not only searched for, when the button is clicked
+    const title = m[1];
+    return [text, h('button', { type: 'button', class: 'btn btn-sm q-link', onclick: () => {
+      const D = S.quest, found = D.data ? D.data.quests.filter((q) => q.title === title) : [];
+      D.q = title; D.type = found.length && found.every((q) => q.type === 'Inactive') ? 'Inactive' : 'available'; D.open = new Set(found.map((q) => q.id));
+      go('quests');
+    } }, 'Open in Quest Guide')];
+  }
   function pluginLine(E, sp) {
     if (!sp || !sp.plugin) return null;
     const p = E.F.plugins[String(sp.plugin)];
     // the game's key item names it ("Plugin: Uriel", "Enhanced Plugin: Skadi"); its ways to get it are joined with " · "
     const ways = p && p.how ? p.how.split(' · ') : ['The data does not say where to get it.'];
+    // several ways are alternatives: say so, or they read as steps that all have to be done
     return h('div', { class: 'fus-plugin' }, icon('info'), h('div', null, h('b', { text: p && p.name ? `Needs the key item “${p.name}”` : 'Needs a fusion plugin' }),
-      ways.length > 1 ? h('ul', null, ways.map((w) => h('li', { text: w }))) : h('div', { text: ways[0] })));
+      ways.length > 1 ? [h('div', { class: 'any-one', text: `Any one of these ${ways.length} ways gives it:` }), h('ul', null, ways.map((w) => h('li', null, questLine(w))))] : h('div', null, questLine(ways[0]))));
   }
   /** The same, short, for a recipe card: the key item's name, and its ways to get it in a tip (cards keep one size). */
   function pluginNote(E, sp) {
@@ -5519,7 +5576,7 @@
     const p = E.F.plugins[String(sp.plugin)];
     const ways = p && p.how ? p.how.split(' · ') : ['The data does not say where to get it.'];
     return withTip(h('div', { class: 'fus-plugin fus-plugin-sm', tabindex: '0' }, icon('info'), h('span', { class: 'fus-plugin-name', text: p && p.name ? `Needs “${p.name}”` : 'Needs a fusion plugin' })),
-      () => h('div', null, h('b', { text: p && p.name ? `How to get “${p.name}”` : 'Fusion plugin' }), h('ul', { class: 'fus-tip-ways' }, ways.map((w) => h('li', { text: w })))));
+      () => h('div', null, h('b', { text: p && p.name ? `How to get “${p.name}”${ways.length > 1 ? ' (any one of these)' : ''}` : 'Fusion plugin' }), h('ul', { class: 'fus-tip-ways' }, ways.map((w) => h('li', { text: w })))));
   }
 
   function pageFusion() {

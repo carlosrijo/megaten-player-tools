@@ -319,13 +319,17 @@ game.
 ### Tools: Demon Database
 
 Under **Tools** in the left bar. Every demon you can own (the compendium's 359 and 592 variants such as Open-minded Ishtar) with its picture, race, base level and
-alignment. Click a demon for its stats at any level from its base level to 99 (a fresh demon: no Demon Force, rebirth
+alignment. Click a demon and its details open on **Where to get it**: the places it can be contracted with their
+levels, its DCM (with a button to the DCM Locator), whether it can be fused (how many two-demon recipes, tri-fusions and
+special fusions make it, the cheapest recipe, and a button that opens it in the Fusion Planner's "Find a recipe"), each
+special fusion with the plugin it needs, each plugin once with where to get it (quest, exchange; a quest has a button
+that opens it in the Quest Guide), and, for a variant,
+the exchange item (a "Summon PG" or a voucher) that gives it with where the item comes from, or its event gift; where the
+data does not say, the page says so. Every list of ways says that any one of them is enough. Below that: its stats at any level from its base level to 99 (a fresh demon: no Demon Force, rebirth
 or Mitama), its affinities (resistance in %, weaknesses in red, natural null / reflect / drain chances), its features and its
 Mitama features (what it gains, or swaps, when Mitama-fused),
 its skills (what it knows and the level it learns each one at; hover for the game's description), what its tarot and
-soul give and on which gear, and where to get it: the places it can be contracted with their levels, its DCM (with a
-button to the DCM Locator), normal fusion and, for a variant, the exchange item (a "Summon PG" or a voucher) that gives
-it with where the item comes from, or its special fusion or event gift; where the data does not say, the page says so. "Normal" / "Mitama-fused" at the top of a demon switches its stats,
+soul give and on which gear. "Normal" / "Mitama-fused" above its stats switches its stats,
 affinities, features and skills to its Mitama-fused form (340 demons have one).
 
 The list opens on the demons that can be contracted somewhere (284); "Not contracted anywhere" and "All demons" show

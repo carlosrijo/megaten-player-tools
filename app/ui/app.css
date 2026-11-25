@@ -970,6 +970,12 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .gdb-kind { display: inline-block; min-width: 96px; margin-right: 8px; color: var(--text-2); font-size: 12px; }
 .gdb-rate { margin-left: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .gdb-sub { padding-left: 22px; }
+.ddb-get-row { display: flex; align-items: baseline; }
+.ddb-get-row > .gdb-kind { flex: none; }
+.ddb-get-body { flex: 1; min-width: 0; }
+.ddb-get-body > .fus-plugin { margin-top: 2px; }
+.q-link { margin: 2px 0 2px 10px; vertical-align: baseline; }
+.any-one { margin: 2px 0 4px; font-size: 12px; font-style: italic; opacity: .85; }
 .gdb-sub-list { margin: 3px 0 0; padding-left: 14px; font-size: 12.5px; color: var(--text-2); }
 
 /* ---------- Build Planner (Tools): the build on the left, what it gives on the right ---------- */
