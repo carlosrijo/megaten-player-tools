@@ -4843,7 +4843,7 @@
       r.extend.forEach(([l, , , text, who]) => items.push({ kind: who === 'demon' ? 'Demon' : 'You', label: text, race: r.name, tier: r.tier, l, have: cur >= l,
         goal: { k: 'race', race: r.id, level: l, why: `${text}${who === 'demon' ? ' (demon)' : ''}` } }));
       // the race itself: opening it is a goal like any boost (the race at DLv 1); the open ones are listed as had
-      if (r.unlock.length) items.push({ kind: 'Race', label: `Unlock ${r.name} (Tier ${r.tier})`, race: r.name, l: 1, have: cur >= 1, open: cur,
+      if (r.unlock.length) items.push({ kind: 'Race', label: `Unlock ${r.name}`, race: r.name, tier: r.tier, l: 1, have: cur >= 1, open: cur,
         needs: r.unlock.map(([u, ul]) => `${E.raceName(u)} ${ul}`).join(' + '), goal: { k: 'race', race: r.id, level: 1 } });
     });
     let costed = false;
@@ -4851,7 +4851,7 @@
       if (costed) return;
       costed = true;
       items.forEach((x) => { const p = x.have ? null : E.solve(st, [x.goal]); x.dp = x.have ? 0 : p && p.ok ? p.cost : Infinity; });
-      items.forEach((x) => { x.sub = (x.kind === 'Race' ? (x.have ? `open, DLv ${x.open}` : `needs ${x.needs}`) : `${x.race} (Tier ${x.tier}) DLv ${x.l}`) + ` · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
+      items.forEach((x) => { x.sub = (x.kind === 'Race' ? (x.have ? `open, DLv ${x.open}` : `needs ${x.needs}`) : `${x.race} DLv ${x.l}`) + ` · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
     };
     const wrap = h('div', { class: 'fus-combo' });
     const ph = 'Add a goal: search a boost or a race to unlock, e.g. Intelligence, Slash, Limit Break, Seraphim';
@@ -4864,7 +4864,7 @@
       const q = input.value.trim().toLowerCase();
       const words = q.split(/\s+/).filter(Boolean);
       // "demon" / "you" in the search pick whose boost it is
-      hits = items.filter((x) => { const hay = `${x.kind} ${x.label} ${x.race}`.toLowerCase(); return words.every((w) => hay.includes(w)); })
+      hits = items.filter((x) => { const hay = `${x.kind} t${x.tier} ${x.label} ${x.race}`.toLowerCase(); return words.every((w) => hay.includes(w)); })
         // the ones you have last (dimmed): still listed, so you can see where a boost comes from
         .sort((a, b) => (a.have ? 1 : 0) - (b.have ? 1 : 0) || (a.label.toLowerCase().startsWith(q) ? 0 : 1) - (b.label.toLowerCase().startsWith(q) ? 0 : 1) || a.dp - b.dp || a.label.localeCompare(b.label)).slice(0, 80);
       at = Math.min(at, Math.max(0, hits.length - 1));
@@ -4878,12 +4878,12 @@
         // one you have already can't be picked: listed (dimmed, no box) only to show where you got it
         if (x.have) return h('div', { class: 'fus-opt dpl-have', role: 'option', 'aria-selected': 'false', 'aria-disabled': 'true', onmousedown: (ev) => ev.preventDefault() },
           h('span', { class: 'dpl-check dpl-check-none', 'aria-hidden': 'true' }),
-          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), text: x.kind }),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), text: `${x.kind} T${x.tier}` }),
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
         return h('div', { class: 'fus-opt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(on),
           onmousedown: (ev) => { ev.preventDefault(); at = i; pick(x); } },
           h('span', { class: 'dpl-check' + (on ? ' ticked' : ''), 'aria-hidden': 'true' }, on ? icon('check') : null),
-          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : x.kind === 'Race' ? 'A race to unlock: it opens at DLv 1 once every race it needs reaches its level' : 'A boost for you', text: x.kind }),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : x.kind === 'Race' ? 'A race to unlock: it opens at DLv 1 once every race it needs reaches its level' : 'A boost for you', text: `${x.kind} T${x.tier}` }),
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
       }) : [h('div', { class: 'fus-opt empty', text: 'Nothing matches.' })]));
       menu.scrollTop = keep;
