@@ -91,3 +91,44 @@ test('a send with files: stored for 180 days, named in the issue; a test send ke
   assert.match(made.body, /Diagnostics files were sent \(2 files, 29 KB\) but \*\*could not be stored\*\*/);
   assert.doesNotMatch(made.body, /Diagnostics attached/);
 });
+
+test('every file written is plain text: the names the app sends stay, anything else gets .txt', () => {
+  for (const n of ['about.txt', 'doctor.txt', 'logs/imagine-20261124-000000-000.log', 'logs/crash-20261124-000000-000.txt', 'data/config.json', 'data/characters.json', 'settings.json', 'data-listing.txt']) {
+    assert.equal(safeName(n), n);
+  }
+  assert.equal(safeName('x.url'), 'x.url.txt');
+  assert.equal(safeName('desktop.ini'), 'desktop.ini.txt');
+  assert.equal(safeName('a/b.lnk'), 'a/b.lnk.txt');
+  assert.equal(safeName('run.bat'), 'run.bat.txt');
+  assert.equal(safeName('NOTES.TXT'), 'NOTES.TXT');
+  assert.equal(safeName('x.json.url'), 'x.json.url.txt');
+  assert.equal(safeName('noextension'), 'noextension.txt');
+  assert.equal(safeName('../../x.json'), 'x.json');
+  assert.equal(safeName('a.url.'), 'a.url.txt');
+  assert.equal(safeName('a.url. . '), 'a.url.txt');
+  assert.equal(safeName('a.txt.'), 'a.txt');
+  assert.equal(safeName('dir /b.log'), 'dir/b.log');
+  assert.equal(safeName('a.txt:stream'), 'a.txt_stream.txt');
+  assert.equal(safeName('..'), 'file.txt');
+  assert.equal(safeName('. . '), 'file.txt');
+});
+
+test('Windows device names get a leading underscore', () => {
+  assert.equal(safeName('con'), '_con.txt');
+  assert.equal(safeName('CON.txt'), '_CON.txt');
+  assert.equal(safeName('logs/nul.log'), 'logs/_nul.log');
+  assert.equal(safeName('com1.json'), '_com1.json');
+  assert.equal(safeName('LPT9.x'), '_LPT9.x.txt');
+  assert.equal(safeName('aux/b.txt'), '_aux/b.txt');
+  assert.equal(safeName('console.txt'), 'console.txt');
+  assert.equal(safeName('com10.txt'), 'com10.txt');
+});
+
+test('an attachment that unpacks to more than the cap is not opened', async () => {
+  const env = await seal(payload, PUB);
+  assert.deepEqual(openEnvelope(env, privateKey, { maxBytes: 1024 * 1024 }), payload);
+  assert.throws(() => openEnvelope(env, privateKey, { maxBytes: 1000 }), /larger than 1000 bytes unpacked; not opened/);
+  const big = await seal({ files: [{ name: 'big.txt', text: 'x'.repeat(3 * 1024 * 1024) }] }, PUB);   // small when zipped
+  assert.throws(() => openEnvelope(big, privateKey, { maxBytes: 2 * 1024 * 1024 }), /The attachment is larger than 2 MB unpacked; not opened\./);
+  assert.equal(openEnvelope(big, privateKey).files[0].text.length, 3 * 1024 * 1024);
+});

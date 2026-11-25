@@ -22,7 +22,7 @@ impl CsvTable {
         if !path.exists() {
             return Ok(t);
         }
-        let mut records = parse(&json::read_all_text(path)?);
+        let mut records: Vec<Vec<String>> = parse(&json::read_all_text(path)?).into_iter().map(|r| r.into_iter().map(unmark).collect()).collect();
         if records.is_empty() {
             return Ok(t);
         }
@@ -62,7 +62,29 @@ impl CsvTable {
 }
 
 fn q(s: &str) -> String {
+    let s = if needs_text_mark(s) { format!("'{s}") } else { s.to_string() };
     format!("\"{}\"", s.replace('"', "\"\""))
+}
+
+/// A cell a spreadsheet would read as a formula (it starts with = + - @, a tab or a line break, and is not a number):
+/// saved with a ' in front, which spreadsheets show as plain text. Any ' it already has in front is looked past, so
+/// such a cell gets one more and reads back as it was: [`q`] adds the ', [`unmark`] takes it off when the file is read.
+fn needs_text_mark(s: &str) -> bool {
+    let s = s.trim_start_matches('\'');
+    let Some(first) = s.chars().next() else { return false };
+    match first {
+        '=' | '@' | '\t' | '\r' | '\n' => true,
+        '+' | '-' => !(s.parse::<f64>().is_ok() && s[1..].chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | 'e' | 'E' | '+' | '-'))),
+        _ => false,
+    }
+}
+
+/// A cell as saved, without the ' [`q`] put in front of it.
+fn unmark(s: String) -> String {
+    match s.strip_prefix('\'') {
+        Some(rest) if needs_text_mark(rest) => rest.to_string(),
+        _ => s,
+    }
 }
 
 fn parse(text: &str) -> Vec<Vec<String>> {
@@ -142,6 +164,31 @@ mod tests {
         assert_eq!(t2.get(&t2.rows[0], "y"), "");
         assert_eq!(t2.get(&t2.rows[1], "y"), "3");
         assert!(CsvTable::load(dir.join("none.csv")).unwrap().columns.is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn text_that_looks_like_a_formula_is_saved_as_text_and_read_back_as_it_was() {
+        let dir = std::env::temp_dir().join(format!("imagine-csv-mark-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let p = dir.join("t.csv");
+        let cells = ["=1+2", "@SUM(A1)", "+x", "-x", "\tx", "\r\nx", "'=1", "''=1", "-5", "+5", "-0.25", "-1e3", "1-2", "'plain", "plain", "", "-", "+"];
+        let columns: Vec<String> = (0..cells.len()).map(|i| format!("c{i}")).collect();
+        let mut row = IndexMap::new();
+        for (c, v) in columns.iter().zip(cells) {
+            row.insert(c.clone(), v.to_string());
+        }
+        let t = CsvTable { columns: columns.clone(), rows: vec![row] };
+        t.save(&p).unwrap();
+        let text = std::fs::read_to_string(&p).unwrap();
+        let line = text.split_once("\r\n").unwrap().1; // the row (one of its cells has a line break in it)
+        // marked: the formula-like text (and a ' already in front of it); numbers and plain text are as they were
+        assert!(line.starts_with(r#""'=1+2","'@SUM(A1)","'+x","'-x","'	x","'"#), "{line}");
+        assert!(line.contains(r#""''=1","'''=1","-5","+5","-0.25","-1e3","1-2","'plain","plain","","'-","'+""#), "{line}");
+        let back = CsvTable::load(&p).unwrap();
+        for (c, v) in columns.iter().zip(cells) {
+            assert_eq!(back.get(&back.rows[0], c), v, "{c}");
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

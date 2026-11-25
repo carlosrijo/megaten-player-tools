@@ -2,13 +2,14 @@
 //   node feedback-worker/tools/open-files.mjs <id> [--key <private key file>] [--out <folder>]
 // <id> is the one in the issue ("Diagnostics attached ... `id`"). Wrangler must be signed in to the Cloudflare account
 // (npx wrangler login). The files go to <repo>\.secrets\feedback-files\<id>\ unless --out says otherwise (.secrets\ is
-// git-ignored: these are other people's logs and settings).
+// git-ignored: these are other people's logs and settings). Every file is written as plain text (.txt, .log or .json).
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openEnvelope, safeName } from './envelope.mjs';
 
+const MAX_FILES = 500;
 const here = dirname(fileURLToPath(import.meta.url));
 const worker = resolve(here, '..');
 const repo = resolve(worker, '..');
@@ -39,11 +40,13 @@ let opened;
 try { opened = openEnvelope(envelope.trim(), readFileSync(keyFile, 'utf8')); }
 catch (e) { console.error(`Could not open ${id} with ${keyFile}: ${e.message}`); process.exit(1); }
 
+const files = Array.isArray(opened.files) ? opened.files : [];
+if (files.length > MAX_FILES) { console.error(`The attachment holds ${files.length} files, more than ${MAX_FILES}; not opened.`); process.exit(1); }
 mkdirSync(out, { recursive: true });
-for (const f of opened.files || []) {
+for (const f of files) {
   const p = join(out, safeName(f.name));
   mkdirSync(dirname(p), { recursive: true });
   writeFileSync(p, String(f.text ?? ''));
 }
-writeFileSync(join(out, '_sent.txt'), `Attachment ${id}\r\nSent: ${opened.made || '?'}\r\nCharacter names: ${opened.includeNames ? 'included' : 'left out'}\r\nFiles: ${(opened.files || []).map((f) => f.name).join(', ')}\r\n`);
-console.log(`${(opened.files || []).length} files in ${out}`);
+writeFileSync(join(out, '_sent.txt'), `Attachment ${id}\r\nSent: ${opened.made || '?'}\r\nCharacter names: ${opened.includeNames ? 'included' : 'left out'}\r\nFiles: ${files.map((f) => f.name).join(', ')}\r\n`);
+console.log(`${files.length} files in ${out}`);
