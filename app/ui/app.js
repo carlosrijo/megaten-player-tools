@@ -4836,6 +4836,9 @@
    * Pick as many as you like: a click (or Enter) ticks or unticks one and the list stays open with the same search;
    * "Add all shown" ticks every match you don't have yet. `toggle(goal)` adds or removes it, `isOn(goal)` says if it's in.
    */
+  /** A goal's chip text: its kind, and for a race its tier ("T5"), bluer the higher it is. */
+  const dplKindText = (x) => (x.kind === 'Race' ? ['Race', h('span', { class: 'dpl-tier', 'data-tier': String(x.tier), text: `T${x.tier}` })] : [x.kind]);
+
   function dplGoalCombo(E, st, toggle, isOn) {
     const items = [];
     E.races.forEach((r) => {
@@ -4878,12 +4881,12 @@
         // one you have already can't be picked: listed (dimmed, no box) only to show where you got it
         if (x.have) return h('div', { class: 'fus-opt dpl-have', role: 'option', 'aria-selected': 'false', 'aria-disabled': 'true', onmousedown: (ev) => ev.preventDefault() },
           h('span', { class: 'dpl-check dpl-check-none', 'aria-hidden': 'true' }),
-          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), text: x.kind === 'Race' ? `Race T${x.tier}` : x.kind }),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : '') }, ...dplKindText(x)),
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
         return h('div', { class: 'fus-opt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(on),
           onmousedown: (ev) => { ev.preventDefault(); at = i; pick(x); } },
           h('span', { class: 'dpl-check' + (on ? ' ticked' : ''), 'aria-hidden': 'true' }, on ? icon('check') : null),
-          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : x.kind === 'Race' ? 'A race to unlock: it opens at DLv 1 once every race it needs reaches its level' : 'A boost for you', text: x.kind === 'Race' ? `Race T${x.tier}` : x.kind }),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : x.kind === 'Race' ? 'A race to unlock: it opens at DLv 1 once every race it needs reaches its level' : 'A boost for you' }, ...dplKindText(x)),
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
       }) : [h('div', { class: 'fus-opt empty', text: 'Nothing matches.' })]));
       menu.scrollTop = keep;
