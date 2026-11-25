@@ -339,6 +339,31 @@ impl MainForm {
                 self.guarded(|| Ok(self.backend.use_demon(e.name(), &dir, &e.csv.clone().unwrap_or_default(), key.as_deref())?.to_string()))
             }
 
+            "forgetDemon" => {
+                // take a demon off the picker's list (cache\comp-demons.json); not the one in use
+                let e = self.require_active("No character is selected yet.")?;
+                if self.no_writes() {
+                    return Err(user_error("Not changing the demon list during a capture run."));
+                }
+                let key = jsonx::str(args.get("key")).unwrap_or_default();
+                let dir = self.char_dir(&e);
+                self.guarded(|| {
+                    self.backend.forget_demon(&dir, &key)?;
+                    Ok("true".to_string())
+                })
+            }
+
+            "deleteSnapshot" => {
+                // one earlier snapshot out of the spreadsheet (copied first), then the page data again
+                let e = self.require_active("No character is selected yet.")?;
+                if self.no_writes() {
+                    return Err(user_error("Not deleting snapshots during a capture run."));
+                }
+                let taken_at = jsonx::str(args.get("takenAt")).unwrap_or_default();
+                let dir = self.char_dir(&e);
+                self.guarded(|| Ok(self.backend.delete_snapshot(&dir, &e.csv.clone().unwrap_or_default(), &taken_at)?.to_string()))
+            }
+
             // ---- character picture: photo of the game window or an image file, cropped in the page ----
             "pictureSource" => {
                 let e = self.active_entry();

@@ -246,6 +246,18 @@ impl Backend {
         Ok(json!({ "name": r.name, "changed": r.changed, "rowUpdated": r.row_updated, "backup": r.backup }))
     }
 
+    /// Delete one earlier snapshot (`Pipeline::delete_snapshot`): `{ backup }`, the copy's file name.
+    pub fn delete_snapshot(&self, character_dir: &Path, csv: &str, taken_at: &str) -> Result<Value> {
+        let p = self.pipe(character_dir);
+        let backup = p.delete_snapshot(csv, taken_at)?;
+        Ok(json!({ "backup": backup }))
+    }
+
+    /// Take a demon off the picker's list (`Pipeline::forget_demon`).
+    pub fn forget_demon(&self, character_dir: &Path, key: &str) -> Result<()> {
+        self.pipe(character_dir).forget_demon(key)
+    }
+
     /// C# `PreviewServer.SimCommand(SimPipe, e.Name, <data>\sim-builds.json, cmd, args, owner, SkillIcons)`
     /// (src\Build\PreviewServer.cs:35) for simInit/simulate/simCatalog/simDemons/simBuilds/simSaveBuild/simDeleteBuild.
     /// Returns the JSON text for the page. See `SimRequest` for how `SimPipe` is expressed.

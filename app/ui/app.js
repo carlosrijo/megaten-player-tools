@@ -120,7 +120,7 @@
       return JSON.parse(JSON.stringify(fake));
     };
     // pictures: a drawn stand-in for the game window, cropped here in the browser
-    const fakePic = {}, fakeSrc = {}, fakeAuto = {};
+    const fakePic = {}, fakeSrc = {}, fakeAuto = {}, fakeGone = new Set();   // fakeGone: snapshots (taken_at) and demons (key) deleted in this preview, in memory only
     const fakeShot = () => {
       const c = document.createElement('canvas'); c.width = 1280; c.height = 800;
       const g = c.getContext('2d'), sky = g.createLinearGradient(0, 0, 0, 800);
@@ -150,10 +150,11 @@
         }
         if (cmd === 'load') {
           const empty = Q.get('empty') === '1' || fake.active !== 'Rubito';
-          const [snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks] = empty ? [[], [], [], [], null, null, {}, []] : await Promise.all([
+          let [snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks] = empty ? [[], [], [], [], null, null, {}, []] : await Promise.all([
             get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
             get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {}), get('../../data/dash/digi-unlocks.json', [])]);
           // the summoned demon comes with the page data (dash\summoned.json); here the stand-in list's summoned one
+          snapshots = snapshots.filter((x) => !fakeGone.has(x.taken_at));   // deleted here: gone until the page is reloaded
           const summoned = empty ? null : (await this.call('compDemons', { cached: true })).find((d) => d.summoned) || null;
           const pf = empty ? null : await get('../../data/cache/profile.json', null);
           const savedAt = pf && /^Updated (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/.exec(String(pf.note || ''));
@@ -194,7 +195,23 @@
               // stand-ins for the three states of the unlock tag
               unlock: name === 'Alilat' ? { listed: false, level: 0, raceLevel: 1, race, reached: false } : { listed: true, level: name === 'Seraph' ? 8 : 5, raceLevel: name === 'Seraph' ? 5 : 10, race, reached: name !== 'Seraph' },
               // the saved demon's own numbers as its offer, so its card looks as in the app (the others have none here)
-              offer: name === cur && S.data && S.data.digitalize ? (({ rate, alignment, stats, skills }) => ({ rate, alignment, stats, skills, combat: {} }))(S.data.digitalize) : null }));
+              offer: name === cur && S.data && S.data.digitalize ? (({ rate, alignment, stats, skills }) => ({ rate, alignment, stats, skills, combat: {} }))(S.data.digitalize) : null }))
+            .filter((d) => !fakeGone.has('demon:' + d.key));
+        }
+        // Deleting here only hides it in this preview (until the page is reloaded): the files are the app's to change
+        if (cmd === 'forgetDemon') {
+          await wait(200);
+          const d = (await this.call('compDemons', { cached: true })).find((x) => x.key === args.key);
+          if (!d) throw Object.assign(new Error('That demon isn’t in the list any more.'), { kind: 'user' });
+          if (d.current) throw Object.assign(new Error('That is your digitalize demon. Pick another one (or No demon) first, then remove it.'), { kind: 'user' });
+          if (d.inComp === true || d.summoned) throw Object.assign(new Error('That demon is still in your COMP, so it would come back the next time the demons are read. Only demons no longer in your COMP can be removed.'), { kind: 'user' });
+          fakeGone.add('demon:' + args.key);
+          return true;
+        }
+        if (cmd === 'deleteSnapshot') {
+          await wait(400);
+          fakeGone.add(args.takenAt);
+          return { backup: 'rubito-stats.backup-before-delete-20261125-120000.csv' };
         }
         // The browser preview has no game and no files to change: say so instead of pretending (the desktop app switches)
         if (cmd === 'useDemon') { await wait(300); throw Object.assign(new Error('This is the browser preview: it shows stand-in demons and can’t change your data. Pick the demon in the desktop app (BABEL.exe).'), { kind: 'user' }); }
@@ -354,7 +371,7 @@
     busy: false, scanning: false, lastScan: 0,
     state: { active: null, scanned: false, clients: [], characters: [] },   // who is in game, whose data is shown
     compare: null,
-    over: { open: null, demon: store.get('demon-open') === '1', allChanges: false, switching: null, aff: store.get('aff') || null },   // (aff: the affinity series shown on its own)   // Overview: the opened stat, demon details shown, every change listed, the demon being switched to
+    over: { open: null, demon: store.get('demon-open') === '1', allChanges: false, switching: null, delSnap: false, deletingSnap: false, aff: store.get('aff') || null },   // (aff: the affinity series shown on its own)   // Overview: the opened stat, demon details shown, every change listed, the demon being switched to
     demons: null,   // the COMP demons as last listed (the picker shows these at once, then looks at the game again)
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
@@ -1270,9 +1287,16 @@
     // counted the same way as the list below.
     const differs = (x) => groups.reduce((n, [, keys]) => n + keys.filter(([k]) => { const a = num(x[k]), b = num(L[k]); return a !== null && b !== null && a !== b; }).length, 0);
     const countText = (n) => (n ? `${n} change${n === 1 ? '' : 's'}` : 'no changes');
-    const sel = h('select', { class: 'select', 'aria-label': 'Compare with snapshot', onchange: () => { S.compare = sel.value; render(); } },
+    const sel = h('select', { class: 'select', 'aria-label': 'Compare with snapshot', onchange: () => { S.compare = sel.value; S.over.delSnap = false; render(); } },
       earlier.slice().reverse().map((x) => h('option', { value: x.taken_at, selected: x.taken_at === base.taken_at, text: `${when(x.taken_at)} · ${countText(differs(x))}` })));
-    const wrap = sect('What changed', h('label', { class: 'card-sub', style: 'display:inline-flex;align-items:center;gap:8px' }, 'since', sel), null, card);
+    // the picked snapshot can be deleted (a row of the spreadsheet, copied first); the latest is not in the picker
+    const del = S.over.delSnap
+      ? h('span', { class: 'snap-del' }, h('span', { class: 'card-sub', text: 'Delete this snapshot?' }),
+        h('button', { type: 'button', class: 'btn btn-sm', disabled: S.over.deletingSnap ? '' : null, onclick: () => deleteSnapshot(base) }, S.over.deletingSnap ? 'Deleting…' : 'Delete'),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { S.over.delSnap = false; render(); } }, 'Keep'))
+      : h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Delete the snapshot of ${when(base.taken_at)}`,
+        'data-tip': `Delete the snapshot of ${when(base.taken_at)}. The spreadsheet is copied first.`, onclick: () => { S.over.delSnap = true; render(); } }, icon('trash'));
+    const wrap = sect('What changed', h('span', { class: 'snap-pick' }, h('label', { class: 'card-sub', style: 'display:inline-flex;align-items:center;gap:8px' }, 'since', sel), del), null, card);
 
     const list = h('div', { class: 'chg-list' });
     // every change, with how big it is next to the number it changed from (so 50 on 365 and 51 on 524 can be compared)
@@ -1296,6 +1320,19 @@
     if (count > TOP_CHANGES) card.append(h('button', { type: 'button', class: 'btn btn-sm chg-more', 'aria-expanded': String(all),
       onclick: () => { S.over.allChanges = !S.over.allChanges; render(); } }, all ? `Show the ${TOP_CHANGES} biggest` : `Show all ${count} changes`));
     return wrap;
+  }
+  /** Delete one earlier snapshot (its spreadsheet row; the app copies the spreadsheet first), then show the page again. */
+  async function deleteSnapshot(x) {
+    if (S.over.deletingSnap) return;
+    S.over.deletingSnap = true; render();
+    try {
+      const r = await host.call('deleteSnapshot', { takenAt: x.taken_at });
+      S.compare = null; S.over.delSnap = false;
+      await reload();
+      toast('ok', `Snapshot of ${when(x.taken_at)} deleted`, r && r.backup ? `The spreadsheet was copied first: ${r.backup}` : '');
+    } catch (e) {
+      toast('err', 'Couldn’t delete the snapshot', String(e && e.message || e), 0);
+    } finally { S.over.deletingSnap = false; render(); }
   }
 
   // ---------- Bonuses ----------
@@ -5234,7 +5271,7 @@
   // Picking closes the dropdown straight away; switching to another demon (another scan, the spreadsheet, the page
   // data) runs behind the demon line, which says so until it is done.
   const demonsMenu = $('#demons');
-  let demonsFor = null, demonsLook = 0;   // the button it hangs from; which look at the game is the latest
+  let demonsFor = null, demonsLook = 0, demonsAsk = null;   // the button it hangs from; which look at the game is the latest; the demon asked about removing
   function placeDemons() {
     if (!demonsFor || !demonsFor.isConnected || !demonsMenu.matches(':popover-open')) return;
     const r = demonsFor.getBoundingClientRect(), w = demonsMenu.offsetWidth, hgt = demonsMenu.offsetHeight;
@@ -5255,7 +5292,22 @@
       () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render())
         : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (the Master), which loads your whole COMP at once. Then press Load demons from the game.', 12000)
           : useDemon(d))); };
-    list.replaceChildren(none, ...demons.map(row));
+    // A cached demon (one the game no longer has: not in the COMP at the last read, not summoned, not in this read, and
+    // not the one in use) can be taken off the list: a trash button on its card, then "Remove?". The others would come
+    // back at the next read, so they have none.
+    const item = (d) => {
+      const tile = row(d);
+      if (d.current || d.inComp === true || d.summoned || d.inGame) return tile;
+      const ask = demonsAsk === d.key;
+      return h('div', { class: 'dg-item' + (ask ? ' asking' : '') }, tile,
+        ask ? h('div', { class: 'dg-ask' }, h('span', { class: 'dgt-line', text: `Remove ${d.name} from this list? It is no longer in your COMP, so what it gives can’t be read again.` }),
+          h('span', { class: 'dg-ask-btns' },
+            h('button', { type: 'button', class: 'btn btn-sm', onclick: () => forgetDemon(d) }, 'Remove'),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-sm dg-keep', onclick: () => { demonsAsk = null; drawDemons(); } }, 'Keep')))
+          : h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm dg-del', 'aria-label': `Remove ${d.name} from the list`, 'data-tip': 'Remove from this list',
+            onclick: () => { demonsAsk = d.key; drawDemons(); const k = list.querySelector('.dg-keep'); if (k) k.focus(); } }, icon('trash')));
+    };
+    list.replaceChildren(none, ...demons.map(item));
     const load = $('#demons-load');
     load.disabled = !!loading;
     load.textContent = loading ? 'Reading the game…' : 'Load demons from the game';
@@ -5282,7 +5334,7 @@
     } catch (e) { if (look === demonsLook) drawDemons(String(e && e.message || e)); }
   }
   demonsMenu.addEventListener('toggle', (ev) => {
-    if (ev.newState !== 'open') { demonsLook++; return; }
+    if (ev.newState !== 'open') { demonsLook++; demonsAsk = null; return; }
     if (S.demons) drawDemons(); else loadDemons(false);   // never the game: only what is cached
     placeDemons();
     const b = $('#demons-list [aria-current="true"]') || $('#demons-list button');
@@ -5312,6 +5364,16 @@
     } catch (e) {
       toast('err', `Couldn’t switch to ${d.name}`, String(e && e.message || e), 0);
     } finally { if (S.over.switching) { S.over.switching = null; render(); } }
+  }
+  /** Take a demon off the list of demons seen (not the one in use). */
+  async function forgetDemon(d) {
+    try {
+      await host.call('forgetDemon', { key: d.key });
+      demonsAsk = null;
+      if (S.demons) S.demons = S.demons.filter((x) => x.key !== d.key);
+      drawDemons();
+      toast('ok', `${d.name} removed from the list`);
+    } catch (e) { toast('err', `Couldn’t remove ${d.name}`, String(e && e.message || e), 0); }
   }
 
   /** After a look at the clients: follow the only character in game, or ask when there are several. */

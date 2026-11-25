@@ -104,7 +104,9 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
   spokes, and the scale fits what is shown). With all three, the outer ring fits your boosts and resistances, and a
   cap that runs past it stops at the rim with its real value beside it.
   At the bottom, across the page, **What changed**: the 5 biggest changes since an earlier snapshot ("Show all" lists
-  the rest). The snapshot picker says how many changes each one has.
+  the rest). The snapshot picker says how many changes each one has. The bin beside it deletes the picked snapshot
+  (its row in your spreadsheet, which is copied first to `<name>.backup-before-delete-<time>.csv`); the latest
+  snapshot is not in the picker and can't be deleted.
 - **Expertise page:** opens with a **Summary**: points spent against the cap (with what is free), how many expertises are raised, at their highest class and chained, and how many passives are counted; then every raised expertise and chain expertise with its class-rank, a bar to its highest class ("Max" once reached; the highest class is the game client's own) and its points, with the icons of the skills its ranks gave you under it. Click one to show only its passives in the list below. Where a rank lets you learn only one of several skills (Pursuit class 1: Strength, Magic, Intelligence or Speed), only the one you learned counts, read from your learned skills at the snapshot; until the game has been read once, those ranks say so and add nothing. A skill's effects come from the game's tables; where the server's older effect data for a skill (the public server's) disagrees with the numbers the game's own text for it lists (Lord of Victory says "Close-Range Damage +15%, FCC +5%, Healing received -25%", the old data had +25% and Critical +100), the page leaves the old effect out and shows the game's text, marked "from the game's description".
 - **Assistant:** Black Frost stands in the window's bottom right corner, drawn in 3D from the game's own model with the
   game's own animations (the app reads them from your game folder the first time, so the game must have been running
@@ -444,7 +446,9 @@ app; a dropdown of "No demon" and the demons seen before, with "Load demons from
 loads a demon's stats and skills when you look at it, so a demon shows "Not read yet" until you click it in the COMP in game, or open the
 fusion window at the Cathedral of Shadows (which loads your whole COMP at once), and load again (the summoned demon is always read). What was read is kept, also for a demon you later move out of the
 COMP (its card then says "Not in your COMP") (`data\cache\comp-demons.json`, with icons in
-`data\cache\demon-icons\`), so the picker also works without the game. In the app, picking never reads the game: it uses the demons and the learned
+`data\cache\demon-icons\`), so the picker also works without the game. Those cached demons have a bin on their card
+that takes them off the list; demons still in your COMP, the summoned one and your digitalize demon have none (they
+would come back at the next read). In the app, picking never reads the game: it uses the demons and the learned
 assists last read (by a snapshot, or by "Load demons from the game" in the dropdown). Picking one saves it, recalculates the latest snapshot's
 demon columns with it (the CSV is copied to `<csv>.backup-before-demon-switch.csv` first) and rebuilds the page. Later
 snapshots refresh it from the COMP, and one taken while digitalized switches to the demon in use. The demon that was summoned when the game was last read (a snapshot, or "Load demons from the game") shows as a small card to the right of your stats on the Overview. The Digitalized view then adds it: a demon line on the Overview (framed in its alignment colour, as the player picture is in theirs; its 32x32 game icon, converted from the
