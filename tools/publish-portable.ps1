@@ -12,7 +12,9 @@
 # this .pdb, see HANDOVER.md "Troubleshooting"). The release workflow keeps it as a workflow artifact.
 #
 # The GitHub release workflow (.github\workflows\release.yml) runs this same script. Needs Rust (rustup, stable,
-# x86_64-pc-windows-msvc) and the Visual Studio C++ build tools.
+# x86_64-pc-windows-msvc) and the Visual Studio C++ build tools. It builds with Cargo.toml's `dist` profile (the release
+# profile plus fat LTO in one codegen unit: smaller, slower to build), so the exe is target\dist\BABEL.exe, not the
+# everyday target\release one.
 #
 #   pwsh -NoProfile -File tools\publish-portable.ps1                  # -> dist\BABEL.exe, dist-symbols\BABEL.pdb
 #   pwsh -NoProfile -File tools\publish-portable.ps1 -Version 1.2.0   # stamp a version into the exe
@@ -33,12 +35,12 @@ foreach ($d in $outDir, $symDir) {
 $env:IMAGINE_VERSION = $Version
 Push-Location $root
 try {
-  & cargo build --release --locked -p imagine-tracker
+  & cargo build --profile dist --locked -p imagine-tracker
   if ($LASTEXITCODE -ne 0) { throw "cargo build failed ($LASTEXITCODE)" }
 } finally { Pop-Location; Remove-Item Env:IMAGINE_VERSION -ErrorAction SilentlyContinue }
 
 $exe = Join-Path $outDir 'BABEL.exe'
-Copy-Item (Join-Path $root 'target\release\BABEL.exe') $exe
+Copy-Item (Join-Path $root 'target\dist\BABEL.exe') $exe
 
 # The release is one file: refuse an exe that still needs a runtime DLL beside it or on the user's PC
 $bytes = [IO.File]::ReadAllBytes($exe)
@@ -50,8 +52,8 @@ if ($extra) { throw "The release should be one exe, but the folder also has: $($
 
 # The symbols of this exe, kept apart. The exe records only the file's name (no build-machine path), so the .pdb has to
 # keep that name; it is useless for any other build.
-$pdb = Join-Path $root 'target\release\BABEL.pdb'
-if (-not (Test-Path $pdb)) { throw "The build made no BABEL.pdb (see profile.release in Cargo.toml)" }
+$pdb = Join-Path $root 'target\dist\BABEL.pdb'
+if (-not (Test-Path $pdb)) { throw "The build made no BABEL.pdb (see profile.release and profile.dist in Cargo.toml)" }
 Copy-Item $pdb (Join-Path $symDir 'BABEL.pdb')
 
 $mb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
