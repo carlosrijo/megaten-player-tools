@@ -4840,10 +4840,10 @@
     const items = [];
     E.races.forEach((r) => {
       const cur = st.lv.get(r.id) || 0;
-      r.extend.forEach(([l, , , text, who]) => items.push({ kind: who === 'demon' ? 'Demon' : 'You', label: text, race: r.name, l, have: cur >= l,
+      r.extend.forEach(([l, , , text, who]) => items.push({ kind: who === 'demon' ? 'Demon' : 'You', label: text, race: r.name, tier: r.tier, l, have: cur >= l,
         goal: { k: 'race', race: r.id, level: l, why: `${text}${who === 'demon' ? ' (demon)' : ''}` } }));
       // the race itself: opening it is a goal like any boost (the race at DLv 1); the open ones are listed as had
-      if (r.unlock.length) items.push({ kind: 'Race', label: `Unlock ${r.name}`, race: r.name, l: 1, have: cur >= 1, open: cur,
+      if (r.unlock.length) items.push({ kind: 'Race', label: `Unlock ${r.name} (Tier ${r.tier})`, race: r.name, l: 1, have: cur >= 1, open: cur,
         needs: r.unlock.map(([u, ul]) => `${E.raceName(u)} ${ul}`).join(' + '), goal: { k: 'race', race: r.id, level: 1 } });
     });
     let costed = false;
@@ -4851,7 +4851,7 @@
       if (costed) return;
       costed = true;
       items.forEach((x) => { const p = x.have ? null : E.solve(st, [x.goal]); x.dp = x.have ? 0 : p && p.ok ? p.cost : Infinity; });
-      items.forEach((x) => { x.sub = (x.kind === 'Race' ? (x.have ? `open, DLv ${x.open}` : `needs ${x.needs}`) : `${x.race} DLv ${x.l}`) + ` · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
+      items.forEach((x) => { x.sub = (x.kind === 'Race' ? (x.have ? `open, DLv ${x.open}` : `needs ${x.needs}`) : `${x.race} (Tier ${x.tier}) DLv ${x.l}`) + ` · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
     };
     const wrap = h('div', { class: 'fus-combo' });
     const ph = 'Add a goal: search a boost or a race to unlock, e.g. Intelligence, Slash, Limit Break, Seraphim';
