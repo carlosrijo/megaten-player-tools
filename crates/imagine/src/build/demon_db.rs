@@ -8,6 +8,11 @@
 //! versions (dungeon and boss copies with their own level and stats), which are folded into their base demon
 //! (DevilData unionData.baseDemonID) for "where it spawns" and are not listed on their own.
 //!
+//! Variants (Lucky Ishtar, Open-minded Ishtar, Inexperienced Cerberus, ...) are DevilData types with their own name,
+//! level and stats that the game hands out, so they are listed too, each once: see demon_variants.rs for the evidence
+//! (exchange items, special fusions, event gifts) and `build` for the rules that keep enemy copies, Mitama forms, loaned
+//! demons and several ids of one demon from being listed twice.
+//!
 //! Inputs:
 //!   decoded dir   DevilData.xml (devil) and ZoneData.xml (zone names), decoded from the IMAGINE client (smt-decoded\server)
 //!   datastore     the server's zones and partials (ServerZone / ServerZonePartial: Spawn, SpawnGroup)
@@ -28,6 +33,7 @@ use regex::Regex;
 use roxmltree::Node;
 use serde_json::{Map, Value, json};
 
+use super::demon_variants::{self, how_to_get};
 use super::item_icons;
 use super::xml::{self, elements, element, m, mem, obj, title};
 use crate::Result;
@@ -79,6 +85,9 @@ struct Devil {
 }
 
 struct Spawn {
+    /// the demon type that spawns
+    ty: i32,
+    /// the demon it is listed under (0: none)
     base: i32,
     level: i32,
     moon: i32,
@@ -90,7 +99,7 @@ struct Spawn {
 const SLOTS: [&str; 14] = ["Head", "Face", "Neck", "Top", "Arms", "Bottom", "Feet", "COMP", "Ring", "Earring", "Extra", "Back", "Talisman", "Weapon"];
 
 /// "200710_halloween" -> "Halloween 2007". Partials under partials\<event>\ are switched on for that event.
-fn season_name(folder: &str) -> String {
+pub(super) fn season_name(folder: &str) -> String {
     let re = Regex::new(r"^(\d{4})(\d{2})_(.+)$").expect("season");
     let Some(c) = re.captures(folder) else { return title(folder) };
     let post = Regex::new(r"[_-]?post$").expect("post");
@@ -224,6 +233,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
     // ---- the compendium: demon type -> the demon it is registered as ----
     let mut book_base: HashMap<i32, i32> = HashMap::new();
     let mut book_group: HashMap<i32, i32> = HashMap::new();
+    let mut book_row_group: HashMap<i32, i32> = HashMap::new(); // every compendium row, a variant's own included
     for line in reference("devil-book.tsv")?.lines()? {
         if line.starts_with('#') {
             continue;
@@ -233,6 +243,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
             continue;
         }
         book_base.insert(int(Some(p[0])), int(Some(p[2])));
+        book_row_group.insert(int(Some(p[0])), int(Some(p[4])));
         if int(Some(p[0])) == int(Some(p[2])) {
             book_group.insert(int(Some(p[2])), int(Some(p[4])));
         }
@@ -252,6 +263,22 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
             _ => 0,
         }
     };
+
+    // ---- how the game hands out demon types that are not compendium bases (exchange items, special fusions, gifts) ----
+    let evidence = demon_variants::gather(
+        decoded,
+        store,
+        &reference("items-game.tsv")?.lines()?,
+        &reference("fusion-plugins.tsv").and_then(|f| f.lines()).unwrap_or_default(),
+    )?;
+    console::write_line(&format!(
+        "{} exchange items hand out {} demon types, {} special fusion results, {} event gifts ({} ms)",
+        evidence.exchange.len(),
+        evidence.exchange_of.len(),
+        evidence.special.len(),
+        evidence.gifts.len(),
+        ms()
+    ));
 
     // ---- zone names (client) ----
     let mut zone_name: HashMap<i32, String> = HashMap::new();
@@ -325,7 +352,11 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
         for sp in &top.spawns {
             let ty = sp.enemy_type;
             let b = base_of(ty);
-            if b == 0 {
+            let join = sp.category.as_deref() != Some("BOSS")
+                && int(sp.talk_resist.as_deref()) < 100
+                && (sp.talk_results.as_deref().map(|tr| int(Some(tr))).unwrap_or(3) & 1) != 0;
+            // a type no compendium demon covers is kept only when a player can contract it (it may be a variant of its own)
+            if b == 0 && !(join && devils.get(&ty).is_some_and(|d| !d.name.trim().is_empty())) {
                 continue;
             }
             // only a spawn some group places can appear (a partial may fill groups of its base zone: kept)
@@ -343,12 +374,9 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
                 Some(lv) if int(Some(lv)) > 0 => int(Some(lv)),
                 _ => devils.get(&ty).map(|d| d.base_level).unwrap_or(0),
             };
-            let join = sp.category.as_deref() != Some("BOSS")
-                && int(sp.talk_resist.as_deref()) < 100
-                && (sp.talk_results.as_deref().map(|tr| int(Some(tr))).unwrap_or(3) & 1) != 0;
             let moon = moons.iter().fold(0, |a, x| a | x);
             for z in &zones {
-                spawns.push(Spawn { base: b, level, join, zone: z.clone(), season: season.clone(), moon });
+                spawns.push(Spawn { ty, base: b, level, join, zone: z.clone(), season: season.clone(), moon });
             }
             if let Some(tw) = &trace {
                 if devils.get(&b).is_some_and(|d| &d.name == tw) {
@@ -373,6 +401,123 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
         tops.len(),
         ms()
     ));
+
+    // ---- variants: demon types a player can own that the compendium does not list as a base demon ----
+    // A type is a variant when the data gives exactly that type: an exchange item (Summon PG / Demon Voucher), a special
+    // fusion result, an event or NPC gift, or a spawn the player can contract. Not variants: Mitama forms (a demon's own
+    // mitamaFusionID, kept in its entry), and types only an event lends for a while (fusionOptions bit 1 with no other
+    // way: the "IC" helpers, Wounded Cerberus), which the game takes back.
+    let mut reasons: HashMap<i32, Vec<&'static str>> = HashMap::new();
+    for t in evidence.exchange_of.keys() {
+        reasons.entry(*t).or_default().push("exchange");
+    }
+    for t in evidence.special.keys() {
+        reasons.entry(*t).or_default().push("special");
+    }
+    for t in evidence.gifts.keys() {
+        reasons.entry(*t).or_default().push("gift");
+    }
+    for t in spawns.iter().filter(|s| s.join).map(|s| s.ty).collect::<HashSet<_>>() {
+        reasons.entry(t).or_default().push("contract");
+    }
+    let (mut mitama_skipped, mut loan_skipped, mut copies_skipped) = (0, 0, 0);
+    let mut picked: Vec<i32> = Vec::new();
+    for (ty, why) in &reasons {
+        let Some(d) = devils.get(ty) else { continue };
+        if d.name.trim().is_empty() || bases.contains(ty) {
+            continue;
+        }
+        if (d.fusion_options & 0x08) != 0 {
+            mitama_skipped += 1;
+            continue;
+        }
+        if (d.fusion_options & 0x01) != 0 && why.iter().all(|w| *w == "gift") {
+            loan_skipped += 1;
+            continue;
+        }
+        // a copy of a demon under the same name (a spawn or a story gift of "Pixie" at level 2) is that demon, not a variant
+        if d.base_id != *ty && why.iter().all(|w| *w == "contract" || *w == "gift") && devils.get(&d.base_id).is_some_and(|b| b.name.trim() == d.name.trim()) {
+            copies_skipped += 1;
+            continue;
+        }
+        picked.push(*ty);
+    }
+    picked.sort();
+    // One entry per distinct demon. Several ids can be the same demon (the same name, level, race, stats, skills and
+    // features: 550 and 1302 Asura Cerberus, 2000 and 542 Cerberus): it is listed once, under the id of the compendium's
+    // demon when it has one, else under the lowest id; the other ids add their ways to get it (and a Mitama form the
+    // listed id lacks) to that entry. Same name with another level or other stats is another demon (Illusion Jeanne
+    // d'Arc Lv 1 and Lv 50 stay two).
+    type Sig = (String, i32, String, Vec<i32>, Vec<i32>, Vec<i32>, Vec<(i32, i32)>);
+    let sig = |d: &Devil| -> Sig { (d.name.trim().to_string(), d.base_level, d.race.clone(), d.correct.clone(), d.skills.clone(), d.traits.clone(), d.learned.clone()) };
+    let mut sig_entry: HashMap<Sig, i32> = HashMap::new();
+    let mut listed: Vec<i32> = bases.iter().copied().collect();
+    listed.sort();
+    for id in &listed {
+        sig_entry.entry(sig(&devils[id])).or_insert(*id);
+    }
+    let mut variants: Vec<i32> = Vec::new();
+    let mut aliases: HashMap<i32, Vec<i32>> = HashMap::new(); // entry id -> the other ids that are the same demon
+    let mut merged = 0;
+    // a demon only an event gives or a spawn offers, with the name, level and race of a listed demon, is that demon (an
+    // event's Lv 49 Cerberus with its own skill list is still Cerberus); exchange items and special fusions name a
+    // demon on purpose, so those need the same stats and skills too
+    let mut look_alike: HashMap<(String, i32, String), i32> = HashMap::new();
+    for id in &listed {
+        let d = &devils[id];
+        look_alike.entry((d.name.trim().to_string(), d.base_level, d.race.clone())).or_insert(*id);
+    }
+    for ty in picked {
+        let d = &devils[&ty];
+        if reasons[&ty].iter().all(|w| *w == "contract" || *w == "gift") {
+            if let Some(e) = look_alike.get(&(d.name.trim().to_string(), d.base_level, d.race.clone())) {
+                merged += 1;
+                aliases.entry(*e).or_default().push(ty);
+                continue;
+            }
+        }
+        match sig_entry.entry(sig(d)) {
+            std::collections::hash_map::Entry::Occupied(e) => {
+                merged += 1;
+                aliases.entry(*e.get()).or_default().push(ty);
+            }
+            std::collections::hash_map::Entry::Vacant(v) => {
+                v.insert(ty);
+                variants.push(ty);
+                look_alike.entry((d.name.trim().to_string(), d.base_level, d.race.clone())).or_insert(ty);
+            }
+        }
+    }
+    let devils_names: HashMap<i32, String> = devils.iter().map(|(k, d)| (*k, d.name.trim().to_string())).collect();
+    let variant_set: HashSet<i32> = variants.iter().copied().collect();
+    console::write_line(&format!(
+        "{} variants listed ({merged} more ids of the same demon merged, {mitama_skipped} Mitama forms, {loan_skipped} loaned demons and {copies_skipped} same-name copies left out)",
+        variants.len()
+    ));
+    if std::env::var("DEMONDB_VARIANTS").is_ok() {
+        for ty in &variants {
+            let d = &devils[ty];
+            let mut why = reasons[ty].clone();
+            why.sort();
+            console::write_line(&format!("  variant {ty}\t{}\tLv{}\t{}\tbase {}\tfo {}\t{}", d.name, d.base_level, d.race, d.base_id, d.fusion_options, why.join("+")));
+        }
+        for (e, a) in &aliases {
+            console::write_line(&format!("  same demon {e} {} = {:?}", devils[e].name, a));
+        }
+    }
+    // a spawn is listed under the demon it is the same as, or under the variant itself, else under its compendium demon
+    let mut canon: HashMap<i32, i32> = variants.iter().map(|v| (*v, *v)).collect();
+    for (e, a) in &aliases {
+        for i in a {
+            canon.insert(*i, *e);
+        }
+    }
+    for s in spawns.iter_mut() {
+        if let Some(k) = canon.get(&s.ty) {
+            s.base = *k;
+        }
+    }
+    spawns.retain(|s| s.base != 0);
 
     // ---- tarot and soul (client EnchantData via reference\enchants-game.tsv) ----
     let mut enchants: HashMap<(i32, String), Enchant> = HashMap::new();
@@ -481,7 +626,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
     for (i, s) in spawns.iter().enumerate() {
         by_base.entry(s.base).or_default().push(i);
     }
-    let mut base_ids: Vec<i32> = bases.iter().copied().collect();
+    let mut base_ids: Vec<i32> = bases.iter().chain(variants.iter()).copied().collect();
     base_ids.sort();
     const STAT_IDX: [usize; 14] = [0, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 19, 20];
     const CRIT_IDX: usize = 16;
@@ -511,8 +656,10 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
         // Mitama-fused, a demon becomes another demon type (unionData.mitamaFusionID, e.g. Metatron 21 -> 10021) with
         // its own features, stats and affinities. Skills only when they differ from the demon's own.
         let mut mt: Value = Value::Null;
-        if d.mitama_id > 0 && d.mitama_id != id {
-            if let Some(md) = devils.get(&d.mitama_id) {
+        // (a Mitama form the listed id lacks may sit on another id of the same demon)
+        let mitama_id = if d.mitama_id > 0 { d.mitama_id } else { aliases.get(&id).into_iter().flatten().map(|a| devils[a].mitama_id).find(|m| *m > 0).unwrap_or(0) };
+        if mitama_id > 0 && mitama_id != id {
+            if let Some(md) = devils.get(&mitama_id) {
                 let mc = pad(&md.correct);
                 growth_used.insert(md.growth);
                 let mut dl = d.learned.clone();
@@ -598,7 +745,25 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
         e.insert("growth".into(), json!(d.growth));
         e.insert("fusion".into(), json!((d.fusion_options & 0x02) != 0));
         e.insert("mitama".into(), json!((d.fusion_options & 0x08) != 0));
-        e.insert("counted".into(), json!(book_group.get(&id).copied().unwrap_or(0) != 0));
+        let is_variant = variant_set.contains(&id);
+        e.insert(
+            "counted".into(),
+            json!(if is_variant { book_row_group.get(&id).copied().unwrap_or(0) != 0 } else { book_group.get(&id).copied().unwrap_or(0) != 0 }),
+        );
+        let mut ids = vec![id];
+        ids.extend(aliases.get(&id).cloned().unwrap_or_default());
+        if is_variant {
+            // the demon it is a variant of: its base demon's name (not for a demon that is its own base)
+            let of = devils.get(&d.base_id).filter(|b| d.base_id != id && !b.name.trim().is_empty()).map(|b| b.name.trim().to_string());
+            e.insert("variant".into(), json!(true));
+            e.insert("variantOf".into(), json!(of));
+        }
+        // the ways the game gives this demon beyond contracts and fusion by level: for a variant always, for a compendium
+        // demon only when another id of the same demon has some
+        let get = if is_variant || aliases.contains_key(&id) { how_to_get(&ids, &devils_names, &evidence, &zone_name) } else { Vec::new() };
+        if is_variant || !get.is_empty() {
+            e.insert("get".into(), Value::Array(get));
+        }
         let icon = match data.devil_icon_file(id)? {
             Some((name, folder)) => picture(&name, Some(&folder), &format!("d{id}.png"))?,
             None => None,

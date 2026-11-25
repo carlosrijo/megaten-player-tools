@@ -143,7 +143,9 @@ column heading to rank by it (again for the other way), click a demon to open it
 at their base level, all at level 1 (the server's formula at level 1, below where any demon starts, so they compare on
 equal footing) or all at level 99. "Mitama-fused" uses the Mitama form's stats where a demon has one, marked with the
 game's Mitama sign on the face's top left corner, as on Overview's summoned demon. Shows the demons that can be
-contracted (140), every one you can get some way (contract, normal fusion or a DCM), or all 359. Stats are a fresh
+contracted (284), every one you can get some way (contract, normal fusion, a DCM, an exchange item, a special fusion or
+an event gift; the page opens on this one), or all 951. The variants (Lucky, Inexperienced, Open-minded Ishtar and the
+like) are listed next to their demon, each with its own stats. Stats are a fresh
 demon's (no Demon Force, rebirth or Mitama runes). Critical is the demon's own value from the game data: it does not
 grow with level, and a critical roll adds Luck to it.
 
@@ -278,17 +280,19 @@ enemy at that level (with the extra HP the game gives enemies), before its passi
 game.
 ### Tools: Demon Database
 
-Under **Tools** in the left bar. Every demon you can own (the compendium's 359) with its picture, race, base level and
+Under **Tools** in the left bar. Every demon you can own (the compendium's 359 and 592 variants such as Open-minded Ishtar) with its picture, race, base level and
 alignment. Click a demon for its stats at any level from its base level to 99 (a fresh demon: no Demon Force, rebirth
 or Mitama), its affinities (resistance in %, weaknesses in red, natural null / reflect / drain chances), its features and its
 Mitama features (what it gains, or swaps, when Mitama-fused),
 its skills (what it knows and the level it learns each one at; hover for the game's description), what its tarot and
 soul give and on which gear, and where to get it: the places it can be contracted with their levels, its DCM (with a
-button to the DCM Locator) and normal fusion. "Normal" / "Mitama-fused" at the top of a demon switches its stats,
+button to the DCM Locator), normal fusion and, for a variant, the exchange item (a "Summon PG" or a voucher) that gives
+it with where the item comes from, or its special fusion or event gift; where the data does not say, the page says so. "Normal" / "Mitama-fused" at the top of a demon switches its stats,
 affinities, features and skills to its Mitama-fused form (340 demons have one).
 
-The list opens on the demons that can be contracted somewhere (140); "Not contracted anywhere" and "All demons" show
-the rest. Dungeon and boss copies of a demon are not listed on their own: the places they appear, where they cannot be
+The list opens on the demons that can be contracted somewhere (284); "Not contracted anywhere" and "All demons" show
+the rest (the variants an item, a fusion or an event gives are there). A variant is a demon type with its own name,
+level and stats that the game gives out. Dungeon and boss copies of a demon are not listed on their own: the places they appear, where they cannot be
 talked into a contract, are under "Enemy only". Search by name, race, skill, feature, tarot text or zone; filter by
 race and alignment (Law, Neutral, Chaos); sort by level, name or race. Demons, stats, skills, tarot and soul are the IMAGINE client's; spawns are the
 public server data, so IMAGINE may have changed them.
