@@ -80,6 +80,9 @@ pub fn sim_command(
         "simInit" => pipe_of(&who)?.sim.init(args)?,
         "simulate" => pipe_of(&who)?.sim.run(args)?,
         "simCatalog" => pipe_of(&who)?.sim.catalog(json::int_or(args.at("slot"), -1), args)?,
+        // a build as a code for another player, and such a code back as a build (neither saves anything)
+        "simShareCode" => pipe_of(&who)?.sim.share(args)?,
+        "simImportCode" => pipe_of(&who)?.sim.import(args)?,
         "simBuilds" => simulator::builds(builds_path, Some(owner))?,
         "simSaveBuild" => simulator::save_build(builds_path, args, Some(owner))?,
         "simDeleteBuild" => simulator::delete_build(builds_path, json::str(args.at("id")).as_deref(), Some(owner))?,

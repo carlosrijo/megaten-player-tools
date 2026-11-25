@@ -36,6 +36,8 @@
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
     route: '<circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="5.5" r="2.2"/><path d="M8.2 18.5H15a3.2 3.2 0 0 0 0-6.4H9a3.2 3.2 0 0 1 0-6.4h6.8"/>',
     trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 10.5v6M14 10.5v6"/>',
+    share: '<path d="M12 15V4M8 7.5l4-4 4 4"/><path d="M5 12.5v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/>',
+    download: '<path d="M12 4v11M8 11.5l4 4 4-4"/><path d="M5 15v3.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V15"/>',
   };
   function icon(name) {
     const s = document.createElementNS(SVG, 'svg');
@@ -3431,6 +3433,127 @@
       drawSimNav(); render();
     } catch (e) { toast('err', 'The build could not be deleted', String((e && e.message) || e)); }
   }
+  // --- sharing a build: a short text code ("BABEL1-…") that another player pastes into "Import build". The reader
+  //     writes and reads the code (host "simShareCode" / "simImportCode": crates\imagine\src\build\share_code.rs). A
+  //     pasted code is a stranger's input, so the page never looks inside one: it hands the text to the reader and
+  //     shows what the reader made of it, as text. A code holds the gear, the expertise points and the level and
+  //     alignment they stand on: no character name, no build name, no demon. Importing only ever adds a new build. ---
+  const simCodeDlg = $('#sim-code');
+  $('#sim-code-close').addEventListener('click', () => simCodeDlg.close());
+  let simCodeSeq = 0;   // which filling of the dialog is the current one (an answer for an earlier one is dropped)
+  /** "Share": the code of a build ({ base, level, alignment, slots, points, cap }), to copy. */
+  async function simShare(spec, name) {
+    let code;
+    try { code = (await host.call('simShareCode', { base: spec.base, level: spec.level, alignment: spec.alignment, slots: spec.slots, points: spec.points, cap: spec.cap })).code; }
+    catch (e) { toast('err', 'This build can’t be shared', String((e && e.message) || e)); return; }
+    ++simCodeSeq;
+    $('#sim-code-title').textContent = 'Share build';
+    const box = h('textarea', { class: 'input sim-code-box', readonly: true, rows: 4, spellcheck: 'false', 'aria-label': 'Build code' });
+    box.value = code;
+    box.addEventListener('focus', () => box.select());
+    const copy = h('button', { type: 'button', class: 'btn btn-primary', onclick: async () => {
+      if (await copyText(code)) flashLabel(copy, 'Copied');
+      else { box.focus(); box.select(); toast('info', 'Copy it by hand', 'The code is selected: press Ctrl+C.'); }
+    } }, 'Copy code');
+    simFill($('#sim-code-body'),
+      h('p', { class: 'field-help', text: `The code of ${name ? `“${name}”` : 'this build'}. Send it to another player: they paste it into “Import build” in their Build Planner.` }),
+      box,
+      h('div', { class: 'field-row' }, copy, h('span', { class: 'field-help sim-code-count', text: `${code.length} characters` })),
+      h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'The code holds the pieces (with their fusions and mods), the expertise ranks, and the level and alignment they stand on. It does not hold your character’s name, the build’s name or its digitalize demon.' })));
+    if (!simCodeDlg.open) simCodeDlg.showModal();
+    copy.focus();
+  }
+  /** "Import build": paste a code, see what it holds, choose what it stands on, and save it as a new build. */
+  function simImportOpen() {
+    const M = S.sim, mine = ++simCodeSeq, me = simActive();
+    let chars = (S.state.characters || []).filter((c) => c.hasData || c.name === me).map((c) => c.name);
+    if (me && !chars.includes(me)) chars = [me, ...chars];
+    // what was read from the code (build), what it is shown on (who: a character, '' = no base), and its result there
+    const st = { build: null, who: me || '', readSeq: 0, showSeq: 0, points: null, ready: false };
+    $('#sim-code-title').textContent = 'Import build';
+    const box = h('textarea', { class: 'input sim-code-box', rows: 4, spellcheck: 'false', autocomplete: 'off', maxlength: 2048, placeholder: 'BABEL1-…', 'aria-label': 'Build code' });
+    const status = h('p', { class: 'field-help sim-code-status', role: 'status' });
+    const preview = h('div', { class: 'sim-code-preview' });
+    const names = new Set((M.builds || []).map((b) => b.name));
+    let fresh = 'Imported build', i = 2;
+    while (names.has(fresh)) fresh = `Imported build ${i++}`;
+    const nameIn = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: fresh, 'aria-label': 'Name of the build', spellcheck: 'false' });
+    const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', disabled: true, onclick: () => save() }, 'Save as build');
+    const foot = h('div', { class: 'sim-code-foot', hidden: true }, h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Name' }), nameIn), saveBtn);
+    const say = (text, bad) => { status.textContent = text || ''; status.classList.toggle('bad', !!bad); };
+    const here = () => mine === simCodeSeq && simCodeDlg.open;
+
+    /** The build on what was chosen: the pieces and ranks by name, as the reader names them. */
+    async function show() {
+      const b = st.build, seq = ++st.showSeq;
+      st.ready = false; saveBtn.disabled = true;
+      if (!b) { simFill(preview); foot.hidden = true; return; }
+      foot.hidden = false;
+      const pick = h('div', { class: 'seg sim-code-on', role: 'group', 'aria-label': 'What the build stands on' },
+        chars.map((c) => h('button', { type: 'button', 'aria-pressed': String(st.who === c), 'data-tip': `Its numbers on ${c} as last read: ${c}’s stats, with this gear and these expertise ranks`, onclick: () => { st.who = c; show(); } }, c)),
+        h('button', { type: 'button', 'aria-pressed': String(st.who === ''), 'data-tip': `No character behind it: only what the build gives, at level ${n0(b.level)} as ${alignName(b.alignment)}, as it was shared`, onclick: () => { st.who = ''; show(); } }, 'No base'));
+      const body = h('div', { class: 'sim-code-list' }, h('p', { class: 'note', text: 'Working it out…' }));
+      simFill(preview, h('div', { class: 'field' }, h('span', { class: 'field-label', text: 'Show it on' }), pick), body);
+      let entry, res;
+      try {
+        entry = await simBase(st.who, n0(b.level), b.alignment);
+        st.points = { ...Object.fromEntries(Object.keys(entry.init.build.points || {}).map((k) => [k, 0])), ...b.points };   // whole: an expertise the code has no points in is at 0
+        res = await host.call('simulate', { ...simArgs(st.who, n0(b.level), b.alignment), demon: '', slots: b.slots, points: st.points });
+      } catch (e) {
+        if (seq !== st.showSeq || !here()) return;
+        simFill(body, h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: st.who ? `${st.who} can’t be used as its base. ` : 'It can’t be worked out. ' }), String((e && e.message) || e), st.who ? ' Pick another character, or No base.' : '')));
+        return;
+      }
+      if (seq !== st.showSeq || !here()) return;
+      const pieces = (res.slots || []).filter((x) => x && !x.empty);
+      const ranks = (entry.init.expertise || []).filter((x) => !x.chain && n0(st.points[x.id]) >= 10000);
+      simFill(body,
+        h('p', { class: 'note', text: `${pieces.length} piece${pieces.length === 1 ? '' : 's'} and ${ranks.length} expertise${ranks.length === 1 ? '' : 's'}, made at level ${n0(b.level)} as ${alignName(b.alignment)}.` }),
+        pieces.map((x) => h('div', { class: 'sim-code-row' },
+          x.icon ? h('img', { src: x.icon, alt: '' }) : h('span'),
+          h('span', { class: 'dgt-line', text: x.slot }),
+          h('span', { class: 'sim-code-piece' }, h('b', { text: x.name }),
+            h('span', { class: 'dgt-line', text: [x.basic ? `Basic features: ${x.basic}` : '', x.special ? `Characteristics: ${x.special}` : '', x.tarot ? `Tarot: ${x.tarot}` : '', x.soul ? `Soul: ${x.soul}` : ''].filter(Boolean).join(' · ') })))),
+        ranks.length ? h('div', { class: 'sim-code-ranks' }, ranks.map((x) => h('span', { class: 'tag', text: `${x.name} · ${simRank(Math.floor(n0(st.points[x.id]) / 10000))}` }))) : null);
+      st.ready = true; saveBtn.disabled = false;
+    }
+    /** What is in the box, to the reader; its answer is the build, or why not in plain words. */
+    async function read() {
+      const text = box.value.trim(), seq = ++st.readSeq;
+      st.build = null; show();
+      if (!text) { say(''); return; }
+      say('Reading the code…');
+      try {
+        const r = await host.call('simImportCode', { code: text });
+        if (seq !== st.readSeq || !here()) return;
+        st.build = r.build; say('');
+        show();
+      } catch (e) { if (seq === st.readSeq && here()) say(String((e && e.message) || e), true); }
+    }
+    async function save() {
+      const b = st.build;
+      if (!b || !st.ready) return;
+      const name = nameIn.value.replace(/\s+/g, ' ').trim() || fresh;
+      saveBtn.disabled = true;
+      try {
+        const r = await host.call('simSaveBuild', { name, ...simArgs(st.who, n0(b.level), b.alignment), slots: b.slots, points: st.points, cap: typeof b.cap === 'number' ? b.cap : null });
+        M.builds = r.builds || [];
+        drawSimNav();
+        simCodeDlg.close();
+        toast('ok', `Imported “${name}”`, 'It is a new build of yours. Nothing else was changed.', 4000);
+        simOpen(r.id);
+      } catch (e) { saveBtn.disabled = false; toast('err', 'The build could not be saved', String((e && e.message) || e)); }
+    }
+    let timer = null;
+    box.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(read, 200); });
+    nameIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') save(); });
+    simFill($('#sim-code-body'),
+      h('p', { class: 'field-help', text: 'Paste a build code another player shared with you. You see what it holds before anything is saved.' }),
+      box, status, preview, foot,
+      h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'A code is only numbers: pieces, fusions and expertise ranks, each checked against the game data. Importing adds a new build and changes nothing else.' })));
+    if (!simCodeDlg.open) simCodeDlg.showModal();
+    box.focus();
+  }
   /** The saved builds under "Build Planner" in the left bar; the one in the editor is marked instead of the entry itself. */
   function drawSimNav() {
     const M = S.sim, list = M.builds || [], open = M.navOpen && list.length > 0;
@@ -3443,6 +3566,40 @@
     const entry = nav.querySelector('.nav-item[data-page="sim"]');
     if (entry && editing && open) entry.removeAttribute('aria-current');
   }
+  /**
+   * The hover tooltip of a piece of a build, laid out as the Gear page's (gearTip): the icon, the name and the slot,
+   * then the set bonus and the sections in the Gear page's order. The Gear page shows the game's own tooltip text,
+   * which exists only for pieces a character was read wearing; here the sections are what the reader worked out for
+   * the build (the lines the editor shows for the piece). `x`: the piece in the build's result; `note`: added to the slot.
+   */
+  const simPieceTip = (x, res, note) => () => {
+    const box = h('div', { class: 'tt' }), L = x.lines || {};
+    box.append(tipHead(gearIcon({ icon: x.icon }), x.name, [x.slot, note].filter(Boolean).join(' · ')));
+    let any = false;
+    const sec = (title, from, list, mark) => {
+      if (!from && !(list && list.length)) return;
+      any = true;
+      box.append(h('div', { class: 'tt-sec', text: title }));
+      if (from) box.append(h('div', { class: 'tt-line tt-why', text: from }));
+      (list || []).forEach((l) => box.append(h('div', { class: 'tt-line', text: (mark || '') + simLineText(l) + (l.n ? ` (${l.n})` : '') })));
+    };
+    const mine = simPlain(x.name);
+    (res.sets || []).filter((s) => s.kind === 'set' && mine && String(s.name || '').includes(mine)).forEach((s) =>
+      sec(s.active ? 'Set bonus' : `Set bonus · ${s.worn} worn, not complete`, `Pieces: ${s.name}`, s.lines, '* '));
+    sec('Appearance Bonus', '', L.appearance);
+    sec('Basic Features', x.basic ? `Of ${x.basic}` : '', L.item);
+    // fusion great-success bonuses, as the Gear page marks them
+    (x.fuse || []).filter((f) => n0(f.bonus)).forEach((f) => {
+      any = true;
+      box.append(h('div', { class: 'tt-line' }, `${f.stat}: `, h('span', { class: 'tt-fuse', text: `+${fmt(f.bonus)} from fusion` }), isTrue(f.max) ? h('span', { class: 'tt-max', text: 'MAX' }) : null));
+    });
+    sec('Characteristics', x.special ? `Of ${x.special}` : '', L.characteristic);
+    sec('Tarot Fusion', x.tarot || '', L.tarot);
+    sec('Soul Fusion', x.soul || '', L.soul);
+    sec('Modification Slot', '', L.mod);
+    if (!any) box.append(h('div', { class: 'tt-line', text: 'It adds nothing by itself.' }));
+    return box;
+  };
   /** One saved build as a card: its name, its base, how far it is from that base, and the biggest differences it makes. */
   function simCard(b) {
     const M = S.sim, key = simCardKey(b), hit = M.cards.get(b.id), known = hit && hit.key === key ? hit : null, res = known ? known.res : null;
@@ -3456,24 +3613,39 @@
     const drawActs = (asking) => simFill(acts, asking
       ? [h('span', { class: 'dgt-line', text: 'Delete it?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => simDelete(b.id) }, 'Delete'),
         h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => drawActs(false) }, 'Keep')]
-      : [h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Duplicate ${b.name}`, 'data-tip': 'Duplicate', onclick: () => simDuplicate(b, false) }, icon('copy')),
+      : [h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Share ${b.name}`, 'data-tip': 'Share: a code another player can import',
+          onclick: () => simShare({ ...simArgs(at.who, at.level, at.align), slots: b.slots, points: b.points, cap: typeof b.cap === 'number' ? b.cap : null }, b.name) }, icon('share')),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Duplicate ${b.name}`, 'data-tip': 'Duplicate', onclick: () => simDuplicate(b, false) }, icon('copy')),
         h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Delete ${b.name}`, 'data-tip': 'Delete', onclick: () => drawActs(true) }, icon('trash'))]);
     drawActs(false);
-    const icons = res ? c.slots.map((k) => res.slots[k] && res.slots[k].icon).filter(Boolean) : [];
+    // the left column: the build's pieces as pictures, one box per slot in the game's order (an empty slot stays an
+    // empty box, so a piece is always in the same place); on a character's build the pieces that differ are ringed
+    const changed = new Set(at.who ? c.slots : []);
+    // Hovering a piece shows the Gear page's tooltip. A piece the shown character wears, unchanged in this build, gets
+    // that very tooltip (the game's own text); any other piece gets the same layout from what the reader worked out.
+    const wornNow = entry && at.who && at.who === simActive() && S.v && S.v.gear ? S.v.gear : [];
+    const col = h('span', { class: 'sim-build-col' }, Array.from({ length: 15 }, (_, k) => {
+      const x = res && res.slots[k] && !res.slots[k].empty ? res.slots[k] : null;
+      const box = h('span', { class: 'sim-build-slot' + (x ? '' : ' none') + (x && changed.has(k) ? ' changed' : '') },
+        x && x.icon ? h('img', { src: x.icon, alt: '' }) : null);
+      if (!x) return box;
+      const worn = changed.has(k) ? null : wornNow.find((g) => g.kind !== 'set' && g.item_id === x.id && String(g.slot).toLowerCase() === String(x.slot).toLowerCase());
+      return withTip(box, worn ? gearTip(worn) : simPieceTip(x, res, changed.has(k) ? `not what ${at.who} wears` : ''));
+    }));
     // what it changes: your stats first, then combat, then the rest; within each, the biggest first
     const rank = { Stats: 0, Combat: 1, Affinity: 2, Other: 3 };
     const diffs = res && entry ? simDiff(entry.init.result, res).filter((x) => rank[x.group] !== undefined).sort((x, y) => rank[x.group] - rank[y.group] || y.size - x.size) : [];
-    simFill(el,
+    simFill(el, col, h('span', { class: 'sim-build-body' },
       h('span', { class: 'sim-build-head' },
         h('span', { class: 'dgt-id' }, h('button', { type: 'button', class: 'sim-build-name', 'data-tip': `Open ${b.name}`, text: b.name }),
-          h('span', { class: 'dgt-line', text: [at.who || 'No base', count, b.saved_at ? `saved ${when(b.saved_at)}` : ''].filter(Boolean).join(' · ') })),
+          h('span', { class: 'dgt-line', text: [at.who || 'No base', count].filter(Boolean).join(' · ') })),
         acts),
-      icons.length ? h('span', { class: 'sim-build-icons' }, icons.slice(0, 8).map((src) => h('img', { src, alt: '' })), icons.length > 8 ? h('span', { class: 'dgt-line', text: `+${icons.length - 8}` }) : null) : null,
       !known ? h('span', { class: 'dgt-line', text: 'Working it out…' })
         : !res ? h('span', { class: 'dgt-line', text: known.why || 'This build can’t be worked out with the game data as it is now.' })
         : diffs.length ? h('span', { class: 'dgt-adds' }, diffs.slice(0, 4).map((x) => h('span', { class: 'dgt-add' }, h('span', { text: x.label }), h('b', { class: x.good ? 'good' : 'bad', text: fmt(x.d, x.unit, true) }))),
           diffs.length > 4 ? h('span', { class: 'dgt-line', text: `and ${diffs.length - 4} more` }) : null)
-        : n ? h('span', { class: 'dgt-line', text: 'Moves none of your numbers.' }) : null);
+        : n ? h('span', { class: 'dgt-line', text: 'Moves none of your numbers.' }) : null,
+      b.saved_at ? h('span', { class: 'dgt-line sim-build-saved', text: `Saved ${when(b.saved_at)}` }) : null));   // at the foot of the card
     // its result, one card after the other; the card is drawn again when it is in
     if (!known) M.jobs = M.jobs.then(async () => {
       const now = M.cards.get(b.id);
@@ -3550,11 +3722,15 @@
     const M = S.sim, builds = M.builds || [], n = simDraftCount();
     page.append(pageHead('Your builds. Open one to keep working on it, or start a new one. Nothing here touches the game or your saved snapshots.'));   // (no demon picker here: it is the editor's, and the cards follow what was picked there)
     page.append(h('div', { class: 'sim-builds' },
-      h('button', { type: 'button', class: 'dg-tile sim-build sim-new', onclick: () => simOpen(null) },
-        h('span', { class: 'sim-new-plus', 'aria-hidden': 'true' }, icon('plus')),
-        h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: 'New build' }),
-          h('span', { class: 'dgt-line', text: n ? `Continue where you left off: ${n} change${n === 1 ? '' : 's'} not saved yet`
-            : simDraft().base ? `Continue where you left off: ${simDraft().base} as imported, not saved yet` : 'Start empty, or import a character as its base' }))),
+      // one card for both ways to start: the whole card is "New build", the small button in it takes a shared code
+      h('div', { class: 'dg-tile sim-build sim-new', onclick: (ev) => { if (!ev.target.closest('.sim-new-import')) simOpen(null); } },
+        h('button', { type: 'button', class: 'sim-new-main' },
+          h('span', { class: 'sim-new-plus', 'aria-hidden': 'true' }, icon('plus')),
+          h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: 'New build' }),
+            h('span', { class: 'dgt-line', text: n ? `Continue where you left off: ${n} change${n === 1 ? '' : 's'} not saved yet`
+              : simDraft().base ? `Continue where you left off: ${simDraft().base} as imported, not saved yet` : 'Start empty, or import a character as its base' }))),
+        h('button', { type: 'button', class: 'btn btn-sm btn-ghost sim-new-import', 'data-tip': 'Paste a code another player shared with you', onclick: () => simImportOpen() },
+          h('span', { class: 'btn-icon', 'aria-hidden': 'true' }, icon('download')), 'Import build')),
       builds.map(simCard)));
     page.append(h('p', { class: 'note', text: builds.length
       ? 'Each card compares the build with its base as last read (digitalized when the build has a demon); one with no base shows what it gives by itself. A saved build keeps every change you make to it.'
@@ -3915,7 +4091,8 @@
       const back = h('button', { type: 'button', class: 'btn btn-ghost sim-back', 'data-tip': 'All your builds', onclick: simGoHome }, h('span', { class: 'chev' }, icon('chevron')), 'Builds');
       if (!M.id && !M.naming) {
         simFill(headLeft, back, h('b', { class: 'sim-name-text', text: 'New build' }), h('span', { class: 'card-sub', text: 'not saved' }),
-          h('button', { type: 'button', class: 'btn btn-primary', 'data-tip': 'Keep this build: it gets a name, a card and a line under Build Planner', onclick: () => { M.naming = true; drawTitle(); } }, 'Save build…'));
+          h('button', { type: 'button', class: 'btn btn-primary', 'data-tip': 'Keep this build: it gets a name, a card and a line under Build Planner', onclick: () => { M.naming = true; drawTitle(); } }, 'Save build…'),
+          h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Share this build', 'data-tip': 'Share: a code another player can import', onclick: () => simShare(simWhole(), '') }, icon('share')));
         return;
       }
       if (!M.id) {
@@ -3949,7 +4126,8 @@
         M.confirmDel
           ? [h('span', { class: 'card-sub', text: 'Delete this build?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => simDelete(M.id) }, 'Delete'),
             h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { M.confirmDel = false; drawTitle(); } }, 'Keep')]
-          : [h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Duplicate this build', 'data-tip': 'Duplicate: a copy to change freely',
+          : [h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Share this build', 'data-tip': 'Share: a code another player can import', onclick: () => simShare(simWhole(), M.name) }, icon('share')),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Duplicate this build', 'data-tip': 'Duplicate: a copy to change freely',
               // the whole build as saved (its base, level, alignment and demon too), so the copy stands where it does
               onclick: async () => { await simFlush(); simDuplicate({ name: M.name, ...simWhole() }, true); } }, icon('copy')),
             h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Delete this build', 'data-tip': 'Delete this build', onclick: () => { M.confirmDel = true; drawTitle(); } }, icon('trash'))]);

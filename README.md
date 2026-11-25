@@ -351,6 +351,17 @@ game or your saved data. It starts from your character as last read (take a snap
   it a name; from then on it keeps every change you make to it. A build can be renamed (click its name), duplicated
   and deleted. Saved builds are also listed under **Build Planner** in the left bar; the small arrow there folds the list.
   A build is a whole plan: when your gear changes, it is compared with your new gear. Each card names its base.
+- **Sharing builds**: the share button on a build (its card, or beside its name in the editor) gives a short text code
+  (`BABEL1-…`, about 130 to 300 characters) to paste to another player. They press "Import build" on the builds page,
+  paste it, see the pieces and expertise ranks it holds, choose what to show it on (one of their characters, or "No
+  base" at the level and alignment it was shared at) and save it as a new build of their own. A code holds numbers
+  only (the pieces with their fusions and mods, the expertise points, the point cap, a level and an alignment): not
+  the character's name, the build's name or its digitalize demon. A pasted code is treated as a stranger's input: the
+  reader accepts only codes it would write itself, checks every number against the game data (a piece of the slot's
+  kind, a crystal that kind of piece takes, an expertise a character can raise), never puts a number from the code
+  into a path or a command, and importing only ever adds a build. The format is in
+  `crates\imagine\src\build\share_code.rs`. The page also has a Content-Security-Policy (index.html): it runs only its
+  own script files and loads nothing from the internet.
 - **Builds are independent of the character shown.** A new build starts empty ("No base"): its numbers are only what
   its pieces and expertise ranks give, for the level and alignment set under its name.
 - **Import base** (top right of a build): pick one of your characters and the build starts again from that
