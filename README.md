@@ -205,6 +205,11 @@ what you get and give, and the kill or collect counts. For each question the ans
 answers that work as well and the ones that do not move the quest on, worded as the game words them now (since the
 update of 19 November several answers are in Japanese in game, and the guide shows them that way). When a step needs several talks (Act 1:
 Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with their answers and whether the order matters.
+When your answers decide the outcome (Uriel in Act 13: Envoy for the Messian Church moves your alignment to a
+different place for each line of answers, and one of them also gives you Inexperienced Uriel) the talk is shown as a
+tree of answers, each branch with what it gives and what it does to your alignment. Alignment changes say whether they
+add to it, set it, or move it part of the way to a value, and which side that is (Law −5,000 or lower, Chaos +5,000 or
+higher); a change that depends on your current alignment says so.
 Where a step can be done in more than one way (for example a Law or a Chaos answer) every way is shown with what it
 changes. Search by quest, person, place or item; the chips filter by kind of quest.
 

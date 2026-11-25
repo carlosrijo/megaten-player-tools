@@ -2480,30 +2480,90 @@
    * The answers to give, one line per question the person asks: the answer to pick, other answers that work as well
    * ("or"), and the answers that do not move the quest on ("not"). Null when there is nothing to choose.
    */
+  /** The answer to question i of a way, with the others that work as well, and the ones that do not move the quest on (and
+   *  what those do to your character when they change your alignment). */
+  function questAnswer(x, i, p, skip) {
+    const also = (x.also && x.also[i]) || [], not = (x.others && x.others[i]) || [], fx = x.answerFx || {};
+    // answers that take the quest another way: only those that change your alignment are worth a warning (the others are
+    // shown as their own way, or are menus and repeats); in a tree its own branches are left out
+    const other = ((x.elsewhere && x.elsewhere[i]) || []).filter((t) => fx[t] && !(skip && skip.has(t)));
+    const said = (t) => [`“${t}”`, fx[t] ? h('span', { class: 'q-fx', text: ` (${fx[t].map((f) => f[0].toLowerCase() + f.slice(1)).join('; ')})` }) : null];
+    // a flat list: h() flattens one level only
+    return [...[p, ...also].flatMap((t, j) => [j ? h('span', { class: 'q-arrow', text: 'or' }) : null, h('span', { class: 'q-pick', text: t })]),
+      not.length ? h('span', { class: 'q-not' }, 'not ', not.flatMap((t, j) => [j ? ' or ' : '', ...said(t)])) : null,
+      other.length ? h('span', { class: 'q-not' }, 'other answers: ', other.flatMap((t, j) => [j ? ', ' : '', ...said(t)])) : null];
+  }
   function questAnswers(x) {
     if (!x.pick || !x.pick.length) return null;
-    const chip = (t) => h('span', { class: 'q-pick', text: t });
-    const lines = x.pick.map((p, i) => {
-      const also = (x.also && x.also[i]) || [], not = (x.others && x.others[i]) || [];
-      return h('div', { class: 'q-answer' },
-        i ? h('span', { class: 'q-arrow', text: 'then' }) : null,
-        [p, ...also].map((t, j) => [j ? h('span', { class: 'q-arrow', text: 'or' }) : null, chip(t)]),
-        not.length ? h('span', { class: 'q-not', text: `not ${not.map((t) => `“${t}”`).join(' or ')}` }) : null);
-    });
+    const lines = x.pick.map((p, i) => h('div', { class: 'q-answer' }, i ? h('span', { class: 'q-arrow', text: 'then' }) : null, ...questAnswer(x, i, p)));
     return h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('div', { class: 'q-answers' }, lines,
       x.oldText ? h('div', { class: 'q-hint', text: 'Worded as before the game update of 19 November; the game may word these answers differently now (often in Japanese).' }) : null));
+  }
+  const questAt = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
+  const questRow = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
+  /** What you need, fight, get, hand over and what changes for a way. What changes is one line each: an alignment change
+   *  can depend on your alignment ("If your alignment is …"). */
+  const questRows = (w) => [questRow('You must', w.needs), questRow('You fight', w.fights), questRow('You receive', w.get, 'q-get'), questRow('You hand over', w.lose),
+    w.effects && w.effects.length ? h('div', { class: 'q-line q-after' }, h('span', { class: 'q-key', text: 'Afterwards' }), h('div', { class: 'q-lines' }, w.effects.map((e) => h('div', { text: e })))) : null];
+  /**
+   * One person whose answers lead to different outcomes (Uriel in Act 13: four ways, each moving your alignment
+   * somewhere else), as one tree of answers: the answers all ways share first, then at each question every answer
+   * that leads on, each with what it leads to.
+   */
+  function questTree(groups, alt) {
+    const ways = groups.map((g) => g[0]), w = ways[0];
+    const root = { kids: new Map(), leaves: [] };
+    ways.forEach((x) => {
+      let n = root;
+      x.pick.forEach((p, i) => {
+        if (!n.kids.has(p)) n.kids.set(p, { kids: new Map(), leaves: [], way: x, depth: i });
+        n = n.kids.get(p);
+      });
+      n.leaves.push(x);
+    });
+    // a run of single answers: "A" then "B" then ...; `sib` = the answers this tree already shows at that question
+    const run = (p, k, first, sib) => {
+      const line = [first ? null : h('span', { class: 'q-arrow', text: 'then' }), ...questAnswer(k.way, k.depth, p, sib)];
+      let c = k;
+      while (c.kids.size === 1 && !c.leaves.length) {
+        const [p2, k2] = [...c.kids][0];
+        line.push(h('span', { class: 'q-arrow', text: 'then' }), ...questAnswer(k2.way, k2.depth, p2, new Set(c.kids.keys())));
+        c = k2;
+      }
+      return { line, end: c };
+    };
+    const outcome = (x) => {
+      const rows = questRows(x).filter(Boolean);
+      return h('div', { class: 'q-outcome' }, rows.length ? rows : h('div', { class: 'q-hint', text: 'Nothing else changes.' }));
+    };
+    const branch = (n) => h('ul', { class: 'q-tree' }, [...n.kids].map(([p, k]) => {
+      const { line, end } = run(p, k, true, new Set(n.kids.keys()));
+      return h('li', null, h('div', { class: 'q-answer' }, ...line), end.leaves.map(outcome), end.kids.size ? branch(end) : null);
+    }));
+    let start = root, lead = null;
+    if (root.kids.size === 1 && !root.leaves.length) {
+      const [p, k] = [...root.kids][0];
+      const r = run(p, k, true, new Set(root.kids.keys()));
+      if (r.end.kids.size) { lead = r.line; start = r.end; }
+    }
+    return h('div', { class: 'q-way' },
+      h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null,
+        h('span', null, ['Talk to ', h('b', { text: w.who }), questAt(w), '. Your answers decide what happens:'])),
+      w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
+      w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
+      lead ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('div', { class: 'q-answer' }, ...lead)) : null,
+      h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: lead ? 'Then' : 'Choose' }), branch(start)));
   }
   /** One instruction: what to do and where as a sentence, then what to choose, what you need, and what changes hands. */
   function questWay(ws, alt) {
     const w = ws[0];
-    const at = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
+    const at = questAt;
     let sentence;
     if (w.talks) sentence = [h('b', { text: w.do }), ':'];   // the people follow as a list
     else if (w.who) {
       const seen = new Set(), people = ws.filter((x) => { const k = x.who + at(x); return !seen.has(k) && seen.add(k); });
       sentence = ['Talk to ', people.map((x, i) => [i ? (i === people.length - 1 ? ' or ' : ', ') : '', h('b', { text: x.who }), at(x)]), '.'];
     } else sentence = [h('b', { text: w.do }), w.kind === 'event' ? '' : at(w), '.'];
-    const row = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
     return h('div', { class: 'q-way' },
       h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, h('span', null, sentence)),
       w.talks ? h('ol', { class: 'q-talks' }, w.talks.map((t) => h('li', null,
@@ -2512,7 +2572,22 @@
       w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
       w.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: w.asks })) : null,
       questAnswers(w),
-      row('You must', w.needs), row('You fight', w.fights), row('You receive', w.get, 'q-get'), row('You hand over', w.lose), row('Afterwards', w.effects));
+      questRows(w));
+  }
+  /** A step's ways as blocks: one person's ways whose answers differ become one tree, the rest stay one block each. */
+  function questBlocks(s, q) {
+    const blocks = [], byPerson = new Map();
+    questWays(s.ways || [], q).forEach((g) => {
+      const w = g[0], k = w.who && w.pick && w.pick.length && !w.talks ? [w.kind, w.who, w.where, w.grid || ''].join('|') : null;
+      if (k && byPerson.has(k)) byPerson.get(k).push(g);
+      else { const b = [g]; if (k) byPerson.set(k, b); blocks.push(b); }
+    });
+    const out = [];
+    blocks.forEach((b) => {
+      if (b.length > 1 && new Set(b.map((g) => JSON.stringify(g[0].pick))).size === b.length) out.push(questTree(b, out.length > 0));
+      else b.forEach((g) => out.push(questWay(g, out.length > 0)));
+    });
+    return out;
   }
   function questDetail(q) {
     const box = h('div', { class: 'q-detail' });
@@ -2523,7 +2598,7 @@
       /^Step /.test(s.label) ? null : h('div', { class: 'q-step-title', text: s.label }),   // the number is already in the circle
       s.objective ? h('p', { class: 'q-objective', text: s.objective }) : null,
       s.goals && s.goals.length ? h('ul', { class: 'q-goals' }, s.goals.map((g) => h('li', { text: g }))) : null,
-      questWays(s.ways || [], q).map((g, i) => questWay(g, i > 0)))));
+      questBlocks(s, q))));
     if (q.steps.length) box.append(ol);
     else box.append(h('p', { class: 'note', text: 'The data has no steps or objective text for this quest.' }));
     if (q.unlocks && q.unlocks.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Opens' }), h('span', null, q.unlocks.join(' · '))));
@@ -2566,7 +2641,7 @@
     page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a quest, person, place or item', (v) => { D.q = v; draw(); }), chips));
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Quest' }), h('th', { scope: 'col', text: 'Client and place' }), h('th', { scope: 'col', text: 'Kind' }))), body)));
-    page.append(h('p', { class: 'note', text: `${quests.length} quests, ${quests.filter((x) => x.walkthrough).length} with steps from the event files. Data made on ${D.data.generatedAt}. Numbers in brackets are the map grid position.` }));
+    page.append(h('p', { class: 'note', text: `${quests.length} quests, ${quests.filter((x) => x.walkthrough).length} with steps from the event files. Data made on ${D.data.generatedAt}. Numbers in brackets are the map grid position. Alignment runs from −10,000 (Law) to +10,000 (Chaos): −5,000 or lower is Law, +5,000 or higher is Chaos, Neutral in between.` }));
     drawChips(); draw();
     return page;
   }

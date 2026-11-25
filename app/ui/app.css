@@ -948,6 +948,13 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .q-answers { display: grid; gap: 4px; }
 .q-answer { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; }
 .q-not { color: var(--text-3); }
+.q-fx { color: var(--text-2); }
+.q-tree { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; }
+.q-tree .q-tree { margin-top: 6px; padding-left: 14px; border-left: 1px solid var(--border); }
+.q-tree > li { display: grid; gap: 4px; }
+.q-outcome { display: grid; gap: 3px; padding-left: 14px; }
+.q-outcome .q-line { grid-template-columns: 92px minmax(0, 1fr); }
+.q-after .q-lines { display: grid; gap: 2px; font-weight: 600; }
 .q-talks { margin: 2px 0 2px; padding-left: 20px; display: grid; gap: 8px; }
 .q-talks > li { display: grid; gap: 3px; }
 .q-talks > li::marker { color: var(--text-3); }
