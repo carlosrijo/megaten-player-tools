@@ -8,8 +8,8 @@
 //!   recalc    [--name N] [--csv path]                           recompute every CSV row's gear bonuses, then rebuild
 //!   gear-names [--name N] [--csv path]                          name every CSV row's gear the game's way (backup first), then rebuild
 //!   sets      [--name N]                                        show the sets/appearance bonuses for the worn gear
-//!   simulate  [--spec build.json | --init | --catalog N]        the Simulator tool: check it, or work out another build (nothing is written)
-//!   serve     [--port N] [--root dir] [--also "Name=folder"]    the app's page in a browser with a working Simulator (testing)
+//!   simulate  [--spec build.json | --init | --catalog N]        the Build Planner tool: check it, or work out another build (nothing is written)
+//!   serve     [--port N] [--root dir] [--also "Name=folder"]    the app's page in a browser with a working Build Planner (testing)
 //!   alignment [LAW|NEUTRAL|CHAOS] [--name N]                    show or set the character's alignment (recalculates when it changes)
 //!   extras    [--quests N|none] [--compendium N|none] [--compendium-v2 yes|no] [--name N]
 //!                                                               show the clan; set the quest/compendium counts for their bonuses
@@ -371,7 +371,7 @@ fn need(chosen: &Option<(Target, Pipeline)>) -> Result<(&Target, &Pipeline)> {
     chosen.as_ref().map(|(t, p)| (t, p)).ok_or_else(|| anyhow::anyhow!("Object reference not set to an instance of an object."))
 }
 
-/// The Simulator tool from the command line (no game, nothing written):
+/// The Build Planner tool from the command line (no game, nothing written):
 ///   simulate                      check: the build as read must give back the saved page data and the readings
 ///   simulate --spec build.json    the result of that build (the page's format, Simulator.Parse), as JSON
 ///   simulate --catalog N          what can go in slot N (0 Weapon ... 14 Extra), as JSON
@@ -395,9 +395,9 @@ fn simulate(opts: &HashMap<String, String>, pipe: &Pipeline) -> Result<i32> {
     let watch = std::time::Instant::now();
     let diffs = pipe.sim.self_check()?;
     if diffs.is_empty() {
-        console::write_line(&format!("Simulator: the build as read gives back the readings and the saved bonus list ({} ms).", watch.elapsed().as_millis()));
+        console::write_line(&format!("Build Planner: the build as read gives back the readings and the saved bonus list ({} ms).", watch.elapsed().as_millis()));
     } else {
-        console::write_line(&format!("Simulator differs from the saved data:\n  {}", diffs.join("\n  ")));
+        console::write_line(&format!("Build Planner differs from the saved data:\n  {}", diffs.join("\n  ")));
     }
     let watch = std::time::Instant::now();
     pipe.sim.init(None)?;
@@ -405,7 +405,7 @@ fn simulate(opts: &HashMap<String, String>, pipe: &Pipeline) -> Result<i32> {
     Ok(if diffs.is_empty() { 0 } else { 1 })
 }
 
-/// The page in a plain browser with a working Simulator: PreviewServer (for testing; see its notes).
+/// The page in a plain browser with a working Build Planner: PreviewServer (for testing; see its notes).
 /// --also "Name=folder": a second character to base builds on (for testing; the app has every saved character).
 fn serve(opts: &HashMap<String, String>, t: &Target, pipe: &Pipeline) -> Result<i32> {
     let data = Arc::clone(pipe.data());
