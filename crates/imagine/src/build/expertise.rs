@@ -52,6 +52,34 @@ fn correct_to_col(id: &str) -> Option<&'static str> {
     })
 }
 
+/// The stat ids [`correct_to_col`] knows (to go from a stat's label back to its column).
+const CORRECT_COL_IDS: [&str; 13] = [
+    "CRITICAL", "FINAL_CRIT_CHANCE", "LB_CHANCE", "LB_DAMAGE", "RATE_CLSR", "RATE_LNGR", "RATE_SPELL", "RATE_SUPPORT", "RATE_CLSR_TAKEN", "RATE_LNGR_TAKEN", "RATE_SPELL_TAKEN",
+    "RATE_SUPPORT_TAKEN", "COOLDOWN_TIME",
+];
+
+/// The combat columns of a Quest bonus / Demonic Compendium row: what its effects on the character itself add, always on
+/// (the same rule `add_skill` uses for a skill: not the partner's, not a situational one). The Overview sums these
+/// columns for its key stats, so a quest bonus that is not in them (Limit break chance/power +10% at 200 quests, Critical
+/// at 120, ...) is in the Bonuses page and not in the Overview. A stat with no column (HP, STR, summon speed, ...) is not
+/// listed here: the Overview reads those from the game's own status or from the Bonuses row.
+/// Checked: Rubito with 361 quests (set by hand): Critical +90, Limit break chance +10, power +10 now agree with the
+/// Bonuses page (tests/w2_calc.rs `overview_and_bonuses_agree_on_the_quest_bonus`). The compendium's only effect on the
+/// character is Summon Sync Duration (no column); the rest is the partner's.
+fn extra_sums<'a>(effects: impl IntoIterator<Item = &'a crate::calc::effect::Effect>) -> Sums {
+    let mut sums = Sums::default();
+    for e in effects {
+        let Some(v) = e.value else { continue };
+        if e.target != "self" || e.cond != "always" {
+            continue;
+        }
+        if let Some(col) = CORRECT_COL_IDS.iter().find(|id| crate::calc::gear_effects::correct_label_of(id) == e.label).and_then(|id| correct_to_col(id)) {
+            sums.add(col, v);
+        }
+    }
+    sums
+}
+
 fn aspect_to_col(id: &str) -> Option<&'static str> {
     Some(match id {
         "LIMIT_BREAK_MAX" => "lb_cap",
@@ -873,8 +901,11 @@ impl Expertise {
                     "cond": if e.cond == "situational" { "situational" } else { "always" }, "note": if e.cond == "situational" { note } else { "" },
                 })));
             }
-            for c in COLS {
-                o.insert(c.into(), json!(0.0));
+            // the combat columns the Overview sums (see `extra_sums`): they were all 0 here, so the Overview left the
+            // quest bonus's Limit break chance/power and Critical out while the Bonuses page counted them
+            let sums = extra_sums(g.iter().copied());
+            for (i, c) in COLS.iter().enumerate() {
+                o.insert((*c).into(), json!(sums.0[i]));
             }
             o.insert("effects".into(), json!(fx.join("; ")));
             o.insert("toggle".into(), json!(false));
@@ -1359,6 +1390,34 @@ mod tests {
         assert_eq!(condition_text(Vec::<(&str, i32)>::new()), "");
         // the page splits effect text at "; ": nothing here may contain one
         assert!(!condition_text([("LNC", 2), ("GAME_TIME", 1), ("MOON_PHASE", 2)]).contains("; "));
+    }
+
+    /// The Overview sums an expertise row's combat columns. A quest bonus / compendium row must fill them from its own
+    /// effects (T19: the 200-quest Limit break chance/power +10% was on the Bonuses page and not in the Overview).
+    #[test]
+    fn quest_and_compendium_rows_fill_the_combat_columns() {
+        use crate::calc::effect::Effect;
+        use crate::calc::gear_effects;
+        let fx = |label: &str, value: f64, target: &str, cond: &str| Effect { label: label.into(), value: Some(value), target: target.into(), cond: cond.into(), ..Default::default() };
+        let lb_chance = gear_effects::correct_label_of("LB_CHANCE");
+        let lb_power = gear_effects::correct_label_of("LB_DAMAGE");
+        let crit = gear_effects::correct_label_of("CRITICAL");
+        let effects = [
+            fx(&lb_chance, 10.0, "self", "always"),
+            fx(&lb_power, 10.0, "self", "always"),
+            fx(&crit, 30.0, "self", "always"),
+            fx(&crit, 5.0, "self", "situational"), // not always on: not counted, like a skill's
+            fx(&lb_chance, 7.0, "partner", "always"), // the partner's: not the character's
+            fx("Max HP", 16.0, "self", "always"), // no column
+        ];
+        let sums = extra_sums(&effects);
+        let col = |name: &str| sums.0[COLS.iter().position(|c| *c == name).unwrap()];
+        assert_eq!((col("lb_chance"), col("lb_power"), col("crit")), (10.0, 10.0, 30.0));
+        assert_eq!(sums.0.iter().sum::<f64>(), 50.0, "nothing else gets a column");
+        // every stat id a column is made from has a distinct label, so a label finds its column
+        let labels: HashSet<String> = CORRECT_COL_IDS.iter().map(|id| gear_effects::correct_label_of(id)).collect();
+        assert_eq!(labels.len(), CORRECT_COL_IDS.len());
+        assert!(CORRECT_COL_IDS.iter().all(|id| correct_to_col(id).is_some()));
     }
 
     #[test]

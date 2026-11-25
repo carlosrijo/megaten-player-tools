@@ -290,6 +290,52 @@ fn quest_and_compendium_bonuses() {
     assert!(extras::compute(&d, None, Some(&no_v2), false).unwrap().iter().any(|e| e.label == "No compendium bonus: Demonic Compendium v2 not owned"));
 }
 
+/// T19 ("the quest passive 10% LB chance is not shown in Overview but counted in Quest Bonus"): the Overview sums the
+/// expertise rows' combat columns, the Bonuses page sums their structured effects. For a character with 361 quests both
+/// must give the same expertise share for every key stat. Predicted before running (QUEST_BONUS tokusei 20010000-20010018):
+/// Critical +floor(361/4) = 90 (120-quest step), Limit break chance +10 and Limit break power +10 (200-quest step); no other
+/// combat key stat comes from quests (the rest are HP, stats, summon speed, resistances, skill boosts).
+#[test]
+fn overview_and_bonuses_agree_on_the_quest_bonus() {
+    use imagine::build::dashboard::{COMBAT_KEYS, Dashboard};
+    use imagine::build::expertise::Expertise;
+    use imagine::calc::gear_effects::GearResult;
+    use imagine::context::Context;
+    use imagine::data::store::Store;
+    if !external_data() {
+        return;
+    }
+    let dir = std::env::temp_dir().join(format!("imagine-t19-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let store = Store::new(&dir);
+    store.save_counts(Some(361), None, None, false, false).unwrap();
+    let ctx = Arc::new(Context::new(store, GameData::new()));
+    let rows = Expertise::new(Arc::clone(&ctx)).rows(None, &[], false).unwrap();
+
+    // what the Overview sums: the columns of every expertise row
+    let overview = |key: &str| -> f64 { (rows.iter().map(|r| r.get(key).and_then(Value::as_f64).unwrap_or(0.0)).sum::<f64>() * 100.0).round() / 100.0 };
+    assert_eq!(overview("lb_chance"), 10.0);
+    assert_eq!(overview("lb_power"), 10.0);
+    assert_eq!(overview("crit"), 90.0);
+
+    // what the Bonuses page shows as the expertise share of the same rows
+    let parts = Dashboard::parts(&GearResult::default(), &IndexMap::new(), None, &rows);
+    let bonuses = Dashboard::new(ctx).bonus_rows(parts, None).unwrap();
+    let mut checked = 0;
+    for (label, key) in COMBAT_KEYS {
+        let name = label.trim_end_matches(" %");
+        let Some(row) = bonuses.iter().find(|r| r["group"] == "Combat" && r["bonus"] == name) else {
+            assert_eq!(overview(key), 0.0, "{label}: the Overview has {} and the Bonuses page has no row", overview(key));
+            continue;
+        };
+        assert_eq!(row["expertise"].as_f64().unwrap(), overview(key), "{label}: Bonuses page and Overview disagree");
+        checked += 1;
+    }
+    assert!(checked >= 3, "{checked} rows compared");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// 64-bit FNV-1a, to pin a big output file without keeping it.
 fn fnv(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf29ce484222325u64, |h, b| (h ^ *b as u64).wrapping_mul(0x100000001b3))
