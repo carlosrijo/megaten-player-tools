@@ -1094,13 +1094,40 @@ impl GameData {
         Ok(self.enchant_by_crystal()?.contains_key(&GameData::crystal_key(Some(name))))
     }
 
-    pub fn enchant_name(&self, id: i32) -> Result<String> {
-        Ok(match self.enchants()?.get(&id) {
-            Some(e) => {
-                let c = e.crystal.clone().unwrap_or_else(|| format!("enchant {id}"));
-                RE_CRYSTAL_NAME_END.replace_all(&c, "").into_owned()
+    /// The in-game name of the crystal an enchant id comes from ("Ogami's Crystal", "Soul Stone: Procyon"), or `None` when
+    /// no table names it. The client's own enchant table gives the crystal's item (its name is the game's); the website's
+    /// list is the fallback for an id the client table lacks. `tarot` picks the side to look at first: a soul and a tarot of
+    /// one id come from the same crystal, but only one side may be in a table.
+    pub fn crystal_name(&self, id: i32, tarot: Option<bool>) -> Result<Option<String>> {
+        let sides = self.enchant_sides()?;
+        let mut tries: Vec<(i32, bool)> = Vec::new();
+        match tarot {
+            Some(t) => tries.extend([(id, t), (id, !t)]),
+            None => tries.extend([(id, true), (id, false)]),
+        }
+        for key in tries {
+            if let Some(side) = sides.get(&key) {
+                if side.crystal_item > 0 {
+                    if let Some(n) = self.item_name(side.crystal_item)?.map(|n| n.trim().to_string()).filter(|n| !n.is_empty()) {
+                        return Ok(Some(n));
+                    }
+                }
             }
-            None => format!("enchant {id}"),
+        }
+        Ok(self.enchants()?.get(&id).and_then(|e| e.crystal.clone()).map(|c| c.trim().to_string()).filter(|c| !c.is_empty()))
+    }
+
+    /// What the page shows for the crystal fused into a piece: its name, or when the data has none, plain words (never the id).
+    pub fn crystal_label(&self, id: i32, tarot: bool) -> Result<String> {
+        Ok(self.crystal_name(id, Some(tarot))?.unwrap_or_else(|| if tarot { "a tarot".to_string() } else { "a soul fusion".to_string() }))
+    }
+
+    /// A crystal's name without its trailing "Crystal" ("Ogami's"), as the pieces of a fusion set are listed; "a crystal" when
+    /// no table names it (the id is an internal number and never shown).
+    pub fn enchant_name(&self, id: i32) -> Result<String> {
+        Ok(match self.crystal_name(id, None)? {
+            Some(c) => RE_CRYSTAL_NAME_END.replace_all(&c, "").into_owned(),
+            None => "a crystal".to_string(),
         })
     }
 
