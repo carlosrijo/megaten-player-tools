@@ -201,9 +201,12 @@ They appear first, marked "IMAGINE note".
 
 Under **Tools** in the left bar. Lists every quest (680; 665 without the inactive ones) and, when opened, what to do
 step by step: who to talk to and where (zone and map grid position), which dialogue choices to pick, what you need,
-what you get and give, and the kill or collect counts. Where a step can be done in more than one way (for example a
-Law or a Chaos answer) every way is shown with what it changes. Search by quest, person, place or item; the chips
-filter by kind of quest.
+what you get and give, and the kill or collect counts. For each question the answer to pick is shown with the other
+answers that work as well and the ones that do not move the quest on, worded as the game words them now (since the
+update of 19 November several answers are in Japanese in game, and the guide shows them that way). When a step needs several talks (Act 1:
+Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with their answers and whether the order matters.
+Where a step can be done in more than one way (for example a Law or a Chaos answer) every way is shown with what it
+changes. Search by quest, person, place or item; the chips filter by kind of quest.
 
 The quest names, objective text and counts are the game's own. The steps come from the public server's event files
 (468 quests have them; the rest show the game's objective text only), so IMAGINE may have changed them. Valuables

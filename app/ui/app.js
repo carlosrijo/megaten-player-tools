@@ -2455,7 +2455,7 @@
       S.quest.data = d; S.quest.state = d ? 'ready' : 'failed';
       if (d) d.quests.forEach((q) => {
         const words = [q.title, q.client, q.zone];
-        q.steps.forEach((s) => { words.push(s.objective || '', ...(s.goals || [])); (s.ways || []).forEach((w) => words.push(w.do, w.who || '', w.where, ...(w.get || []), ...(w.lose || []), ...(w.needs || []))); });
+        q.steps.forEach((s) => { words.push(s.objective || '', ...(s.goals || [])); (s.ways || []).forEach((w) => words.push(w.do, w.who || '', w.where || '', ...(w.talks || []).flatMap((t) => [t.who, t.where]), ...(w.get || []), ...(w.lose || []), ...(w.needs || []))); });
         q.hay = words.join(' ').toLowerCase();
       });
       if (S.page === 'quests') render();
@@ -2469,28 +2469,48 @@
     const groups = new Map();
     ways.forEach((w0) => {
       const w = Object.assign({}, w0, { needs: (w0.needs || []).filter((n) => !q.needs.includes(n)) });
-      const key = JSON.stringify([w.kind === 'npc' && w.who ? 'talk' : w.do + w.where + (w.grid || ''), w.pick, w.needs, w.fights, w.get, w.lose, w.effects]);
+      const key = JSON.stringify([w.kind === 'npc' && w.who ? 'talk' : w.do + w.where + (w.grid || ''), w.talks, w.pick, w.also, w.others, w.needs, w.fights, w.get, w.lose, w.effects]);
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(w);
     });
     return [...groups.values()];
+  }
+  /**
+   * The answers to give, one line per question the person asks: the answer to pick, other answers that work as well
+   * ("or"), and the answers that do not move the quest on ("not"). Null when there is nothing to choose.
+   */
+  function questAnswers(x) {
+    if (!x.pick || !x.pick.length) return null;
+    const chip = (t) => h('span', { class: 'q-pick', text: t });
+    const lines = x.pick.map((p, i) => {
+      const also = (x.also && x.also[i]) || [], not = (x.others && x.others[i]) || [];
+      return h('div', { class: 'q-answer' },
+        i ? h('span', { class: 'q-arrow', text: 'then' }) : null,
+        [p, ...also].map((t, j) => [j ? h('span', { class: 'q-arrow', text: 'or' }) : null, chip(t)]),
+        not.length ? h('span', { class: 'q-not', text: `not ${not.map((t) => `“${t}”`).join(' or ')}` }) : null);
+    });
+    return h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('div', { class: 'q-answers' }, lines,
+      x.oldText ? h('div', { class: 'q-hint', text: 'Worded as before the game update of 19 November; the game may word these answers differently now (often in Japanese).' }) : null));
   }
   /** One instruction: what to do and where as a sentence, then what to choose, what you need, and what changes hands. */
   function questWay(ws, alt) {
     const w = ws[0];
     const at = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
     let sentence;
-    if (w.who) {
+    if (w.talks) sentence = [h('b', { text: w.do }), ':'];   // the people follow as a list
+    else if (w.who) {
       const seen = new Set(), people = ws.filter((x) => { const k = x.who + at(x); return !seen.has(k) && seen.add(k); });
       sentence = ['Talk to ', people.map((x, i) => [i ? (i === people.length - 1 ? ' or ' : ', ') : '', h('b', { text: x.who }), at(x)]), '.'];
     } else sentence = [h('b', { text: w.do }), w.kind === 'event' ? '' : at(w), '.'];
     const row = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
     return h('div', { class: 'q-way' },
       h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null, h('span', null, sentence)),
+      w.talks ? h('ol', { class: 'q-talks' }, w.talks.map((t) => h('li', null,
+        h('div', null, h('b', { text: t.who }), at(t)), questAnswers(t)))) : null,
       w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
       w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
       w.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: w.asks })) : null,
-      w.pick && w.pick.length ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Choose' }), h('span', null, w.pick.map((p, i) => [i ? h('span', { class: 'q-arrow', text: ' then ' }) : null, h('span', { class: 'q-pick', text: p })]))) : null,
+      questAnswers(w),
       row('You must', w.needs), row('You fight', w.fights), row('You receive', w.get, 'q-get'), row('You hand over', w.lose), row('Afterwards', w.effects));
   }
   function questDetail(q) {
