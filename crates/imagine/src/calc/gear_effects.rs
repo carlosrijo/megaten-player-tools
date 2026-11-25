@@ -78,6 +78,8 @@ pub fn is_pct_correct(id: &str) -> bool {
             | "RATE_LNGR_TAKEN"
             | "RATE_SPELL_TAKEN"
             | "RATE_SUPPORT_TAKEN"
+            | "RATE_PC_TAKEN"
+            | "RATE_DEMON_TAKEN"
             | "COOLDOWN_TIME"
             | "RATE_XP"
             | "RATE_EXPERTISE"

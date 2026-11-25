@@ -31,13 +31,26 @@ jobs:
           rustup default stable
           cargo --version
 
+      # Downloaded crates only. target\ is never cached: the build puts the key of reference\sealed\ into it, and a cache
+      # made on master can be restored by any pull request's workflow.
       - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      # The sealed data is in git only encrypted (reference\sealed\). Stop if a local file, a key or tokusei XML outside
+      # reference\bundled\tokusei\ was committed by mistake.
+      - name: Check the sealed data
+        shell: pwsh
+        run: |
+          $bad = @(git ls-files | Where-Object { $_ -match '(?i)(\.local\.json$|(^|/)\.secrets/|pack\.key$)' })
+          $bad += @(git ls-files '*.xml' '*.json' '*.tsv' | Where-Object { $_ -notmatch '^reference/bundled/tokusei/' -and (Select-String -LiteralPath $_ -Pattern 'name="Tokusei"' -SimpleMatch -Quiet) })
+          if ($bad) { Write-Error "Not for git: $($bad -join ', ')"; exit 1 }
+          if (-not $env:BABEL_PACK_KEY) { Write-Warning 'No BABEL_PACK_KEY secret: this exe is built without the sealed data.' }
+        env:
+          BABEL_PACK_KEY: ${{ secrets.BABEL_PACK_KEY }}
 
       - name: Version from the tag
         id: ver
@@ -46,9 +59,12 @@ jobs:
           $v = if ('${{ github.ref_type }}' -eq 'tag') { '${{ github.ref_name }}'.TrimStart('v') } else { '0.0.0-dev' }
           "version=$v" >> $env:GITHUB_OUTPUT
 
+      # BABEL_PACK_KEY opens reference\sealed\data.bin; crates\imagine\build.rs puts it in the exe scrambled. Never echo it.
       - name: Build the portable exe
         shell: pwsh
         run: ./tools/publish-portable.ps1 -Version '${{ steps.ver.outputs.version }}'
+        env:
+          BABEL_PACK_KEY: ${{ secrets.BABEL_PACK_KEY }}
 
       - name: Checksum
         shell: pwsh

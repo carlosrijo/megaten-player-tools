@@ -350,6 +350,47 @@ impl TokValue {
     }
 }
 
+/// The tokusei in the sealed data ([`super::pack`], entry [`super::pack::TOKUSEI`]): server tokusei that comp_hack's files
+/// lack. Never in a folder; this name stands for them in [`GameData::tokusei_xml_text`]. Read before comp_hack's files,
+/// so they win should an id ever be in both (the server refuses a duplicate id).
+pub const SEALED_TOKUSEI: &str = "sealed:tokusei";
+
+/// XML comments taken out: the server files keep old versions of tokusei commented out, which a text search over
+/// the file would otherwise find (a disabled copy can come after the real one).
+fn strip_xml_comments(text: &str) -> String {
+    static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?s)<!--.*?-->").unwrap());
+    RE.replace_all(text, "").into_owned()
+}
+
+/// One `<object name="Tokusei">` of the server XML as a [`TokuseiDef`].
+fn xml_tokusei_def(o: roxmltree::Node, tid: i32) -> Result<TokuseiDef> {
+    Ok(TokuseiDef {
+        id: tid,
+        target: member_text(o, "TargetType").unwrap_or_else(|| "SELF".into()),
+        conditions: member_objects(o, "Conditions")
+            .into_iter()
+            .map(|c| TokCond {
+                r#type: member_text(c, "Type"),
+                value: member_text(c, "Value").and_then(|s| crate::fmt::parse_i32(&s)).unwrap_or(0),
+                cmp: member_text(c, "Comparator").unwrap_or_else(|| "EQUALS".into()),
+                group: member_text(c, "OptionGroupID").and_then(|s| crate::fmt::parse_i32(&s)).unwrap_or(0),
+            })
+            .collect(),
+        skill_conditions: member_objects(o, "SkillConditions")
+            .into_iter()
+            .map(|c| (member_text(c, "SkillConditionType"), member_text(c, "Value").and_then(|s| crate::fmt::parse_i32(&s)).unwrap_or(0)))
+            .collect(),
+        target_conditions: !member_objects(o, "SkillTargetConditions").is_empty(),
+        correct: member_objects(o, "CorrectValues")
+            .into_iter()
+            .chain(member_objects(o, "TokuseiCorrectValues"))
+            .map(|c| xml_tok_value(c, "ID"))
+            .collect::<Result<Vec<_>>>()?,
+        aspects: member_objects(o, "Aspects").into_iter().map(|c| xml_tok_value(c, "Type")).collect::<Result<Vec<_>>>()?,
+        from_client_text: false,
+    })
+}
+
 /// Everything a tokusei does and needs. `from_client_text`: not in the server data: the values were read from the client's
 /// display text for this tokusei (reference\tokusei-missing.tsv).
 #[derive(Debug, Clone, PartialEq)]
@@ -481,6 +522,37 @@ fn loads_without_website_folder() {
     }
 }
 
+/// The sealed tokusei come from the sealed data, with or without a tokuseiXml folder, and not from the client's text;
+/// a GameData made without it (the repo's Gear Database) falls back to the client's text. No values are checked here.
+/// Skipped in a build without the key.
+#[cfg(test)]
+#[test]
+fn tokusei_from_the_sealed_data() {
+    if !super::pack::available() {
+        return;
+    }
+    let ids: Vec<i32> = {
+        let text = String::from_utf8_lossy(super::pack::entry(super::pack::TOKUSEI).unwrap()).into_owned();
+        let doc = parse_xml(&text).unwrap();
+        doc.descendants()
+            .filter(|x| x.is_element() && x.tag_name().name() == "object" && x.attribute("name") == Some("Tokusei"))
+            .filter_map(|o| member_text(o, "ID").and_then(|s| crate::fmt::parse_i32(&s)))
+            .collect()
+    };
+    assert!(ids.len() > 500, "{}", ids.len());
+    for dir in [None, Some(r"Z:\no\such\folder".to_string())] {
+        let d = GameData::with_paths(None, dir);
+        for &id in ids.iter().step_by(37) {
+            let t = d.tokusei_full(id).unwrap().unwrap_or_else(|| panic!("{id} in the sealed data"));
+            assert!(!t.from_client_text, "{id}");
+        }
+        // comp_hack's own ids still load
+        assert!(d.tokusei_full(10003).unwrap().is_some());
+    }
+    let public = GameData::with_paths(None, None).without_sealed_data();
+    assert!(ids.iter().all(|&id| public.tokusei_full(id).unwrap().is_none_or(|t| t.from_client_text)));
+}
+
 static RE_MEMBERS_STAT: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^members' (strength|magic|vitality|intelligence|speed|luck) \+(\d+),?$").unwrap());
 static RE_PARTY_SEG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(all party( members)?|by the power of [a-z ]+)$").unwrap());
@@ -498,6 +570,8 @@ pub struct GameData {
     pub content: Option<String>,
     /// data\config.json "tokuseiXml"
     pub tokusei_xml_dir: Option<String>,
+    /// Use the sealed data ([`super::pack`]); off for what is committed (the repo's gear-db.json)
+    sealed_data: bool,
 
     trait_text: OnceLock<HashMap<i32, String>>,
     constants: OnceLock<HashMap<String, String>>,
@@ -550,6 +624,7 @@ impl GameData {
         GameData {
             content,
             tokusei_xml_dir,
+            sealed_data: true,
             trait_text: OnceLock::new(),
             constants: OnceLock::new(),
             items: OnceLock::new(),
@@ -607,12 +682,24 @@ impl GameData {
         }
     }
 
-    /// The text of one of comp_hack's tokusei XML files ("tokusei_00010000.xml"): from the tokuseiXml folder when it
-    /// exists, else the bundled copy; `None` when neither has it.
+    /// The same data without the sealed data: what is committed (the repo's app\ui\gear-db.json).
+    pub fn without_sealed_data(mut self) -> GameData {
+        self.sealed_data = false;
+        self
+    }
+
+    /// The text of one of the server's tokusei XML files ("tokusei_00010000.xml"): from the tokuseiXml folder when it has
+    /// the file, else the bundled copy; `None` when neither has it. [`SEALED_TOKUSEI`] only ever comes
+    /// from the sealed data (`None` without it, or for [`Self::without_sealed_data`]).
     pub fn tokusei_xml_text(&self, file: &str) -> Result<Option<String>> {
+        if file == SEALED_TOKUSEI {
+            return Ok(if self.sealed_data { super::pack::entry(super::pack::TOKUSEI).map(|b| String::from_utf8_lossy(b).into_owned()) } else { None });
+        }
         if let Some(dir) = self.tokusei_xml_dir.as_deref().map(Path::new).filter(|d| d.is_dir()) {
             let p = dir.join(file);
-            return if p.is_file() { Ok(Some(json::read_all_text(&p)?)) } else { Ok(None) };
+            if p.is_file() {
+                return Ok(Some(json::read_all_text(&p)?));
+            }
         }
         Ok(bundled_text(&format!("tokusei/{file}")))
     }
@@ -1487,42 +1574,23 @@ impl GameData {
         format!("tokusei_{}.xml", d8(id.wrapping_div(10000).wrapping_mul(10000)))
     }
 
-    /// Everything a tokusei does and needs, or `None` when neither the server XML nor the website file has it.
+    /// Everything a tokusei does and needs, or `None` when no source has it. Order: the sealed tokusei, comp_hack's
+    /// file for the id's range, the website file, the client's text (reference\tokusei-missing.tsv).
     pub fn tokusei_full(&self, id: i32) -> Result<Option<Arc<TokuseiDef>>> {
         let mut st = lock(&self.defs);
         if let Some(d) = st.defs.get(&id) {
             return Ok(d.clone());
         }
-        let file = self.tokusei_file(id);
-        if let Some(text) = if st.files.insert(file.clone()) { self.tokusei_xml_text(&file)? } else { None } {
+        // each file is parsed once (st.files); the sealed one on the first call, so its ids are in before any range file's
+        for file in [SEALED_TOKUSEI.to_string(), self.tokusei_file(id)] {
+            let Some(text) = (if st.files.insert(file.clone()) { self.tokusei_xml_text(&file)? } else { None }) else { continue };
             let doc = parse_xml(&text)?;
             for o in doc.descendants().filter(|x| x.is_element() && x.tag_name().name() == "object" && x.attribute("name") == Some("Tokusei")) {
                 let Some(tid) = member_text(o, "ID").and_then(|s| crate::fmt::parse_i32(&s)) else { continue };
-                let def = TokuseiDef {
-                    id: tid,
-                    target: member_text(o, "TargetType").unwrap_or_else(|| "SELF".into()),
-                    conditions: member_objects(o, "Conditions")
-                        .into_iter()
-                        .map(|c| TokCond {
-                            r#type: member_text(c, "Type"),
-                            value: member_text(c, "Value").and_then(|s| crate::fmt::parse_i32(&s)).unwrap_or(0),
-                            cmp: member_text(c, "Comparator").unwrap_or_else(|| "EQUALS".into()),
-                            group: member_text(c, "OptionGroupID").and_then(|s| crate::fmt::parse_i32(&s)).unwrap_or(0),
-                        })
-                        .collect(),
-                    skill_conditions: member_objects(o, "SkillConditions")
-                        .into_iter()
-                        .map(|c| (member_text(c, "SkillConditionType"), member_text(c, "Value").and_then(|s| crate::fmt::parse_i32(&s)).unwrap_or(0)))
-                        .collect(),
-                    target_conditions: !member_objects(o, "SkillTargetConditions").is_empty(),
-                    correct: member_objects(o, "CorrectValues")
-                        .into_iter()
-                        .chain(member_objects(o, "TokuseiCorrectValues"))
-                        .map(|c| xml_tok_value(c, "ID"))
-                        .collect::<Result<Vec<_>>>()?,
-                    aspects: member_objects(o, "Aspects").into_iter().map(|c| xml_tok_value(c, "Type")).collect::<Result<Vec<_>>>()?,
-                    from_client_text: false,
-                };
+                if st.defs.contains_key(&tid) {
+                    continue;
+                }
+                let def = xml_tokusei_def(o, tid)?;
                 st.defs.insert(tid, Some(Arc::new(def)));
             }
         }
@@ -1566,15 +1634,21 @@ impl GameData {
         Ok(d)
     }
 
-    fn xml_for(&self, id: i32) -> Result<Option<Arc<String>>> {
-        let file = self.tokusei_file(id);
+    /// One server tokusei file's text, comments taken out (for the text searches below), cached.
+    fn xml_file(&self, file: String) -> Result<Option<Arc<String>>> {
         let mut files = lock(&self.xml_files);
         if let Some(x) = files.get(&file) {
             return Ok(x.clone());
         }
-        let x = self.tokusei_xml_text(&file)?.map(Arc::new);
+        let x = self.tokusei_xml_text(&file)?.map(|t| Arc::new(strip_xml_comments(&t)));
         files.insert(file, x.clone());
         Ok(x)
+    }
+
+    /// The server files that may hold this tokusei id, in the order [`Self::tokusei_full`] reads them: the sealed one,
+    /// then comp_hack's file for the id's range.
+    fn xml_for(&self, id: i32) -> Result<Vec<Arc<String>>> {
+        Ok([self.xml_file(SEALED_TOKUSEI.to_string())?, self.xml_file(self.tokusei_file(id))?].into_iter().flatten().collect())
     }
 
     /// A tokusei straight from the server XML (for ids the website file leaves out).
@@ -1583,8 +1657,11 @@ impl GameData {
             return Ok(r.clone());
         }
         let mut r = None;
-        if let Some(x) = self.xml_for(id)? {
-            let re = FancyRegex::new(&format!(r#"(?is)<member name="ID">{id}</member>(.*?)(?=<object name="Tokusei">|\z)"#))?;
+        let re = FancyRegex::new(&format!(r#"(?is)<member name="ID">{id}</member>(.*?)(?=<object name="Tokusei">|\z)"#))?;
+        for x in self.xml_for(id)? {
+            if r.is_some() {
+                break;
+            }
             if let Some(m) = re.captures(x.as_str())? {
                 let body = &m[1];
                 let tt = RE_TARGET_TYPE.captures(body);
@@ -1609,8 +1686,11 @@ impl GameData {
             return Ok(s.clone());
         }
         let mut s = None;
-        if let Some(x) = self.xml_for(id)? {
-            let re = Regex::new(&format!(r#"(?is)<member name="ID">{id}</member>(.*?)</object>\s*</element>\s*</member>\s*</object>"#))?;
+        let re = Regex::new(&format!(r#"(?is)<member name="ID">{id}</member>(.*?)</object>\s*</element>\s*</member>\s*</object>"#))?;
+        for x in self.xml_for(id)? {
+            if s.is_some() {
+                break;
+            }
             if let Some(m) = re.captures(&x) {
                 s = Some(
                     RE_RAW_TYPES

@@ -36,8 +36,9 @@ fn external_data() -> bool {
     ok
 }
 
+/// Without the sealed data (imagine::data::pack): these golden outputs come out the same with or without its key.
 fn data() -> Arc<GameData> {
-    Arc::new(GameData::new())
+    Arc::new(GameData::new().without_sealed_data())
 }
 
 #[test]
@@ -83,6 +84,8 @@ fn item_effects_of_a_fused_weapon() {
         "  fx label=Rapid Damage|value=20|pct=1|cond=always|note=|target=self|source=mod|item=Levi Blaster|tok=30008|skill=0|missing=0",
         "  fx label=Rapid Damage|value=50|pct=1|cond=always|note=|target=self|source=mod|item=Levi Blaster|tok=30089|skill=0|missing=0",
         "  fx label=Rapid Damage|value=4|pct=1|cond=always|note=|target=self|source=tarot|item=Levi Blaster|tok=30057|skill=0|missing=0",
+        // the soul (Ogami's Crystal): on the public data its tokusei have no server data, so its text is read (with the sealed
+        // data it comes from the server data: tested in calc::item_effects)
         "  fx label=Final Critical rate correction|value=5|pct=1|cond=digitalized|note=from the game's text|target=self|source=soul|item=Levi Blaster|tok=2000192|skill=0|missing=0",
         "  fx label=Final Critical rate correction|value=5|pct=1|cond=digitalized|note=from the game's text|target=partner|source=soul|item=Levi Blaster|tok=2000192|skill=0|missing=0",
         "  fx label=Limit Break chance|value=5|pct=1|cond=digitalized|note=from the game's text|target=self|source=soul|item=Levi Blaster|tok=2000192|skill=0|missing=0",
@@ -369,12 +372,15 @@ fn gear_database_matches_the_csharp_file() {
     // Boost, Curative Received) and EQUIPPED_WEAPON_TYPE conditions name the weapon class ("Axe equipped" for "Equipped
     // Weapon Type 29"): +3,323 bytes, only in those lines. Since status effects go by the game's names (referencestatus-names.tsv:
     // "Immune to Stun" for "Immune to status 10", "Charm success rate" for "Status 4 success rate"): -2,600 bytes, only
-    // in those lines.
+    // in those lines. Since 2026-11-25 this is made without the sealed data (as the repo's
+    // gear-db.json is): +76,222 bytes from the wording of comp_hack's own effects, only in effect lines: statuses by name
+    // ("Inflicts Bind"), named skill conditions ("Fire skills only"), partner, time, moon and status conditions in words
+    // ("at full moon", "from 18:00 game time"), enemy race/demon/HP conditions, named aspects.
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (3751141, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (3827363, GEARDB_FNV));
 }
 
 /// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods") after its
 /// `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 17079864666555525593;
+const GEARDB_FNV: u64 = 18407798558130659198;

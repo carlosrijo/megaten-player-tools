@@ -5,6 +5,7 @@ pub mod characters;
 pub mod demon_tables;
 pub mod stat_labels;
 pub mod game_data;
+pub mod pack;
 pub mod store;
 pub mod nif;
 pub mod tga;
