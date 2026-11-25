@@ -1211,7 +1211,10 @@
     page.append(h('div', { class: 'page-head with-portrait' }, portrait, h('div', { class: 'page-head-text' },
       h('div', { class: 'who-line' },
         h('p', { class: 'page-who' }, h('b', { class: 'who-big', text: S.meta.character || '' }), [`Level ${fmt(L.level)}`, align].filter(Boolean).map((t) => ` · ${t}`).join('')),
-        legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : []))),
+        h('div', { class: 'who-right' },
+          legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : [])),
+          S.meta.character ? h('button', { type: 'button', class: 'btn btn-primary btn-sm', 'data-tip': 'A code of what you wear and your expertise ranks, for another player to import into their Build Planner',
+            onclick: (ev) => exportCurrentBuild(ev.currentTarget) }, icon('share'), 'Export build') : null)),
       h('div', { class: 'dg-bars who-stats' }, mine.map(statRow))), summonedCard()));
     // three one-line bands under your stats: your expertise, your demon (always there: a demon, or "No demon"), your gear
     page.append(expertiseBand(), demonCard());
@@ -3934,6 +3937,17 @@
       h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'The code holds the pieces (with their fusions and mods), the expertise ranks, and the level and alignment they stand on. It does not hold your character’s name, the build’s name or its digitalize demon.' })));
     if (!simCodeDlg.open) simCodeDlg.showModal();
     copy.focus();
+  }
+  /** Overview's "Export build": the shown character's build as last read (what "New build" starts from), shared as a code. */
+  async function exportCurrentBuild(btn) {
+    const me = simActive();
+    if (!me || (btn && btn.disabled)) return;
+    if (btn) btn.disabled = true;
+    try {
+      const { init } = await simBase(me);
+      await simShare({ ...simArgs(me), slots: init.build.slots, points: init.build.points, cap: null }, '');
+    } catch (e) { toast('err', 'This build can’t be exported', String((e && e.message) || e)); }
+    finally { if (btn) btn.disabled = false; }
   }
   /** "Import build": paste a code, see what it holds, choose what it stands on, and save it as a new build. */
   function simImportOpen() {

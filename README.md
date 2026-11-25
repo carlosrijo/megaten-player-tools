@@ -425,7 +425,8 @@ game or your saved data. It starts from your character as last read (take a snap
   section comes from (the piece lending the basic features or the characteristics, the crystals, a set's pieces; the
   Gear page's tooltips have them too). For a ringed piece, a section the build changes shows what the character wears
   and, under it, a "Changes to" card with what the build has there.
-- **Sharing builds**: the share button on a build (its card, or beside its name in the editor) gives a short text code
+- **Sharing builds**: the share button on a build (its card, or beside its name in the editor), or **Export build** beside
+  your name on Overview (what you wear now, without opening the Build Planner), gives a short text code
   (`BABEL1-…`, about 130 to 300 characters) to paste to another player. They press "Import build" on the builds page,
   paste it, see the pieces and expertise ranks it holds, choose what to show it on (one of their characters, or "No
   base" at the level and alignment it was shared at) and save it as a new build of their own. A code holds numbers
