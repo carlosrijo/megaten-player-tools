@@ -908,6 +908,7 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .detail-row > td { background: var(--surface-2); padding: 6px 12px 12px 34px; }
 .dcm-parts { max-width: 760px; }
 .dcm-parts li:first-child { border-top: 0; }
+.dcm-parts li { grid-template-columns: 92px minmax(0, 1fr) auto; }   /* DCM lines have no icon: kind, text, rate */
 .dcm-icon { flex: none; width: 28px; height: 28px; border-radius: 6px; background: var(--surface-2); overflow: hidden; display: inline-grid; margin: -4px 0; }
 .dcm-icon img { width: 28px; height: 28px; display: block; object-fit: cover; object-position: 50% 20%; }
 .page-dcm .row-btn { align-items: center; }

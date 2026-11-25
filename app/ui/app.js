@@ -2340,7 +2340,7 @@
   // ---------- Tools: DCM Locator ----------
   // dcm-sources.json is made by tools\dcmexport from the game data; dcm-notes.json is written by hand (what players
   // found on IMAGINE itself). Both sit beside this file.
-  const DCM_KINDS = [['all', 'All'], ['shop', 'Shop'], ['drop', 'Enemy drop'], ['chest', 'Chest or loot'], ['event', 'Event or NPC'], ['present', 'Present only'], ['none', 'No known source']];
+  const DCM_KINDS = [['all', 'All'], ['shop', 'Shop'], ['drop', 'Enemy drop'], ['chest', 'Chest or loot'], ['event', 'Event or NPC'], ['barter', 'NPC exchange'], ['present', 'Present only'], ['none', 'No known source']];
   const pct = (v) => `${nf.format(n0(v))}%`;
   function loadDcm() {
     if (S.dcm.state !== 'idle') return;
@@ -2374,6 +2374,11 @@
     grouped(by('plasma'), (s) => s.zone + '|' + s.rate).forEach((g) => lines.push({ group: 'chest', kind: 'Plasma', text: g[0].zone || NOPLACE, value: pct(g[0].rate), tags: tagsOf(g[0]), rank: 3 }));
     grouped(by('event'), (s) => s.zone + '|' + (s.season || '')).forEach((g) => { const who = [...new Set(g.map((s) => s.npc).filter(Boolean))];
       lines.push({ group: 'event', kind: 'Event or NPC', text: g[0].zone || NOPLACE, sub: who.length ? 'Talk to ' + who.join(', ') : '', tags: tagsOf(g[0]), rank: 4 }); });
+    // NPC exchanges (the client's own barter lists): one line per NPC and price, naming every zone that NPC trades it in.
+    // After events so a drop, chest or shop stays the best line; before random boxes and presents.
+    grouped(by('barter'), (s) => s.npc + '|' + s.cost + '|' + (s.npc ? '' : s.zone)).forEach((g) => { const z = zones(g);
+      lines.push({ group: 'barter', kind: 'Exchange', text: g[0].npc ? `Talk to ${g[0].npc}` + (z ? ' in ' + z : '') : z ? `An NPC in ${z} (the data does not say who)` : 'An exchange NPC the data does not place',
+        sub: g[0].cost ? 'for ' + g[0].cost : 'The data does not say what it costs', rank: 4.5 }); });
     by('box').forEach((s) => lines.push({ group: 'chest', kind: 'Random box', text: s.desc || `Box ${s.dropSetId}`, value: pct(s.rate), rank: 5 }));
     by('destiny').concat(by('demonquest'), by('dropset')).forEach((s) => lines.push({ group: 'drop', kind: s.kind === 'destiny' ? 'Destiny box' : s.kind === 'demonquest' ? 'Demon quest' : 'Drop table',
       text: s.desc || `Drop set ${s.dropSetId}`, sub: s.kind === 'dropset' ? 'The data does not say which enemy uses this table' : '', value: pct(s.rate), rank: 6 }));
@@ -2399,7 +2404,7 @@
       return page;
     }
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
-      'The DCM list, zone names and shop stock are the IMAGINE client\'s. Drops, chests, presents and events come from the public server data, so IMAGINE may have changed them. Lines marked “IMAGINE note” are confirmed by players.')));
+      'The DCM list, zone names, shop stock and NPC exchanges are the IMAGINE client\'s. Drops, chests, presents, events and which NPC offers an exchange come from the public server data, so IMAGINE may have changed them. Lines marked “IMAGINE note” are confirmed by players.')));
     const items = D.data.items;
     const inKind = (it, k) => k === 'all' ? true : k === 'none' ? !it.lines.length : k === 'present' ? it.lines.length > 0 && it.lines.every((l) => l.group === 'present') : it.kinds.has(k);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by source' });

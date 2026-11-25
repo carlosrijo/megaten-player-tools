@@ -187,12 +187,12 @@ grow with level, and a critical roll adds Luck to it.
 ### Tools: DCM Locator
 
 Under **Tools** in the left bar. Lists every DCM (Demon Compendium Memory) and where the game data says it comes from:
-shops with prices, enemies with drop rates and zones, chests, event or NPC rewards, random boxes, and presents from the
-demon itself. Search by demon, enemy, zone or shop; the chips filter by kind of source. It works without a snapshot.
+shops with prices, enemies with drop rates and zones, chests, event or NPC rewards, NPC exchanges with what they cost,
+random boxes, and presents from the demon itself. Search by demon, enemy, zone or shop; the chips filter by kind of source. It works without a snapshot.
 Each row shows the demon's own icon from your game client when the client has one.
 
-The DCM list, zone names and shop stock are the IMAGINE client's. Drops, chests, presents and events come from the
-public server data, so IMAGINE may have changed them; DCMs with "No known source" are most likely IMAGINE additions.
+The DCM list, zone names, shop stock and NPC exchanges are the IMAGINE client's. Drops, chests, presents, events and
+which NPC offers an exchange come from the public server data, so IMAGINE may have changed them; DCMs with "No known source" are most likely IMAGINE additions.
 To record what players confirmed on IMAGINE, add notes to `app\ui\dcm-notes.json`
 (`"notes": { "<item id>": ["Sold by X in Y for Z"] }`; the item id is shown at the bottom of an opened row).
 They appear first, marked "IMAGINE note".
