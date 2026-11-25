@@ -1390,11 +1390,16 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 /* a race's tier in its chip: the higher the tier, the bluer (Tokyo Night blue at tier 5) */
 /* a loot-rarity ladder in Tokyo Night colours: grey, cyan, blue, purple, orange */
 .dpl-tier { margin-left: 4px; font-weight: 700; color: var(--text-3); }
-.dpl-tier[data-tier="1"] { color: #a9b1d6; }
-.dpl-tier[data-tier="2"] { color: #7dcfff; }
-.dpl-tier[data-tier="3"] { color: #7aa2f7; }
-.dpl-tier[data-tier="4"] { color: #bb9af7; }
-.dpl-tier[data-tier="5"] { color: #ff9e64; }
+.dpl-tier[data-tier="1"] { color: #6172b0; }   /* light theme: Tokyo Night Day */
+.dpl-tier[data-tier="2"] { color: #007197; }
+.dpl-tier[data-tier="3"] { color: #2e7de9; }
+.dpl-tier[data-tier="4"] { color: #9854f1; }
+.dpl-tier[data-tier="5"] { color: #b15c00; }
+:root[data-theme="dark"] .dpl-tier[data-tier="1"] { color: #a9b1d6; }
+:root[data-theme="dark"] .dpl-tier[data-tier="2"] { color: #7dcfff; }
+:root[data-theme="dark"] .dpl-tier[data-tier="3"] { color: #7aa2f7; }
+:root[data-theme="dark"] .dpl-tier[data-tier="4"] { color: #bb9af7; }
+:root[data-theme="dark"] .dpl-tier[data-tier="5"] { color: #ff9e64; }
 .dpl-menu { max-height: 380px; padding-top: 0; }
 .dpl-menu-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -4px 2px; background: var(--surface); border-bottom: 1px solid var(--border); min-height: 34px; box-sizing: border-box; }
 .dpl-check { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); display: inline-grid; place-items: center; }
