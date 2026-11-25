@@ -1287,8 +1287,43 @@
     // counted the same way as the list below.
     const differs = (x) => groups.reduce((n, [, keys]) => n + keys.filter(([k]) => { const a = num(x[k]), b = num(L[k]); return a !== null && b !== null && a !== b; }).length, 0);
     const countText = (n) => (n ? `${n} change${n === 1 ? '' : 's'}` : 'no changes');
-    const sel = h('select', { class: 'select', 'aria-label': 'Compare with snapshot', onchange: () => { S.compare = sel.value; S.over.delSnap = false; render(); } },
-      earlier.slice().reverse().map((x) => h('option', { value: x.taken_at, selected: x.taken_at === base.taken_at, text: `${when(x.taken_at)} · ${countText(differs(x))}` })));
+    // The picker is the app's own dropdown (a popover, as the digitalize demon's), not a native <select>: the browser
+    // draws a native list itself, so its scrollbar can't be given the sidebar's look.
+    // Each snapshot in it has a bin on its right: a click tints that row and asks "Delete this snapshot?" inside it
+    // (the list stays where it was); the dropdown stays open after a delete, so several can go one after another.
+    const rows = h('div', { class: 'char-list' });
+    let asking = null;   // the snapshot (taken_at) asked about
+    const drawRows = (focus) => {
+      const top = rows.scrollTop;
+      rows.replaceChildren(...earlier.slice().reverse().map((x) => {
+        const on = x.taken_at === base.taken_at, ask = asking === x.taken_at;
+        const at = (cls) => `.snap-row[data-at="${CSS.escape(x.taken_at)}"] ${cls}`;
+        return h('div', { class: 'snap-row' + (ask ? ' asking' : ''), 'data-at': x.taken_at },
+          h('button', { type: 'button', class: 'char snap-opt', 'aria-current': on ? 'true' : null,
+            onclick: () => { menu.hidePopover(); if (!on) { S.compare = x.taken_at; S.over.delSnap = false; render(); } } },
+            h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: when(x.taken_at) }), h('span', { class: 'char-line', text: countText(differs(x)) }))),
+          ask ? h('div', { class: 'snap-ask' }, h('span', { class: 'dgt-line', text: 'Delete this snapshot? The spreadsheet is copied first.' }),
+            h('span', { class: 'dg-ask-btns' },
+              h('button', { type: 'button', class: 'btn btn-sm snap-yes', onclick: () => deleteSnapshot(x, true) }, 'Delete'),
+              h('button', { type: 'button', class: 'btn btn-ghost btn-sm snap-keep', onclick: () => { asking = null; drawRows(at('.snap-x')); } }, 'Keep')))
+            : h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm snap-x', 'aria-label': `Delete the snapshot of ${when(x.taken_at)}`, 'data-tip': 'Delete this snapshot',
+              onclick: () => { asking = x.taken_at; drawRows(at('.snap-keep')); } }, icon('trash')));
+      }));
+      rows.scrollTop = top;
+      const el = focus && rows.querySelector(focus);
+      if (el) {
+        el.focus({ preventScroll: true });
+        // the asked row's question in view, by as little as it takes (only the list scrolls)
+        const row = el.closest('.snap-row'), bottom = row.offsetTop - rows.offsetTop + row.offsetHeight;
+        if (bottom > rows.scrollTop + rows.clientHeight) rows.scrollTop = bottom - rows.clientHeight;
+      }
+    };
+    drawRows();
+    const menu = h('div', { class: 'menu snap-menu', id: 'snap-menu', popover: 'auto', 'aria-label': 'Compare with snapshot',
+      ontoggle: (ev) => { if (ev.newState === 'open') openSnapMenu(menu, sel); else if (asking) { asking = null; drawRows(); } } }, rows);
+    const sel = h('button', { type: 'button', class: 'select snap-btn', popovertarget: 'snap-menu', 'aria-haspopup': 'listbox', 'aria-label': `Compare with snapshot: ${when(base.taken_at)}` },
+      h('span', { text: `${when(base.taken_at)} · ${countText(differs(base))}` }), icon('chevron'));
+    card.append(menu);
     // the picked snapshot can be deleted (a row of the spreadsheet, copied first); the latest is not in the picker
     const del = S.over.delSnap
       ? h('span', { class: 'snap-del' }, h('span', { class: 'card-sub', text: 'Delete this snapshot?' }),
@@ -1321,18 +1356,49 @@
       onclick: () => { S.over.allChanges = !S.over.allChanges; render(); } }, all ? `Show the ${TOP_CHANGES} biggest` : `Show all ${count} changes`));
     return wrap;
   }
-  /** Delete one earlier snapshot (its spreadsheet row; the app copies the spreadsheet first), then show the page again. */
-  async function deleteSnapshot(x) {
+  /** What changed's snapshot dropdown, just opened: under its button (above it when there is no room below), the picked
+   *  snapshot in view and focused; arrow keys move through the list; scrolling the page closes it (its button moves away). */
+  function openSnapMenu(menu, btn) {
+    const r = btn.getBoundingClientRect(), w = menu.offsetWidth, hgt = menu.offsetHeight;
+    menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+    menu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
+    const cur = menu.querySelector('[aria-current="true"]');
+    // the picked one in the middle of the list (only the list scrolls: scrollIntoView would move the page too)
+    const list = menu.querySelector('.char-list');
+    if (menu.dataset.top) { list.scrollTop = Number(menu.dataset.top); delete menu.dataset.top; if (cur) cur.focus({ preventScroll: true }); }   // reopened after a delete: where it was
+    else if (cur) { list.scrollTop = cur.offsetTop - list.offsetTop - (list.clientHeight - cur.offsetHeight) / 2; cur.focus({ preventScroll: true }); }
+    if (!menu.dataset.keys) {
+      menu.dataset.keys = '1';
+      menu.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+        const rows = [...menu.querySelectorAll('.snap-opt')], i = rows.indexOf(document.activeElement);
+        const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
+        if (next) { next.focus(); ev.preventDefault(); }
+      });
+    }
+    $('#main').addEventListener('scroll', () => { if (menu.matches(':popover-open')) menu.hidePopover(); }, { once: true });
+  }
+  /** Delete one earlier snapshot (its spreadsheet row; the app copies the spreadsheet first), then show the page again.
+   *  `fromMenu`: asked in the snapshot dropdown, which stays open afterwards, scrolled where it was. */
+  async function deleteSnapshot(x, fromMenu) {
     if (S.over.deletingSnap) return;
-    S.over.deletingSnap = true; render();
+    S.over.deletingSnap = true;
+    const list = fromMenu && $('#snap-menu .char-list'), top = list ? list.scrollTop : 0;
+    if (fromMenu) { const b = $('#snap-menu .snap-yes'); if (b) { b.disabled = true; b.textContent = 'Deleting…'; } }
+    else render();
     try {
       const r = await host.call('deleteSnapshot', { takenAt: x.taken_at });
-      S.compare = null; S.over.delSnap = false;
+      if (!fromMenu || S.compare === x.taken_at) S.compare = null;   // from the menu: still compared with the one picked, unless that was it
+      S.over.delSnap = false;
       await reload();
       toast('ok', `Snapshot of ${when(x.taken_at)} deleted`, r && r.backup ? `The spreadsheet was copied first: ${r.backup}` : '');
     } catch (e) {
       toast('err', 'Couldn’t delete the snapshot', String(e && e.message || e), 0);
-    } finally { S.over.deletingSnap = false; render(); }
+    } finally {
+      S.over.deletingSnap = false; render();
+      const m = fromMenu && $('#snap-menu');
+      if (m) { m.dataset.top = String(top); m.showPopover(); }   // openSnapMenu keeps the list there instead of centring the picked one
+    }
   }
 
   // ---------- Bonuses ----------
@@ -5279,8 +5345,9 @@
     demonsMenu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
   }
   const setMode = (mode) => { S.mode = mode; store.set('mode', mode); };
-  /** The list as known now: "No demon", then every demon seen. `status`: a line under the load button. */
-  function drawDemons(status, loading) {
+  /** The list as known now: "No demon", then every demon seen. `status`: a line under the load button. `keep` (a
+   *  selector, or null): keep the list's scroll and focus that instead of the demon in use. */
+  function drawDemons(status, loading, keep) {
     const list = $('#demons-list'), demons = S.demons || [];
     const had = list.contains(document.activeElement);
     const none = h('button', { type: 'button', class: 'char', 'aria-current': digi() ? null : 'true',
@@ -5299,21 +5366,30 @@
       const tile = row(d);
       if (d.current || d.inComp === true || d.summoned || d.inGame) return tile;
       const ask = demonsAsk === d.key;
-      return h('div', { class: 'dg-item' + (ask ? ' asking' : '') }, tile,
+      // asking: the same card, tinted, with the question under its content (the list stays where it was)
+      const at = (sel) => `.dg-item[data-key="${CSS.escape(d.key)}"] ${sel}`;
+      return h('div', { class: 'dg-item' + (ask ? ' asking' : ''), 'data-key': d.key }, tile,
         ask ? h('div', { class: 'dg-ask' }, h('span', { class: 'dgt-line', text: `Remove ${d.name} from this list? It is no longer in your COMP, so what it gives can’t be read again.` }),
           h('span', { class: 'dg-ask-btns' },
             h('button', { type: 'button', class: 'btn btn-sm', onclick: () => forgetDemon(d) }, 'Remove'),
-            h('button', { type: 'button', class: 'btn btn-ghost btn-sm dg-keep', onclick: () => { demonsAsk = null; drawDemons(); } }, 'Keep')))
+            h('button', { type: 'button', class: 'btn btn-ghost btn-sm dg-keep', onclick: () => { demonsAsk = null; drawDemons(null, false, at('.dg-del')); } }, 'Keep')))
           : h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm dg-del', 'aria-label': `Remove ${d.name} from the list`, 'data-tip': 'Remove from this list',
-            onclick: () => { demonsAsk = d.key; drawDemons(); const k = list.querySelector('.dg-keep'); if (k) k.focus(); } }, icon('trash')));
+            onclick: () => { demonsAsk = d.key; drawDemons(null, false, at('.dg-keep')); } }, icon('trash')));
     };
+    const top = list.scrollTop;
     list.replaceChildren(none, ...demons.map(item));
     const load = $('#demons-load');
     load.disabled = !!loading;
     load.textContent = loading ? 'Reading the game…' : 'Load demons from the game';
     $('#demons-status').textContent = status || (!S.demons ? '' : !demons.length ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
     placeDemons();
-    if (had) { const b = list.querySelector('[aria-current="true"]') || list.querySelector('button'); if (b) b.focus(); }
+    if (keep !== undefined) {
+      // asking about (or keeping) one demon: the list stays where it was; only when the card's question runs past the
+      // bottom is it brought into view, by as little as it takes
+      list.scrollTop = top;
+      const el = keep && list.querySelector(keep);
+      if (el) { el.focus({ preventScroll: true }); (el.closest('.dg-item') || el).scrollIntoView({ block: 'nearest' }); }
+    } else if (had) { const b = list.querySelector('[aria-current="true"]') || list.querySelector('button'); if (b) b.focus(); }
   }
   /** The demons seen before (at once), or with `scan` a fresh look at the game added to them. */
   async function loadDemons(scan) {
@@ -5371,7 +5447,7 @@
       await host.call('forgetDemon', { key: d.key });
       demonsAsk = null;
       if (S.demons) S.demons = S.demons.filter((x) => x.key !== d.key);
-      drawDemons();
+      drawDemons(null, false, null);   // the list stays where it was
       toast('ok', `${d.name} removed from the list`);
     } catch (e) { toast('err', `Couldn’t remove ${d.name}`, String(e && e.message || e), 0); }
   }
