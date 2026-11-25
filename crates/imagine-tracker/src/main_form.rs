@@ -511,8 +511,17 @@ impl MainForm {
                 // The demon in the page's corner: its 3D model as one JSON text, made from the client's own files the
                 // first time (Build\DemonModel.cs) and kept in <data>\cache\models. "null" while the game's folder
                 // isn't known (never seen running) or the model can't be read.
+                // { demon: <id> } asks for another demon's model (the assistant picker, a feature still behind a flag):
+                // read from the game's files on the fly and only kept in memory, never written to cache\models
+                // (only the default assistant's file is kept there). Its size, summoning circle size and colour come along as "summon".
+                let demon = jsonx::int(args.get("demon"), 0);
+                let picked = if demon > 0 { imagine::build::demon_model::model_of_demon(demon)? } else { None };
+                if demon > 0 && picked.is_none() {
+                    return Ok("null".to_string());
+                }
+                let model = picked.as_ref().map(|p| p.model.clone()).unwrap_or_else(|| imagine::build::demon_model::ASSISTANT.to_string());
                 let e = self.active_entry();
-                let save = !self.no_writes();
+                let save = !self.no_writes() && picked.is_none();
                 let attempt = || -> Result<Option<String>> {
                     let mut client = match &e {
                         Some(e) => self.backend.item_icons_client_dir(&self.char_dir(e))?,
@@ -529,13 +538,70 @@ impl MainForm {
                             }
                         }
                     }
-                    self.backend.demon_model_load(&self.data_dir, client.as_deref(), save)
+                    self.backend.demon_model_load(&self.data_dir, client.as_deref(), &model, save)
                 };
                 match attempt() {
-                    Ok(Some(model)) => Ok(model),
+                    Ok(Some(json)) => {
+                        // the model's JSON object with the game's model numbers put in front
+                        let r = picked.unwrap_or_else(|| imagine::build::demon_model::model_of_demon(imagine::build::demon_model::ASSISTANT_DEMON).ok().flatten().unwrap_or(imagine::build::demon_model::DemonModelRef {
+                            model: model.clone(),
+                            scale: 1.0,
+                            circle: 1.0,
+                            color: [162, 70, 243],
+                        }));
+                        let head = format!("{{\"demon\":{demon},\"summon\":{{\"scale\":{},\"circle\":{},\"color\":{}}},", json!(r.scale), json!(r.circle), json!(r.color));
+                        Ok(match json.strip_prefix('{') {
+                            Some(rest) if rest.trim_start() != "}" => format!("{head}{rest}"),
+                            _ => json,
+                        })
+                    }
                     Ok(None) => Ok("null".to_string()),
                     // C# catches NifException, IOException and UnauthorizedAccessException
                     Err(err) if err.downcast_ref::<std::io::Error>().is_some() || imagine::data::nif::is_nif_error(&err) => Ok("null".to_string()),
+                    Err(err) => Err(err),
+                }
+            }
+
+            "summonedDemon" => {
+                // The active character's summoned demon right now, read from its client (read-only, one pass over the
+                // demon records, ~30 ms): { type, name } or { type: 0 } when none is out. "null" when it can't be told
+                // (no character, or its client isn't running). For the assistant picker's "same as my summoned demon"
+                // (a feature behind a flag); the page asks every few seconds, so it is logged quietly.
+                let Some(name) = self.active_entry().and_then(|e| e.name.clone()) else { return Ok("null".to_string()) };
+                let proc = match imagine::game::client_reader::find_client(&name) {
+                    Ok(p) => p,
+                    Err(e) if imagine::error::is_user_error(&e) => return Ok("null".to_string()),
+                    Err(e) => return Err(e),
+                };
+                let mem = imagine::memory::GameMemory::new(proc.id())?;
+                // another player's demon in view has a record too, but no details: the partner is the loaded one
+                let all = imagine::game::demon_reader::read_demons(&mem, true);
+                Ok(match all.iter().find(|d| d.summoned() && d.loaded()) {
+                    Some(d) => json!({ "type": d.r#type, "name": d.name }),
+                    None => json!({ "type": 0 }),
+                }
+                .to_string())
+            }
+
+            "assistantSummon" => {
+                // The game's summoning effect pieces (pictures from its effect models, its summoning sound) for the
+                // assistant picker's change of demon (a feature behind a flag). Only read; "null" while the game's
+                // folder isn't known.
+                let e = self.active_entry();
+                let mut client = match &e {
+                    Some(e) => self.backend.item_icons_client_dir(&self.char_dir(e))?,
+                    None => None,
+                };
+                if client.is_none() {
+                    client = self.backend.item_icons_client_dir(&self.data_dir)?;
+                }
+                if client.is_none() {
+                    client = backend::client_pids().into_iter().find_map(backend::process_exe_dir);
+                }
+                match client.map(|d| imagine::build::demon_model::summon_effect(&d)).transpose() {
+                    Ok(Some(Some(json))) => Ok(json),
+                    Ok(_) => Ok("null".to_string()),
+                    Err(err) if err.downcast_ref::<std::io::Error>().is_some() => Ok("null".to_string()),
                     Err(err) => Err(err),
                 }
             }
@@ -874,7 +940,7 @@ fn log_command(cmd: &str, ms: u128, r: &std::thread::Result<Result<String>>) {
     if name == "log" {
         return;
     }
-    let quiet = matches!(name.as_str(), "status");
+    let quiet = matches!(name.as_str(), "status" | "summonedDemon");
     match r {
         Ok(Ok(_)) => log::write(if quiet { Level::Debug } else { Level::Info }, &format!("command {name}: ok ({ms} ms)")),
         Ok(Err(e)) if imagine::error::is_user_error(e) => log::write(Level::Info, &format!("command {name}: user error: {e} ({ms} ms)")),

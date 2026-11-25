@@ -41,6 +41,8 @@ window.NMAssistant = (() => {
     model.nodes.forEach((x, i) => { M.parent[i] = x.parent; M.restT.set(x.t, i * 3); M.restQ.set(x.q, i * 4); M.restS[i] = x.s; });
     M.meshes = model.meshes.filter((m) => !m.hidden && m.indices > 0).map((m) => ({
       node: m.node, verts: m.verts, count: m.indices, texture: m.texture, diffuse: m.diffuse,
+      // the game's alpha settings: blended (drawn after the solid parts, see-through where its picture is), alpha test
+      blend: !!m.blend, alpha: m.alpha != null ? m.alpha : 1, alphaNow: m.alpha != null ? m.alpha : 1, cut: m.alphaTest != null && m.alphaTest >= 0 ? m.alphaTest / 255 : -1,
       pos: new Float32Array(buf, m.pos, m.verts * 3), nrm: new Float32Array(buf, m.nrm, m.verts * 3),
       uv: m.uv >= 0 ? new Float32Array(buf, m.uv, m.verts * 2) : new Float32Array(m.verts * 2), idx: new Uint16Array(buf, m.idx, m.indices),
       outPos: new Float32Array(m.verts * 3), outNrm: new Float32Array(m.verts * 3),
@@ -57,6 +59,8 @@ window.NMAssistant = (() => {
         pos: t.pos >= 0 ? new Float32Array(buf, t.pos, a.frames * 3) : null,
         scl: t.scl >= 0 ? new Float32Array(buf, t.scl, a.frames) : null,
       })),
+      // meshes fading in and out (their material's alpha every frame)
+      fades: (a.fades || []).map((x) => ({ node: x.node, alpha: new Float32Array(buf, x.alpha, a.frames) })),
     }]));
     return M;
   }
@@ -135,15 +139,27 @@ varying vec2 vUv; varying vec3 vN; varying vec3 vToEye;
 void main() { vUv = aUv; vN = aNrm; vToEye = uEye - aPos; gl_Position = uViewProj * vec4(aPos, 1.0); }`;
   const FS = `precision mediump float;
 uniform sampler2D uTex; uniform float uHasTex; uniform vec3 uTint; uniform vec3 uLight; uniform vec3 uRim;
+uniform float uAlpha; uniform float uCut; uniform float uBlend;
 varying vec2 vUv; varying vec3 vN; varying vec3 vToEye;
 void main() {
-  vec3 base = mix(vec3(1.0), texture2D(uTex, vUv).rgb, uHasTex) * uTint;
+  vec4 tex = texture2D(uTex, vUv);
+  vec3 base = mix(vec3(1.0), tex.rgb, uHasTex) * uTint;
+  float a = mix(1.0, tex.a, uHasTex) * uAlpha;
+  if (uCut >= 0.0 && a < uCut) discard;
   vec3 n = normalize(vN); vec3 e = normalize(vToEye);
   if (dot(n, e) < 0.0) n = -n;
   float lit = dot(n, uLight) * 0.5 + 0.5;
   float rim = pow(1.0 - max(dot(n, e), 0.0), 3.0);
-  gl_FragColor = vec4(base * (0.55 + 0.6 * lit * lit) + uRim * rim, 1.0);
+  // the light on its edges: a brighter touch of the surface's own colour with a little of the app's purple (a fixed
+  // purple washed brown and grey demons lilac); none on added light
+  vec3 col = base * (0.55 + 0.6 * lit * lit) + (base * 0.7 + uRim * 0.3) * rim * (uBlend > 1.5 ? 0.0 : 1.0);
+  // blended parts: premultiplied, as the canvas is; solid parts stay solid
+  // added light (uBlend 2) leaves the coverage as it is
+  gl_FragColor = uBlend > 1.5 ? vec4(col * a, 0.0) : uBlend > 0.5 ? vec4(col * a, a) : vec4(col, 1.0);
 }`;
+
+  /** Black Frost standing idle (the default assistant), in model units: every demon is sized against it. */
+  const REF = { tall: 111, wide: 74 };
 
   function mount(canvas, model, opts) {
     opts = opts || {};
@@ -151,6 +167,10 @@ void main() {
     const gl = canvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: true });
     if (!gl || M.meshes.length === 0) return null;
     const idle = M.anims.has('Stay') ? 'Stay' : (M.anims.keys().next().value || null);
+    // A layer the game fades in and out (Alilat's glyph shell over its stone) is light added on top: the game's own
+    // picture of the demon shows its red glyphs orange over the brown stone and its black adding nothing. Drawn so, at
+    // full strength (the pulsing looked wrong in the corner).
+    for (const a of M.anims.values()) for (const fd of a.fades) for (const mesh of M.meshes) if (mesh.node === fd.node) mesh.add = true;
     const world = new Float64Array(M.n * 12);
     const pose = newPose(M), target = newPose(M), from = newPose(M);
     let G = null;   // the GL objects; made again if the browser drops the context
@@ -160,7 +180,20 @@ void main() {
     const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
     for (const mesh of M.meshes) for (let i = 0; i < mesh.outPos.length; i++) { lo[i % 3] = Math.min(lo[i % 3], mesh.outPos[i]); hi[i % 3] = Math.max(hi[i % 3], mesh.outPos[i]); }
     const centre = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
-    const wide = Math.max(hi[0] - lo[0], hi[1] - lo[1]), tall = hi[2] - lo[2];
+    const tall = hi[2] - lo[2];
+    // One size for every demon: the box shows what Black Frost's height fills (REF), times the game's own size for the
+    // model (CModelData scale, model.summon.scale), so a big demon stands bigger, a small one smaller, as in game. Capped:
+    // no taller than 1.8 Black Frosts or wider than 3.4 (giants would cover the page), no smaller than 0.55 (still seen).
+    // Its feet stay on the box's floor (the model's ground, z = 0): a demon that hovers in game hovers here too.
+    const gameScale = model.summon && model.summon.scale > 0 ? model.summon.scale : 1;
+    const top = Math.max(hi[2], 1), across = Math.max(hi[0] - lo[0], 1);
+    let size = gameScale;
+    if (top * size > REF.tall * 1.8) size = REF.tall * 1.8 / top;
+    if (across * size > REF.wide * 3.4) size = REF.wide * 3.4 / across;
+    if (top * size < REF.tall * 0.55) size = REF.tall * 0.55 / top;
+    const span = REF.tall * 1.16 / size;   // model units from the box's bottom to its top
+    const ground = Math.min(0, lo[2]);
+    let atZ = ground + span * 0.457;   // the height the camera looks at (feet a little above the box's bottom); floor() may lower it
 
     function setup() {
       const sh = (type, text) => { const s = gl.createShader(type); gl.shaderSource(s, text); gl.compileShader(s); return s; };
@@ -169,7 +202,7 @@ void main() {
       if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
       const g = { prog, loc: {}, textures: [], meshes: [] };
       for (const a of ['aPos', 'aNrm', 'aUv']) g.loc[a] = gl.getAttribLocation(prog, a);
-      for (const u of ['uViewProj', 'uEye', 'uTex', 'uHasTex', 'uTint', 'uLight', 'uRim']) g.loc[u] = gl.getUniformLocation(prog, u);
+      for (const u of ['uViewProj', 'uEye', 'uTex', 'uHasTex', 'uTint', 'uLight', 'uRim', 'uAlpha', 'uCut', 'uBlend']) g.loc[u] = gl.getUniformLocation(prog, u);
       const white = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, white);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([255, 255, 255, 255]));
@@ -204,13 +237,16 @@ void main() {
     const viewProj = new Float32Array(16), eye = [0, 0, 0];
     const box = { w: opts.width || canvas.parentElement.clientWidth || 136, h: opts.height || canvas.parentElement.clientHeight || 150 };   // where it stands, in CSS pixels
     const pad = { l: 0, t: 0, r: 0, b: 0 };   // how much further the canvas goes on each side
-    const home = { r: 0, b: 0 };   // the same for its right and bottom, facing the way it does at the start
+    const home = { r: 0, b: 0, standR: 0 };   // the same for its right and bottom, facing the way it does at the start (standR: standing idle only)
+    let camDist = 1;   // how far the camera stands from what it looks at (camera())
     let yawNow = opts.yaw != null ? opts.yaw : 22;   // degrees the camera stands to the side of its front; turn() changes it
     function camera() {
       const aspect = box.w / box.h, fov = 24 * Math.PI / 180, yaw = yawNow * Math.PI / 180, pitch = 7 * Math.PI / 180;
-      const fit = Math.max(tall * 1.16, wide * 1.12 / aspect), dist = fit / 2 / Math.tan(fov / 2);
+      const fit = span, dist = fit / 2 / Math.tan(fov / 2);
+      camDist = dist;
       const dir = [Math.sin(yaw) * Math.cos(pitch), -Math.cos(yaw) * Math.cos(pitch), Math.sin(pitch)];
-      const at = [centre[0], centre[1], centre[2] + tall * 0.03];
+      // aimed above the model's origin, where the game stands a demon (the middle of its box can lie far behind a long one)
+      const at = [0, 0, atZ];
       for (let i = 0; i < 3; i++) eye[i] = at[i] + dir[i] * dist;
       // view rows: right, up, back
       const back = dir, right = [-back[1], back[0], 0], rl = Math.hypot(right[0], right[1]) || 1;
@@ -239,7 +275,7 @@ void main() {
       const keep = yawNow, views = [];
       for (let k = 0; k < 8; k++) { yawNow = k * 45; camera(); views.push(viewProj.slice()); }
       yawNow = keep; camera(); views.push(viewProj.slice());
-      let x0 = -1, x1 = 1, y0 = -1, y1 = 1, hx = 1, hy = -1;   // hx, hy: right and bottom as it faces now
+      let x0 = -1, x1 = 1, y0 = -1, y1 = 1, hx = 1, hy = -1, sx = 1;   // hx, hy: right and bottom as it faces now; sx: right standing idle
       for (const anim of M.anims.values()) {
         if (opts.only && !opts.only.includes(anim.name)) continue;
         for (let f = 0; f < anim.frames; f += 3) {
@@ -249,18 +285,45 @@ void main() {
             for (const v of views)
               for (let i = 0; i < p.length; i += 3) {
                 const w = v[3] * p[i] + v[7] * p[i + 1] + v[11] * p[i + 2] + v[15];
-                if (w <= 0) continue;
+                // a demon rushing at the camera (Alilat's Rush, seen from some side) would fill the screen: not counted
+                if (w <= camDist * 0.4) continue;
                 const x = (v[0] * p[i] + v[4] * p[i + 1] + v[8] * p[i + 2] + v[12]) / w, y = (v[1] * p[i] + v[5] * p[i + 1] + v[9] * p[i + 2] + v[13]) / w;
                 if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
-                if (v === views[8]) { if (x > hx) hx = x; if (y < hy) hy = y; }
+                if (v === views[8]) { if (x > hx) hx = x; if (y < hy) hy = y; if (anim.name === idle && x > sx) sx = x; }
               }
           }
         }
       }
       const px = (over, size, most) => Math.min(most, over > 0 ? Math.ceil(over / 2 * size) + 8 : 0);
-      home.r = px(hx - 1, box.w, box.w); home.b = px(-1 - hy, box.h, box.h);
-      pad.l = px(-1 - x0, box.w, box.w * 2); pad.r = px(x1 - 1, box.w, box.w * 2); pad.t = px(y1 - 1, box.h, box.h * 2); pad.b = px(-1 - y0, box.h, box.h);
+      home.r = px(hx - 1, box.w, box.w); home.b = px(-1 - hy, box.h, box.h); home.standR = px(sx - 1, box.w, box.w);
+      // as far as its animations reach to the left and above (a rush, a jump), up to the screen's size: the window can
+      // grow to that; to the right and below there is only the window's edge, close by
+      const wideMost = Math.max(window.innerWidth || 0, (window.screen && screen.availWidth) || 0, box.w * 2), tallMost = Math.max(window.innerHeight || 0, (window.screen && screen.availHeight) || 0, box.h * 2);
+      pad.l = px(-1 - x0, box.w, wideMost); pad.r = px(x1 - 1, box.w, box.w * 2); pad.t = px(y1 - 1, box.h, tallMost); pad.b = px(-1 - y0, box.h, box.h);
       Object.assign(canvas.style, { position: 'absolute', left: -pad.l + 'px', top: -pad.t + 'px', width: box.w + pad.l + pad.r + 'px', height: box.h + pad.t + pad.b + 'px' });
+      sample(M, M.anims.get(idle), 0, pose); skin(M, pose, world);
+    }
+
+    // A demon reaching towards the camera (Cerberus's front paws) shows lower than its origin's ground: standing idle,
+    // its lowest point on screen is lifted to just above the box's bottom. One that hovers above it keeps its height.
+    function floor() {
+      const anim = M.anims.get(idle), want = -1 + 2 * 0.043;
+      for (let pass = 0; pass < 3; pass++) {
+        camera();
+        let low = 1e9;
+        for (let f = 0; f < (anim ? anim.frames : 1); f += 3) {
+          sample(M, anim, anim ? f / anim.fps : 0, pose); skin(M, pose, world);
+          for (const mesh of M.meshes) {
+            const p = mesh.outPos, v = viewProj;
+            for (let i = 0; i < p.length; i += 3) {
+              const w = v[3] * p[i] + v[7] * p[i + 1] + v[11] * p[i + 2] + v[15];
+              if (w > 0) low = Math.min(low, (v[1] * p[i] + v[5] * p[i + 1] + v[9] * p[i + 2] + v[13]) / w);
+            }
+          }
+        }
+        if (!(low < want - 0.005)) break;
+        atZ -= (want - low) / 2 * span;
+      }
       sample(M, M.anims.get(idle), 0, pose); skin(M, pose, world);
     }
 
@@ -269,6 +332,7 @@ void main() {
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; dirty = true; }
     }
 
+    const see = (mesh) => mesh.blend || mesh.add || mesh.alphaNow < 0.999;   // drawn see-through, after the solid parts
     function draw() {
       if (!G) return;
       resize(); camera();
@@ -285,8 +349,12 @@ void main() {
       const rim = opts.rim || [0.36, 0.30, 0.52];
       gl.uniform3f(G.loc.uRim, rim[0], rim[1], rim[2]);
       gl.uniform1i(G.loc.uTex, 0); gl.activeTexture(gl.TEXTURE0);
-      M.meshes.forEach((mesh, i) => {
+      // the solid parts first, then the blended ones over them, added light last
+      const drawMesh = (mesh, i) => {
         const b = G.meshes[i], tex = mesh.texture >= 0 ? G.textures[mesh.texture] : null;
+        gl.uniform1f(G.loc.uAlpha, mesh.alphaNow); gl.uniform1f(G.loc.uCut, mesh.cut); gl.uniform1f(G.loc.uBlend, mesh.add ? 2 : see(mesh) ? 1 : 0);
+        // a blended part still hides what is behind it (its own back faces too); added light hides nothing
+        if (mesh.add) { gl.blendFunc(gl.ONE, gl.ONE); gl.depthMask(false); } else if (see(mesh)) { gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(true); }
         gl.bindBuffer(gl.ARRAY_BUFFER, b.pos); gl.bufferSubData(gl.ARRAY_BUFFER, 0, mesh.outPos);
         gl.enableVertexAttribArray(G.loc.aPos); gl.vertexAttribPointer(G.loc.aPos, 3, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, b.nrm); gl.bufferSubData(gl.ARRAY_BUFFER, 0, mesh.outNrm);
@@ -298,7 +366,14 @@ void main() {
         gl.uniform3f(G.loc.uTint, mesh.diffuse[0], mesh.diffuse[1], mesh.diffuse[2]);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, b.idx);
         gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
-      });
+      };
+      M.meshes.forEach((mesh, i) => { if (!see(mesh)) drawMesh(mesh, i); });
+      if (M.meshes.some(see)) {
+        gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        M.meshes.forEach((mesh, i) => { if (see(mesh) && !mesh.add && mesh.alphaNow > 0.002) drawMesh(mesh, i); });
+        M.meshes.forEach((mesh, i) => { if (mesh.add && mesh.alphaNow > 0.002) drawMesh(mesh, i); });
+        gl.depthMask(true); gl.disable(gl.BLEND);
+      }
     }
 
     // ---------- what it is doing ----------
@@ -357,11 +432,14 @@ void main() {
     window.addEventListener('resize', onResize);
     G = setup();
     if (!G) return null;
+    floor();
     measure();
     kick();
 
     return {
       names: [...M.anims.keys()],
+      /** For checks: the model's size standing idle, in its own units (lo, hi corners). */
+      bounds: { lo: lo.slice(), hi: hi.slice() },
       /** How far the canvas goes beyond the box it was given, in CSS pixels: { l, t, r, b }. */
       reach: pad,
       /** The same to the right and below as it stood at the start: { r, b }. Keep the box that far from the window's edges. */
@@ -386,5 +464,125 @@ void main() {
     };
   }
 
-  return { mount };
+  // ---------- the summoning effect (the assistant picker's change of demon) ----------
+  // The pictures are the game's own (its summoning effect's models and particles, from the host's "assistantSummon"),
+  // drawn added onto each other and tinted with the demon's summoning colour. How the game times its effect
+  // (effect\eff) isn't decoded, so the timing here is the page's own: light comes down, the old demon fades into it,
+  // the new one stands there from ARRIVE on, smoke spreads on the ground and sparkles rise.
+  const SUMMON = { SECONDS: 1.9, ARRIVE: 0.55 };
+  const fxCache = new Map();   // data URI -> loaded picture
+  function fxImage(url) {
+    if (!url) return Promise.resolve(null);
+    if (!fxCache.has(url)) fxCache.set(url, new Promise((done) => { const i = new Image(); i.onload = () => done(i); i.onerror = () => done(null); i.src = url; }));
+    return fxCache.get(url);
+  }
+  /**
+   * The picture as light to add: how bright each pixel is becomes how much of it shows (the game draws these added,
+   * so their dark backgrounds add nothing; here the near-black is cut so no box shows), in the colour `rgb`, going to
+   * white where it is brightest. Without `rgb` it stays white.
+   */
+  function tinted(img, rgb) {
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+    const [r, g, b] = rgb || [255, 255, 255];
+    for (let i = 0; i < p.length; i += 4) {
+      let v = Math.max(p[i], p[i + 1], p[i + 2]) / 255 * (p[i + 3] / 255);
+      v = v <= 0.07 ? 0 : (v - 0.07) / 0.93;
+      const w = v * v * v * 0.6;   // the brightest part goes white
+      p[i] = r + (255 - r) * w; p[i + 1] = g + (255 - g) * w; p[i + 2] = b + (255 - b) * w; p[i + 3] = v * 255;
+    }
+    x.putImageData(d, 0, 0);
+    return c;
+  }
+  /**
+   * Play the effect on `canvas` (2D), which stands over the assistant's box: `o.box` {w, h} is the box in CSS pixels,
+   * `o.ground` the canvas pixel row (CSS) its feet stand on, `o.color` [r,g,b], `o.circle` the game's summoning circle
+   * size, `o.arrive()` is called when the new demon should appear. Resolves when it is over (false: nothing to draw).
+   */
+  async function summon(canvas, fx, o) {
+    const T = fx && fx.textures ? fx.textures : {};
+    const names = ['pillar', 'lightning', 'glow', 'arc', 'sparks', 'smoke', 'sparkle'];
+    const imgs = await Promise.all(names.map((n) => fxImage(T[n])));
+    const raw = {}; names.forEach((n, i) => { raw[n] = imgs[i]; });
+    if (!raw.glow && !raw.pillar && !raw.smoke) { o.arrive(); return false; }
+    const rgb = o.color && o.color.length === 3 ? o.color : [162, 70, 243];
+    const tint = {}; for (const n of names) if (raw[n]) tint[n] = tinted(raw[n], rgb);
+    const white = {}; for (const n of ['pillar', 'glow', 'sparkle']) if (raw[n]) white[n] = tinted(raw[n], null);
+    if (fx.sound && o.sound !== false) { try { const a = new Audio(fx.sound); a.volume = 0.45; a.play().catch(() => {}); } catch (e) { /* no sound */ } }
+
+    const x = canvas.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    const gx = W / 2, gy = o.ground, bw = o.box.w, bh = o.box.h;
+    const R = 46 * Math.min(1.5, Math.max(0.6, (o.circle || 1.5) / 1.5));   // the circle on the ground, CSS pixels
+    // up a -> b, stays, down c -> d (seconds)
+    const env = (t, a, b, c, d) => (t <= a || t >= d ? 0 : t < b ? (t - a) / (b - a) : t <= c ? 1 : (d - t) / (d - c));
+    const ease = (v) => 1 - (1 - v) * (1 - v);
+    const puffs = Array.from({ length: 8 }, (_, i) => ({ a: (i / 8) * Math.PI * 2 + Math.random() * 0.5, s: 0.8 + Math.random() * 0.5, r: Math.random() * Math.PI }));
+    let bolt = { at: -1, col: 0, dx: 0, a: 0 }, arrived = false;
+    const draw = (img, cx, cy, w, h, alpha, rot) => {
+      if (!img || alpha <= 0.002) return;
+      x.globalAlpha = Math.min(1, alpha);
+      if (rot) { x.save(); x.translate(cx, cy); x.rotate(rot); x.drawImage(img, -w / 2, -h / 2, w, h); x.restore(); }
+      else x.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+    };
+    return new Promise((resolve) => {
+      let start = 0, over = false;
+      const done = (v) => { if (!over) { over = true; resolve(v); } };
+      // a window in the background gets no frames: the new demon still arrives, and it ends
+      setTimeout(() => { if (!arrived) { arrived = true; o.arrive(); } }, SUMMON.ARRIVE * 1000 + 400);
+      setTimeout(() => { if (!over) { x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, canvas.width, canvas.height); done(true); } }, SUMMON.SECONDS * 1000 + 1500);
+      const frame = (now) => {
+        if (over) return;
+        if (!start) start = now;
+        const t = (now - start) / 1000;
+        if (!arrived && t >= SUMMON.ARRIVE) { arrived = true; o.arrive(); }
+        x.setTransform(dpr, 0, 0, dpr, 0, 0);
+        x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.clearRect(0, 0, W, H);
+        x.globalCompositeOperation = 'lighter';
+        // on the ground: a glow, and smoke spreading out in a ring
+        draw(tint.glow, gx, gy, R * 2.8, R * 0.8, env(t, 0, 0.3, 1.1, 1.8));
+        const spread = ease(Math.min(1, t / 1.6));
+        for (const p of puffs) {
+          const a = p.a + t * 0.5, rr = R * (0.45 + 0.75 * spread);
+          draw(tint.smoke, gx + Math.cos(a) * rr, gy + Math.sin(a) * rr * 0.3, R * 0.95 * p.s * (0.7 + 0.5 * spread), R * 0.6 * p.s * (0.7 + 0.5 * spread), 0.5 * env(t, 0.05, 0.35, 0.9, 1.85), p.r + t * 0.4);
+        }
+        // the light coming down, and its white core
+        const pa = env(t, 0.05, 0.35, 0.7, 1.25), pw = R * (1.6 + 0.6 * pa);
+        draw(tint.pillar, gx, gy - bh * 0.62, pw, bh * 1.5, pa);
+        draw(white.pillar, gx, gy - bh * 0.62, pw * 0.55, bh * 1.5, pa * 0.35);
+        // lightning: one bolt of the picture's four at a time, changing every 70 ms
+        const la = env(t, 0.12, 0.2, 0.65, 0.85);
+        if (la > 0 && tint.lightning) {
+          if (t - bolt.at > 0.07) bolt = { at: t, col: Math.floor(Math.random() * 4), dx: (Math.random() - 0.5) * R * 1.2, a: 0.55 + Math.random() * 0.45 };
+          const L = tint.lightning, sw = L.width / 4;
+          x.globalAlpha = la * bolt.a;
+          x.drawImage(L, bolt.col * sw, 0, sw, L.height, gx + bolt.dx - R * 0.3, gy - bh * 1.05, R * 0.6, bh * 1.05);
+        }
+        // swirling arcs going up around it
+        const aa = env(t, 0.25, 0.45, 0.95, 1.35);
+        for (let k = 0; k < 3; k++) {
+          const ang = t * 5 + k * 2.1, lift = ease(Math.min(1, Math.max(0, (t - 0.25) / 1.1)));
+          draw(tint.arc, gx + Math.cos(ang) * R * 0.7, gy - bh * (0.15 + 0.55 * lift) + k * 6, R * 0.9, R * 0.9, aa * 0.9, ang + Math.PI / 2);
+        }
+        draw(tint.sparks, gx, gy - bh * 0.5, R * 1.1, bh * 0.9, env(t, 0.3, 0.45, 0.6, 0.9) * 0.8);
+        // the flash it appears in
+        const fa = env(t, SUMMON.ARRIVE - 0.12, SUMMON.ARRIVE, SUMMON.ARRIVE + 0.05, SUMMON.ARRIVE + 0.45);
+        draw(tint.glow, gx, gy - bh * 0.45, R * 3.2, R * 3.6, fa);
+        draw(white.glow, gx, gy - bh * 0.45, R * 1.6, R * 1.9, fa * 0.6);
+        // sparkles rising after it
+        const sa = env(t, 0.45, 0.7, 1.3, 1.9);
+        draw(tint.sparkle, gx, gy - bh * 0.55 - t * 26, bw * 1.25, bh * 1.1, sa);
+        draw(white.sparkle, gx + 6, gy - bh * 0.35 - t * 40, bw * 0.9, bh * 0.8, sa * 0.5);
+        if (t < SUMMON.SECONDS) requestAnimationFrame(frame);
+        else { x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, canvas.width, canvas.height); done(true); }
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+
+  return { mount, summon, SUMMON };
 })();

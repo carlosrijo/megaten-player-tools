@@ -86,6 +86,10 @@ pub enum NifKind {
     SplineData(NifSplineData),
     SplineBasis(NifSplineBasis),
     Sequence(NifSequence),
+    /// NiFloatInterpolator: a value, or its keys (NiFloatData) when data >= 0 (a material's alpha, NiAlphaController)
+    FloatInterpolator(NifFloatInterpolator),
+    /// NiFloatData: the keys of one number over time
+    FloatData(Option<NifKeys>),
 }
 
 /// C# `NifNet`: name, extra data refs and controller of an object with a name.
@@ -263,6 +267,12 @@ pub struct NifController {
     pub phase: f32,
     pub start: f32,
     pub stop: f32,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct NifFloatInterpolator {
+    pub value: f32,
+    pub data: i32,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -966,9 +976,8 @@ fn read_block(ty: &str, r: &mut Reader) -> B<NifKind> {
             NifKind::Object
         }
         "NiFloatInterpolator" => {
-            r.f()?;
-            r.i32()?;
-            NifKind::Object
+            let value = r.f()?;
+            NifKind::FloatInterpolator(NifFloatInterpolator { value, data: r.i32()? })
         }
         "NiPoint3Interpolator" => {
             r.skip(12)?;
@@ -983,10 +992,7 @@ fn read_block(ty: &str, r: &mut Reader) -> B<NifKind> {
             }
             NifKind::Object
         }
-        "NiFloatData" => {
-            key_group(r, 1)?;
-            NifKind::Object
-        }
+        "NiFloatData" => NifKind::FloatData(key_group(r, 1)?),
         "NiPosData" => {
             key_group(r, 3)?;
             NifKind::Object

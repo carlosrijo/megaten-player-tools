@@ -288,8 +288,8 @@ impl Backend {
     /// demon's 3D model as one JSON text, built from the client's files the first time and kept in
     /// `<data>\cache\models`. None = "null" (client folder unknown, or no such model). The callers turn the errors C#
     /// catches (NifException, IOException, UnauthorizedAccessException) into "null".
-    pub fn demon_model_load(&self, data_root: &Path, client_dir: Option<&Path>, save: bool) -> Result<Option<String>> {
-        demon_model::load(data_root, client_dir, demon_model::ASSISTANT, save)
+    pub fn demon_model_load(&self, data_root: &Path, client_dir: Option<&Path>, model: &str, save: bool) -> Result<Option<String>> {
+        demon_model::load(data_root, client_dir, model, save)
     }
 }
 

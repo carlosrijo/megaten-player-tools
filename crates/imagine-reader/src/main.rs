@@ -241,6 +241,17 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             None => item_icons::client_dir(&Store::new(&root), 0)
                 .ok_or_else(|| user_error("The game's folder isn't known yet: start the game once, or pass --client <folder>."))?,
         };
+        // model summon: the summoning effect's pictures and sound (cache\models\summon.json), for the browser preview
+        if model == "summon" {
+            let json = demon_model::summon_effect(&client)?.ok_or_else(|| user_error(format!("{} has no effect folder.", client.display())))?;
+            let to = get_or("out", demon_model::cache_path(Path::new(&root), "summon").to_string_lossy().into_owned());
+            if let Some(dir) = std::path::absolute(&to)?.parent() {
+                std::fs::create_dir_all(dir)?;
+            }
+            std::fs::write(&to, &json)?;
+            console::write_line(&format!("Wrote {to} ({} KB)", json.len() / 1024));
+            return Ok(0);
+        }
         let mut say = |s: &str| console::write_line(s);
         let json = demon_model::export(&client, &model, Some(&mut say))?
             .ok_or_else(|| user_error(format!("{} has no model named {model} (Devil\\bone\\{model}_Base.nif).", client.display())))?;
