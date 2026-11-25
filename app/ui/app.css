@@ -575,6 +575,19 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .dg-tile.on:hover { background: var(--surface); }
 .dg-tile[disabled] { opacity: .6; cursor: progress; }
 .dg-tile.static, .dg-tile.static:hover { cursor: default; background: var(--surface); border-color: var(--border); }
+/* a demon that can be taken off the list: the card with a trash button in its corner, then "Remove?" under it */
+.dg-item { position: relative; display: grid; gap: 4px; min-width: 0; }
+.dg-item .dgt-head { padding-right: 26px; }   /* room for the trash button */
+.dg-del { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; padding: 0; opacity: .55; }
+.dg-item:hover .dg-del, .dg-del:focus-visible { opacity: 1; }
+.dg-del svg.icon, .snap-pick .btn-square svg.icon { width: 15px; height: 15px; }
+.dg-item.asking .dg-tile { border-color: var(--border-strong); }
+.dg-ask { display: grid; gap: 6px; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: 10px; }
+.dg-ask-btns { display: flex; gap: 6px; }
+/* What changed: the snapshot picker with its trash button, or "Delete this snapshot?" */
+.snap-pick { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.snap-pick .btn-square { width: 26px; height: 26px; padding: 0; }
+.snap-del { display: inline-flex; align-items: center; gap: 6px; }
 /* Overview: the summoned demon, to the right of the character's stats (the picker's card without its bonus list) */
 .summoned { flex: 0 1 auto; min-width: 0; max-width: 340px; }
 .summoned.none { display: none; }

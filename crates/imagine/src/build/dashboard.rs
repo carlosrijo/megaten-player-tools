@@ -119,7 +119,7 @@ pub fn parse_datetime(text: &str) -> Result<NaiveDateTime> {
     Err(anyhow::anyhow!("The string '{s}' was not recognized as a valid DateTime."))
 }
 
-fn iso(v: &str) -> Result<String> {
+pub(crate) fn iso(v: &str) -> Result<String> {
     Ok(parse_datetime(v)?.format("%Y-%m-%dT%H:%M:%S").to_string())
 }
 

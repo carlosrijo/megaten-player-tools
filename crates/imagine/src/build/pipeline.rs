@@ -714,6 +714,53 @@ impl Pipeline {
         })
     }
 
+    /// Delete one earlier snapshot: the CSV row taken at `taken_at` (as the page has it, "2026-11-24T13:11:44"), then the
+    /// page data again. The latest snapshot is never deleted (it is what every page shows, and the digitalize demon is
+    /// on it); a snapshot of the same second as the latest counts as the latest. The CSV is copied first
+    /// (`<name>.backup-before-delete-<time>.csv`). Returns the backup's file name.
+    pub fn delete_snapshot(&self, csv: &str, taken_at: &str) -> Result<String> {
+        if csv.is_empty() || !Path::new(csv).exists() {
+            return Err(user_error("There is no spreadsheet of snapshots for this character."));
+        }
+        let mut t = CsvTable::load(csv)?;
+        let times: Vec<Option<String>> = t.rows.iter().map(|r| super::dashboard::iso(&t.get(r, "Timestamp")).ok()).collect();
+        let Some(i) = times.iter().position(|x| x.as_deref() == Some(taken_at)) else {
+            return Err(user_error("That snapshot isn't in the spreadsheet any more."));
+        };
+        if times.iter().flatten().max().map(String::as_str) == Some(taken_at) {
+            return Err(user_error("The latest snapshot can't be deleted: every page shows it. Take a new one to replace it."));
+        }
+        json::ensure_writable(csv)?;
+        let stem = Path::new(csv).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        let dir = Path::new(csv).parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from("."));
+        let backup = dir.join(format!("{stem}.backup-before-delete-{}.csv", Local::now().format("%Y%m%d-%H%M%S")));
+        std::fs::copy(csv, &backup)?;
+        t.rows.remove(i);
+        t.save(csv)?;
+        self.rebuild(csv)?;
+        Ok(backup.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default())
+    }
+
+    /// Take one cached demon off the seen list (cache\comp-demons.json; `key` from `comp_demons`): only one the game no
+    /// longer has, i.e. not in the COMP at the last read of its slots and not summoned (those come back at the next read
+    /// anyway). Not the digitalize demon in use either: switch to another first.
+    pub fn forget_demon(&self, key: &str) -> Result<()> {
+        let store = self.store();
+        let mut seen = load_seen(store)?;
+        let current = DigitalizeSave::load(store)?.and_then(|s| s.demon);
+        if key.ends_with("|saved") || current.as_ref().and_then(|c| find_key(seen.iter().map(|(k, s)| (k, &s.demon)), c)).as_deref() == Some(key) {
+            return Err(user_error("That is your digitalize demon. Pick another one (or No demon) first, then remove it."));
+        }
+        let Some(s) = seen.get(key) else {
+            return Err(user_error("That demon isn't in the list any more."));
+        };
+        if s.in_comp == Some(true) || s.demon.summoned() {
+            return Err(user_error("That demon is still in your COMP, so it would come back the next time the demons are read. Only demons no longer in your COMP can be removed."));
+        }
+        seen.shift_remove(key);
+        write_seen(store, &seen)
+    }
+
     /// Rebuild data\dash\*.json from the CSV and the saved files (no game needed).
     pub fn rebuild(&self, csv: &str) -> Result<Counts> {
         let snaps = self.dash.build_snapshots(csv)?;
