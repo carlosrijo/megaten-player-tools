@@ -176,7 +176,7 @@ fn main() {
         let app = app.clone();
         Arc::new(move |json, source| app.on_message(json, source))
     };
-    let web = match WebHost::create(hwnd, &user_data, dark, opt.dev, opt.offscreen, opt.capture.is_some(), site, handler) {
+    let web = match WebHost::create(hwnd, &user_data, dark, opt.dev, opt.offscreen, opt.capture.is_some(), site.clone(), handler) {
         Ok(w) => w,
         Err(e) => {
             imagine::log_error!("the window's WebView2 couldn't start: {e}");
@@ -213,10 +213,25 @@ fn main() {
     }
     web.resize();
     let mut web = Some(web);
+    // the quest panel: made the first time it is asked for, then shown and hidden
+    let mut panel: Option<Panel> = None;
+    let panel_open = Arc::new(std::sync::atomic::AtomicBool::new(false));
 
-    event_loop.run(move |event, _target, control_flow| {
+    event_loop.run(move |event, target, control_flow| {
         *control_flow = ControlFlow::Wait;
         match event {
+            // the quest panel's own window: its size follows, closing it only hides it
+            Event::WindowEvent { window_id, event, .. } if panel.as_ref().is_some_and(|p| p.window.id() == window_id) => {
+                let p = panel.as_ref().expect("checked above");
+                match event {
+                    WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. } => p.web.resize(),
+                    WindowEvent::CloseRequested => {
+                        panel_open.store(false, Ordering::Relaxed);
+                        p.window.set_visible(false);
+                    }
+                    _ => {}
+                }
+            }
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => {
                     app.save_bounds(winutil::saved_bounds(hwnd));
@@ -236,6 +251,54 @@ fn main() {
                 WindowEvent::ThemeChanged(_) => winutil::apply_chrome(hwnd, chrome_dark),
                 _ => {}
             },
+            // ---- the quest panel ----
+            Event::UserEvent(UserEvent::Panel { open, near }) => {
+                if !open {
+                    panel_open.store(false, Ordering::Relaxed);
+                    if let Some(p) = &panel {
+                        p.window.set_visible(false);
+                    }
+                    return;
+                }
+                if panel.is_none() {
+                    match Panel::create(target, &user_data, chrome_dark, opt.dev, site.clone(), app.clone()) {
+                        Ok(p) => panel = Some(p),
+                        Err(e) => {
+                            imagine::log_error!("the quest panel couldn't open: {e:#}");
+                            return;
+                        }
+                    }
+                }
+                let p = panel.as_ref().expect("made above");
+                p.place(near);
+                p.window.set_visible(true);
+                // while it is open, the app reads the quests itself and sends them over (every 3 s)
+                if !panel_open.swap(true, Ordering::Relaxed) {
+                    let (app, open) = (app.clone(), panel_open.clone());
+                    std::thread::spawn(move || {
+                        while open.load(Ordering::Relaxed) {
+                            let json = app.quest_progress().unwrap_or_else(|_| "null".to_string());
+                            app.ui.panel_post(format!("{{\"progress\":{json}}}"));
+                            for _ in 0..30 {
+                                if !open.load(Ordering::Relaxed) {
+                                    break;
+                                }
+                                std::thread::sleep(std::time::Duration::from_millis(100));
+                            }
+                        }
+                    });
+                }
+            }
+            Event::UserEvent(UserEvent::PanelPost(json)) => {
+                if let Some(p) = &panel {
+                    p.web.post_json(&json);
+                }
+            }
+            Event::UserEvent(UserEvent::PanelDrag) => {
+                if let Some(p) = &panel {
+                    let _ = p.window.drag_window();
+                }
+            }
             Event::UserEvent(ev) => {
                 let Some(w) = web.as_mut() else { return };
                 match ev {
@@ -258,9 +321,15 @@ fn main() {
                         app.save_bounds(winutil::saved_bounds(hwnd));
                         *control_flow = ControlFlow::Exit;
                     }
+                    // handled above
+                    UserEvent::Panel { .. } | UserEvent::PanelPost(_) | UserEvent::PanelDrag => {}
                 }
             }
             Event::LoopDestroyed => {
+                panel_open.store(false, Ordering::Relaxed);
+                if let Some(p) = panel.take() {
+                    p.web.close();
+                }
                 if let Some(w) = web.take() {
                     w.close();
                 }
@@ -268,6 +337,87 @@ fn main() {
             _ => {}
         }
     });
+}
+
+/// The quest panel: a small frameless window that stays above the game (always on top, not in the taskbar) with its own
+/// page, panel.html, so a player sees the next step of their quests without leaving the game. The page only shows
+/// what it is sent (the quest progress, read by the app while it is open) and can ask for three things: to be moved,
+/// to be closed, and to be sent the progress now.
+struct Panel {
+    window: tao::window::Window,
+    web: WebHost,
+}
+
+impl Panel {
+    const WIDTH: f64 = 380.0;
+    const HEIGHT: f64 = 260.0;
+
+    fn create(
+        target: &tao::event_loop::EventLoopWindowTarget<UserEvent>,
+        user_data: &std::path::Path,
+        dark: bool,
+        dev: bool,
+        site: Arc<site::Site>,
+        app: Arc<MainForm>,
+    ) -> anyhow::Result<Panel> {
+        let window = WindowBuilder::new()
+            .with_title("BABEL quests")
+            .with_visible(false)
+            .with_decorations(false)
+            .with_always_on_top(true)
+            .with_skip_taskbar(true)
+            .with_resizable(true)
+            .with_inner_size(LogicalSize::new(Self::WIDTH, Self::HEIGHT))
+            .with_min_inner_size(LogicalSize::new(260.0, 120.0))
+            .with_drag_and_drop(false)
+            .build(target)?;
+        let hwnd = winutil::hwnd_of(window.hwnd());
+        winutil::set_icons(hwnd);
+        winutil::apply_chrome(hwnd, dark);
+        // what the panel's page may ask: only from the app's own page, and only these
+        let app2 = app.clone();
+        let handler: host::MessageHandler = Arc::new(move |json, source| {
+            let app = &app2;
+            let prefix = format!("https://{}/", site::HOST);
+            if !source.to_ascii_lowercase().starts_with(&prefix) {
+                return;
+            }
+            let Ok(m) = serde_json::from_str::<serde_json::Value>(&json) else { return };
+            match m.get("cmd").and_then(|c| c.as_str()) {
+                Some("drag") => app.ui.panel_drag(),
+                Some("close") => app.ui.panel(false, None),
+                Some("ready") => {
+                    let app = app.clone();
+                    std::thread::spawn(move || {
+                        let json = app.quest_progress().unwrap_or_else(|_| "null".to_string());
+                        app.ui.panel_post(format!("{{\"progress\":{json}}}"));
+                    });
+                }
+                _ => {}
+            }
+        });
+        // the same browser profile as the main window: the panel and the Quest Tracker share which quests are hidden
+        let theme = app.theme();
+        let web = WebHost::create(hwnd, user_data, dark, dev, false, false, site, handler)?;
+        web.set_scheme(theme.as_deref());
+        web.navigate(&format!("https://{}/panel.html", site::HOST))?;
+        web.resize();
+        Ok(Panel { window, web })
+    }
+
+    /// Over the top right of the game's window (inside it, below its title bar), or of the screen without one.
+    fn place(&self, near: Option<isize>) {
+        let hwnd = winutil::hwnd_of(self.window.hwnd());
+        let (w, h) = winutil::outer_size(hwnd);
+        let (x, y) = match near.and_then(winutil::window_rect) {
+            Some(r) => (r.right - w - 16, r.top + 48),
+            None => {
+                let wa = winutil::primary_work_area();
+                (wa.right - w - 16, wa.top + 16)
+            }
+        };
+        winutil::set_outer_bounds(hwnd, x, y, w, h);
+    }
 }
 
 /// `StartPosition = CenterScreen` for a window whose size is already set.
