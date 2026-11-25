@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <!-- What the page may load and run: its own files and nothing else. No script written into the page runs (so text
-       that ever got shown as markup by mistake still could not run), nothing is fetched from the internet, and the page
-       can't be sent anywhere else. Pictures also come from the app's data folder (data.imagine.app is that folder, not
-       a website) and from pictures made in the page itself (data:, blob:). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://data.imagine.app; connect-src 'self' https://data.imagine.app; font-src 'self'; media-src 'self' https://data.imagine.app; object-src 'none'; base-uri 'none'; form-action 'none'">
+       that ever got shown as markup by mistake still could not run), nothing is fetched from the internet (the one
+       address the page may send to is the feedback service, FEEDBACK_URL in app.js, when the player presses Send), and
+       the page can't be sent anywhere else. Pictures also come from the app's data folder (data.imagine.app is that
+       folder, not a website) and from pictures made in the page itself (data:, blob:). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://data.imagine.app; connect-src 'self' https://data.imagine.app https://babel-feedback.babel-feedback.workers.dev; font-src 'self'; media-src 'self' https://data.imagine.app; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BABEL</title>
   <script src="theme.js"></script>

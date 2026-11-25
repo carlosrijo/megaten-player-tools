@@ -8,6 +8,10 @@
 //!                   the page's browser stand-in calls these, so the Simulator works in the preview as in the app.
 //! Everything else the page asks its host stays the stand-in's (fake game, fake snapshots): see app\ui\app.js.
 //!
+//! What it answers: only requests addressed to this PC by name (Host `localhost`, `127.0.0.1` or `[::1]`), only the
+//! files the page loads (`app/ui/`, `reference/` under the root, and `/data/`), and commands only from the page itself
+//! or a tool with no Origin (a POST from any other site's page is refused).
+//!
 //! The desktop app calls [`sim_command`] (the same dispatcher) from its page-command handler; see its documentation.
 //!
 //! The C# used `HttpListener` (one request at a time); this uses `tiny_http` on 127.0.0.1 (and [::1] when it can be
@@ -171,6 +175,43 @@ fn header(name: &str, value: &str) -> tiny_http::Header {
     tiny_http::Header::from_bytes(name.as_bytes(), value.as_bytes()).expect("a header made of plain text")
 }
 
+/// A request header's value (`None` = not sent).
+fn header_value<'a>(req: &'a tiny_http::Request, name: &'static str) -> Option<&'a str> {
+    req.headers().iter().find(|h| h.field.equiv(name)).map(|h| h.value.as_str())
+}
+
+/// `localhost`, `127.0.0.1` or `[::1]`, with or without a port: a name for this PC.
+fn is_this_pc(host: &str) -> bool {
+    let host = host.trim().to_ascii_lowercase();
+    // the name ends at the port's ':' ("[::1]" has its own colons, so it ends at the ']')
+    let end = if host.starts_with('[') { host.find(']').map(|i| i + 1) } else { Some(host.find(':').unwrap_or(host.len())) };
+    let Some(end) = end else { return false };
+    let (name, port) = host.split_at(end);
+    let port_ok = port.is_empty() || port.strip_prefix(':').is_some_and(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()));
+    matches!(name, "localhost" | "127.0.0.1" | "[::1]") && port_ok
+}
+
+/// A page's Origin that is this PC over http (`http://localhost:18770` etc.).
+fn is_this_pc_origin(origin: &str) -> bool {
+    origin.strip_prefix("http://").is_some_and(is_this_pc)
+}
+
+/// The folder a request path is answered from and the path inside it; `None` = not one of the page's files. The
+/// prefixes are matched without regard to case (the folders are on Windows).
+fn served_file<'p>(path: &'p str, root: &str, data_dir: &str) -> Option<(String, &'p str)> {
+    let lower = path.to_ascii_lowercase();
+    for (prefix, under_root) in [("data/", None), ("app/ui/", Some("app\\ui\\")), ("reference/", Some("reference\\"))] {
+        if lower.starts_with(prefix) {
+            let base = match under_root {
+                None => data_dir.to_string(),
+                Some(sub) => format!("{root}{}", sub.replace('\\', std::path::MAIN_SEPARATOR_STR)),
+            };
+            return Some((base, &path[prefix.len()..]));
+        }
+    }
+    None
+}
+
 /// One request: the body of the C# loop.
 fn serve_request<F>(mut req: tiny_http::Request, pipe_of: &F, default_base: &str, builds_path: &Path, root: &str, data_dir: &str)
 where
@@ -179,7 +220,11 @@ where
     let path = unescape(&absolute_path(req.url())).trim_start_matches('/').to_string();
     let no_store = header("Cache-Control", "no-store");
     let post = *req.method() == tiny_http::Method::Post;
-    let result = if post && path.starts_with("host/") {
+    // only requests that name this PC, and commands only from the page itself (or a tool, which sends no Origin)
+    let refused = !header_value(&req, "Host").is_some_and(is_this_pc) || (post && header_value(&req, "Origin").is_some_and(|o| !is_this_pc_origin(o)));
+    let result = if refused {
+        req.respond(tiny_http::Response::empty(403).with_header(no_store))
+    } else if post && path.starts_with("host/") {
         let mut raw = Vec::new();
         let _ = std::io::Read::read_to_end(req.as_reader(), &mut raw);
         let body = json::decode_text(&raw);
@@ -188,12 +233,12 @@ where
             Some(reply) => req.respond(tiny_http::Response::from_data(reply.into_bytes()).with_header(header("Content-Type", "application/json; charset=utf-8")).with_header(no_store)),
         }
     } else {
-        // Only files inside the root (or the data folder) are ever served.
-        let is_data = path.starts_with("data/");
-        let base_dir = if is_data { data_dir } else { root };
-        let rel = (if is_data { &path[5..] } else { path.as_str() }).replace('/', std::path::MAIN_SEPARATOR_STR);
-        let file = std::path::absolute(PathBuf::from(base_dir).join(rel)).map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
-        if file.to_uppercase().starts_with(&base_dir.to_uppercase()) && Path::new(&file).is_file() {
+        // Only the page's own files (app/ui/, reference/ and the data folder) are ever served, and only from inside them.
+        let found = served_file(&path, root, data_dir).and_then(|(base_dir, rel)| {
+            let file = std::path::absolute(PathBuf::from(&base_dir).join(rel.replace('/', std::path::MAIN_SEPARATOR_STR))).ok()?.to_string_lossy().into_owned();
+            (file.to_uppercase().starts_with(&base_dir.to_uppercase()) && Path::new(&file).is_file()).then_some(file)
+        });
+        if let Some(file) = found {
             match std::fs::read(&file) {
                 Ok(bytes) => req.respond(tiny_http::Response::from_data(bytes).with_header(header("Content-Type", mime(&file))).with_header(no_store)),
                 Err(_) => req.respond(tiny_http::Response::empty(200).with_header(no_store)), // the browser went away / unreadable: an empty answer
@@ -256,6 +301,32 @@ mod tests {
         assert_eq!(absolute_path("/a/./b/"), "/a/b/");
         assert_eq!(absolute_path("/../../etc"), "/etc");
         assert_eq!(unescape("a%20b%E3%81%82%zz%4"), "a b\u{3042}%zz%4");
+    }
+
+    #[test]
+    fn only_names_for_this_pc_are_answered() {
+        for ok in ["localhost", "LocalHost:18770", "127.0.0.1", "127.0.0.1:80", "[::1]", "[::1]:18770", " localhost:1 "] {
+            assert!(is_this_pc(ok), "{ok}");
+        }
+        for no in ["", "example.com", "localhost.example.com", "example.com:18770", "127.0.0.2", "127.0.0.1.nip.io", "localhost:", "localhost:x", "[::1", "[::2]:80", "::1"] {
+            assert!(!is_this_pc(no), "{no}");
+        }
+        assert!(is_this_pc_origin("http://localhost:18770"));
+        assert!(!is_this_pc_origin("https://example.com"));
+        assert!(!is_this_pc_origin("http://example.com"));
+        assert!(!is_this_pc_origin("null"));
+    }
+
+    #[test]
+    fn only_the_pages_folders_are_served() {
+        let (root, data) = (r"C:\repo\", r"C:\data\");
+        let sep = std::path::MAIN_SEPARATOR_STR;
+        assert_eq!(served_file("app/ui/app.js", root, data), Some((format!(r"C:\repo\app{sep}ui{sep}"), "app.js")));
+        assert_eq!(served_file("reference/devil-models.tsv", root, data), Some((format!(r"C:\repo\reference{sep}"), "devil-models.tsv")));
+        assert_eq!(served_file("DATA/dash/gear.json", root, data), Some((data.to_string(), "dash/gear.json")));
+        assert_eq!(served_file("README.md", root, data), None);
+        assert_eq!(served_file(".secrets/x.pem", root, data), None);
+        assert_eq!(served_file("app/x.js", root, data), None);
     }
 
     #[test]
@@ -334,6 +405,22 @@ mod server_tests {
         assert!(get(port, "/").0.starts_with("HTTP/1.1 404"));
         assert!(get(port, "/host/simBuilds").0.starts_with("HTTP/1.1 404")); // only POST is a command
         assert!(post(port, "/host/nothing", "{}").0.starts_with("HTTP/1.1 404"));
+        // only the page's folders: a file elsewhere under the root is not served, however it is asked for
+        std::fs::create_dir_all(dir.join("root").join(".secrets")).unwrap();
+        std::fs::write(dir.join("root").join(".secrets").join("k.pem"), "no").unwrap();
+        for p in ["/secret.txt", "/.secrets/k.pem", "/app/ui/../../secret.txt", "/app/ui/%2e%2e/%2e%2e/secret.txt", "/app/ui/..%5c..%5csecret.txt", "/DATA/../secret.txt"] {
+            assert!(get(port, p).0.starts_with("HTTP/1.1 404"), "{p}");
+        }
+        assert_eq!(get(port, "/DATA/a.json").1, "{\"a\":1}"); // the data folder's prefix in any case
+        // only requests that name this PC
+        let other_host = request(port, "GET /app/ui/x.js HTTP/1.1\r\nHost: example.com:1\r\nConnection: close\r\n\r\n");
+        assert!(other_host.0.starts_with("HTTP/1.1 403"), "{}", other_host.0);
+        assert!(request(port, "GET /app/ui/x.js HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n").0.starts_with("HTTP/1.1 200"));
+        // commands only from the page itself (or a tool, which sends no Origin)
+        let from = |origin: &str| request(port, &format!("POST /host/simBuilds HTTP/1.1\r\nHost: localhost\r\nOrigin: {origin}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n")).0;
+        assert!(from("https://example.com").starts_with("HTTP/1.1 403"));
+        assert!(from("null").starts_with("HTTP/1.1 403"));
+        assert!(from(&format!("http://localhost:{port}")).starts_with("HTTP/1.1 200"));
 
         let (head, body) = post(port, "/host/simBuilds", "");
         assert!(head.to_lowercase().contains("content-type: application/json; charset=utf-8"), "{head}");

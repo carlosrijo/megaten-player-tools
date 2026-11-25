@@ -12,9 +12,17 @@ export function clean(v, max) {
   if (typeof v !== 'string') return '';
   return v.replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').trim().slice(0, max);
 }
-/** Keep the text as written, but never let it ping someone (@name) or start HTML (<tag>). */
+/** Keep the text as written, but show it as plain text: no pings (@name), no HTML (<tag>), no links or images
+ *  ([text](url), [text][ref], web addresses) and no issue or commit references (#12, GH-12, owner/repo#12). */
 export function quiet(text) {
-  return text.replace(/@(?=[A-Za-z0-9_-])/g, '@​').replace(/</g, '&lt;');
+  return text
+    .replace(/(\\*)([[\]])/g, (_, slashes, bracket) => `${slashes.replace(/\\/g, '\\\\')}\\${bracket}`)   // [ and ] as written
+    .replace(/(https?|ftp|mailto):/gi, '$1[:]')                     // https://x.y is shown as https[:]//x.y
+    .replace(/(?<![A-Za-z0-9])www\./gi, 'www[.]')
+    .replace(/@(?=[A-Za-z0-9_-])/g, '@​')
+    .replace(/#(?=[0-9])/g, '#​')
+    .replace(/\b(GH-)(?=[0-9])/gi, '$1​')
+    .replace(/</g, '&lt;');
 }
 
 export function check(input) {

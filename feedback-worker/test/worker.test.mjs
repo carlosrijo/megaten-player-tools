@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, createVerify } from 'node:crypto';
 import worker from '../src/index.js';
-import { check, makeIssue } from '../src/issue.js';
+import { check, makeIssue, quiet } from '../src/issue.js';
 import { appJwt } from '../src/github.js';
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', {
@@ -103,4 +103,36 @@ test('other web pages get no CORS answer', async () => {
   assert.equal(r.status, 403);
   const ok = await worker.fetch(new Request('https://x.workers.dev/feedback', { method: 'OPTIONS', headers: { Origin: 'https://imagine.app' } }), env);
   assert.equal(ok.status, 204);
+});
+
+test('the issue shows the player\'s text as plain text: no links, images, references or pings', () => {
+  const message = [
+    'see [click](https://x.y) and ![i](https://x.y/a.png)',
+    'ref [text][r1] and \\[escaped](http://x.y)',
+    '[r1]: ftp://x.y',
+    'https://x.y, HTTP://X.Y and www.x.y, mailto:a@b.c',
+    'owner/repo#12 and #12 and GH-12 and gh-7',
+    'owner/repo@abc1234 and a@b',
+  ].join('\n');
+  const i = makeIssue(check({ kind: 'bug', message, contact: '[me](https://x.y) #3', about }));
+  const body = i.body.split('\n---')[0];
+  assert.equal(body, [
+    'see \\[click\\](https[:]//x.y) and !\\[i\\](https[:]//x.y/a.png)',
+    'ref \\[text\\]\\[r1\\] and \\\\\\[escaped\\](http[:]//x.y)',
+    '\\[r1\\]: ftp[:]//x.y',
+    'https[:]//x.y, HTTP[:]//X.Y and www[.]x.y, mailto[:]a@\u200bb.c',
+    'owner/repo#\u200b12 and #\u200b12 and GH-\u200b12 and gh-\u200b7',
+    'owner/repo@\u200babc1234 and a@\u200bb',
+    '',
+  ].join('\n'));
+  assert.match(i.body, /\*\*Contact:\*\* \\\[me\\\]\(https\[:\]\/\/x\.y\) #\u200b3/);
+  assert.ok(!/(?<!\\)\]\(/.test(i.body), 'no link left');
+  assert.ok(!/https?:/i.test(i.body) && !/#\d/.test(i.body) && !/GH-\d/i.test(i.body));
+});
+
+test('ordinary text is left as written', () => {
+  const text = 'I lost 50% HP at level 99, why? Seen in Tokyo (Ginza) at 3:45 - the "boss" fight; HP/MP & stuff.';
+  assert.equal(quiet(text), text);
+  assert.equal(makeIssue(check({ kind: 'bug', message: text })).body.split('\n')[0], text);
+  assert.equal(quiet('Please add @someone <b>bold</b>'), 'Please add @\u200bsomeone &lt;b>bold&lt;/b>');
 });
