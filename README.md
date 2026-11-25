@@ -210,9 +210,10 @@ Messian Church moves your alignment to a different place for each line of answer
 Inexperienced Uriel) the talk is shown as a tree of answers, each branch with what it gives and what it does to your
 alignment. Alignment changes say whether they add to it, set it, or move it part of the way to a value, and which side
 that is (Law −5,000 or lower, Chaos +5,000 or higher); a change that depends on your current alignment says so.
-People show their picture before their name (Quest Database, Quest Tracker and the panel) when there is one: taken
-from their 3D model in the client, or, for someone who appears as a demon (Uriel, Surt), that demon's Demon Database
-picture. People made of separate body parts, like most humans in the game, have no picture yet.
+People show their picture before their name (Quest Database, Quest Tracker and the panel): taken from their 3D model
+in the client (for most humans, their skeleton dressed in the face, eyes, hair, clothes and accessories the game lists
+for them), or, for someone who appears as a demon (Uriel, Surt), that demon's Demon Database picture. All but one of
+the people the quests name have one.
 When a step's person can only be reached a certain way, it says what comes first: who takes you there (Act 3: Curse of
 the Gods: talk to DB Saito in TMG Building, "Go to the Heliport"), and what makes the person appear (walk to the spot,
 answer, defeat DB Kisugi; then he is there to talk to). Where a step can be done in more than one way (for example a
