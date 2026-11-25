@@ -809,16 +809,7 @@ impl Simulator {
     }
 
     fn crystal_name(&self, id: i32, tarot: bool) -> Result<String> {
-        let data = self.data();
-        if let Some(side) = data.enchant_sides()?.get(&(id, tarot)) {
-            if side.crystal_item > 0 {
-                if let Some(item) = data.item_name(side.crystal_item)?.filter(|n| !n.is_empty()) {
-                    return Ok(item);
-                }
-            }
-        }
-        let n = data.enchant_name(id)?;
-        Ok(if n.starts_with("enchant ") { "A crystal the game data has no name for".to_string() } else { format!("{n} Crystal") })
+        Ok(self.data().crystal_name(id, Some(tarot))?.unwrap_or_else(|| "A crystal the game data has no name for".to_string()))
     }
 
     fn icon(&self, id: i32) -> Result<Option<String>> {

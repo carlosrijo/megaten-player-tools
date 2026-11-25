@@ -361,14 +361,14 @@ impl Dashboard {
             let tarot_name = match info.as_ref().and_then(|i| i.tarot.clone()) {
                 Some(n) => Some(n),
                 None => match &rec.detail {
-                    Some(d) if d.tarot > 0 => Some(data.enchant_name(d.tarot)?),
+                    Some(d) if d.tarot > 0 => Some(data.crystal_label(d.tarot, true)?),
                     _ => None,
                 },
             };
             let soul_name = match info.as_ref().and_then(|i| i.soul.clone()) {
                 Some(n) => Some(n),
                 None => match &rec.detail {
-                    Some(d) if d.soul > 0 => Some(data.enchant_name(d.soul)?),
+                    Some(d) if d.soul > 0 => Some(data.crystal_label(d.soul, false)?),
                     _ => None,
                 },
             };
@@ -1074,6 +1074,12 @@ impl Dashboard {
                     "item".into()
                 };
                 let src = rx::rep(&src, "^(Fusion set|Set): ", "");
+                // A set's label ends in its internal number, "(set 1792)": it tells the sets apart for the page (which worn
+                // set a bonus belongs to, "set_key") but is not a name, so the shown source is the name alone.
+                let (src, set_key) = match rx::m(&src, r"^(.*) \((fusion set|set) (\d+)\)$") {
+                    Some(m) if kind == "set" || kind == "fusion set" => (m[1].to_string(), Some(format!("{}:{}", &m[2], &m[3]))),
+                    _ => (src, None),
+                };
                 // Its icon, as a key into icons.json: the skill's own, else the demon's picture for what the demon itself gives.
                 let mut icon: Option<String> = None;
                 if icons.is_some() && p.skill_id > 0 {
@@ -1169,6 +1175,9 @@ impl Dashboard {
                             part.insert("tip".into(), json!(effects.trim()));
                         }
                     }
+                }
+                if let Some(k) = &set_key {
+                    part.insert("set_key".into(), json!(k));
                 }
                 if p.toggle {
                     part.insert("toggle".into(), json!(true)); // a toggle skill that is on: the page tags it, and says how much of a total the toggles give

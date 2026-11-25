@@ -428,7 +428,8 @@
       gearRows.push(row);
     });
     const partKey = (part) => {
-      const key = (part.kind === 'set' || part.kind === 'fusion set') ? setKey(part.source) : (part.kind === 'expertise' ? null : 'item:' + part.source);
+      // a set's part names it by its shown name and says which worn set it is in "set_key" (older saved data: "(set N)" in the name)
+      const key = (part.kind === 'set' || part.kind === 'fusion set') ? (part.set_key || setKey(part.source)) : (part.kind === 'expertise' ? null : 'item:' + part.source);
       return alias.get(key) || key;
     };
     const contrib = new Map();
@@ -1317,7 +1318,7 @@
         // hovering it shows a game-style tooltip
         piece ? withTip(gearIcon(piece), gearTip(piece)) : withTip(gearIcon(other), sourceTip(p, other)),
         h('span', { class: 'kind', text: KIND[p.kind] || p.kind || '' }),
-        h('span', null, p.source, crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) && p.kind !== 'stats' ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null, isTrue(p.toggle) ? toggleTag('margin-left:8px') : null,
+        h('span', null, String(p.source).replace(/\s*\((?:fusion )?set \d+\)\s*$/, ''), crystal ? h('span', { class: 'part-from', text: crystal }) : null, isTrue(p.digi) && p.kind !== 'stats' ? h('span', { class: 'tag ' + (digi() ? 'tag-digi' : 'tag-off'), style: 'margin-left:8px', text: 'Digi only' }) : null, isTrue(p.toggle) ? toggleTag('margin-left:8px') : null,
           p.kind === 'summoned' ? h('span', { class: 'tag ' + (digi() ? 'tag-off' : 'tag-demon'), style: 'margin-left:8px', 'data-tip': String(p.source).replace(/ \(summoned\)$/, '') + ' gives you this only while it is summoned beside you, not while you are digitalized', text: 'While summoned' }) : null,
           notes.length ? h('small', { text: notes.join(' · ') }) : null),
         h('span', { class: 'pv', text: p.value === null || p.value === undefined ? '' : fmt(p.value, row.unit, true) }));
@@ -1421,8 +1422,8 @@
   // ---------- Gear ----------
   const setTitle = (g) => String(g.item || '').replace(/\s*\((\d+\/\d+), (fusion )?set \d+\)\s*$/, '');
   const setIds = (g) => g.setIds || [];
-  // The short name in lists: "Set 1430", or "2 sets" when several sets share the same pieces.
-  const setLabel = (g) => (setIds(g).length > 1 ? `${setIds(g).length} sets` : `${g.slot === 'Fusion set' ? 'Fusion' : 'Set'} ${setIds(g)[0] || ''}`);
+  // The short name in lists: "Set bonus" / "Fusion set", or "2 sets" when several sets share the same pieces (the sets' numbers are internal and not shown).
+  const setLabel = (g) => (setIds(g).length > 1 ? `${setIds(g).length} sets` : g.slot === 'Fusion set' ? 'Fusion set' : 'Set bonus');
   // The hover tooltip of a worn piece: the game's own tooltip text (kept from the snapshot), under its icon and name.
   // A set has no tooltip in the game: it lists its pieces and what the set adds.
   // The order of a piece's tooltip sections (the user's, not the game's); the set bonus always goes before them.
@@ -1431,7 +1432,7 @@
     const box = h('div', { class: 'tt' });
     if (g.kind === 'set') {
       const worn = /\((\d+)\/(\d+),/.exec(String(g.item || ''));
-      box.append(tipHead(gearIcon(g), setTitle(g), [g.slot, worn ? `${worn[1]} of ${worn[2]} worn` : '', setIds(g).map((id) => `set ${id}`).join(', ')].filter(Boolean).join(' · ')));
+      box.append(tipHead(gearIcon(g), setTitle(g), [g.slot, worn ? `${worn[1]} of ${worn[2]} worn` : '', setIds(g).length > 1 ? `${setIds(g).length} sets` : ''].filter(Boolean).join(' · ')));
       if (g.shown_as) box.append(h('div', { class: 'tt-sec', text: g.slot === 'Fusion set' ? 'Crystals' : 'Set pieces' }), ...String(g.shown_as).split(', ').map((p) => h('div', { class: 'tt-line', text: p })));
       if (g.parts.length) box.append(h('div', { class: 'tt-sec', text: 'Activation effects' }),
         ...g.parts.map(({ row, part }) => h('div', { class: 'tt-line', text: `${row.bonus} ${part.value === null || part.value === undefined ? '' : fmt(part.value, row.unit, true)}${isTrue(part.digi) ? ' (digitalized)' : ''}` })));
@@ -1465,7 +1466,7 @@
     });
     if (basic.length) { basic[0].classList.remove('tt-gap'); secs.unshift([h('div', { class: 'tt-sec', text: 'Basic Features' }), ...basic]); }
     const sets = S.v.gear.filter((s) => s.kind === 'set' && (s.piece_ids || []).includes(g.item_id)).flatMap((s) => [
-      h('div', { class: 'tt-sec', text: `Set bonus · ${setIds(s).map((id) => `set ${id}`).join(', ')}` }),
+      h('div', { class: 'tt-sec', text: setIds(s).length > 1 ? `Set bonus · ${setIds(s).length} sets` : 'Set bonus' }),
       h('div', { class: 'tt-line', text: `Pieces: ${s.shown_as || ''}` }),
       ...s.parts.map(({ row, part }) => h('div', { class: 'tt-line', text: `* ${row.bonus} ${part.value === null || part.value === undefined ? '' : fmt(part.value, row.unit, true)}${isTrue(part.digi) ? ' (digitalized)' : ''}` }))]);
     box.append(...sets, ...secs.map((b, i) => ({ b, i })).sort((x, y) => rank(x.b) - rank(y.b) || x.i - y.i).flatMap((x) => x.b.filter(noSetLine)));
@@ -1497,7 +1498,7 @@
       h('div', null, h('span', { class: 'stat-label', text: g.slot }), h('h2', { class: 'detail-title' }, isSet ? setTitle(g) : g.item,
         !isSet && g.item_id ? h('span', { class: 'detail-id', 'data-tip': 'Item id', text: `#${g.item_id}` }) : null))));
     const meta = h('div', { class: 'detail-meta' });
-    if (isSet && m) meta.append(h('span', { class: 'tag', text: `${m[1]} of ${m[2]} worn` }), ...(setIds(g).length ? setIds(g) : [m[3]]).map((id) => h('span', { class: 'tag', text: `Set ${id}` })));
+    if (isSet && m) meta.append(h('span', { class: 'tag', text: `${m[1]} of ${m[2]} worn` }), ...(setIds(g).length > 1 ? [h('span', { class: 'tag', text: `${setIds(g).length} sets` })] : []));
     // Tarot and soul fusion: hovering the label shows what the crystal gives, as the game's own tooltip of the piece
     // says it (its "[Tarot Fusion]" / "[Soul Fusion]" part: the crystal's name, then its lines up to the next blank line).
     const fusionTag = (label, crystal, section) => {
