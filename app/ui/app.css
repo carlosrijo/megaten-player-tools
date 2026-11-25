@@ -1388,12 +1388,15 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 /* The boost search: a list you tick in. The ones you have are listed last, dimmed, and can't be ticked. */
 .tag.dpl-kind { flex: none; min-width: 52px; justify-content: center; }
 /* a race's tier in its chip: the higher the tier, the bluer (Tokyo Night blue at tier 5) */
-.dpl-tier { margin-left: 4px; font-weight: 600; color: color-mix(in srgb, var(--law) var(--tier-blue, 0%), var(--text)); }
-.dpl-tier[data-tier="1"] { --tier-blue: 15%; }
-.dpl-tier[data-tier="2"] { --tier-blue: 35%; }
-.dpl-tier[data-tier="3"] { --tier-blue: 55%; }
-.dpl-tier[data-tier="4"] { --tier-blue: 78%; }
-.dpl-tier[data-tier="5"] { --tier-blue: 100%; }
+/* each step both bluer text (from grey) and a stronger blue backing, so neighbouring tiers are told apart at a glance */
+.dpl-tier { margin-left: 4px; padding: 0 4px; border-radius: 4px; font-weight: 700;
+  color: color-mix(in srgb, var(--law) var(--tier-ink, 0%), var(--text-3));
+  background: color-mix(in srgb, var(--law) var(--tier-bg, 0%), transparent); }
+.dpl-tier[data-tier="1"] { --tier-ink: 0%;   --tier-bg: 0%; }
+.dpl-tier[data-tier="2"] { --tier-ink: 35%;  --tier-bg: 8%; }
+.dpl-tier[data-tier="3"] { --tier-ink: 70%;  --tier-bg: 18%; }
+.dpl-tier[data-tier="4"] { --tier-ink: 100%; --tier-bg: 32%; }
+.dpl-tier[data-tier="5"] { --tier-ink: 100%; --tier-bg: 100%; color: var(--bg); }
 .dpl-menu { max-height: 380px; padding-top: 0; }
 .dpl-menu-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin: 0 -4px 2px; background: var(--surface); border-bottom: 1px solid var(--border); min-height: 34px; box-sizing: border-box; }
 .dpl-check { flex: none; width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); display: inline-grid; place-items: center; }
