@@ -396,6 +396,7 @@ impl Rules {
         let want: IndexSet<i32> = r.quest_bonus.iter().chain(&r.book_demon).chain(&r.book_summoner).flat_map(|p| p.1.iter().copied()).filter(|&t| t != 0).collect();
         let mut files: IndexSet<String> = want.iter().map(|t| format!("tokusei_{}.xml", d8(t.wrapping_div(10000).wrapping_mul(10000)))).collect();
         files.insert("tokusei_custom.xml".to_string());
+        files.insert(crate::data::game_data::SEALED_TOKUSEI.to_string());
         for file in &files {
             let Some(text) = data.tokusei_xml_text(file)? else { continue };
             let doc = parse_xml(&text)?;

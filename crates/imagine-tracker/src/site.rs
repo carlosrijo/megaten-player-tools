@@ -20,12 +20,14 @@ use std::path::{Component, Path, PathBuf};
 pub const HOST: &str = "imagine.app";
 pub const DATA_HOST: &str = "data.imagine.app";
 
-/// The page (app\ui), compressed into the exe. The folders of game art made locally (*-icons) are never embedded.
+/// The page (app\ui), compressed into the exe. The folders of game art made locally (*-icons) are never embedded, nor
+/// a readable `*.local.json` (made with the sealed data, which goes in the exe only sealed: imagine::data::pack).
 #[derive(RustEmbed)]
 #[folder = "../../app/ui"]
 #[compression = "zstd"]
 #[exclude = "*-icons/*"]
 #[exclude = "*-icons"]
+#[exclude = "*.local.json"]
 pub struct UiFiles;
 
 /// The pictures CharacterPicture compares the game window with (app\assets).
@@ -84,6 +86,12 @@ impl Site {
             return None;
         }
         let rel = if rel.is_empty() { vec!["index.html".to_string()] } else { rel };
+        // the Gear Database made with the sealed data (the repo's file is made without it)
+        if rel.len() == 1 && rel[0] == "gear-db.json" {
+            if let Some(b) = imagine::data::pack::entry(imagine::data::pack::GEAR_DB) {
+                return Some(Served { body: Cow::Borrowed(b), mime: mime_of("gear-db.json") });
+            }
+        }
         if let Some(dev) = &self.dev_ui {
             if let Some(s) = read_file(dev, &rel) {
                 return Some(s);
@@ -187,6 +195,8 @@ mod tests {
         assert!(UiFiles::get("index.html").is_some());
         assert!(UiFiles::get("app.js").is_some());
         assert!(UiFiles::iter().all(|n| !n.contains("-icons")));
+        // the sealed data goes in only sealed
+        assert!(UiFiles::iter().all(|n| !n.ends_with(".local.json")));
         assert!(AssetFiles::get("info-window-labels-1.png").is_some());
     }
 }

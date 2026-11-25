@@ -91,6 +91,30 @@ fn aspect_to_col(id: &str) -> Option<&'static str> {
     })
 }
 
+/// A server-XML value with its multiplier applied, the way the server does it (TokuseiManager::CalculateAttributeValue,
+/// as `ItemEffects::scaled`): (value, how it was made, countable). CORRECT_TABLE multiplies by one of the character's
+/// final stats (MultiplierValue = its CorrectTbl index) and CORRECT_TABLE_DIVIDE divides by it, cut to a whole number;
+/// a multiplier the page can't work out (level, the partner's Mitama rank...) gives the base number, not countable.
+fn scale_value(v: &crate::data::game_data::TokValue, stats: &HashMap<i32, f64>) -> (f64, String, bool) {
+    let base = if v.precision > 0 { v.value / 10f64.powi(v.precision) } else { v.value };
+    // the ten stats the page has (from the last snapshot); another table (Max HP, Max MP, defence...) is named, not used
+    let known = stats.get(&v.mult_value).copied();
+    let stat = known.unwrap_or(0.0);
+    let tbl = match tbl_name(v.mult_value) {
+        "" => stat_labels::name(&crate::calc::digitalize::correct_id(v.mult_value.max(0) as usize), 0),
+        s => s.to_string(),
+    };
+    match v.mult.as_str() {
+        "" | "NONE" => (base, String::new(), true),
+        "CORRECT_TABLE" if known.is_some() => ((base * stat).trunc(), format!(" ({} x {tbl})", n(base)), true),
+        "CORRECT_TABLE" => (base, format!(" (× {tbl})"), false),
+        "CORRECT_TABLE_DIVIDE" if stat > 0.0 => ((base / stat).trunc(), format!(" ({} ÷ {tbl})", n(base)), true),
+        "CORRECT_TABLE_DIVIDE" => (base, format!(" (÷ {tbl})"), false),
+        "LEVEL" => (base, " (× level)".to_string(), false),
+        m => (base, format!(" (× {})", crate::build::xml::title(m)), false),
+    }
+}
+
 fn tbl_name(i: i32) -> &'static str {
     match i {
         0 => "STR",
@@ -1098,7 +1122,7 @@ impl Expertise {
                 } else {
                     let full = data
                         .tokusei_full(t)?
-                        .filter(|f| f.correct.len() + f.aspects.len() > 0 && f.correct.iter().chain(f.aspects.iter()).all(|v| v.mult.is_empty() || v.mult == "NONE"));
+                        .filter(|f| f.correct.len() + f.aspects.len() > 0);
                     if let Some(full) = full {
                         // Not in the website data: the server XML, else the client's own text for it (GameData.ClientTokusei)
                         let who2 = match full.target.as_str() {
@@ -1113,31 +1137,54 @@ impl Expertise {
                         let cond_txt = condition_text(full.conditions.iter().map(|c| (c.r#type.clone().unwrap_or_default(), c.value)));
                         let note = [trim_cond(src), trim_cond(&cond_txt)].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join("; ");
                         let who2_text = if who2.is_empty() { String::new() } else { format!("{who2} ") };
+                        let fx_before = fx.len();
+                        let mut unworded = false;
                         for cc in &full.correct {
                             if is_stale(t, cc.id.as_deref(), cc.value) {
                                 continue;
                             }
-                            let v = if cc.precision > 0 { cc.value / 10f64.powf(cc.precision as f64) } else { cc.value };
+                            let (v, how, countable) = scale_value(cc, &c.stat_by_tbl);
                             let cid = cc.id.as_deref().unwrap_or("");
+                            let typ = if cc.r#type >= 100 { cc.r#type - 100 } else { cc.r#type };
+                            if cid.starts_with("NRA_") && !(3..=5).contains(&typ) {
+                                // type 0 with 1/2/3 = always null/reflect/drain (ActiveEntityState.cpp); any other shape is
+                                // another shape: worded, not counted
+                                if typ == 0 && (1..=3).contains(&(cc.value as i32)) {
+                                    fx.push(format!("{who2_text}100% {}{src}{cond_txt}", stat_labels::name(cid, cc.value as i32 + 2)));
+                                } else {
+                                    let el = stat_labels::name(cid, 3).strip_prefix("Chance to Null ").map(str::to_string).unwrap_or_else(|| "an element".into());
+                                    fx.push(format!("{who2_text}{el} null/reflect/drain {}{} ({}){src}{cond_txt}", sign(v), n(v), stat_labels::UNCOUNTED_NOTE));
+                                }
+                                continue;
+                            }
+                            if cid.starts_with("NRA_") {
+                                // a null/reflect/drain chance (type 3/4/5, +100 when the server re-applies it): words, the
+                                // chance in %, not one of the page's columns
+                                fx.push(format!("{who2_text}{} {}{}%{how}{src}{cond_txt}", stat_labels::name(cid, typ), sign(v), n(v)));
+                                continue;
+                            }
                             // Percent the same way gear decides it (item_effects::correct_effect): type 1, a skill
                             // boost, or a stat the server always treats as a percent whatever the type (LB_CHANCE...).
                             // Limit Break Chance Up Improvement 1 is "LB_CHANCE:0:5", +5% in the game's own text.
                             let pct_fx = correct_is_pct(cid, cc.r#type);
                             let pct = pct_fx || cid.starts_with("RATE_");
                             let (label, shown) = shown_stat(cc.id.as_deref(), cc.r#type, v);
-                            fx.push(format!("{who2_text}{label} {}{}{}{src}{cond_txt}", sign(shown), n(shown), if pct { "%" } else { "" }));
+                            let sit_c = situational || !countable;
+                            // a multiplier the page can't work out goes in the note ("× level"), and the row isn't counted
+                            let row_note = if countable { note.clone() } else { [note.as_str(), how.trim()].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join("; ") };
+                            fx.push(format!("{who2_text}{label} {}{}{}{how}{src}{cond_txt}", sign(shown), n(shown), if pct { "%" } else { "" }));
                             sfx.push(obj(json!({
                                 "label": label, "value": shown, "pct": pct_fx, "target": if who2.is_empty() { "self" } else { "partner" },
-                                "cond": if situational { "situational" } else { "always" }, "note": note,
+                                "cond": if sit_c { "situational" } else { "always" }, "note": row_note,
                             })));
                             // The party is the character and the partner: a party effect counts for both
                             if who2 == "Party's" {
                                 sfx.push(obj(json!({
                                     "label": label, "value": shown, "pct": pct_fx, "target": "self",
-                                    "cond": if situational { "situational" } else { "always" }, "note": note,
+                                    "cond": if sit_c { "situational" } else { "always" }, "note": row_note,
                                 })));
                             }
-                            if (who2.is_empty() || who2 == "Party's") && !situational {
+                            if (who2.is_empty() || who2 == "Party's") && !sit_c {
                                 if let Some(col) = correct_to_col(cid) {
                                     sums.add(col, v);
                                 }
@@ -1147,7 +1194,7 @@ impl Expertise {
                             if is_stale(t, a.id.as_deref(), a.value) {
                                 continue;
                             }
-                            let v = if a.precision > 0 { a.value / 10f64.powf(a.precision as f64) } else { a.value };
+                            let (v, how, countable) = scale_value(a, &c.stat_by_tbl);
                             let aid = a.id.as_deref().unwrap_or("");
                             const ACT: [&str; 12] = ["Attack", "Spin", "Rush", "Shot", "Rapid", "Guard", "Counter", "Dodge", "Talk", "Intimidate", "Taunt", "Support"];
                             let nice = match aid {
@@ -1161,6 +1208,29 @@ impl Expertise {
                                 fx.push(format!("Adds skill {}{src}{cond_txt}", data.skill_names()?.get(&(a.value as i32)).cloned().flatten().unwrap_or_else(|| n(a.value))));
                                 continue;
                             }
+                            match stat_labels::aspect_show(aid, a.value) {
+                                Some(stat_labels::AspectShow::Sentence(s)) => {
+                                    // the value names a status: words, never a number to add up
+                                    fx.push(format!("{who2_text}{s}{src}{cond_txt}"));
+                                    continue;
+                                }
+                                Some(stat_labels::AspectShow::Uncounted(name)) => {
+                                    // shown, never counted: nothing says how the server applies it
+                                    fx.push(format!("{who2_text}{name} {}{}{src}{cond_txt}", sign(v), n(v)));
+                                    let nm_note = if note.is_empty() { stat_labels::UNCOUNTED_NOTE.to_string() } else { format!("{note}; {}", stat_labels::UNCOUNTED_NOTE) };
+                                    sfx.push(obj(json!({
+                                        "label": name, "value": v, "pct": false, "target": if who2.is_empty() { "self" } else { "partner" },
+                                        "cond": "situational", "note": nm_note,
+                                    })));
+                                    continue;
+                                }
+                                Some(stat_labels::AspectShow::Unknown) if !matches!(aid, "EFFECT_POWER" | "DAMAGE_DEALT" | "SKILL_ADD" | "AFFINITY_CAP_MAX" | "LIMIT_BREAK_MAX") => {
+                                    // no wording for it: left to the skill's own description below
+                                    unworded = true;
+                                    continue;
+                                }
+                                _ => {}
+                            }
                             if aid == "AFFINITY_CAP_MAX" {
                                 // Value = the element, Modifier = the amount in %
                                 add_cap(&mut fx, &mut sfx, a.value as i32, a.modifier, if who2.is_empty() { "self" } else { "partner" }, if situational { "situational" } else { "always" }, &note, false);
@@ -1169,12 +1239,21 @@ impl Expertise {
                                 }
                                 continue;
                             }
-                            let pct = aid != "LIMIT_BREAK_MAX";
-                            let sit = situational || (aid == "EFFECT_POWER" && actions.len() != 1);
-                            fx.push(format!("{who2_text}{nice} {}{}{}{src}{cond_txt}", sign(v), n(v), if pct { "%" } else { "" }));
+                            // a stack count is a number of stacks, not a percent ("+5 Skill stack", Extended Scope's text)
+                            let pct = aid != "LIMIT_BREAK_MAX" && !aid.ends_with("STACK_ADJUST");
+                            // limited to an action type (Extended Scope: one tokusei for Rapid, one for Shot): only those
+                            // skills, like gear (item_effects), so two of them are not one total
+                            let only: Vec<&str> = actions.iter().filter_map(|&a| ACT.get(a as usize).copied()).collect();
+                            let by_action = aid != "EFFECT_POWER" && !only.is_empty();
+                            let sit = situational || (aid == "EFFECT_POWER" && actions.len() != 1) || by_action || !countable;
+                            let act_note = if by_action { format!("{} skills only", only.join("/")) } else { String::new() };
+                            let how_note = if countable { "" } else { how.trim() };
+                            let row_note = [note.as_str(), act_note.as_str(), how_note].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join("; ");
+                            let act_txt = if by_action { format!(" ({act_note})") } else { String::new() };
+                            fx.push(format!("{who2_text}{nice} {}{}{}{how}{act_txt}{src}{cond_txt}", sign(v), n(v), if pct { "%" } else { "" }));
                             sfx.push(obj(json!({
                                 "label": nice, "value": v, "pct": pct, "target": if who2.is_empty() { "self" } else { "partner" },
-                                "cond": if sit { "situational" } else { "always" }, "note": note,
+                                "cond": if sit { "situational" } else { "always" }, "note": row_note,
                             })));
                             if who2.is_empty() && !sit {
                                 if let Some(col) = aspect_to_col(aid) {
@@ -1182,8 +1261,34 @@ impl Expertise {
                                 }
                             }
                         }
+                        // nothing of it could be worded: the game's own text for it, as for a tokusei without data
+                        if unworded && fx.len() == fx_before {
+                            unknown_tok.push(t);
+                        }
                     } else if raw.as_deref().is_some_and(|r| !r.is_empty()) {
-                        fx.push(raw.clone().unwrap_or_default());
+                        // the raw "TYPE=value" list only when no aspect in it is one the reader can't word
+                        match raw.as_deref().map(|r| r.split(", ").filter_map(|p| p.split_once('=')).any(|(k, v)| {
+                            matches!(stat_labels::aspect_show(k, v.parse().unwrap_or(0.0)), Some(stat_labels::AspectShow::Unknown))
+                        })) {
+                            Some(true) => unknown_tok.push(t),
+                            // "TYPE=value" pairs by the game's names ("All Skill Stack +5"), never the server's ids
+                            _ => fx.push(
+                                raw.as_deref()
+                                    .unwrap_or("")
+                                    .split(", ")
+                                    .filter_map(|p| p.split_once('='))
+                                    .map(|(k, v)| {
+                                        let x: f64 = v.parse().unwrap_or(0.0);
+                                        match stat_labels::aspect_show(k, x) {
+                                            Some(stat_labels::AspectShow::Sentence(s)) => s,
+                                            Some(stat_labels::AspectShow::Uncounted(nm)) => format!("{nm} {}{}", sign(x), n(x)),
+                                            _ => format!("{} {}{}", label_of(Some(k)), sign(x), n(x)),
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()
+                                    .join("; "),
+                            ),
+                        }
                     } else {
                         unknown_tok.push(t);
                     }

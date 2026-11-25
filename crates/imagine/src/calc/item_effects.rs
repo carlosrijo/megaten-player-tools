@@ -106,6 +106,15 @@ pub(crate) fn title(s: &str) -> String {
 }
 
 /// `Join(a, b)`: two notes with "; " between, skipping an empty one.
+/// "A", "A or B", "A, B or C".
+fn or_list(names: &[String]) -> String {
+    match names.split_last() {
+        Some((last, rest)) if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
+        Some((last, _)) => last.clone(),
+        None => String::new(),
+    }
+}
+
 pub(crate) fn join(a: &str, b: &str) -> String {
     if a.is_empty() {
         b.to_string()
@@ -334,7 +343,7 @@ impl ItemEffects {
         let family = |label: &str| {
             let l: String = label.to_lowercase().chars().filter(|c| c.is_alphanumeric()).collect();
             let l = l.strip_suffix("dealt").unwrap_or(&l).to_string();
-            for tail in ["damage", "boost", "power", "effects"] {
+            for tail in ["damage", "boost", "power", "effects", "affinity"] {
                 if let Some(h) = l.strip_suffix(tail) {
                     if !h.is_empty() {
                         return h.to_string();
@@ -343,14 +352,36 @@ impl ItemEffects {
             }
             l
         };
-        let covered = |e: &Effect, have: &[Effect]| {
-            e.value.is_some()
-                && have.iter().any(|h| {
-                    !is_gap(h) && h.cond != "unparsed" && h.target == e.target && ((h.value == e.value && h.pct == e.pct) || family(&h.label) == family(&e.label))
-                })
-        };
+        // Each data effect covers one text effect at most, by name first, then by value: with the sealed tokusei a
+        // crystal can have most of its tokusei in the data, and Executioner's Death +10% from the data must not also take
+        // away the text's "Blunt-based Skill effects +10%" (363485, still without data).
         fx.retain(|e| !is_gap(e));
-        let fresh: Vec<Effect> = read.into_iter().filter(|e| !covered(e, fx)).map(|e| Effect { tokusei: lowest, ..e }).collect();
+        let mut used = vec![false; fx.len()];
+        let mut keep = vec![true; read.len()];
+        for by_name in [true, false] {
+            for (i, e) in read.iter().enumerate() {
+                if !keep[i] || e.value.is_none() {
+                    continue;
+                }
+                let hit = fx.iter().enumerate().position(|(j, h)| {
+                    !used[j]
+                        && h.cond != "unparsed"
+                        && h.target == e.target
+                        && if by_name { family(&h.label) == family(&e.label) } else { h.value == e.value && h.pct == e.pct }
+                });
+                if let Some(j) = hit {
+                    used[j] = true;
+                    keep[i] = false;
+                }
+            }
+        }
+        // a line the text can't put a number on, when the data already has that stat ("Limit Break Cap + (STR x 1)")
+        let named = |e: &Effect| {
+            let l = e.label.to_lowercase();
+            e.value.is_none() && fx.iter().any(|h| !h.label.is_empty() && l.starts_with(&h.label.to_lowercase()))
+        };
+        let fresh: Vec<Effect> =
+            read.into_iter().zip(keep).filter(|(e, k)| *k && !named(e)).map(|(e, _)| Effect { tokusei: lowest, ..e }).collect();
         fx.extend(fresh);
         Ok(())
     }
@@ -510,11 +541,66 @@ impl ItemEffects {
             .filter(|s| s.0.as_deref() == Some("ACTION_TYPE"))
             .map(|s| if s.1 >= 0 && (s.1 as usize) < ACTION_NAMES.len() { ACTION_NAMES[s.1 as usize].to_string() } else { format!("action {}", s.1) })
             .collect();
-        let other_skill: Vec<String> = d
+        // Named skills (EXPLICIT_SKILL, one or several in an option group: any of them) by the game's names
+        let skill_names = self.data.skill_names()?;
+        let named: Vec<String> = d
             .skill_conditions
             .iter()
-            .filter(|s| s.0.as_deref() != Some("ACTION_TYPE"))
+            .filter(|s| s.0.as_deref() == Some("EXPLICIT_SKILL"))
+            .filter_map(|s| skill_names.get(&s.1).cloned().flatten())
+            .fold(Vec::new(), |mut v, n| {
+                if !v.contains(&n) {
+                    v.push(n);
+                }
+                v
+            });
+        let explicit = d.skill_conditions.iter().any(|s| s.0.as_deref() == Some("EXPLICIT_SKILL"));
+        let mut other_skill: Vec<String> = Vec::new();
+        if explicit {
+            other_skill.push(match named.len() {
+                0 => "certain skills only".to_string(),
+                1..=4 => format!("only with {}", or_list(&named)),
+                n => format!("only with {}, {} and {} more skills", named[0], named[1], n - 2),
+            });
+        }
+        // The target demon's race or kind (SkillManager.cpp: DEMON_RACE / DEMON_TYPE), several = any of them
+        let races: Vec<String> = d.skill_conditions.iter().filter(|s| s.0.as_deref() == Some("DEMON_RACE")).map(|s| self.race_text(s.1)).fold(Vec::new(), |mut v, n| {
+            if !v.contains(&n) {
+                v.push(n);
+            }
+            v
+        });
+        if !races.is_empty() {
+            other_skill.push(format!("vs {} demons", or_list(&races)));
+        }
+        let demon_names: Vec<String> = d
+            .skill_conditions
+            .iter()
+            .filter(|s| s.0.as_deref() == Some("DEMON_TYPE"))
+            .map(|s| self.data.demons().ok().and_then(|t| t.devils.get(&s.1).map(|v| v.name.clone())).unwrap_or_else(|| "a certain demon".into()))
+            .fold(Vec::new(), |mut v, n| {
+                if !v.contains(&n) {
+                    v.push(n);
+                }
+                v
+            });
+        if !demon_names.is_empty() {
+            other_skill.push(format!("vs {}", or_list(&demon_names)));
+        }
+        let expertises = self.data.expertises().ok();
+        other_skill.extend(d
+            .skill_conditions
+            .iter()
+            .filter(|s| !matches!(s.0.as_deref(), Some("ACTION_TYPE") | Some("EXPLICIT_SKILL") | Some("DEMON_RACE") | Some("DEMON_TYPE")))
             .map(|s| match s.0.as_deref() {
+                // SkillManager.cpp: 0 = the target is of another faction, 1 = the same faction
+                Some("ENEMY_FACTION") => if s.1 == 1 { "on allies".to_string() } else { "on enemies".to_string() },
+                Some("ENEMY_STATUS_ACTIVE") => format!("vs enemies under {}", crate::data::game_data::status_target(s.1)),
+                // the skill's expertise (TokuseiManager, SKILL_EXPERTISE: the skill belongs to that expertise)
+                Some("SKILL_EXPERTISE") => match expertises.as_ref().and_then(|e| json::str(e.at(&s.1.to_string()).at("name"))) {
+                    Some(name) => format!("{name} skills only"),
+                    None => "skills of a certain expertise only".to_string(),
+                },
                 Some("ENEMY_LNC") => format!(
                     "vs {} enemies",
                     match s.1 {
@@ -525,9 +611,9 @@ impl ItemEffects {
                     }
                 ),
                 Some("AFFINITY") if affinity_name(s.1).is_some() => format!("{} skills only", affinity_name(s.1).unwrap_or_default()),
-                t => format!("skill: {} {}", title(t.unwrap_or("")), s.1),
-            })
-            .collect();
+                t => stat_labels::sealed_skill_condition(t.unwrap_or(""), s.1).unwrap_or_else(|| format!("skill: {} {}", title(t.unwrap_or("")), s.1)),
+            }));
+        other_skill.dedup();
         if !other_skill.is_empty() || d.target_conditions {
             if cond != "inactive" {
                 cond = "situational".into();
@@ -617,12 +703,31 @@ impl ItemEffects {
                     output.push(mk(format!("Adds skill {sn}"), None, false, &cond));
                     continue;
                 }
-                _ => {
-                    let mut e = mk(format!("{id} {}", num(a.value)), None, false, "unparsed");
-                    e.pct = false;
-                    output.push(e);
-                    continue;
-                }
+                _ => match stat_labels::aspect_show(id, a.value) {
+                    None => {
+                        // a named aspect (Chance to Null Knockback, All Skill Stack, Soul Points Earned...): counted like the
+                        // others; a stack adjustment is a number of stacks, not a percent
+                        lab = stat_labels::name(id, 0);
+                        pct = !id.ends_with("STACK_ADJUST");
+                    }
+                    Some(stat_labels::AspectShow::Sentence(s)) => {
+                        output.push(mk(s, None, false, &cond));
+                        continue;
+                    }
+                    Some(stat_labels::AspectShow::Uncounted(name)) => {
+                        // shown with its number, never counted: nothing says how the server applies it
+                        let mut e = mk(name.to_string(), if ok { Some(value) } else { None }, false, if acond == "inactive" { "inactive" } else { "situational" });
+                        e.cond_note = join(&anote, stat_labels::UNCOUNTED_NOTE);
+                        output.push(e);
+                        continue;
+                    }
+                    Some(stat_labels::AspectShow::Unknown) => {
+                        // no wording for it (the value is a skill, an action, an element...): like a tokusei without data, so
+                        // a saved tooltip or the game's own description can stand in, and no internal name is shown
+                        output.push(Effect { label: format!("Unknown effect (tokusei {tid})"), missing_data: true, ..mk(String::new(), None, false, "unparsed") });
+                        continue;
+                    }
+                },
             }
             if !actions.is_empty() && id != "EFFECT_POWER" && counted(&acond) {
                 acond = "situational".into();
@@ -697,6 +802,18 @@ impl ItemEffects {
         if id.starts_with("NRA_") && (3..=5).contains(&typ) {
             return mk(format!("{}% {}", num(value), stat_labels::name(id, typ)), None, false);
         }
+        if id.starts_with("NRA_") {
+            // type 0 with value 1/2/3 = always null/reflect/drain, 100% (ActiveEntityState.cpp: "the NRA value becomes 100%
+            // and CANNOT be reduced"); any other shape isn't read by comp_hack, so the server does something of its own
+            if typ == 0 && (1..=3).contains(&(c.value as i32)) {
+                return mk(format!("100% {}", stat_labels::name(id, c.value as i32 + 2)), None, false);
+            }
+            let element = stat_labels::name(id, 3).strip_prefix("Chance to Null ").map(str::to_string).unwrap_or_else(|| "an element".into());
+            let mut e = mk(format!("{element} null/reflect/drain"), Some(value), false);
+            e.cond = if cond == "inactive" { "inactive".into() } else { "situational".into() };
+            e.cond_note = join(&e.cond_note, stat_labels::UNCOUNTED_NOTE);
+            return e;
+        }
         if id == "RES_STATUS" {
             // "Ailment Resistance +20" for -20; a plain number, not a percent
             let (label, shown) = stat_labels::displayed(id, 0, value);
@@ -706,6 +823,14 @@ impl ItemEffects {
             return mk(stat_labels::name(id, 0), Some(value), true);
         }
         mk(stat_labels::name(id, 0), Some(value), typ == 1 || gear_effects::is_pct_correct(id))
+    }
+
+    /// A race by the game's name ("Foul"), else its DevilData name in words.
+    fn race_text(&self, race_id: i32) -> String {
+        match self.data.demons() {
+            Ok(d) => d.game_race_name(race_id).unwrap_or_else(|| crate::build::xml::title(&d.race_name(race_id))),
+            Err(_) => "certain race".into(),
+        }
     }
 
     /// A tokusei condition the reader can decide (true/false), or `None` when it depends on the fight or partner.
@@ -736,6 +861,109 @@ impl ItemEffects {
                     v => format!("alignment {v}"),
                 };
                 (Some(contains == eq), if eq { format!("if you are {want}") } else { format!("unless you are {want}") })
+            }
+            Some("EXPERTISE") => {
+                // The two lowest digits are the expertise id, the rest the rank value (class x 10 + rank), compared with
+                // the character's (TokuseiManager.cpp, TokuseiConditionType::EXPERTISE): 9035 = Pursuit at Class 9
+                let id = c.value % 100;
+                let want = c.value / 100;
+                let name = self.data.expertises().ok().and_then(|e| json::str(e.at(&id.to_string()).at("name"))).unwrap_or_else(|| "a certain expertise".into());
+                let rank = |r: i32| if r % 10 == 0 { format!("Class {}", r / 10) } else { format!("Class {} Rank {}", r / 10, r % 10) };
+                // comparators: EQUALS, NOT_EQUAL, GTE, LTE (comp_hack libcomp\schema\tokusei.xml)
+                let what = match c.cmp.as_str() {
+                    "GTE" => format!("needs {} {name}", rank(want)),
+                    "LTE" => format!("only up to {} {name}", rank(want)),
+                    "NOT_EQUAL" => format!("not at {} {name}", rank(want)),
+                    _ => format!("only at {} {name}", rank(want)),
+                };
+                if self.expertise_ranks.is_empty() {
+                    return (None, what);
+                }
+                let have = self.expertise_ranks.get(&id).copied().unwrap_or(0);
+                let met = match c.cmp.as_str() {
+                    "GTE" => have >= want,
+                    "LTE" => have <= want,
+                    "NOT_EQUAL" => have != want,
+                    _ => have == want,
+                };
+                (Some(met), format!("{what} (you have {}-{})", have / 10, have % 10))
+            }
+            // The partner (TokuseiManager.cpp, the PARTNER_* conditions): familiarity and Mitama type compared as numbers,
+            // the demon (type = its id) and race matched
+            Some("PARTNER_FAMILIARITY") => (
+                None,
+                match c.cmp.as_str() {
+                    "GTE" => format!("with partner familiarity {}+", c.value),
+                    "LTE" => format!("with partner familiarity up to {}", c.value),
+                    "NOT_EQUAL" => format!("unless partner familiarity is {}", c.value),
+                    _ => format!("with partner familiarity {}", c.value),
+                },
+            ),
+            Some("PARTNER_MITAMA") => {
+                let name = |v: i32| crate::calc::digitalize::MITAMA_NAMES.get(v as usize).filter(|n| !n.is_empty()).map(|n| format!("{n} Mitama"));
+                (
+                    None,
+                    match (c.cmp.as_str(), c.value) {
+                        ("GTE", 1) | ("NOT_EQUAL", 0) => "with a Mitama-fused partner".to_string(),
+                        ("NOT_EQUAL", v) => format!("unless the partner is {}", name(v).unwrap_or_else(|| "a certain Mitama".into())),
+                        (_, v) => format!("with a partner fused with {}", name(v).unwrap_or_else(|| "a certain Mitama".into())),
+                    },
+                )
+            }
+            Some(t @ ("PARTNER_TYPE" | "PARTY_DEMON_TYPE")) => {
+                let demon = self.data.demons().ok().and_then(|d| d.devils.get(&c.value).map(|v| v.name.clone())).unwrap_or_else(|| "a certain demon".into());
+                (
+                    None,
+                    match (t, eq) {
+                        ("PARTNER_TYPE", true) => format!("with {demon} as partner"),
+                        ("PARTNER_TYPE", false) => format!("unless {demon} is your partner"),
+                        (_, true) => format!("with {demon} summoned in the party"),
+                        _ => format!("unless {demon} is summoned in the party"),
+                    },
+                )
+            }
+            Some("PARTNER_RACE") => {
+                let race = self.race_text(c.value);
+                (None, if eq { format!("with a {race} partner") } else { format!("unless the partner is a {race}") })
+            }
+            Some("PARTNER_FAMILY") => (None, "with a partner of a certain family".into()),
+            // the server switches these on and off with the world clock (value HHMM for the time, 0-15 for the moon)
+            Some("GAME_TIME") => {
+                let hm = format!("{:02}:{:02}", c.value / 100, c.value % 100);
+                (
+                    None,
+                    match c.cmp.as_str() {
+                        "GTE" => format!("from {hm} game time"),
+                        "LTE" => format!("until {hm} game time"),
+                        _ => format!("at {hm} game time"),
+                    },
+                )
+            }
+            Some("MOON_PHASE") => (
+                None,
+                match c.value {
+                    0 => "at new moon".to_string(),
+                    8 => "at full moon".to_string(),
+                    v => format!("in moon phase {v} of 16"),
+                },
+            ),
+            Some("STATUS_ACTIVE") => {
+                let what = crate::data::game_data::status_target(c.value);
+                (None, if eq { format!("while under {what}") } else { format!("unless under {what}") })
+            }
+            Some(t @ ("CURRENT_HP" | "CURRENT_MP")) => {
+                // the percent of max HP/MP, rounded down (TokuseiManager.cpp, CURRENT_HP / CURRENT_MP)
+                let what = if t == "CURRENT_HP" { "HP" } else { "MP" };
+                let v = c.value;
+                (
+                    None,
+                    match c.cmp.as_str() {
+                        "GTE" => format!("at {v}% {what} or more"),
+                        "LTE" => format!("at {v}% {what} or less"),
+                        "NOT_EQUAL" => format!("unless at {v}% {what}"),
+                        _ => format!("at {v}% {what}"),
+                    },
+                )
             }
             Some("EQUIPPED_WEAPON_TYPE") => {
                 // The value is the weapon's item class (what the client calls "One-Handed Sword"), not a stat to show
@@ -794,33 +1022,37 @@ mod tests {
         ItemEffects::new(Arc::new(GameData::new()), "NEUTRAL", 95, ranks).enchant(id, tarot, "Weapon").unwrap()
     }
 
-    /// Ogami's Crystal as a soul fusion (enchant 3105, "of the Warmonger"): its tokusei 2000192-2000194 are in neither comp_hack
-    /// nor the website file, and the client's text for them is one block shared by the three. Before the text was read, the
-    /// effects were "Unknown effect" rows the Bonuses page dropped, so a weapon's Final Critical, Limit Break chance and power
-    /// bonuses showed only while a fresh tooltip of the weapon was saved. The game's text: "While Digitalized, Player/Demon's
-    /// Final Critical rate correction +5%, Limit Break chance +5%, Limit Break power +5%. Player's Damage to Neutral enemies +20%."
+    // The next three need the sealed data (data::pack) and are skipped in a build without its key. They check what the
+    // game's own text also says.
+
+    /// Ogami's Crystal as a soul fusion (enchant 3105, "of the Warmonger"): sealed tokusei. The game's text: "While
+    /// Digitalized, Player/Demon's Final Critical rate correction +5%, Limit Break chance +5%, Limit Break power +5%. Player's
+    /// Damage to Neutral enemies +20%." All of it now comes from the server data, nothing from the text.
     #[test]
-    fn ogamis_crystal_soul_is_read_from_its_text_once() {
+    fn ogamis_crystal_soul_comes_from_the_server_data() {
+        if !crate::data::pack::available() {
+            return;
+        }
         let list = crystal_effects(&[], 3105, false);
-        assert!(list.iter().all(|e| !e.missing_data && e.cond != "unparsed" && e.tokusei == 2000192 && e.source == "soul"), "{list:#?}");
+        assert!(list.iter().all(|e| !e.missing_data && e.cond != "unparsed" && e.source == "soul" && !e.cond_note.contains("text")), "{list:#?}");
         let find = |label: &str, target: &str| list.iter().filter(|e| e.label == label && e.target == target).collect::<Vec<_>>();
         // the player's and the digitalize demon's side, only while digitalized, +5% each, counted once
         for target in ["self", "partner"] {
-            for label in ["Final Critical rate correction", "Limit Break chance", "Limit Break power"] {
+            for label in ["Final Crit", "Limit Break Chance", "Limit Break Power"] {
                 let hit = find(label, target);
                 assert_eq!(hit.len(), 1, "{label} / {target}: {list:#?}");
                 assert_eq!((hit[0].value, hit[0].pct, hit[0].cond.as_str()), (Some(5.0), true, "digitalized"), "{label} / {target}");
             }
         }
-        // the damage line depends on the enemy's alignment, so it is never counted in a total
-        let damage: Vec<&Effect> = list.iter().filter(|e| e.label == "Damage").collect();
-        assert_eq!(damage.len(), 1, "{list:#?}");
-        assert_eq!((damage[0].value, damage[0].cond.as_str(), damage[0].target.as_str(), damage[0].cond_note.as_str()), (Some(20.0), "situational", "self", "vs NEUTRAL enemies; from the game's text"));
-        assert_eq!(list.len(), 7, "{list:#?}");
+        // the damage depends on the enemy's alignment, so it is never counted in a total
+        let damage: Vec<&Effect> = list.iter().filter(|e| e.cond_note.contains("NEUTRAL")).collect();
+        assert!(!damage.is_empty(), "{list:#?}");
+        assert!(damage.iter().all(|d| (d.value, d.cond.as_str(), d.target.as_str()) == (Some(20.0), "situational", "self")), "{damage:#?}");
     }
 
-    /// Ogami's tarot has the same gap: "If Player has Pursuit Class 9: Digitalize Duration +2%, Limit Break Cap +25, MAX HP +25".
-    /// With the character's ranks unknown the requirement stays a note; known, it is decided (Pursuit is expertise 35, 90 = Class 9).
+    /// Ogami's tarot: "If Player has Pursuit Class 9: Digitalize Duration +2%, Limit Break Cap +25, MAX HP +25". The server's
+    /// condition is EXPERTISE 9035 GTE (expertise 35 at rank value 90 or more). With the character's ranks unknown the
+    /// requirement stays a note; known, it is decided.
     #[test]
     fn a_tarot_with_a_class_requirement_follows_the_ranks() {
         let unknown = crystal_effects(&[], 3105, true);
@@ -833,23 +1065,32 @@ mod tests {
     }
 
     /// Executioner (soul 3108, "STR +7, Blunt-based Skill effects +10%, For all Death-based skills, Death Boost +10% and Limit
-    /// Break Cap + (STR x 1)"): the clauses that can be read count, the ones that cannot stay as notes, and the block sits on the
-    /// lowest tokusei without data (363485) while the other (2100150) gets nothing.
+    /// Break Cap + (STR x 1)"): one of its two tokusei is in the sealed data (the Death part), the other (363485) has none,
+    /// so the text stands in for that one with only what the data doesn't already give: the data's Death +10% covers the
+    /// text's "Death Boost +10%" (same stat), not its "Blunt-based Skill effects +10%" (same number, another stat), and the
+    /// cap is not there twice.
     #[test]
-    fn a_clause_the_text_cannot_give_does_not_drop_the_rest() {
+    fn a_crystal_half_in_the_data_takes_the_rest_from_its_text() {
+        if !crate::data::pack::available() {
+            return;
+        }
         let list = crystal_effects(&[], 3108, false);
-        let values: Vec<(&str, f64)> = list.iter().filter(|e| e.value.is_some()).map(|e| (e.label.as_str(), e.value.unwrap())).collect();
-        assert_eq!(values, vec![("STR", 7.0), ("Blunt-based Skill effects", 10.0), ("Death Boost", 10.0)], "{list:#?}");
-        let notes: Vec<&Effect> = list.iter().filter(|e| e.value.is_none()).collect();
-        assert!(notes.iter().any(|e| e.label.contains("Limit Break Cap")), "{list:#?}");
-        assert!(notes.iter().all(|e| e.cond == "unparsed" && e.cond_note == "from the game's text" && !e.missing_data));
-        assert!(list.iter().all(|e| e.tokusei == 363485), "{list:#?}");
+        let from_text: Vec<(&str, f64)> = list.iter().filter(|e| e.tokusei == 363485 && e.value.is_some()).map(|e| (e.label.as_str(), e.value.unwrap())).collect();
+        assert_eq!(from_text, vec![("STR", 7.0), ("Blunt-based Skill effects", 10.0)], "{list:#?}");
+        assert_eq!(list.iter().filter(|e| e.label.contains("Limit Break Cap")).count(), 1, "{list:#?}");
+        assert!(list.iter().all(|e| !e.missing_data), "{list:#?}");
     }
 
-    /// A crystal whose text says nothing the reader can use keeps its "Unknown effect" rows (a saved tooltip may still stand in).
+    /// A crystal whose effects are statuses and server-only aspects (enchant 3113): a status by the game's name, never a
+    /// number, and what can't be worded stays an effect without data (a saved tooltip or the game's description may stand
+    /// in), never the server's internal name.
     #[test]
-    fn an_unreadable_text_leaves_the_unknown_rows() {
+    fn statuses_by_name_and_no_internal_names() {
+        if !crate::data::pack::available() {
+            return;
+        }
         let list = crystal_effects(&[], 3113, false);
-        assert!(!list.is_empty() && list.iter().all(|e| e.missing_data && e.value.is_none()), "{list:#?}");
+        assert!(list.iter().any(|e| e.label.starts_with("Inflicts ") && e.value.is_none() && !e.missing_data), "{list:#?}");
+        assert!(list.iter().all(|e| !e.label.contains('_')), "{list:#?}");
     }
 }

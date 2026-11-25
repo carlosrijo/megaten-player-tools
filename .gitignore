@@ -51,3 +51,6 @@ dist-symbols/
 # private keys: the feedback GitHub App's key stays in .secrets\ (never in git; feedback-worker\set-key.ps1 loads it into Cloudflare)
 /.secrets/
 *.pem
+
+# Made locally with the sealed data (reference\sealed\README.md); never committed
+/app/ui/*.local.json

@@ -168,7 +168,55 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
         let out = get_or("out", path_combine(&path_combine("app", "ui"), "gear-db.json"));
         // --ids-out: the ids for tools\dcmexport --ids; --game-sources: its output
         let client = client_arg(get("client"))?;
-        gear_db::build(Arc::new(GameData::new()), decoded, get("sheets"), &out, get("ids-out"), get("game-sources"), client.as_deref())?;
+        // --out is the repo's file: made without the sealed data. In a build with it, the full one goes beside it as
+        // <name>.local.json (git-ignored, never embedded), for `seal --gear-db`.
+        gear_db::build(Arc::new(GameData::new().without_sealed_data()), decoded, get("sheets"), &out, get("ids-out"), get("game-sources"), client.as_deref())?;
+        if imagine::data::pack::available() && get("ids-out").is_none() {
+            let local = out.strip_suffix(".json").map(|s| format!("{s}.local.json")).unwrap_or_else(|| format!("{out}.local.json"));
+            gear_db::build(Arc::new(GameData::new()), decoded, get("sheets"), &local, None, get("game-sources"), client.as_deref())?;
+            println!("With the sealed data: {local} (seal it: imagine-reader seal --gear-db {local})");
+        }
+        return Ok(0);
+    }
+    if cmd == "seal" {
+        // Data into reference\sealed\data.bin (encrypted; the readable files never go in git):
+        //   seal [--tokusei <tokusei XML>] [--labels <labels.tsv>] [--gear-db <gear-db.local.json>] [--out <file>]
+        // An entry not given is kept from the sealed file as it is. Key: BABEL_PACK_KEY or .secrets\pack.key.
+        use imagine::data::pack;
+        let key = pack::key_for_sealing()?.ok_or_else(|| user_error("seal needs the key: .secrets\\pack.key (64 hex digits) or BABEL_PACK_KEY."))?;
+        let root = imagine::data::config::repo_root().ok_or_else(|| user_error("seal runs inside the repo."))?;
+        let out = get("out").map(PathBuf::from).unwrap_or_else(|| pack::sealed_path(&root));
+        let mut entries: Vec<(String, Vec<u8>)> = match std::fs::read(&out) {
+            Ok(blob) => pack::open(&blob, &key)?,
+            Err(_) => Vec::new(),
+        };
+        let mut put = |name: &str, data: Vec<u8>| {
+            entries.retain(|e| e.0 != name);
+            entries.push((name.to_string(), data));
+        };
+        if let Some(f) = get("tokusei") {
+            put(pack::TOKUSEI, pack::strip_xml(&imagine::data::json::read_all_text(Path::new(f))?).into_bytes());
+        }
+        if let Some(f) = get("labels") {
+            put(pack::LABELS, std::fs::read(f)?);
+        }
+        if let Some(f) = get("gear-db") {
+            put(pack::GEAR_DB, std::fs::read(f)?);
+        }
+        entries.sort_by(|a, b| a.0.cmp(&b.0));
+        let blob = pack::seal(&entries, &key)?;
+        // check before writing: it opens again to the same entries
+        if pack::open(&blob, &key)? != entries {
+            return Err(user_error("the sealed data did not open again to the same entries; nothing written.").into());
+        }
+        if let Some(dir) = out.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        std::fs::write(&out, &blob)?;
+        for (n, d) in &entries {
+            println!("  {n}: {} KB", d.len() / 1024);
+        }
+        println!("Sealed into {} ({} KB). Rebuild (cargo build --release) to put it in the exe.", out.display(), blob.len() / 1024);
         return Ok(0);
     }
     if cmd == "dungeons" {

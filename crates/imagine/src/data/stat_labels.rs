@@ -59,8 +59,75 @@ fn no_game_text(id: &str) -> Option<&'static str> {
         "RATE_HEAL_TAKEN" => Some("Curative Received"),
         "RES_STATUS" => Some("Ailment Resistance"),
         "RATE_HEAL" => Some("Curative Boost"),
+        // comp_hack's aspect (TokuseiManager): damage taken, in percent
+        "DAMAGE_TAKEN" => Some("Damage Taken"),
+        // CorrectTbl damage taken from player characters / from demons
+        "RATE_PC_TAKEN" => Some("Damage Taken from Players"),
+        "RATE_DEMON_TAKEN" => Some("Damage Taken from Demons"),
         _ => None,
     }
+}
+
+/// How to show a tokusei aspect that is not a plain stat with a name.
+#[derive(Debug, Clone, PartialEq)]
+pub enum AspectShow {
+    /// The value names a status: a sentence with the game's name for it, never a number.
+    Sentence(String),
+    /// An aspect worded by the sealed data's labels (not in comp_hack's schema, libcomp\schema\tokusei.xml). Nothing says
+    /// how the server applies it, so it is shown with its number but never counted in a total.
+    Uncounted(&'static str),
+    /// Nothing the reader can word (the value is a skill, an action, an element...): shown as an effect without data.
+    Unknown,
+}
+
+/// Note for a [`AspectShow::Uncounted`] effect.
+pub const UNCOUNTED_NOTE: &str = "not counted: how it applies isn't known";
+
+/// The sealed data's wording for ids comp_hack's schema doesn't have (entry [`super::pack::LABELS`]: lines of
+/// `kind<TAB>id<TAB>text`): kind `status` (an aspect whose value is a status: `{status}` in the text), `named` (an aspect
+/// shown, not counted), `skill` (a skill condition: `{v}` is its value). Empty in a build without the sealed data.
+fn sealed_labels() -> &'static HashMap<(String, String), String> {
+    static L: OnceLock<HashMap<(String, String), String>> = OnceLock::new();
+    L.get_or_init(|| {
+        let text = super::pack::entry(super::pack::LABELS).map(String::from_utf8_lossy).unwrap_or_default();
+        text.lines()
+            .filter_map(|l| {
+                let mut p = l.splitn(3, '\t');
+                Some(((p.next()?.to_string(), p.next()?.to_string()), p.next()?.trim_end().to_string()))
+            })
+            .collect()
+    })
+}
+
+/// A skill condition worded by the sealed data (kind `skill`), `{v}` filled in; `None` when it has no wording.
+pub fn sealed_skill_condition(id: &str, value: i32) -> Option<String> {
+    sealed_labels().get(&("skill".to_string(), id.to_string())).map(|t| t.replace("{v}", &value.to_string()))
+}
+
+/// `None` for a plain stat (one [`has`] names); otherwise how to show it.
+pub fn aspect_show(id: &str, value: f64) -> Option<AspectShow> {
+    if has(id) {
+        return None;
+    }
+    let status = || crate::data::game_data::status_target(value as i32);
+    Some(match id {
+        // comp_hack's own (TokuseiManager / SkillManager)
+        "STATUS_NULL" => AspectShow::Sentence(format!("Immune to {}", status())),
+        "STATUS_ADD" => AspectShow::Sentence(format!("Gives you {}", status())),
+        "CONSTANT_STATUS" => AspectShow::Sentence(format!("Always under {}", status())),
+        "SUMMON_STATUS" => AspectShow::Sentence(format!("A summoned partner gets {}", status())),
+        "KNOCKBACK_STATUS_ADD" => AspectShow::Sentence(format!("Knocking an enemy back inflicts {}", status())),
+        _ => {
+            let l = sealed_labels();
+            if let Some(t) = l.get(&("status".to_string(), id.to_string())) {
+                AspectShow::Sentence(t.replace("{status}", &status()))
+            } else if let Some(t) = l.get(&("named".to_string(), id.to_string())) {
+                AspectShow::Uncounted(t.as_str())
+            } else {
+                AspectShow::Unknown
+            }
+        }
+    })
 }
 
 /// The name to show for a stat id: the game's wording, else the few names above, else the id itself.
