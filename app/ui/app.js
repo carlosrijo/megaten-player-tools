@@ -4842,16 +4842,19 @@
       const cur = st.lv.get(r.id) || 0;
       r.extend.forEach(([l, , , text, who]) => items.push({ kind: who === 'demon' ? 'Demon' : 'You', label: text, race: r.name, l, have: cur >= l,
         goal: { k: 'race', race: r.id, level: l, why: `${text}${who === 'demon' ? ' (demon)' : ''}` } }));
+      // the race itself: opening it is a goal like any boost (the race at DLv 1); the open ones are listed as had
+      if (r.unlock.length) items.push({ kind: 'Race', label: `Unlock ${r.name}`, race: r.name, l: 1, have: cur >= 1, open: cur,
+        needs: r.unlock.map(([u, ul]) => `${E.raceName(u)} ${ul}`).join(' + '), goal: { k: 'race', race: r.id, level: 1 } });
     });
     let costed = false;
     const costAll = () => {   // a plan per boost, once, when the list is first opened (a few ms in all)
       if (costed) return;
       costed = true;
       items.forEach((x) => { const p = x.have ? null : E.solve(st, [x.goal]); x.dp = x.have ? 0 : p && p.ok ? p.cost : Infinity; });
-      items.forEach((x) => { x.sub = `${x.race} DLv ${x.l} · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
+      items.forEach((x) => { x.sub = (x.kind === 'Race' ? (x.have ? `open, DLv ${x.open}` : `needs ${x.needs}`) : `${x.race} DLv ${x.l}`) + ` · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
     };
     const wrap = h('div', { class: 'fus-combo' });
-    const ph = 'Add a boost: search a stat or affinity, e.g. Intelligence, Slash, Limit Break';
+    const ph = 'Add a goal: search a boost or a race to unlock, e.g. Intelligence, Slash, Limit Break, Seraphim';
     const input = h('input', { class: 'input', type: 'search', placeholder: ph, 'aria-label': ph, spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
     const menu = h('div', { class: 'fus-menu dpl-menu', role: 'listbox', 'aria-multiselectable': 'true', hidden: true });
     let hits = [], at = 0;
@@ -4867,7 +4870,7 @@
       at = Math.min(at, Math.max(0, hits.length - 1));
       const addable = hits.filter((x) => !x.have && !isOn(x.goal));
       const head = h('div', { class: 'dpl-menu-head' },
-        h('span', { class: 'src-count', style: 'margin-left:0', text: `${hits.length}${hits.length === 80 ? '+' : ''} boost${hits.length === 1 ? '' : 's'} · ${U.goals.length} picked` }),
+        h('span', { class: 'src-count', style: 'margin-left:0', text: `${hits.length}${hits.length === 80 ? '+' : ''} match${hits.length === 1 ? '' : 'es'} · ${U.goals.length} picked` }),
         h('span', { class: 'toolbar-spacer' }),
         addable.length && words.length ? h('button', { type: 'button', class: 'btn btn-sm btn-ghost', onmousedown: (ev) => { ev.preventDefault(); addable.forEach((x) => toggle(x.goal)); draw(); } }, `Add all ${addable.length} shown`) : null);
       menu.replaceChildren(head, ...(hits.length ? hits.map((x, i) => {
@@ -4875,14 +4878,14 @@
         // one you have already can't be picked: listed (dimmed, no box) only to show where you got it
         if (x.have) return h('div', { class: 'fus-opt dpl-have', role: 'option', 'aria-selected': 'false', 'aria-disabled': 'true', onmousedown: (ev) => ev.preventDefault() },
           h('span', { class: 'dpl-check dpl-check-none', 'aria-hidden': 'true' }),
-          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : ''), text: x.kind }),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), text: x.kind }),
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
         return h('div', { class: 'fus-opt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(on),
           onmousedown: (ev) => { ev.preventDefault(); at = i; pick(x); } },
           h('span', { class: 'dpl-check' + (on ? ' ticked' : ''), 'aria-hidden': 'true' }, on ? icon('check') : null),
-          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : 'A boost for you', text: x.kind }),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : x.kind === 'Race' ? 'A race to unlock: it opens at DLv 1 once every race it needs reaches its level' : 'A boost for you', text: x.kind }),
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
-      }) : [h('div', { class: 'fus-opt empty', text: 'No boost matches.' })]));
+      }) : [h('div', { class: 'fus-opt empty', text: 'Nothing matches.' })]));
       menu.scrollTop = keep;
       const cur = menu.querySelector('.fus-opt.on'); if (cur) cur.scrollIntoView({ block: 'nearest' });
     };
@@ -4999,7 +5002,7 @@
       const top = dplSuggestions(E, st, 6);
       return h('div', { class: 'dpl-empty' },
         h('p', { class: 'dpl-empty-title', text: 'What do you want from Digitalize?' }),
-        h('p', { class: 'note', text: 'Search the boosts the Digitalization Levels teach (stats, affinities, the Limit Break cap), for you or for your demon, and tick the ones you want. Or start from one of the strongest you don’t have yet:' }),
+        h('p', { class: 'note', text: 'Search the boosts the Digitalization Levels teach (stats, affinities, the Limit Break cap), for you or for your demon, or a race to unlock, and tick the ones you want. Or start from one of the strongest you don’t have yet:' }),
         h('div', { class: 'dpl-suggs' }, top.map((c) => h('button', { type: 'button', class: 'dpl-sugg', 'data-tip': `Add “${c.text}” for ${c.who === 'demon' ? 'your demon' : 'you'} as a goal: ${c.r.name} DLv ${c.l}, ${nf.format(c.dp)} Digitalize points from here`, onclick: () => toggle(c.goal) },
           dplRaceOrbs(E, c.r),
           h('span', { class: 'dpl-goal-text' }, h('span', { class: 'dpl-goal-title' }, h('b', { text: c.text }), h('span', { class: 'tag dpl-kind' + (c.who === 'demon' ? ' tag-demon' : ''), text: c.who === 'demon' ? 'Demon' : 'You' })),
@@ -5022,12 +5025,17 @@
         Array.from({ length: E.P.cap }, (_, k) => k + 1).map((l) => h('option', { value: l, selected: l === g.level ? true : null, text: `DLv ${l}` })));
       // the boost is the card's title (what you want); the race and level under it
       const demonSide = /\(demon\)$/.test(g.why || '');
-      const title = g.why ? g.why.replace(/ \(demon\)$/, '') : R.name;
+      // a race goal (no boost: "Unlock X" from the search, or "Plan to here"): while the race is locked, the card
+      // says what opens it, each race level ticked when you have it
+      const title = g.why ? g.why.replace(/ \(demon\)$/, '') : cur ? R.name : `Unlock ${R.name}`;
       const done = cur >= g.level;
+      const needs = !g.why && !cur && R.unlock.length ? h('span', { class: 'dpl-needs dpl-goal-needs', 'data-tip': `${R.name} opens at DLv 1 once all of these are reached` },
+        h('span', { text: 'needs' }), R.unlock.map(([u, l]) => h('span', { class: (st.lv.get(u) || 0) >= l ? 'met' : '', text: `${E.raceName(u)} ${l}` }))) : null;
       return h('span', { class: 'dpl-goal' + (done ? ' done' : '') }, dplRaceOrbs(E, R),
         h('span', { class: 'dpl-goal-text' }, h('span', { class: 'dpl-goal-title' }, h('b', { text: title }),
-          g.why ? h('span', { class: 'tag dpl-kind' + (demonSide ? ' tag-demon' : ''), text: demonSide ? 'Demon' : 'You' }) : null),
-          h('span', { class: 'card-sub', text: [g.why ? R.name : null, done ? 'you have it' : cur ? `you have DLv ${cur}` : 'locked'].filter(Boolean).join(' · ') })), sel, remove);
+          g.why ? h('span', { class: 'tag dpl-kind' + (demonSide ? ' tag-demon' : ''), text: demonSide ? 'Demon' : 'You' })
+            : h('span', { class: 'tag dpl-kind tag-digi', text: 'Race' })),
+          h('span', { class: 'card-sub', text: [g.why ? R.name : null, done ? 'you have it' : cur ? `you have DLv ${cur}` : 'locked'].filter(Boolean).join(' · ') }), needs), sel, remove);
     };
     return h('div', { class: 'dpl-goals' }, U.goals.map(chip));
   }
