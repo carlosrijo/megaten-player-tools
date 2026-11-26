@@ -459,7 +459,9 @@
       char: '', level: 0, align: 'NEUTRAL', inits: new Map(), bases: new Map(), useSeq: 0,
       demon: '',   // the build's digitalize demon: one of its base's COMP demons ("type:name"), or '' = not digitalized
       saveState: '', storeTimer: null, naming: false, confirmDel: false, navOpen: store.get('sim-nav') !== '0' },
-    exp: { q: '', closed: new Set() },
+    exp: { q: '', closed: new Set(), view: store.get('exp-view') === 'plan' ? 'plan' : 'mine' },   // view: 'mine' (as read) or 'plan' (the planner)
+    // Expertise page planner: whose plan, the character as read (init), the planned points and cap, its result (cur), the open rows
+    xp: { who: '', state: 'idle', error: '', init: null, cur: null, points: null, cap: null, demon: '', open: new Set(), seq: 0, loadSeq: 0, timer: null, working: false, redraw: null },
     dg: { q: '', closed: new Set() },
     extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
     hist: { key: store.get('hist') || 'lngr' },
@@ -1310,7 +1312,7 @@
     // "skills" lists the passives from expertise.json only.
     const chains = ((R.ranks) || []).filter((r) => r.chain);
     const rank = (c) => h('button', { type: 'button', class: 'exp-rank', 'data-tip': `Open ${c.name} on the Expertise page`, 'aria-label': `${c.name}, class ${c.class} rank ${c.rank}`,
-      onclick: () => { S.exp.q = c.name; go('expertise'); } }, h('span', { text: c.name }), h('b', { text: `${c.class}-${c.rank}` }));
+      onclick: () => { S.exp.q = c.name; S.exp.view = 'mine'; go('expertise'); } }, h('span', { text: c.name }), h('b', { text: `${c.class}-${c.rank}` }));
     const icons = (c) => {
       const rows = S.data.expertise.filter((r) => r.expertise === c.name && !isExtra(r));
       const offIds = new Set(rows.filter((r) => r.toggle && !r.toggle_on).map((r) => r.skill_id));
@@ -1330,7 +1332,7 @@
         P ? null : h('span', { class: 'note', text: 'Take a snapshot to read your expertise points and cap.' }),
         chains.length ? h('div', { class: 'exp-ranks', style: `--rows:${Math.ceil(chains.length / 2)}` }, chains.map(rank)) : h('span', { class: 'note', text: 'No chain expertise unlocked yet.' })),
       h('div', { class: 'band-items exp-icons-run' }, chains.map(icons)),
-      h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every expertise and what it adds, on the Expertise page', onclick: () => { S.exp.q = ''; go('expertise'); } }, 'View more'));
+      h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every expertise and what it adds, on the Expertise page', onclick: () => { S.exp.q = ''; S.exp.view = 'mine'; go('expertise'); } }, 'View more'));
   }
 
   function changesCard() {
@@ -1971,6 +1973,7 @@
             o.noIcons ? null : h('span', { class: 'exp-icons' }, mine.filter((r) => r.icon).map((r) => {
               const ic = skillIcon(r);
               if (!isTrue(r.counted)) ic.classList.add('off');
+              if (o.richTips) return expSkillTip(ic, { id: r.skill_id, name: r.skill, icon: r.icon, rank: r.rank, expertise: r.expertise, effects: r.effects, off: r.toggle && !r.toggle_on, counted: isTrue(r.counted) });
               ic.dataset.tip = [r.skill || '—', r.rank ? `(${r.rank})` : null].filter(Boolean).join(' ') + (r.effects ? ': ' + String(r.effects).split('; ').join(' · ') : '');
               return ic;
             }))),
@@ -1988,6 +1991,25 @@
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { st.closed.clear(); draw(); } }, 'Expand all'),
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => st.closed.add(n)); draw(); } }, 'Collapse all')), listHost));
     draw();
+  }
+
+  /**
+   * The game-style tooltip of an expertise skill's icon (the Expertise page's summary and closed groups): icon and name,
+   * which expertise and rank give it, then the game's own description (skill-db.json, loaded on first use); until that
+   * is in, or for a skill it lacks, the effects the reader counted. s: { id, name, icon, rank, active, off, expertise, effects, counted }.
+   */
+  function expSkillTip(el, s) {
+    loadSkillData();
+    el.removeAttribute('aria-hidden'); el.setAttribute('role', 'img'); el.setAttribute('aria-label', s.name || 'Skill');
+    return withTip(el, () => {
+      const x = sklById(s.id), fx = String(s.effects || '').split('; ').filter(Boolean);
+      const where = [s.expertise, s.rank ? String(s.rank).replace(/^Class (\d+) Rank (\d+)$/, '$1-$2') : null].filter(Boolean).join(' ');
+      return h('div', { class: 'tt' },
+        tipHead(s.icon || !x ? skillIcon(s) : sklIcon(x), s.name || '—', [s.active ? 'Active skill' : 'Passive skill', where].filter(Boolean).join(' · ')),
+        ...(x && x.desc ? tipLines(x.desc) : fx.map((t) => h('div', { class: 'tt-line', text: t }))),
+        s.off ? h('div', { class: 'tt-line tt-gap tt-why', text: 'Toggle switched off: its effects are not counted.' })
+          : s.counted === false ? h('div', { class: 'tt-line tt-gap tt-why', text: 'Not counted.' }) : null);
+    });
   }
 
   /** Expertise points as the Expertise page shows them: the game's number / 100, with no ".00pt" (the user's request). */
@@ -2029,8 +2051,7 @@
         : mine.map((x) => ({ id: x.skill_id, name: x.skill || '—', icon: x.icon, rank: x.rank || '', active: false, off: x.toggle && !x.toggle_on }));
       const ordered = skills.filter((s) => s.icon && !s.active).concat(skills.filter((s) => s.icon && s.active));
       const icons = ordered.map((s, i) => {
-        const ic = skillIcon(s);
-        ic.dataset.tip = `${s.name} · ${s.active ? 'active' : 'passive'} (${s.rank})` + (s.off ? ', toggle switched off' : '');
+        const ic = expSkillTip(skillIcon(s), { ...s, expertise: r.name, effects: (mine.find((x) => x.skill_id === s.id) || {}).effects });
         if (s.off) ic.classList.add('off');
         if (s.active && (i === 0 || !ordered[i - 1].active)) ic.classList.add('first');   // a little air before the actives
         return ic;
@@ -2101,10 +2122,146 @@
     return sect('Expertise cap', pt(P.cap), null, card);
   }
 
+  // ---------- Expertise page: the planner ----------
+  // Other ranks on top of the shown character's, with what they do to the numbers. The same reader commands as the
+  // Build Planner ("simInit" for the character as last read, "simulate" for the plan: its worn gear as read, only the
+  // points changed) and the same editor (expEditor). The plan is kept per character in the page's own storage; nothing
+  // touches the game or the character's files.
+  const xpKey = (who) => 'exp-plan:' + who;
+  /** The plan kept for this character: { points: {expertise: points} (what differs from the ranks as read), cap }. */
+  function xpKept(who) {
+    try { const v = JSON.parse(store.get(xpKey(who)) || 'null'); return v && typeof v === 'object' ? { points: v.points || {}, cap: v.cap ?? null } : { points: {}, cap: null }; } catch (e) { return { points: {}, cap: null }; }
+  }
+  /** The expertises the plan changes (ids). */
+  const xpChanged = () => { const X = S.xp; if (!X.init) return []; const p0 = X.init.build.points; return Object.keys(X.points).filter((id) => n0(X.points[id]) !== n0(p0[id])); };
+  function xpSave() {
+    const X = S.xp;
+    if (!X.init) return;
+    store.set(xpKey(X.who), JSON.stringify({ points: Object.fromEntries(xpChanged().map((id) => [id, n0(X.points[id])])), cap: X.cap }));
+  }
+  async function xpLoad() {
+    const X = S.xp;
+    if (X.state !== 'idle' || !X.who) return;
+    const tok = ++X.loadSeq, who = X.who;
+    X.state = 'loading';
+    try {
+      const init = await host.call('simInit', { base: who });
+      if (tok !== X.loadSeq) return;
+      const kept = xpKept(who), ids = new Set(init.expertise.map((d) => String(d.id)));
+      X.init = init; X.points = simClone(init.build.points); X.cap = kept.cap; X.cur = init.result; X.demon = simDemonDefault(init); X.state = 'ready';
+      Object.entries(kept.points).forEach(([id, v]) => { if (ids.has(String(id))) X.points[id] = n0(v); });
+      if (xpChanged().length) xpRun(false);
+    } catch (e) {
+      if (tok !== X.loadSeq) return;
+      X.state = 'failed'; X.error = String((e && e.message) || e);
+    }
+    if (S.page === 'expertise') render();
+  }
+  /** Asks the reader for the plan's result; only the answer to the latest change is used. */
+  async function xpRun(keep) {
+    const X = S.xp, seq = ++X.seq;
+    clearTimeout(X.timer);
+    if (keep !== false) xpSave();
+    X.working = true;
+    try {
+      const res = await host.call('simulate', { base: X.who, demon: X.demon, slots: X.init.build.slots, points: X.points });
+      if (seq !== X.seq) return;
+      X.cur = res;
+    } catch (e) {
+      if (seq !== X.seq) return;
+      toast('err', 'That plan could not be worked out', String((e && e.message) || e));
+    }
+    X.working = false;
+    if (X.redraw) X.redraw();
+  }
+  const xpRunSoon = () => { const X = S.xp; clearTimeout(X.timer); X.working = true; if (X.redraw) X.redraw(); X.timer = setTimeout(() => xpRun(), 90); };
+
+  /** The skills a changed expertise gains or loses: the ranks between the one as read and the planned one. */
+  function xpUnlocks(d, from, to) {
+    const lo = Math.min(from, to), hi = Math.max(from, to);
+    return d.unlocks.filter((u) => u.rank > lo && u.rank <= hi).map((u) => ({ rank: u.rank, pick: u.pick, skills: u.skills }));
+  }
+
+  function expPlanner() {
+    const X = S.xp, me = S.meta.character || '';
+    if (X.who !== me) Object.assign(X, { who: me, state: 'idle', init: null, cur: null, points: null, loadSeq: X.loadSeq + 1 });
+    xpLoad();
+    if (X.state !== 'ready') {
+      const body = X.state === 'failed'
+        ? h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'The planner can’t start. ' }), X.error, ' ',
+          h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:8px', onclick: () => { X.state = 'idle'; render(); } }, 'Try again')))
+        : h('p', { class: 'note', text: me ? 'Reading your expertise…' : 'No character shown yet.' });
+      return sect('Expertise planner', null, null, body);
+    }
+    // the app's digitalized / not digitalized switch decides the demon, as on the other pages
+    const dm = simDemonDefault(X.init);
+    if (X.demon !== dm) { X.demon = dm; xpRun(false); }
+    const I = X.init, defs = I.expertise, byId = new Map(defs.map((d) => [String(d.id), d]));
+    const resetBox = h('div', { class: 'toolbar' }), out = h('aside', { class: 'sim-out xp-out' });
+    const capOf = () => (X.cap === null || X.cap === undefined ? X.init.result.expertise.cap : X.cap);
+    const drawReset = () => {
+      const dirty = xpChanged().length > 0 || (X.cap !== null && X.cap !== undefined);
+      const allOpen = defs.filter((d) => !d.chain).every((d) => X.open.has(d.id));
+      simFill(resetBox,
+        h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': allOpen ? 'Hide what each expertise’s ranks unlock' : 'Show what every rank of every expertise unlocks',
+          onclick: () => { defs.filter((d) => !d.chain).forEach((d) => (allOpen ? X.open.delete(d.id) : X.open.add(d.id))); render(); } }, allOpen ? 'Collapse all' : 'Expand all'),
+        h('button', { type: 'button', class: 'btn btn-sm', disabled: dirty ? null : true, 'data-tip': 'Back to your ranks and cap as last read',
+          onclick: () => { clearTimeout(X.timer); X.seq++; X.working = false; X.points = simClone(I.build.points); X.cap = null; xpSave(); X.cur = I.result; render(); } }, 'Reset to your ranks'));
+    };
+    const ed = expEditor({ defs, P: X.points, P0: I.build.points, cap0: I.result.expertise.cap, RP: (S.data.ranks && S.data.ranks.points) || {}, open: X.open,
+      cap: capOf, setCap: (v) => { X.cap = v; xpSave(); },
+      ranksNow: () => X.cur.expertise.ranks, ranksBefore: () => I.result.expertise.ranks,
+      onRank: () => { drawReset(); xpRunSoon(); }, onCap: () => drawReset() });
+
+    function drawOut() {
+      const changed = xpChanged(), cur = X.cur, diff = simDiff(I.result, cur);
+      const groups = [['Stats', 'Your stats'], ['Combat', 'Combat'], ['Affinity', 'Affinity'], ['Other', 'Other'], ['Partner', 'Your partner'], ['Only in some fights', 'Only in some fights']];
+      const list = h('div', { class: 'sim-others' });
+      groups.forEach(([g, title]) => {
+        const rows = diff.filter((x) => x.group === g);
+        if (!rows.length) return;
+        list.append(h('div', { class: 'chg-group', text: title }), ...rows.map((x) => h('div', { class: 'chg' }, h('span', null, x.label, x.fresh ? chgDot('new') : x.gone ? chgDot('gone') : null),
+          h('span', { class: 'chg-vals' }, x.fresh ? null : fmt(x.from, x.unit) + ' → ', h('b', { text: x.gone ? 'gone' : fmt(x.to, x.unit) })), simDelta(x))));
+      });
+      // the skills the plan gains or loses, per changed regular expertise
+      // the changed expertises (ranks from the points), then the chains the reader worked out a new rank for
+      const moved = [...changed.map((id) => byId.get(String(id))).filter((d) => d && !d.chain)
+        .map((d) => ({ d, from: Math.floor(n0(I.build.points[d.id]) / 10000), to: Math.floor(n0(X.points[d.id]) / 10000) })),
+        ...defs.filter((d) => d.chain).map((d) => ({ d, from: n0(I.result.expertise.ranks[d.id]), to: n0(cur.expertise.ranks[d.id]) })).filter((m) => m.from !== m.to)];
+      const skillRows = moved.map(({ d, from, to }) => {
+        const up = to > from;
+        const steps = xpUnlocks(d, from, to);
+        if (!steps.length) return null;
+        return h('div', { class: 'xp-unlock ' + (up ? 'good' : 'bad') },
+          h('span', { class: 'xp-unlock-head' }, h('b', { text: d.name }), h('span', { class: 'card-sub', text: `${Math.floor(from / 10)}-${from % 10} → ${Math.floor(to / 10)}-${to % 10}` + (d.chain ? ' · chain' : '') })),
+          h('ul', { class: 'sim-unlocks xp-unlock-list' }, steps.map((u) => h('li', null, h('span', { class: 'sim-unlock-rank', text: (up ? '+ ' : '− ') + `${Math.floor(u.rank / 10)}-${u.rank % 10}` }),
+            h('span', null, unlockSkills(u, d.name))))));
+      }).filter(Boolean);
+      simFill(out, h('section', { class: 'card sim-card' },
+        h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: changed.length ? `With your ${changed.length} change${changed.length === 1 ? '' : 's'}` : 'As you are now' }),
+          h('span', { class: 'card-sub', role: 'status', text: X.working ? 'working it out…' : '' })),
+        !changed.length ? h('p', { class: 'note', text: 'Move a rank on the left: the skills it unlocks or loses and what it does to your numbers are listed here.' }) : null,
+        skillRows.length ? [h('h4', { class: 'list-head', text: 'Skills' }), h('div', { class: 'xp-unlocks' }, skillRows)] : null,
+        diff.length ? [h('h4', { class: 'list-head', text: 'Numbers' }), list] : changed.length && !X.working ? h('p', { class: 'note', text: 'These ranks move none of your numbers.' }) : null),
+        h('p', { class: 'note', text: `Starts from your gear and ranks as last read (${when(I.meta.stats_at)}, level ${I.meta.level}). As everywhere in the app: no buffs and nothing from the partner demon. Ranks with a choice count the skill you learned in game.` }));
+    }
+    X.redraw = () => { if (S.page !== 'expertise' || !out.isConnected) return; ed.live(); drawOut(); drawReset(); };
+    drawReset(); drawOut();
+    return sect('Expertise planner', null, resetBox, h('div', { class: 'sim-layout xp-layout' }, ed.box, out));
+  }
+
   function pageExpertise() {
     const rows = S.data.expertise.filter((r) => !isDlevel(r) && !isExtra(r));
     const page = h('div', { class: 'page' });
-    page.append(pageHead('Passive skills your expertise ranks unlock (this assumes you acquired every one), and your other learned passives. Digitalization Levels are on the Digitalize page; the quest bonus and Demonic Compendium are on Bonuses.'));
+    // two views (the user's request): your expertise as read, and the planner with every expertise there is
+    const plan = S.exp.view === 'plan';
+    const view = (id, label, tip) => h('button', { type: 'button', 'aria-pressed': String(S.exp.view === id), 'data-tip': tip,
+      onclick: () => { if (S.exp.view === id) return; S.exp.view = id; store.set('exp-view', id); render(); $('#main').scrollTop = 0; } }, label);
+    const toggle = h('div', { class: 'seg', role: 'group', 'aria-label': 'View' },
+      view('mine', 'Your expertise', 'Your ranks, cap and passives as last read'), view('plan', 'Planner', 'Every expertise on a slider: try other ranks and see what they change'));
+    page.append(pageHead(plan ? 'Every expertise and what its ranks unlock, starting from your ranks. Try others and see the skills and numbers they change. Nothing here touches the game or your data.'
+      : 'Passive skills your expertise ranks unlock (this assumes you acquired every one), and your other learned passives. Digitalization Levels are on the Digitalize page; the quest bonus and Demonic Compendium are on Bonuses.', toggle));
+    if (plan) { page.append(expPlanner()); return page; }
     page.append(expSummary(rows));
     const cap = expCap();
     if (cap) page.append(cap);
@@ -2112,7 +2269,7 @@
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, round2(n0(r.expertise) - shareOf(r, ['dlevel', 'quest', 'compendium']))]).filter(([, v]) => v);
     page.append(sect('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, null,
       totalsCard(null, null, totals, 'No expertise bonuses counted yet.')));
-    passiveList(page, rows, S.exp, { id: 'exp-list', heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
+    passiveList(page, rows, S.exp, { id: 'exp-list', richTips: true, heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
     return page;
   }
 
@@ -3507,13 +3664,53 @@
   const sklIcon = (x) => { const box = ddbImg(x.icon, 24, 'skill-ico'); if (!x.icon && SKL_NO_ICON[x.noIcon]) box.setAttribute('data-tip', SKL_NO_ICON[x.noIcon]); return box; };
   function loadSkillDb() {
     loadDemonDb();   // who learns each skill
+    loadSkillData();
+  }
+  /** skill-db.json alone (the Expertise page's icon tooltips take the game's descriptions from it). */
+  function loadSkillData() {
     if (S.skl.state !== 'idle') return;
     S.skl.state = 'loading';
     fetch('skill-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
       S.skl.data = d; S.skl.state = d ? 'ready' : 'failed';
       if (d) d.skills.forEach((x) => { x.hay0 = sklWords([x.name, x.el, x.desc, ...(x.exp || []), x.fusion ? 'fusion' : '', x.barter ? 'barter' : '', ...(x.barter || []).map((b) => b.cost)].join(' ')); });
-      if (S.page === 'skills') render();
+      // tooltips made before the descriptions came in are made again on the next hover
+      document.querySelectorAll('[data-rich]').forEach((el) => { delete el._richNode; });
+      if (S.page === 'skills' || (d && (S.page === 'expertise' || S.page === 'sim'))) render();   // the planners' unlock lists get their pictures
     });
+  }
+  /** A skill of the game by id (skill-db.json), or null while that is loading or when it isn't there. */
+  const sklById = (id) => {
+    const D = S.skl.data;
+    if (!D) return null;
+    if (!S.skl.byId || S.skl.byIdFrom !== D) { S.skl.byId = new Map(D.skills.map((x) => [x.id, x])); S.skl.byIdFrom = D; }
+    return S.skl.byId.get(id) || null;
+  };
+  /** A skill an expertise rank unlocks, found in skill-db.json by its expertise, rank and name ("Shot · Class 0 Rank 5"). */
+  const sklByExp = (exp, rank, name) => {
+    const D = S.skl.data;
+    if (!D) return null;
+    if (!S.skl.byExp || S.skl.byExpFrom !== D) {
+      S.skl.byExp = new Map();
+      D.skills.forEach((x) => (x.exp || []).forEach((e) => S.skl.byExp.set(`${e}|${x.name}`, x)));
+      S.skl.byExpFrom = D;
+    }
+    return S.skl.byExp.get(`${exp} · Class ${Math.floor(rank / 10)} Rank ${rank % 10}|${name}`) || null;
+  };
+  /** A rank's skills in a planner's unlock list; a rank that lets you learn only one of them puts "or" between them. */
+  const unlockSkills = (u, exp) => {
+    const tip = `The game lets you learn only ${u.pick === 1 ? 'one' : u.pick} of these. Which one counts is the one you learned in game.`;
+    const list = u.skills.map((s) => unlockSkill(s, exp, u.rank));
+    if (!u.pick || u.skills.length < 2) return list;
+    if (u.pick > 1) return [h('span', { class: 'sim-unlock-pick', 'data-tip': tip, text: `Learn ${u.pick} of: ` }), ...list];
+    return list.flatMap((el, i) => (i ? [h('span', { class: 'sim-unlock-pick unl-or', 'data-tip': tip, text: 'or' }), el] : [el]));
+  };
+  /** One skill in a planner's unlock list: its picture and name, with the game-style tooltip (expSkillTip). */
+  function unlockSkill(s, exp, rank) {
+    const x = sklByExp(exp, rank, s.name);
+    const ic = x ? sklIcon(x) : h('span', { class: 'skill-ico', 'aria-hidden': 'true' });
+    const el = h('span', { class: 'unl-skill' + (s.passive ? ' unl-passive' : '') }, ic, h('span', { text: s.name }));
+    return expSkillTip(el, { id: x ? x.id : null, name: s.name, active: !s.passive, expertise: exp, rank: `Class ${Math.floor(rank / 10)} Rank ${rank % 10}`,
+      effects: x ? '' : (s.passive ? '' : 'An active skill: it adds no stats by itself') });
   }
   /** skill id -> the compendium demons that learn it or have it as a feature (from the Demon Database's data), made once. */
   function sklDemons() {
@@ -4374,6 +4571,9 @@
     out.forEach((x) => { x.d = round2(x.to - x.from); x.good = lowIsGood(x.label) ? x.d < 0 : x.d > 0; x.size = Math.abs(x.d) / Math.max(Math.abs(x.from), Math.abs(x.to), 1); });
     return out;
   }
+  /** A little dot before a name the change touches: green new, blue changed, red gone (down to nothing). */
+  const chgDot = (kind) => h('span', { class: 'chg-dot ' + kind, role: 'img', 'aria-label': { new: 'new', upd: 'changed', gone: 'gone' }[kind],
+    'data-tip': { new: 'New with this change', upd: 'Changed by this change', gone: 'Gone with this change' }[kind] });
   const simDelta = (x, cls) => h('span', { class: (cls || 'delta') + ' ' + (x.good ? 'good' : 'bad'), text: (x.d > 0 ? '▲ ' : '▼ ') + fmt(x.d, x.unit, true) });
 
   // --- showing what something gives ---
@@ -4561,6 +4761,126 @@
       sortNote);
     draw();
     input.focus();
+  }
+
+  /**
+   * The expertise editor, shared by the Build Planner's Expertise tab and the Expertise page's planner: the points spent
+   * against the cap (a cap set by hand only changes what counts as free or over, never a stat), one slider per expertise
+   * with what its ranks unlock, and the chains worked out by the reader. `c` holds the build's points (`P`, changed in
+   * place), the points as read (`P0`), the expertise list (`defs`), the game's cap (`cap0`, with `RP` for its make-up),
+   * the cap in use and how to keep another (`cap()`, `setCap(v)`), the open rows (`open`), the chain ranks of the result
+   * and of the character as read (`ranksNow()`, `ranksBefore()`) and what to do after a change (`onRank`, `onCap`).
+   * `fold`: the expertises not trained yet sit behind a button. Returns the box and `live`, which refreshes the parts a
+   * result changes (the sliders are left alone).
+   */
+  function expEditor(c) {
+    const { defs, P, P0, cap0 } = c, RP = c.RP || {};
+    const baseRank = (id) => Math.floor(n0(P0[id]) / 10000), rankOf = (id) => Math.floor(n0(P[id]) / 10000);
+    const box = h('div', { class: 'sim-exp' });
+    // The line is built once and only its texts are refreshed, so the box being typed in is never replaced under the cursor.
+    const spent = h('span', { class: 'card-sub' }), freeTag = h('span', { class: 'tag' }), meter = h('span', { class: 'exp-bar' }, h('i')), capNote = h('p', { class: 'note' });
+    const capIn = h('input', { class: 'input sim-cap-in', type: 'number', min: 0, step: 1000, inputmode: 'numeric', placeholder: 'no cap', 'aria-label': 'Expertise point cap, in pt' });
+    const setCap = (v, typing) => {
+      c.setCap(v === null || v === cap0 ? null : Math.max(0, Math.round(v)));
+      drawBar(typing); if (c.onCap) c.onCap();
+    };
+    const capUndo = h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', 'data-tip': cap0 ? `Back to your cap in game, ${simPt(cap0)}` : 'Back to no cap, as in game', onclick: () => setCap(null) }, 'Undo');
+    const capStep = (by, text, tip) => h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': tip, 'data-tip': tip, onclick: () => setCap(n0(c.cap()) + by) }, text);
+    capIn.addEventListener('input', () => { if (capIn.value !== '') setCap(Number(capIn.value) * 100, true); });
+    capIn.addEventListener('change', () => { if (capIn.value === '') setCap(null); else drawBar(); });   // an emptied box: back to the game's
+    const capTip = (cap0 ? `Your cap in game is ${simPt(cap0)}` : 'The game has no cap on your points')
+      + (cap0 && RP.level !== undefined && RP.extension !== undefined ? ` = 17,000.00pt + 1,000.00pt per 10 levels (level ${RP.level})${RP.level === 99 ? ' + 1,000.00pt at 99' : ''} + ${RP.extension} expansions × 1,000.00pt` : '')
+      + '. Set another one to plan ahead: each expansion adds 1,000.00pt.';
+    const bar = h('div', { class: 'sim-points' },
+      h('div', { class: 'sim-points-top' }, h('b', { text: 'Expertise points' }), spent,
+        h('span', { class: 'sim-cap' }, h('span', { class: 'card-sub', 'data-tip': capTip, text: 'of a cap of' }), capStep(-100000, '−', 'Cap 1,000.00pt lower'), capIn, h('span', { class: 'card-sub', text: 'pt' }),
+          capStep(100000, '+', 'Cap 1,000.00pt higher (one more expansion)'), capUndo),
+        freeTag),
+      meter, capNote);
+    const drawBar = (typing) => {
+      const total = defs.filter((d) => d.counts).reduce((a, d) => a + n0(P[d.id]), 0), cap = c.cap();
+      const free = cap ? cap - total : 0, moved = cap0 && cap ? cap - cap0 : 0;
+      spent.textContent = simPt(total);
+      if (!typing) capIn.value = cap ? String(cap / 100) : '';
+      capUndo.hidden = cap === cap0;
+      freeTag.hidden = !cap; freeTag.className = 'tag ' + (free < 0 ? 'tag-over' : '');
+      freeTag.textContent = free < 0 ? `${simPt(-free)} over the cap` : `${simPt(free)} free`;
+      meter.hidden = !cap; meter.className = 'exp-bar' + (free < 0 ? ' over' : '');
+      meter.firstChild.style.width = `${cap ? Math.max(0, Math.min(100, (total / cap) * 100)) : 0}%`;
+      capNote.textContent = [
+        moved ? `A cap you set: ${simPt(Math.abs(moved))} ${moved > 0 ? 'above' : 'below'} yours in game (${simPt(cap0)})${moved > 0 && moved % 100000 === 0 ? `, which is ${moved / 100000} more expansion${moved === 100000 ? '' : 's'}` : ''}.` : (!cap0 && cap ? 'A cap you set: the game has none on your points.' : ''),
+        free < 0 ? 'The ranks above need more points than this cap allows: lower an expertise or raise the cap.' : ''].filter(Boolean).join(' ');
+      capNote.hidden = !capNote.textContent;
+    };
+    const unlockList = (d, rank) => h('ul', { class: 'sim-unlocks' }, d.unlocks.length ? d.unlocks.map((u) => h('li', { class: u.rank <= rank ? 'on' : '' },
+      h('span', { class: 'sim-unlock-rank', text: simRank(u.rank) }),
+      h('span', null, unlockSkills(u, d.name)))) : h('li', { text: 'The game data lists no skills for its ranks.' }));
+    const row = (d) => {
+      const base = baseRank(d.id), open = c.open.has(d.id);
+      const label = h('span', { class: 'sim-exp-rank' }), was = h('span', { class: 'sim-exp-was' }), dot = h('span', { class: 'sim-exp-dot' });
+      const slider = h('input', { type: 'range', class: 'sim-range', min: 0, max: d.max, step: 1, value: rankOf(d.id), 'aria-label': `${d.name}: rank` });
+      const undo = h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', onclick: () => set(base) }, 'Undo');
+      const detail = h('div', { class: 'sim-exp-detail' });
+      const el = h('div', { class: 'sim-exp-row' });
+      const paint = () => {
+        const v = rankOf(d.id);
+        label.textContent = simRank(v);
+        slider.value = v; slider.style.setProperty('--fill', `${d.max ? (v / d.max) * 100 : 0}%`);
+        el.classList.toggle('changed', v !== base);
+        dot.replaceChildren(...(v === base ? [] : [chgDot(!base ? 'new' : !v ? 'gone' : 'upd')]));
+        was.textContent = v !== base ? `was ${Math.floor(base / 10)}-${base % 10}` : '';
+        undo.hidden = v === base;
+        if (c.open.has(d.id)) detail.replaceChildren(unlockList(d, v)); else detail.replaceChildren();
+        drawBar();
+      };
+      const set = (v) => {
+        v = Math.max(0, Math.min(d.max, v));
+        P[d.id] = v === base ? n0(P0[d.id]) : v * 10000;   // untouched: the exact points as read (part of a rank counts toward chains)
+        paint(); c.onRank();
+      };
+      slider.addEventListener('input', () => set(Number(slider.value)));
+      const step = (by, text, tip) => h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': tip, 'data-tip': tip, onclick: () => set(rankOf(d.id) + by) }, text);
+      el.append(h('button', { type: 'button', class: 'sim-exp-name', 'aria-expanded': String(open), 'data-tip': 'What its ranks unlock',
+          onclick: (ev) => { if (c.open.has(d.id)) c.open.delete(d.id); else c.open.add(d.id); ev.currentTarget.setAttribute('aria-expanded', String(c.open.has(d.id))); paint(); } },
+          h('span', { class: 'chev' }, icon('chevron')), h('span', { text: d.name }), dot),
+        h('span', { class: 'sim-exp-val' }, label, was),
+        h('span', { class: 'sim-exp-ctl' }, step(-10, '«', 'One class down'), step(-1, '−', 'One rank down'), slider, step(1, '+', 'One rank up'), step(10, '»', 'One class up')),
+        undo, detail);
+      paint();
+      return el;
+    };
+    const regular = defs.filter((d) => !d.chain), chains = defs.filter((d) => d.chain);
+    const trained = regular.filter((d) => baseRank(d.id) > 0), rest = regular.filter((d) => baseRank(d.id) === 0);
+    const chainBox = h('div', { class: 'sim-chains' });
+    const drawChains = () => {
+      const now = c.ranksNow(), before = c.ranksBefore();
+      chainBox.replaceChildren(...chains.map((d) => {
+        const a = n0(before[d.id]), b = n0(now[d.id]);
+        if (!a && !b && !c.open.has('chains')) return null;
+        const needs = d.needs.map((x) => `${Math.round(x.share * 100)}% of ${x.name}${x.rank ? ` (needs ${simRank(x.rank)})` : ''}`).join(' + ');
+        return h('div', { class: 'sim-chain' + (a !== b ? ' changed' : '') + (b ? '' : ' off'), 'data-tip': needs ? `${d.name} = ${needs}` : null },
+          h('span', null, d.name, a === b ? null : chgDot(!a ? 'new' : !b ? 'gone' : 'upd')),
+          h('span', { class: 'sim-exp-val' }, h('span', { class: 'sim-exp-rank', text: b ? simRank(b) : 'Not reached' }), a && a !== b ? h('span', { class: 'sim-exp-was', text: `was ${Math.floor(a / 10)}-${a % 10}` }) : null));
+      }).filter(Boolean));
+      if (!chainBox.childNodes.length) chainBox.append(h('p', { class: 'note', text: 'No chain expertise reached.' }));
+    };
+    const allChains = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { if (c.open.has('chains')) c.open.delete('chains'); else c.open.add('chains'); allChains.textContent = c.open.has('chains') ? 'Only the ones reached' : 'Show every chain'; drawChains(); } },
+      c.open.has('chains') ? 'Only the ones reached' : 'Show every chain');
+    // not trained yet: on the Expertise page behind a button (the list is long), unless one of them was raised here
+    const restBox = h('div');
+    const drawRest = () => {
+      const shown = !c.fold || c.open.has('rest') || rest.some((d) => rankOf(d.id) > 0);
+      const btn = c.fold ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { if (c.open.has('rest')) c.open.delete('rest'); else c.open.add('rest'); drawRest(); } },
+        shown ? 'Hide them' : `Show all ${rest.length}`) : null;
+      simFill(restBox, h('h3', { class: 'list-head sim-list-head' }, 'Not trained yet', h('small', { text: c.fold ? 'raise one to plan it' : '' }), btn), shown ? rest.map(row) : null);
+    };
+    simFill(box, bar,
+      trained.length ? [h('h3', { class: 'list-head', text: 'Your expertise' }), trained.map(row)] : null,
+      h('h3', { class: 'list-head sim-list-head' }, 'Chain expertise', h('small'), allChains), chainBox,
+      rest.length ? restBox : null);
+    if (rest.length) drawRest();
+    drawChains();
+    return { box, live: () => { drawBar(); drawChains(); } };
   }
 
   function pageSim() {
@@ -4798,107 +5118,13 @@
     // --- expertise ---
     let expLive = null;   // refreshes the parts of the expertise tab a result changes (the sliders are left alone)
     function expertiseTab() {
-      const defs = M.init.expertise, P = M.build.points, P0 = M.init.build.points;
-      const baseRank = (id) => Math.floor(n0(P0[id]) / 10000), rankOf = (id) => Math.floor(n0(P[id]) / 10000);
-      const box = h('div', { class: 'sim-exp' });
-      // Points spent against the cap. The cap can be set by hand, to plan for more expansions or a higher level: it
-      // only changes what counts as free or over here, never a stat. The line is built once and only its texts are
-      // refreshed, so the box being typed in is never replaced under the cursor.
-      const cap0 = M.base.expertise.cap, RP = (mine && S.data.ranks && S.data.ranks.points) || {};
-      const capNow = () => (M.cap === null || M.cap === undefined ? cap0 : M.cap);
-      const spent = h('span', { class: 'card-sub' }), freeTag = h('span', { class: 'tag' }), meter = h('span', { class: 'exp-bar' }, h('i')), capNote = h('p', { class: 'note' });
-      const capIn = h('input', { class: 'input sim-cap-in', type: 'number', min: 0, step: 1000, inputmode: 'numeric', placeholder: 'no cap', 'aria-label': 'Expertise point cap, in pt' });
-      const setCap = (v, typing) => {
-        M.cap = v === null || v === cap0 ? null : Math.max(0, Math.round(v));
-        simSave(); drawBar(typing); drawHead();
-      };
-      const capUndo = h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', 'data-tip': cap0 ? `Back to your cap in game, ${simPt(cap0)}` : 'Back to no cap, as in game', onclick: () => setCap(null) }, 'Undo');
-      const capStep = (by, text, tip) => h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': tip, 'data-tip': tip, onclick: () => setCap(n0(capNow()) + by) }, text);
-      capIn.addEventListener('input', () => { if (capIn.value !== '') setCap(Number(capIn.value) * 100, true); });
-      capIn.addEventListener('change', () => { if (capIn.value === '') setCap(null); else drawBar(); });   // an emptied box: back to the game's
-      const capTip = (cap0 ? `Your cap in game is ${simPt(cap0)}` : 'The game has no cap on your points')
-        + (cap0 && RP.level !== undefined && RP.extension !== undefined ? ` = 17,000.00pt + 1,000.00pt per 10 levels (level ${RP.level})${RP.level === 99 ? ' + 1,000.00pt at 99' : ''} + ${RP.extension} expansions × 1,000.00pt` : '')
-        + '. Set another one to plan ahead: each expansion adds 1,000.00pt.';
-      const bar = h('div', { class: 'sim-points' },
-        h('div', { class: 'sim-points-top' }, h('b', { text: 'Expertise points' }), spent,
-          h('span', { class: 'sim-cap' }, h('span', { class: 'card-sub', 'data-tip': capTip, text: 'of a cap of' }), capStep(-100000, '−', 'Cap 1,000.00pt lower'), capIn, h('span', { class: 'card-sub', text: 'pt' }),
-            capStep(100000, '+', 'Cap 1,000.00pt higher (one more expansion)'), capUndo),
-          freeTag),
-        meter, capNote);
-      const drawBar = (typing) => {
-        const total = defs.filter((d) => d.counts).reduce((a, d) => a + n0(P[d.id]), 0), cap = capNow();
-        const free = cap ? cap - total : 0, moved = cap0 && cap ? cap - cap0 : 0;
-        spent.textContent = simPt(total);
-        if (!typing) capIn.value = cap ? String(cap / 100) : '';
-        capUndo.hidden = cap === cap0;
-        freeTag.hidden = !cap; freeTag.className = 'tag ' + (free < 0 ? 'tag-over' : '');
-        freeTag.textContent = free < 0 ? `${simPt(-free)} over the cap` : `${simPt(free)} free`;
-        meter.hidden = !cap; meter.className = 'exp-bar' + (free < 0 ? ' over' : '');
-        meter.firstChild.style.width = `${cap ? Math.max(0, Math.min(100, (total / cap) * 100)) : 0}%`;
-        capNote.textContent = [
-          moved ? `A cap you set: ${simPt(Math.abs(moved))} ${moved > 0 ? 'above' : 'below'} yours in game (${simPt(cap0)})${moved > 0 && moved % 100000 === 0 ? `, which is ${moved / 100000} more expansion${moved === 100000 ? '' : 's'}` : ''}.` : (!cap0 && cap ? 'A cap you set: the game has none on your points.' : ''),
-          free < 0 ? 'The ranks above need more points than this cap allows: lower an expertise or raise the cap.' : ''].filter(Boolean).join(' ');
-        capNote.hidden = !capNote.textContent;
-      };
-      const unlockList = (d, rank) => h('ul', { class: 'sim-unlocks' }, d.unlocks.length ? d.unlocks.map((u) => h('li', { class: u.rank <= rank ? 'on' : '' },
-        h('span', { class: 'sim-unlock-rank', text: simRank(u.rank) }),
-        h('span', null, u.pick ? h('span', { class: 'sim-unlock-pick', 'data-tip': 'The game lets you learn only this many of these. Which one counts is the one you learned in game.', text: u.pick === 1 ? 'Learn one of: ' : `Learn ${u.pick} of: ` }) : null, u.skills.map((s, i) => [i ? ', ' : null, h('span', { class: s.passive ? '' : 'sim-active', 'data-tip': s.passive ? null : 'An active skill: it adds no stats by itself', text: s.name })])))) : h('li', { text: 'The game data lists no skills for its ranks.' }));
-      const row = (d) => {
-        const base = baseRank(d.id), open = M.expOpen.has(d.id);
-        const label = h('span', { class: 'sim-exp-rank' }), was = h('span', { class: 'sim-exp-was' });
-        const slider = h('input', { type: 'range', class: 'sim-range', min: 0, max: d.max, step: 1, value: rankOf(d.id), 'aria-label': `${d.name}: rank` });
-        const undo = h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', onclick: () => set(base) }, 'Undo');
-        const detail = h('div', { class: 'sim-exp-detail' });
-        const el = h('div', { class: 'sim-exp-row' });
-        const paint = () => {
-          const v = rankOf(d.id);
-          label.textContent = simRank(v);
-          slider.value = v; slider.style.setProperty('--fill', `${d.max ? (v / d.max) * 100 : 0}%`);
-          el.classList.toggle('changed', v !== base);
-          was.textContent = v !== base ? `was ${Math.floor(base / 10)}-${base % 10}` : '';
-          undo.hidden = v === base;
-          if (M.expOpen.has(d.id)) detail.replaceChildren(unlockList(d, v)); else detail.replaceChildren();
-          drawBar();
-        };
-        const set = (v) => {
-          v = Math.max(0, Math.min(d.max, v));
-          P[d.id] = v === base ? n0(P0[d.id]) : v * 10000;   // untouched: the exact points as read (part of a rank counts toward chains)
-          paint(); drawHead(); simRunSoon();
-        };
-        slider.addEventListener('input', () => set(Number(slider.value)));
-        const step = (by, text, tip) => h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': tip, 'data-tip': tip, onclick: () => set(rankOf(d.id) + by) }, text);
-        el.append(h('button', { type: 'button', class: 'sim-exp-name', 'aria-expanded': String(open), 'data-tip': 'What its ranks unlock',
-            onclick: (ev) => { if (M.expOpen.has(d.id)) M.expOpen.delete(d.id); else M.expOpen.add(d.id); ev.currentTarget.setAttribute('aria-expanded', String(M.expOpen.has(d.id))); paint(); } },
-            h('span', { class: 'chev' }, icon('chevron')), h('span', { text: d.name })),
-          h('span', { class: 'sim-exp-val' }, label, was),
-          h('span', { class: 'sim-exp-ctl' }, step(-10, '«', 'One class down'), step(-1, '−', 'One rank down'), slider, step(1, '+', 'One rank up'), step(10, '»', 'One class up')),
-          undo, detail);
-        paint();
-        return el;
-      };
-      const regular = defs.filter((d) => !d.chain), chains = defs.filter((d) => d.chain);
-      const trained = regular.filter((d) => baseRank(d.id) > 0), rest = regular.filter((d) => baseRank(d.id) === 0);
-      const chainBox = h('div', { class: 'sim-chains' });
-      const drawChains = () => {
-        const now = M.cur.expertise.ranks, before = M.base.expertise.ranks;
-        chainBox.replaceChildren(...chains.map((d) => {
-          const a = n0(before[d.id]), b = n0(now[d.id]);
-          if (!a && !b && !M.expOpen.has('chains')) return null;
-          const needs = d.needs.map((x) => `${Math.round(x.share * 100)}% of ${x.name}${x.rank ? ` (needs ${simRank(x.rank)})` : ''}`).join(' + ');
-          return h('div', { class: 'sim-chain' + (a !== b ? ' changed' : '') + (b ? '' : ' off'), 'data-tip': needs ? `${d.name} = ${needs}` : null },
-            h('span', { text: d.name }), h('span', { class: 'sim-exp-val' }, h('span', { class: 'sim-exp-rank', text: b ? simRank(b) : 'Not reached' }), a !== b ? h('span', { class: 'sim-exp-was', text: a ? `was ${Math.floor(a / 10)}-${a % 10}` : 'new' }) : null));
-        }).filter(Boolean));
-        if (!chainBox.childNodes.length) chainBox.append(h('p', { class: 'note', text: 'No chain expertise reached.' }));
-      };
-      expLive = () => { drawBar(); drawChains(); };
-      const allChains = h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { if (M.expOpen.has('chains')) M.expOpen.delete('chains'); else M.expOpen.add('chains'); allChains.textContent = M.expOpen.has('chains') ? 'Only the ones reached' : 'Show every chain'; drawChains(); } },
-        M.expOpen.has('chains') ? 'Only the ones reached' : 'Show every chain');
-      simFill(box, bar,
-        trained.length ? [h('h3', { class: 'list-head', text: 'Your expertise' }), trained.map(row)] : null,
-        h('h3', { class: 'list-head sim-list-head' }, 'Chain expertise', h('small', { text: 'worked out from the ones above' }), allChains), chainBox,
-        rest.length ? [h('h3', { class: 'list-head', text: 'Not trained yet' }), rest.map(row)] : null);
-      drawChains();
-      return box;
+      const ed = expEditor({ defs: M.init.expertise, P: M.build.points, P0: M.init.build.points, cap0: M.base.expertise.cap,
+        RP: (mine && S.data.ranks && S.data.ranks.points) || {}, open: M.expOpen,
+        cap: () => (M.cap === null || M.cap === undefined ? M.base.expertise.cap : M.cap), setCap: (v) => { M.cap = v; simSave(); },
+        ranksNow: () => M.cur.expertise.ranks, ranksBefore: () => M.base.expertise.ranks,
+        onRank: () => { drawHead(); simRunSoon(); }, onCap: () => drawHead() });
+      expLive = ed.live;
+      return ed.box;
     }
 
     function drawEditor() {
@@ -4947,8 +5173,8 @@
         // without a base there is no "before": a line is what the build gives
         diffList.append(h('div', { class: 'chg-group', text: title }), ...rows.map((x) => (blank
           ? h('div', { class: 'chg' }, h('span', { text: x.label }), h('span'), h('span', { class: 'delta ' + (x.good ? 'good' : 'bad'), text: fmt(x.to, x.unit, true) }))
-          : h('div', { class: 'chg' }, h('span', { text: x.label }),
-            h('span', { class: 'chg-vals' }, x.fresh ? 'new: ' : fmt(x.from, x.unit) + ' → ', h('b', { text: x.gone ? 'gone' : fmt(x.to, x.unit) })), simDelta(x)))));
+          : h('div', { class: 'chg' }, h('span', null, x.label, x.fresh ? chgDot('new') : x.gone ? chgDot('gone') : null),
+            h('span', { class: 'chg-vals' }, x.fresh ? null : fmt(x.from, x.unit) + ' → ', h('b', { text: x.gone ? 'gone' : fmt(x.to, x.unit) })), simDelta(x)))));
       });
       if (allRows.length > 12) diffList.append(h('button', { type: 'button', class: 'btn btn-sm chg-more', style: 'margin-top:8px', 'aria-expanded': String(few),
         onclick: () => { M.allDiff = !M.allDiff; drawResults(); } }, few ? 'Show fewer' : `Show all ${allRows.length} differences`));
@@ -6015,6 +6241,7 @@
     S.data = { snapshots: d.snapshots || [], gear: d.gear || [], expertise: d.expertise || [], bonuses: d.bonuses || [], ranks: d.ranks || null, digitalize: d.digitalize || null, icons: d.icons || {}, unlocks: d.unlocks || [], summoned: d.summoned || null };
     S.meta = d.meta || {};
     if (!S.data.digitalize) S.mode = 'normal';   // no demon saved: there is nothing to be digitalized with (the choice itself is kept)
+    Object.assign(S.xp, { state: 'idle', loadSeq: S.xp.loadSeq + 1 });   // the Expertise planner too (its plan is kept)
     S.sim.state = 'idle';   // the Build Planner starts again from what was just loaded (the build being tried is kept)
 
     simLoadBuilds();
