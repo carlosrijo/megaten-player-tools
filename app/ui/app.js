@@ -3306,7 +3306,7 @@
         d.classes = {};
         d.items.forEach((it) => { if (it.class) (d.classes[it.kind] = d.classes[it.kind] || new Set()).add(it.class); });
       }
-      if (S.page === 'geardb') render();
+      if (S.page === 'geardb' || S.page === 'rebirth') render();   // the Rebirth Planner's equipment step says where each part comes from
     });
   }
   function gearDbDetail(it) {
@@ -6739,6 +6739,13 @@
     }
     loadDemonDb(); loadFusion(); loadDcm();   // the DCM list: which demons a DCM gives (ddbCanOwn)
     loadSkillDb();   // the Skills step: every skill a demon can get
+    if (!S.rbp.fxState) {   // what each passive, feature and part does (rbp-effects.json; the app's copy is made with the sealed data)
+      S.rbp.fxState = 'loading';
+      fetch('rbp-effects.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+        S.rbp.fx = d && d.skills ? d.skills : null; S.rbp.fxState = S.rbp.fx ? 'ready' : 'failed';
+        if (S.page === 'rebirth') render();
+      });
+    }
     if (S.rbp.compState === 'idle' && !S.rbp.comp) {   // the COMP demons as last seen (no look at the game: the Overview's picker does that)
       S.rbp.compState = 'loading';
       host.call('compDemons', { cached: true }).then((list) => { S.rbp.comp = Array.isArray(list) ? list : []; S.rbp.compState = 'ready'; if (S.page === 'rebirth') render(); })
@@ -6755,7 +6762,8 @@
         fuse: !!(p && p.fuse), kind: p && p.kind >= 1 && p.kind <= 4 ? p.kind : 1, boost: !!(p && p.boost), post: ranks(p && p.post), postLast: p ? n0(p.postLast) : 0,
         slots: {}, view: p && p.view === 'boosts' ? 'boosts' : 'runes', picks: p && Array.isArray(p.picks) ? p.picks.map(n0).filter((v) => v >= 0 && v < 48) : [], kindAuto: !(p && p.kindAuto === false),
         boostPre: ranks(p && p.boostPre), boostPost: ranks(p && p.boostPost), itemKind: p && RBP_ITEM_KINDS.some(([k]) => k === p.itemKind) ? p.itemKind : 'rune',
-        skills: p && p.skills && typeof p.skills === 'object' && Array.isArray(p.skills.slots) ? { key: String(p.skills.key || ''), slots: p.skills.slots.slice(0, 8).map(n0), touched: !!p.skills.touched } : null };   // ranks the player raised by hand in the boosts view, over what the boosts need; the skill bar (for which demon)
+        skills: p && p.skills && typeof p.skills === 'object' && Array.isArray(p.skills.slots) ? { key: String(p.skills.key || ''), slots: p.skills.slots.slice(0, 8).map(n0), touched: !!p.skills.touched } : null,
+        equip: p && p.equip && typeof p.equip === 'object' && Array.isArray(p.equip.slots) ? { key: String(p.equip.key || ''), slots: p.equip.slots.slice(0, 4).map(n0), touched: !!p.equip.touched } : null };   // ranks the player raised by hand in the boosts view, over what the boosts need; the skill bar (for which demon)
       // the slots per rune: counts per kind (an older plan's set + extras becomes counts)
       if (p && p.slots && typeof p.slots === 'object') Object.entries(p.slots).forEach(([i, sl]) => { if (sl && Array.isArray(sl.counts)) S.rbp.plan.slots[i] = { counts: sl.counts.map((v) => Math.max(0, Math.min(8, n0(v)))) }; });
     }
@@ -6833,7 +6841,22 @@
   /** Conversion points the ranks are worth when extracted (REUNION_RANK_POINTS, summed up to each rank). */
   function rbpConversion(P, ranks) { return ranks.reduce((s, r) => { let v = 0; for (let p = 0; p <= Math.min(r, 9); p++) v += P.rankPoints[p]; return s + v; }, 0); }
   /** Stats at a level: growth type, rebirth ranks, then the Mitama parts, as the server works them out (see the top of this section). */
-  function rbpStats(P, base, growthId, L, ranks, mit) {
+  /**
+   * The server's stat changes from skills (ActiveEntityState::AdjustStats): per stat, the percents of layer 1 (type 1),
+   * then the flat amounts (type 0), then the percents of layer 2 (type 2), each percent `x + trunc(x × sum / 100)` and
+   * -100% or less making it 0. `adj`: [CorrectTbl id, type, value, per level] (rbp-effects.json); only the ids in `only`.
+   */
+  function rbpAdjust(s, adj, L, only) {
+    const sums = new Map();
+    adj.forEach(([id, type, v, lv]) => {
+      const k = RBP_STAT_IDX[id];
+      if (k === undefined || !only(id) || type > 2 || (type > 0 && !v)) return;
+      const e = sums.get(k) || [0, 0, 0]; e[type === 0 ? 1 : type === 1 ? 0 : 2] += lv ? v * L : v; sums.set(k, e);
+    });
+    const pct = (x, p) => (p <= -100 ? 0 : x + Math.trunc(x * p * 0.01));
+    sums.forEach(([p1, n, p2], k) => { let x = s[k]; if (p1) x = pct(x, p1); x += Math.trunc(n); if (p2) x = pct(x, p2); s[k] = x; });
+  }
+  function rbpStats(P, base, growthId, L, ranks, mit, adj) {
     const s = base.slice(), g = P.growth[String(growthId)];
     if (g) {
       const boost = Math.floor((L + 3) / 4), stage = Math.floor((boost - 1) / 5);
@@ -6851,6 +6874,8 @@
       (K.ranks[Math.max(0, Math.min(12, mit.rank))] || []).forEach(([id, label, b]) => { const v = Math.round(L / 99 * Math.ceil(1.25 * b * b + b)); if (v && id <= 5) s[id] += v; else if (v) mode2.push([id, label, v]); });
       mit.slots.forEach((id) => { const sb = P.mitama.kinds.flatMap((k) => k.slots).find((q) => q[0] === id); if (!sb) return; const [, st, label, v] = sb; if (st <= 5) s[st] += v; else mode2.push([st, label, v]); });
     }
+    // the skills' changes to STR ... LUCK come before the stats that depend on them (RecalculateDemonStats: base mode first)
+    if (adj && adj.length) rbpAdjust(s, adj, L, (id) => id <= 5);
     const [str, mag_, vit, int_] = s, hp = s[6], mp = s[7];
     const out = s.slice();
     out[6] = hp + Math.ceil(hp * 0.03 * L) + Math.ceil(str * 0.3) + Math.ceil((hp * 0.01 + 0.5) * vit);
@@ -6868,6 +6893,8 @@
       setLines.push({ set, text: rbpBoostText(mit.boost ? set.exText : set.text) });
     });
     void addPart;
+    // then the rest (Max HP/MP, CLS-R, LNG-R, Spell, Support, P.Def, M.Def) on the worked-out stats, after the Mitama's
+    if (adj && adj.length) rbpAdjust(s2, adj, L, (id) => id > 5);
     return { stats: s2, mag, other, setLines };
   }
   const RBP_KINDS = ['Ara', 'Nigi', 'Kusi', 'Saki'];
@@ -7029,6 +7056,172 @@
     if (next) { next.focus(); ev.preventDefault(); }
   });
   $('#main').addEventListener('scroll', () => { if (rbpSkillsMenu.matches(':popover-open')) rbpSkillsMenu.hidePopover(); });
+
+  // ---- the Demon equipment step (user, 2026-11-27: under the skills) ----
+  // A demon wears up to 4 Epitaph Parts, one per feature (trait) slot: a part worn in a slot replaces that slot's
+  // feature with the part's own skill (comp_hack CharacterManager::GetTraitSkills). The server refuses a part on a
+  // feature marked fixed, and a part that shares an exclusion group with what the other three slots hold (their
+  // features, or the parts worn there): packets\game\DemonEquip.cpp. rebirth-planner.json `equipment` carries the
+  // tables. The step plans the demon it ends as: the Mitama form's features when the fusion is planned. The picks are
+  // kept with the plan (`plan.equip`: the demon they were made for and the 4 item ids); a COMP demon starts from the
+  // parts BABEL last read on it.
+  const RBP_EQ_SLOTS = 4;
+  let rbpEqItems = null, rbpEqFrom = null;
+  /** The equipment items by id: { id, skill, name, skillName, desc, groups, hay }. */
+  function rbpEqById(P) {
+    const E = P && P.equipment;
+    if (!E) return null;
+    if (rbpEqFrom !== E) {
+      rbpEqItems = new Map(E.items.map(([id, skill, name, skillName, desc]) => {
+        const rule = E.rules[String(skill)], groups = rule ? rule[1] : [];
+        const gnames = groups.map((g) => E.groups[String(g)]).filter(Boolean);
+        return [id, { id, skill, name, skillName, desc: desc || '', groups, gnames, hay: [name, skillName, ...gnames, desc || ''].join(' ').toLowerCase() }];
+      }));
+      rbpEqFrom = E;
+    }
+    return rbpEqItems;
+  }
+  /** The Mitama form's demon type, from the Fusion Planner's data (its row's column 8). */
+  function rbpMtType(D) { const F = S.fus.eng && S.fus.eng.F, f = F && F.demons.find((r) => r[0] === D.x.id); return f ? f[8] : 0; }
+  /** The 4 feature slots (skill ids, 0 = none) of the demon as it ends: the Mitama form's when it is or will be fused. */
+  function rbpTraitSlots(P, D, endFused) {
+    const type = endFused ? (D.fused && D.comp ? D.comp.type : rbpMtType(D)) : D.x.id;
+    const gap = P.equipment && type ? P.equipment.traitSlots[String(type)] : null;
+    if (gap) return gap.slice(0, RBP_EQ_SLOTS);
+    const list = ((endFused && D.x.mt ? D.x.mt.traits : D.x.traits) || []).slice(0, RBP_EQ_SLOTS);
+    while (list.length < RBP_EQ_SLOTS) list.push(0);
+    return list;
+  }
+  const rbpEqKey = (D, endFused) => `${rbpSkillKey(D)}${endFused ? ':end-mt' : ''}`;
+  /** The plan's 4 parts for this demon (what BABEL last read on a COMP demon until the player changes them). */
+  function rbpEquip(plan, D, endFused) {
+    const key = rbpEqKey(D, endFused);
+    if (!plan.equip || plan.equip.key !== key || !Array.isArray(plan.equip.slots)) {
+      const read = D.comp && Array.isArray(D.comp.equipment) ? D.comp.equipment.slice(0, RBP_EQ_SLOTS).map((v) => Math.max(0, n0(v))) : [];
+      while (read.length < RBP_EQ_SLOTS) read.push(0);
+      plan.equip = { key, slots: read, touched: false };
+    }
+    return plan.equip.slots;
+  }
+  /** A feature's name, text and picture (the Demon Database's; the game has no picture for most features). */
+  function rbpTrait(id) {
+    const d = S.ddb.data && S.ddb.data.skills[id];
+    return d ? { id, name: d.name, desc: d.desc || '', icon: d.icon } : { id, name: `Feature ${id}`, desc: '', icon: null };
+  }
+  /** What slot `i` would hold with part `item` there: the part's skill, else the slot's feature. */
+  const rbpSlotSkill = (byId, traits, equip, i) => (equip[i] && byId.get(equip[i]) ? byId.get(equip[i]).skill : traits[i]);
+  /**
+   * Whether part `item` can go in slot `at`, as the server checks it: the slot's feature is not fixed, and no other slot
+   * holds a skill sharing an exclusion group with the part. Returns null when it can, else why not ({ fixed } or
+   * { clash: the other slot's name, group }).
+   */
+  function rbpEqBlock(P, byId, traits, equip, at, item) {
+    const E = P.equipment, it = byId.get(item);
+    if (!it) return null;
+    const own = E.rules[String(traits[at])];
+    if (traits[at] && own && own[0]) return { fixed: true };
+    const mine = new Set(it.groups);
+    for (let i = 0; i < RBP_EQ_SLOTS; i++) {
+      if (i === at) continue;
+      const sk = rbpSlotSkill(byId, traits, equip, i), r = sk ? E.rules[String(sk)] : null;
+      const g = r ? r[1].find((x) => mine.has(x)) : 0;
+      if (g) return { clash: equip[i] && byId.get(equip[i]) ? byId.get(equip[i]).name : rbpTrait(traits[i]).name, group: E.groups[String(g)] || `group ${g}`, slot: i };
+    }
+    return null;
+  }
+  const rbpEqPic = (id, size) => { const name = rbpIcons()[`item${id}`]; return name && S.meta.skillIcons ? h('img', { class: 'rbp-eqimg', src: S.meta.skillIcons + name + '.png', alt: '', width: size, height: size, loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null; };
+  /** The game's text when it is in English (195 of the parts still have the client's Japanese one), else the group names. */
+  const rbpEqText = (it) => (/[぀-ヿ一-鿿]/.test(it.desc) ? it.gnames.join(', ') : it.desc.replace(/\s*\n\s*/g, ' ').trim());
+  /** Where a part comes from in the game: the Item Database's first lines (it loads with the first part planned). */
+  function rbpEqWhere(id) {
+    if (S.gdb.state !== 'ready') return S.gdb.state === 'failed' ? '' : 'Looking up where it comes from…';
+    const it = S.gdb.data.items.find((x) => x.id === id && !x.keyItem);
+    // the ways as the Item Database words them ("Chest: Suginami Tunnels (5%)"), the same place once, then its quests
+    const ways = it ? [...new Set([...it.get.filter((g) => !g.d).map((g) => `${g.k ? `${g.k}: ` : ''}${g.t}${g.s ? ` · ${g.s}` : ''}`), ...it.quests.map((q) => `Quest: ${q}`)])] : [];
+    if (!ways.length) return 'The game data does not say where it comes from';
+    return ways.length > 2 ? `${ways.slice(0, 2).join('; ')}; or ${ways.length - 2} more ways (Item Database)` : ways.join('; or ');
+  }
+  /** The Demon equipment step: the 4 feature slots, what each holds now and the part planned there. */
+  function rbpEquipCard(P, plan, D, endFused, step) {
+    const card = h('div', { class: 'card rbp-equip' });
+    const byId = rbpEqById(P);
+    const formName = endFused && D.x.mt && D.x.mt.name ? D.x.mt.name : D.name;
+    card.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: step }), h('span', { class: 'card-title', text: 'Demon equipment' })),
+      plan.equip && plan.equip.touched ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': D.comp ? 'Back to the parts BABEL last read on the demon' : 'Back to no parts', onclick: () => { plan.equip = null; rbpSave(); render(); } }, D.comp ? 'Back to what it wears' : 'Clear') : null));
+    if (!byId) { card.append(h('p', { class: 'note', text: 'The planner data has no demon equipment tables: rebuild rebirth-planner.json.' })); return card; }
+    const traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
+    if (equip.some(Boolean) && S.gdb.state === 'idle') loadGearDb();
+    card.append(h('p', { class: 'note rbp-how', text: `A demon wears up to ${RBP_EQ_SLOTS} Epitaph Parts, one per feature slot: a part replaces that slot’s feature with its own. Parts with a similar effect can’t be worn together (the game’s rule), so a part that clashes with another slot is greyed out in the list.${endFused && !D.fused ? ` These are the features of ${formName}, the form it ends as after the Mitama fusion.` : ''}` }));
+    const rows = traits.map((tr, i) => {
+      const it = equip[i] ? byId.get(equip[i]) : null, T = tr ? rbpTrait(tr) : null;
+      const block = it ? rbpEqBlock(P, byId, traits, equip, i, it.id) : null;
+      const slot = h('button', { type: 'button', class: 'rbp-skillslot rbp-eqslot' + (it ? ' swapped' : ' empty') + (block ? ' bad' : ''), popovertarget: 'rbp-equip-menu', 'aria-haspopup': 'menu',
+        'aria-label': it ? `Slot ${i + 1}: ${it.name}` : `Slot ${i + 1}: ${T ? T.name : 'no feature'}`, 'data-tip': it ? `${it.name}\n${rbpEqText(it)}` : 'Click to pick a part for this slot',
+        onclick: (ev) => { rbpEqFor = ev.currentTarget; rbpEqSlot = i; } }, it ? (rbpEqPic(it.id, 40) || h('span', { class: 'rbp-skillpic rbp-skillnone', text: '?' })) : h('span', { class: 'rbp-skillpic rbp-skillnone', text: '+' }));
+      const feat = T ? h('span', { class: 'rbp-eqfeat' + (it ? ' covered' : ''), 'data-tip': T.desc || null, tabindex: T.desc ? 0 : null }, T.name) : h('span', { class: 'rbp-eqfeat none', text: 'no feature' });
+      const text = it
+        ? h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }),
+          T ? h('small', { class: 'rbp-skillfrom' }, 'in place of ', feat) : h('small', { class: 'rbp-skillfrom', text: 'in a slot with no feature' }), block ? h('small', { class: 'rbp-eqbad', text: block.fixed ? 'This feature can’t be covered' : `Can’t be worn with ${block.clash} (${block.group})` }) : null,
+          h('small', { class: 'rbp-skillfrom got', text: rbpEqWhere(it.id) }))
+        // the feature as it is: its name and the game's description of it (user, 2026-11-27: not just "its own feature")
+        : h('span', { class: 'rbp-skilltext' }, T ? h('b', { text: T.name }) : h('span', { class: 'src-count', text: 'No feature in this slot' }),
+          T ? h('span', { class: 'src-count rbp-eqdesc', text: T.desc ? T.desc.replace(/\s*\n\s*/g, ' ').trim() : 'its own feature (the game data has no description)' }) : h('small', { class: 'rbp-skillfrom', text: 'a part here adds its skill' }));
+      return h('li', { class: 'rbp-skillrow rbp-eqrow' + (it ? ' swapped' : '') }, slot, text);   // no slot number (user, 2026-11-27): the square leads the row
+    });
+    card.append(h('ul', { class: 'gdb-list rbp-skilllist rbp-eqlist' }, rows));
+    return card;
+  }
+  // the part picker: a popover beside the slot clicked, with a search over every part
+  const rbpEqMenu = $('#rbp-equip-menu');
+  let rbpEqFor = null, rbpEqSlot = 0;
+  function drawRbpEquip() {
+    const list = $('#rbp-equip-list'), q = ($('#rbp-equip-search input').value || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+    const P = S.rbp.P, plan = rbpPlan(), D = rbpDemon(), byId = rbpEqById(P);
+    if (!D || D.missing || !byId) { list.replaceChildren(); return; }
+    const endFused = rbpEndFused(P, plan, D), traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
+    const pick = (id) => { equip[rbpEqSlot] = id; plan.equip.touched = true; rbpSave(); rbpEqMenu.hidePopover(); render(); };
+    const all = [...byId.values()].filter((it) => words.every((w) => it.hay.includes(w)));
+    const rows = all.map((it) => ({ it, block: rbpEqBlock(P, byId, traits, equip, rbpEqSlot, it.id) }));
+    const rank = (it) => (q && it.name.toLowerCase().replace(/^epitaph parts\s*/, '').replace(/^[[【]/, '').startsWith(q) ? 0 : 1);
+    rows.sort((a, b) => (a.block ? 1 : 0) - (b.block ? 1 : 0) || rank(a.it) - rank(b.it) || a.it.name.localeCompare(b.it.name));
+    const shown = rows.slice(0, 80);
+    const tr = traits[rbpEqSlot], T = tr ? rbpTrait(tr) : null;
+    const items = [];
+    if (equip[rbpEqSlot]) items.push(h('button', { type: 'button', class: 'char', onclick: () => pick(0) }, h('span', { class: 'dm-icon dm-none dm-off', text: '–' }),
+      h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: T ? `Keep the feature ${T.name}` : 'Take the part off' }))));
+    items.push(h('div', { class: 'list-head', text: T ? `Slot ${rbpEqSlot + 1}: in place of ${T.name}` : `Slot ${rbpEqSlot + 1}: no feature` }));
+    shown.forEach(({ it, block }) => items.push(h('button', { type: 'button', class: 'char' + (block ? ' rbp-eqoff' : ''), 'aria-disabled': block ? 'true' : null, 'aria-current': equip[rbpEqSlot] === it.id ? 'true' : null,
+      'data-tip': block ? (block.fixed ? 'This slot’s feature can’t be covered' : `Can’t be worn with ${block.clash} in slot ${block.slot + 1}: both are ${block.group}`) : it.desc || null,
+      onclick: () => { if (!block) pick(it.id); } },
+      h('span', { class: 'dm-icon rbp-dm-icon' }, rbpEqPic(it.id, 32)), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: it.name }), h('span', { class: 'char-line', text: rbpEqText(it) || it.skillName })),
+      block ? h('span', { class: 'tag tag-off', text: block.fixed ? 'fixed feature' : `clashes · slot ${block.slot + 1}` }) : equip.includes(it.id) ? h('span', { class: 'tag', text: 'worn' }) : null)));
+    list.replaceChildren(...items);
+    const free = rows.filter((r) => !r.block).length;
+    $('#rbp-equip-note').textContent = !all.length ? 'No part matches.' : `${free} of ${all.length} can go here${rows.length > shown.length ? `; ${shown.length} shown: type more to narrow it` : ''}.`;
+    simPlace(rbpEqMenu, rbpEqFor);
+  }
+  rbpEqMenu.addEventListener('toggle', (ev) => {
+    if (ev.newState !== 'open') return;
+    const inp = $('#rbp-equip-search input'); inp.value = ''; drawRbpEquip(); inp.focus();
+  });
+  $('#rbp-equip-search input').addEventListener('input', () => drawRbpEquip());
+  $('#rbp-equip-search input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { const b = $('#rbp-equip-list .char:not([aria-disabled])'); if (b) b.click(); ev.preventDefault(); } else if (ev.key === 'ArrowDown') { const b = $('#rbp-equip-list .char'); if (b) { b.focus(); ev.preventDefault(); } } });
+  rbpEqMenu.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    const rows = [...rbpEqMenu.querySelectorAll('.char')], i = rows.indexOf(document.activeElement);
+    const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
+    if (next) { next.focus(); ev.preventDefault(); }
+  });
+  $('#main').addEventListener('scroll', () => { if (rbpEqMenu.matches(':popover-open')) rbpEqMenu.hidePopover(); });
+  /** Whether the demon ends Mitama-fused: it is now, or the plan fuses it and the ranks before reach the 48 points. */
+  function rbpEndFused(P, plan, D) {
+    if (D.fused) return true;
+    if (plan.view === 'boosts') return !!D.x.mt;   // "Pick boosts first" always plans the fusion
+    if (!plan.fuse || !D.x.mt) return false;
+    const onRune = P.runeOf.has(D.growth) ? P.runeOf.get(D.growth) : -1, defaultRune = P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1;
+    const pre = rbpSteps(P, D.ranks, onRune, D.level, plan.pre, plan.last, 1);
+    return rbpPoints(pre.ranks, defaultRune) >= 48;
+  }
   function pageRebirth() {
     const U = S.rbp, page = h('div', { class: 'page page-rbp' });
     loadRebirth();
@@ -7064,7 +7257,8 @@
     }
     const main = h('div', { class: 'rbp-main' }), side = h('div', { class: 'rbp-side' });
     let pre = null, points, mitamaRank, fused = D.fused, kind = D.kind, postCur, postOn, postLevel, step = 1;
-    main.append(rbpSkillsCard(P, plan, D, step++));   // the skills first (user, 2026-11-27)
+    main.append(rbpSkillsCard(P, plan, D, step++));   // the skills first (user, 2026-11-27), then the equipment of the demon it ends as
+    main.append(rbpEquipCard(P, plan, D, rbpEndFused(P, plan, D), step++));
     if (!D.fused) {
       pre = rbpSteps(P, D.ranks, onRune, D.level, plan.pre, plan.last, xpMult);
       points = rbpPoints(pre.ranks, defaultRune);
@@ -7154,13 +7348,14 @@
   function rbpBoostsView(P, plan, D, ctx) {
     const R = rbpDerive(P, plan, D, ctx);
     const main = h('div', { class: 'rbp-main' }), side = h('div', { class: 'rbp-side' });
-    main.append(rbpSkillsCard(P, plan, D, 1));   // the skills first (user, 2026-11-27)
+    main.append(rbpSkillsCard(P, plan, D, 1));   // the skills first (user, 2026-11-27), then the equipment
+    main.append(rbpEquipCard(P, plan, D, D.fused || !!D.x.mt, 2));   // this view always plans the Mitama fusion
     // ---- the picker ----
     const card = h('div', { class: 'card rbp-boosts' });
     const q = (S.rbp.boostQ || '').trim().toLowerCase();
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Search a boost (fire, null, LB, regen…)', value: S.rbp.boostQ || '', 'aria-label': 'Search a boost', spellcheck: 'false',
       oninput: (ev) => { S.rbp.boostQ = ev.target.value; const words = ev.target.value.trim().toLowerCase().split(/\s+/).filter(Boolean); rows.querySelectorAll('.rbp-set').forEach((c) => { const hit = words.length && words.every((w) => c.dataset.hay.includes(w)); c.classList.toggle('hit', !!hit); c.classList.toggle('miss', !!words.length && !hit); }); } });
-    card.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '2' }), h('span', { class: 'card-title', text: 'The boosts you want' })),
+    card.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '3' }), h('span', { class: 'card-title', text: 'The boosts you want' })),
       plan.picks.length ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { plan.picks = []; rbpSave(); render(); } }, 'Clear') : null));
     // the search, and at the end of its row the Iron Man tick (the expertise skill that makes every set stronger)
     card.append(h('div', { class: 'rbp-searchrow' }, h('div', { class: 'search' }, icon('search'), search),
@@ -7199,7 +7394,7 @@
     main.append(card);
     // ---- what it takes ----
     const take = h('div', { class: 'card rbp-take' });
-    take.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '3' }), h('span', { class: 'card-title', text: 'What it takes' })),
+    take.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '4' }), h('span', { class: 'card-title', text: 'What it takes' })),
       plan.picks.length && !R.warnings.length ? h('button', { type: 'button', class: 'btn btn-sm btn-primary', 'data-tip': 'Copy these ranks, the fusion and the Mitamas into the rune planner to fine-tune them',
         onclick: () => { if (R.preRanks) { plan.pre = R.preRanks.slice(); plan.last = R.preLast; } plan.fuse = true; plan.kind = R.kind; plan.post = R.postRanks.slice(); plan.postLast = R.postLast; plan.slots = {}; R.counts.forEach((c, i) => { plan.slots[i] = { counts: c.slice() }; }); plan.view = 'runes'; rbpSave(); render(); } }, 'Open in the rune planner') : null));
     if (!plan.picks.length) { take.append(h('p', { class: 'note', text: 'Tick the boosts you want above. The ranks, the Mitamas and the costs follow.' })); main.append(take); }
@@ -7400,7 +7595,7 @@
     if (!D.x.mt) { card.append(h('p', { class: 'note', text: `${D.name} has no Mitama form: the game can’t fuse it with a Mitama.` })); return card; }
     if (points < 48) {
       card.append(h('div', { class: 'rbp-gate' },
-        h('p', { class: 'note', text: `The fusion needs 48 rank points; the rebirths above reach ${points}. Raise the ranks in step 1, or take the shortest way:` }),
+        h('p', { class: 'note', text: `The fusion needs 48 rank points; the rebirths above reach ${points}. Raise the ranks in step ${step - 1}, or take the shortest way:` }),
         h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every rune to rank 4 (48 rank points, Mitama rank 0), and the fusion planned', onclick: () => { for (let i = 0; i < 12; i++) plan.pre[i] = Math.max(D.ranks[i], 4); plan.fuse = true; rbpSave(); render(); } }, 'Every rune to rank 4, then fuse')));
       return card;
     }
@@ -7565,21 +7760,22 @@
     const I = rbpIcons();
     const raisedText = (ranks, from) => { const r = P.runes.map((R, i) => (ranks[i] > from[i] ? `${R.name} ${from[i] ? `${from[i]} → ` : ''}${ranks[i]}` : null)).filter(Boolean); return r.length ? `${r.length} ${r.length === 1 ? 'rune' : 'runes'} raised: ${r.join(', ')}` : 'no rune raised'; };
     const lines = [];   // [step, title, what, rebirths, apples, macca]
-    if (pre && pre.steps.length) lines.push([2, D.fused ? 'Rebirths' : 'Rebirths before the fusion', `${raisedText(pre.ranks, D.ranks)}; the demon ends on ${P.runes[pre.on] ? P.runes[pre.on].name : '—'}${pre.growth ? ` (${pre.growth.name})` : ''}. Each rebirth takes the demon to level 1; the apples bring it back to the next rank’s level at Vivian.`, pre.total.rebirths, pre.total.apples, pre.total.macca]);
-    if (fused && !D.fused) { const K = P.mitama.kinds[plan.kind - 1]; const pts = pre ? rbpPoints(pre.ranks, P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1) : 48; lines.push([3, 'Mitama fusion', `${D.name} fused with ${K ? K.demonName : 'a Mitama'} at the Cathedral: it becomes ${D.x.mt && D.x.mt.name ? D.x.mt.name : 'its Mitama form'} at Mitama rank ${Math.min(12, Math.floor((pts - 48) / 4))} (${pts} rank points). 50,000 macca, or 2,500 Kreuz for a sure success.`, 0, 0, 50000]); }
-    if (post && post.steps.length) lines.push([D.fused ? 2 : 4, D.fused ? 'Rebirths' : 'Rebirths after the fusion', `${raisedText(post.ranks, D.fused ? D.ranks : Array(12).fill(0))}; the demon ends on ${P.runes[post.on] ? P.runes[post.on].name : '—'}${post.growth ? ` (${post.growth.name})` : ''}. A Mitama-fused demon gets 60% less XP, so 2.5 × the apples.`, post.total.rebirths, post.total.apples, post.total.macca]);
-    if (M && M.pgs.some(Boolean)) lines.push([D.fused ? 2 : 4, 'Mitama slots', `${fmt(M.pgs.reduce((a, b) => a + b, 0))} Mitamas placed (${M.pgs.map((n, k) => (n ? `${n} ${RBP_KINDS[k]}` : null)).filter(Boolean).join(', ')}) for ${M.activeSets.length} ${M.activeSets.length === 1 ? 'set' : 'sets'}; each one costs (slots already filled on that rune + 1) × 50,000 macca.`, 0, 0, M.macca]);
+    if (pre && pre.steps.length) lines.push([3, D.fused ? 'Rebirths' : 'Rebirths before the fusion', `${raisedText(pre.ranks, D.ranks)}; the demon ends on ${P.runes[pre.on] ? P.runes[pre.on].name : '—'}${pre.growth ? ` (${pre.growth.name})` : ''}. Each rebirth takes the demon to level 1; the apples bring it back to the next rank’s level at Vivian.`, pre.total.rebirths, pre.total.apples, pre.total.macca]);
+    if (fused && !D.fused) { const K = P.mitama.kinds[plan.kind - 1]; const pts = pre ? rbpPoints(pre.ranks, P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1) : 48; lines.push([4, 'Mitama fusion', `${D.name} fused with ${K ? K.demonName : 'a Mitama'} at the Cathedral: it becomes ${D.x.mt && D.x.mt.name ? D.x.mt.name : 'its Mitama form'} at Mitama rank ${Math.min(12, Math.floor((pts - 48) / 4))} (${pts} rank points). 50,000 macca, or 2,500 Kreuz for a sure success.`, 0, 0, 50000]); }
+    if (post && post.steps.length) lines.push([D.fused ? 3 : 5, D.fused ? 'Rebirths' : 'Rebirths after the fusion', `${raisedText(post.ranks, D.fused ? D.ranks : Array(12).fill(0))}; the demon ends on ${P.runes[post.on] ? P.runes[post.on].name : '—'}${post.growth ? ` (${post.growth.name})` : ''}. A Mitama-fused demon gets 60% less XP, so 2.5 × the apples.`, post.total.rebirths, post.total.apples, post.total.macca]);
+    if (M && M.pgs.some(Boolean)) lines.push([D.fused ? 3 : 5, 'Mitama slots', `${fmt(M.pgs.reduce((a, b) => a + b, 0))} Mitamas placed (${M.pgs.map((n, k) => (n ? `${n} ${RBP_KINDS[k]}` : null)).filter(Boolean).join(', ')}) for ${M.activeSets.length} ${M.activeSets.length === 1 ? 'set' : 'sets'}; each one costs (slots already filled on that rune + 1) × 50,000 macca.`, 0, 0, M.macca]);
     const rebirths = lines.reduce((s, l) => s + l[3], 0), apples = lines.reduce((s, l) => s + l[4], 0), macca = lines.reduce((s, l) => s + l[5], 0), mitamas = M ? M.pgs.reduce((a, b) => a + b, 0) : 0;
     card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'What it all costs' }), h('span', { class: 'src-count', text: lines.length ? 'everything above, added up' : '' })));
-    if (!lines.length) { card.append(h('p', { class: 'note', text: 'Nothing planned yet: set a rune’s target above.' })); return card; }
-    card.append(h('div', { class: 'rbp-sum rbp-sum-big' },
+    // no rebirth planned: the note, then still the skills and the demon equipment to get (under the totals' place)
+    if (!lines.length) card.append(h('p', { class: 'note', text: 'No rebirths planned yet: set a rune’s target above.' }));
+    else card.append(h('div', { class: 'rbp-sum rbp-sum-big' },
       rbpSumTile(rbpOrbs([0, 1, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes'), rebirths, rebirths === 1 ? 'rebirth' : 'rebirths', { tip: 'Every rebirth of the plan, both phases' }),
       rbpSumTile(rbpCostIcon(I.apple), apples, 'apples', { tip: P.apple.name + 's at Vivian, 10,000 XP each plus your XP bonus' }),
       rbpSumTile(rbpCostIcon(I.macca, 'rbp-macca'), macca, 'macca', { tip: 'Rebirths, the fusion and the placed Mitamas together' }),
       mitamas ? rbpSumTile(rbpOrbs([0, 1, 2, 3].map((k) => I[`kind${k}`])), mitamas, 'Mitamas', { tip: 'Summon PGs to get, or Mitama demons to fuse' }) : null));
     // step by step: what each one is, and its three numbers
     const headPic = (pic, word) => h('th', { class: 'num', 'data-tip': word, 'aria-label': word }, pic || word);
-    card.append(h('table', { class: 'tbl rbp-costs rbp-costs-wide' }, h('thead', null, h('tr', null, h('th', { text: 'Step' }), h('th', { text: 'What' }),
+    if (lines.length) card.append(h('table', { class: 'tbl rbp-costs rbp-costs-wide' }, h('thead', null, h('tr', null, h('th', { text: 'Step' }), h('th', { text: 'What' }),
       headPic(rbpOrbs([0, 1, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes rbp-orbs-sm'), 'Rebirths'), headPic(rbpCostIcon(I.apple, 'rbp-costicon-sm'), 'Apples'), headPic(rbpCostIcon(I.macca, 'rbp-macca rbp-costicon-sm'), 'Macca'))),
       h('tbody', null, lines.map(([step, title, what, r, a, m]) => h('tr', null, h('td', { class: 'rbp-cost-step' }, h('span', null, h('i', { class: 'rbp-step', text: step }), h('b', { text: title }))), h('td', { class: 'rbp-cost-what', text: what }), h('td', { class: 'num', text: r ? fmt(r) : '' }), h('td', { class: 'num', text: a ? fmt(a) : '' }), h('td', { class: 'num', text: fmt(m) })))),
       h('tfoot', null, h('tr', null, h('td', { text: 'Total' }), h('td'), h('td', { class: 'num', text: fmt(rebirths) }), h('td', { class: 'num', text: fmt(apples) }), h('td', { class: 'num', text: fmt(macca) })))));
@@ -7657,6 +7853,16 @@
         gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'The skills on the bar that the demon does not learn itself: what each costs at an NPC (hover a picture for the item and how many), or who learns it for a fusion. The Soul Points of every priced skill are added up', tabindex: 0, text: `Skills to get · ${got.length}${sp ? ` · ${fmt(sp)} Soul Points` : ''}` }), h('ul', { class: 'gdb-list rbp-skilllist rbp-skillcosts' }, lines)));
       }
     }
+    // the demon equipment planned that the demon does not wear yet: each part's picture and where it comes from
+    {
+      const byId = rbpEqById(P), endFused = rbpEndFused(P, plan, D);
+      const worn = D.comp && Array.isArray(D.comp.equipment) ? D.comp.equipment.map(n0) : [];
+      const parts = byId ? rbpEquip(plan, D, endFused).filter((id) => id && byId.has(id) && !worn.includes(id)).map((id) => byId.get(id)) : [];
+      if (parts.length) gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'The Epitaph Parts planned in the equipment step that the demon does not wear yet, and where each comes from in the game (the Item Database has every way)', tabindex: 0, text: `Demon equipment to get · ${parts.length}` }),
+        h('ul', { class: 'gdb-list rbp-skilllist rbp-skillcosts' }, parts.map((it) => h('li', { class: 'rbp-skillcost' },
+          h('div', { class: 'rbp-skillrow' }, h('span', { class: 'skill-ico' }, rbpEqPic(it.id, 24)), h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }))),
+          h('div', { class: 'rbp-ways' }, h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-where', text: rbpEqWhere(it.id) }))))))));
+    }
     if (gather.children.length) card.append(gather);
     return card;
   }
@@ -7669,19 +7875,78 @@
     const res = post || pre;
     const growth = res && res.growth ? res.growth.growth : D.growth;
     const mit = fused ? { kind, rank: mitamaRank, slots: D.fused ? D.slots.filter(Boolean) : [], sets: M ? M.activeSets : [], boost: plan.boost } : null;
-    const r = rbpStats(P, form.stats, growth, L, ranks, mit);
+    const owned = rbpOwnedSkills(P, plan, D, fused), FX = S.rbp.fx || {};
+    const r = rbpStats(P, form.stats, growth, L, ranks, mit, owned.flatMap((o) => (FX[o.id] ? FX[o.id].adj : [])));
     const gname = P.growthNames[String(growth)] || `growth ${growth}`;
     card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: `Stats at level ${L}` }), h('span', { class: 'src-count', text: `${fused ? 'Mitama form · ' : ''}${gname}` })));
     const max = Math.max(1, ...d.statNames.map((n, i) => Math.max(plain[i], r.stats[i])));
     const rows = d.statNames.map((n, i) => { const a = plain[i], b = r.stats[i], delta = b - a; return h('tr', null, h('td', { text: n }), h('td', { class: 'num', text: fmt(a) }), h('td', { class: 'num rbp-planned', text: fmt(b) }), h('td', { class: 'num ' + (delta > 0 ? 'rbp-up' : delta < 0 ? 'rbp-down' : ''), text: delta ? fmt(delta, '', true) : '' })); });
     void max;
-    card.append(h('table', { class: 'tbl rbp-stats' }, h('thead', null, h('tr', null, h('th', { text: 'Stat' }), h('th', { class: 'num', 'data-tip': 'A fresh demon of this level on its own growth: no rebirth, no Mitama', text: 'Plain' }), h('th', { class: 'num', text: 'Planned' }), h('th', { class: 'num', text: 'Change' }))), h('tbody', null, rows)));
+    card.append(h('table', { class: 'tbl rbp-stats' }, h('thead', null, h('tr', null, h('th', { text: 'Stat' }), h('th', { class: 'num', 'data-tip': 'A fresh demon of this level on its own growth: no rebirth, no Mitama, and none of its skills, features or equipment counted (Planned counts them)', text: 'Plain' }), h('th', { class: 'num', text: 'Planned' }), h('th', { class: 'num', text: 'Change' }))), h('tbody', null, rows)));
     const lines = [];
     if (r.mag) lines.push(`Summon magnetite −${r.mag}%`);
     if (lines.length) card.append(h('p', { class: 'note', text: lines.join(' · ') }));
     if (r.setLines.length) card.append(h('ul', { class: 'rbp-setlines' }, r.setLines.map(({ set, text }) => h('li', null, h('b', { text: P.runes[set.rune].name }), ` ${text}`))));
-    card.append(h('p', { class: 'note', text: 'No Demon Force or familiarity; the random bonus of each planned Mitama is not added.' }));
+    card.append(rbpBoostList(owned, L));
+    card.append(h('p', { class: 'note', text: 'No Demon Force or familiarity; the random bonus of each planned Mitama is not added. Switch skills are left out (whether they are on is up to you).' }));
     return card;
+  }
+  /**
+   * What the planned demon holds that does something by itself: the passives on its skill bar, its features (the
+   * Mitama form's when it ends fused) and the parts worn in their place (a part's skill stands in for the feature,
+   * CharacterManager::GetTraitSkills). [{ id, kind: 'skill' | 'feature' | 'part', name }]
+   */
+  function rbpOwnedSkills(P, plan, D, endFused) {
+    const out = [];
+    rbpSkills(plan, D).forEach((id) => { if (id) out.push({ id, kind: 'skill', name: rbpSkill(id).name }); });
+    const byId = rbpEqById(P);
+    if (byId) {
+      const traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
+      traits.forEach((tr, i) => {
+        const it = equip[i] ? byId.get(equip[i]) : null;
+        if (it) out.push({ id: it.skill, kind: 'part', name: it.name });
+        else if (tr) out.push({ id: tr, kind: 'feature', name: rbpTrait(tr).name });
+      });
+    }
+    return out;
+  }
+  // who a boost reaches (TokuseiManager on a partner demon: PARTNER and SELF stay on the demon, SUMMONER goes to you)
+  const RBP_FX_GROUPS = [['demon', 'On the demon'], ['you', 'For you (its summoner)'], ['party', 'For the party']];
+  const rbpFxGroup = (target) => (target === 'SUMMONER' ? 'you' : target === 'PARTY' ? 'party' : 'demon');
+  /**
+   * Every boost of the demon's skills, features and parts that the stats table does not show (attack and affinity
+   * boosts, costs, cooldown, incantation, actions, resistances...), added up per kind of effect, grouped by who it
+   * reaches; one that needs something (a time, a skill kind) says what. The tip names where each part comes from.
+   */
+  function rbpBoostList(owned, L) {
+    const box = h('div', { class: 'rbp-fx' });
+    if (S.rbp.fxState !== 'ready') { box.append(h('p', { class: 'note', text: S.rbp.fxState === 'failed' ? 'The skills’ effects could not be loaded (rbp-effects.json is missing beside the page).' : 'Loading the skills’ effects…' })); return box; }
+    const FX = S.rbp.fx, by = new Map();
+    owned.forEach((o) => {
+      const S2 = FX[o.id];
+      if (!S2) return;
+      S2.fx.forEach(([label, value, pct, cond, note, target, lv, table]) => {
+        if (table) return;   // in the table above
+        const g = rbpFxGroup(target), n = (note || '').replace(/\s*;?\s*LvL × [\d.,]+/, '').replace(/^;\s*/, '').trim();
+        const key = [g, label, pct, cond === 'always' ? '' : n, value === null ? 'x' : ''].join('|');
+        const e = by.get(key) || { g, label, pct, cond, note: cond === 'always' ? '' : n, value: value === null ? null : 0, from: [] };
+        if (value !== null && e.value !== null) e.value += lv ? value * L : value;
+        e.from.push(`${o.name} (${o.kind === 'part' ? 'demon equipment' : o.kind}${value !== null ? `: ${fmt(lv ? value * L : value, pct ? '%' : '', true)}` : ''})`);
+        by.set(key, e);
+      });
+    });
+    const all = [...by.values()].filter((e) => e.value !== 0 || e.value === null);
+    box.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'Boosts' }), h('span', { class: 'src-count', text: all.length ? 'skills, features and equipment' : '' })));
+    if (!all.length) { box.append(h('p', { class: 'note', text: 'None beyond the stats above: the demon’s passives, features and parts change nothing else.' })); return box; }
+    RBP_FX_GROUPS.forEach(([g, title]) => {
+      const list = all.filter((e) => e.g === g).sort((a, b) => (a.cond === 'always' ? 0 : 1) - (b.cond === 'always' ? 0 : 1) || a.label.localeCompare(b.label));
+      if (!list.length) return;
+      box.append(h('div', { class: 'rbp-fxgroup' }, h('span', { class: 'q-key', text: title }),
+        h('ul', { class: 'rbp-fxlist' }, list.map((e) => h('li', { class: e.cond === 'always' ? '' : 'cond', tabindex: 0, 'data-tip': `From ${e.from.join(', ')}${e.note ? `\n${e.note}` : ''}${e.cond === 'unparsed' ? '\nThe game data gives no number for it' : ''}` },
+          h('span', { class: 'rbp-fxlabel', text: e.label }), e.value !== null ? h('b', { class: 'num', text: fmt(e.value, e.pct ? '%' : '', true) }) : null,
+          e.note ? h('small', { class: 'rbp-fxnote', text: e.note }) : null)))));
+    });
+    return box;
   }
 
   const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };

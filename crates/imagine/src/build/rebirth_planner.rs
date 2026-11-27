@@ -14,6 +14,9 @@
 //!                           of each gem, and a ten-pack at 100; the data does not say which NPC offers which)
 //!   SACRED_SOUL_* below      NewMoon's Saien barter for "Summon PG: Sacred Soul" (read in game; not in NPCBarterData)
 //!   items-game.tsv / the website's items.json   item names
+//!   devil-equipment-items.tsv, devil-equipment.tsv, devil-equipment-groups.tsv   demon equipment: item -> skill, which
+//!                           features it can't cover and what can't be worn together (DevilEquipmentItemData,
+//!                           DevilEquipmentData, CDevilEquipmentExclusiveData)
 //!
 //! The rules the page follows are the server's (comp_hack CharacterManager::ReunionDemon, AdjustDemonBaseStats,
 //! MitamaDemon, AdjustMitamaStats, GetMitamaBonuses, packets\game\MitamaReunion.cpp) and the public server data's
@@ -27,7 +30,7 @@ use serde_json::{Value, json};
 use crate::Result;
 use crate::calc::digitalize::MITAMA_NAMES;
 use crate::data::game_data::{GameData, reference_lines};
-use crate::data::json::{self, Escape};
+use crate::data::json::{self, At, Escape};
 use crate::data::stat_labels;
 
 /// Conversion points a rank is worth when extracted (comp_hack FusionTables.cpp REUNION_RANK_POINTS: rank 0..9).
@@ -220,6 +223,7 @@ pub fn planner_json(data: &GameData) -> Result<Value> {
     }
     let boost_skill = data.mitama_set_boost_skill()?;
     let boost_name = data.skill_names()?.get(&boost_skill).cloned().flatten().unwrap_or_else(|| format!("skill {boost_skill}"));
+    let equipment = equipment_json(data, &item_name)?;
 
     Ok(json!({
         "source": "The server's growth, rebirth and Mitama tables (DevilLVUpRateData, MitamaUnionBonusData, MitamaReunionBonusData, MitamaReunionSetBonusData, NPCBarterData), the client's texts, and comp_hack's rebirth rules",
@@ -227,7 +231,160 @@ pub fn planner_json(data: &GameData) -> Result<Value> {
         "apple": { "id": APPLE_ITEM, "name": item_name(APPLE_ITEM)?, "xp": APPLE_XP },
         "mitama": { "kinds": kinds, "sets": sets, "boostSkill": boost_skill, "boostName": boost_name, "spirit": spirit },
         "stats": stats_used.iter().map(|(id, n)| (id.to_string(), json!(n))).collect::<IndexMap<String, Value>>(),
+        "equipment": equipment,
     }))
+}
+
+/// Demon equipment (the Epitaph Parts items), as the server lets a demon wear it (packets\game\DemonEquip.cpp,
+/// CharacterManager::GetTraitSkills): four slots, one per feature (trait) slot; an item worn in a slot replaces that
+/// slot's feature with the item's skill (DevilEquipmentItemData); a feature marked `fixed` can't be covered; and the new
+/// item may share no exclusion group with what the other three slots hold (their features, or the items worn there).
+///   items:      [item id, its skill, the item's name, the skill's name, the skill's game text]
+///   rules:      skill -> [fixed, exclusion groups], for every skill DevilEquipmentData lists (features and items' skills)
+///   groups:     exclusion group -> the client's name for it (CDevilEquipmentExclusiveData)
+///   traitSlots: demon type -> its 4 feature slots, for the demons whose features leave a gap (demon-db.json lists the
+///               features without the empty slots, so slot 3's feature of "0,0,26025,0" would look like slot 1's)
+fn equipment_json(data: &GameData, item_name: &dyn Fn(i32) -> Result<String>) -> Result<Value> {
+    let t = data.demons()?;
+    let names = data.skill_names()?;
+    let skill_name = |id: i32| names.get(&id).cloned().flatten().unwrap_or_else(|| format!("skill {id}"));
+    let mut items: Vec<Value> = Vec::new();
+    for r in rows("devil-equipment-items.tsv")? {
+        let (item, skill) = (int(&r[0]), int(r.get(1).map_or("", String::as_str)));
+        let name = item_name(item)?;
+        if name.starts_with("Debug ") {
+            continue; // "Debug Epitaph Parts 1-3": the developers' test items, which nothing in the game hands out
+        }
+        items.push(json!([item, skill, name, skill_name(skill), data.skill_text(skill)?.unwrap_or_default()]));
+    }
+    let mut rules: IndexMap<String, Value> = IndexMap::new();
+    for r in rows("devil-equipment.tsv")? {
+        let groups: Vec<i32> = r.get(2).map_or("", String::as_str).split(',').filter(|s| !s.trim().is_empty()).map(int).collect();
+        rules.insert(r[0].trim().to_string(), json!([int(r.get(1).map_or("", String::as_str)), groups]));
+    }
+    // the client leaves six group names in Japanese: plain translations of them (the parts in each group say the same)
+    let english = |id: &str, name: &str| -> String {
+        match id {
+            "520" => "All Physical Boost",
+            "521" => "All Magic Boost",
+            "522" => "EX Affinity Boost",
+            "609" => "In-Game Time Boost",
+            "610" => "Moon Phase Boost",
+            "611" => "Magic-Sealing Miasma Immunity",
+            _ => name,
+        }
+        .to_string()
+    };
+    let groups: IndexMap<String, Value> = rows("devil-equipment-groups.tsv")?.iter().filter(|r| r.len() > 1).map(|r| (r[0].trim().to_string(), json!(english(r[0].trim(), r[1].trim())))).collect();
+    let mut trait_slots: IndexMap<String, Value> = IndexMap::new();
+    for (id, d) in &t.devils {
+        let listed: Vec<usize> = (0..d.traits.len().min(4)).filter(|&i| d.traits[i] > 0).collect();
+        if listed.iter().enumerate().any(|(k, &i)| k != i) {
+            let mut four = d.traits.clone();
+            four.resize(4, 0);
+            trait_slots.insert(id.to_string(), json!(four[..4]));
+        }
+    }
+    Ok(json!({ "items": items, "rules": rules, "groups": groups, "traitSlots": trait_slots }))
+}
+
+/// What every passive skill, feature and demon equipment skill does, for the planner's stats pane (rbp-effects.json):
+/// skill id -> { fx, adj }.
+///   fx:  the effects as the other pages word them: [label, value (null: none or unknown), percent (0/1), cond
+///        ("always", "situational", "inactive", "unparsed"), note, target (the tokusei's TargetType: SELF, SUMMONER,
+///        PARTY...; "SELF" for a skill's own correct table), per level (1: the value is per demon level), in the stats
+///        table (1: an unconditional change to the demon's own stat that `adj` carries)]
+///   adj: the changes the server makes to the demon's own stats (ActiveEntityState::AdjustStats), unconditional only:
+///        [CorrectTbl id, type (0 flat, 1 percent layer 1, 2 percent layer 2), value, per level (0/1)]
+/// A demon's skills reach its stats like this (ActiveEntityState::ApplySkillCorrectTbls, GetAdditionalCorrectTbls):
+/// the correct tables of its passives (and switches that are on: not planned here) and of its traits (a worn part's
+/// skill in place of its slot's trait), and its SELF tokusei's correct values. The effects come from the same code the
+/// Overview uses for a summoned demon (ItemEffects, level 1 so a per-level value is the factor). Switch and active
+/// skills are left out; a tokusei that needs the owner digitalized is left out (the digitalize path, not the demon's).
+/// `data` decides what tokusei data is used: the repo's file is made without the sealed data, the app serves one made
+/// with it (`effects_bytes`).
+pub fn effects_json(data: std::sync::Arc<GameData>) -> Result<Value> {
+    use crate::calc::item_effects::ItemEffects;
+    let fx = ItemEffects::new(std::sync::Arc::clone(&data), "", 1, IndexMap::new());
+    let t = data.demons()?;
+    let index: std::collections::HashMap<String, i32> = rows("correct-table.tsv")?.iter().filter(|r| r.len() > 1).map(|r| (r[1].trim().to_string(), int(&r[0]))).collect();
+    // the 14 stats of the page's table (RBP_STAT_IDX): an unconditional change to one of them is applied there
+    const TABLE: [&str; 14] = ["STR", "MAGIC", "VIT", "INT", "SPEED", "LUCK", "HP_MAX", "MP_MAX", "CLSR", "LNGR", "SPELL", "SUPPORT", "PDEF", "MDEF"];
+    let table_labels: std::collections::HashSet<String> = TABLE.iter().flat_map(|n| (0..=2).map(move |k| stat_labels::name(n, k))).collect();
+    let mut ids: indexmap::IndexSet<i32> = t.skills.iter().filter(|(_, (cat, _))| *cat == 0).map(|(id, _)| *id).collect();
+    for r in rows("devil-equipment.tsv")? {
+        ids.insert(int(&r[0]));
+    }
+    for r in rows("devil-equipment-items.tsv")? {
+        ids.insert(int(r.get(1).map_or("", String::as_str)));
+    }
+    let passives = data.passives()?;
+    let line = |e: &crate::calc::effect::Effect, target: &str, own: bool| -> Value {
+        let lv = e.cond_note.contains("LvL × ");
+        let table = own && e.cond == "always" && e.value.is_some() && table_labels.contains(&e.label);
+        json!([e.label, e.value, i32::from(e.pct), e.cond, e.cond_note, target, i32::from(lv), i32::from(table)])
+    };
+    let mut out: IndexMap<String, Value> = IndexMap::new();
+    for id in ids {
+        let Some(p) = passives.get(&id.to_string()).filter(|v| !v.is_null()) else { continue };
+        let (mut lines, mut adj) = (Vec::new(), Vec::new());
+        for c in json::arr(p.at("correctTbl")) {
+            let name = json::str(c.at("id")).unwrap_or_default();
+            let (typ, v) = (json::int(c.at("type")), json::num(c.at("value")).unwrap_or(0.0));
+            let typ = if typ >= 100 { typ - 100 } else { typ };
+            lines.push(line(&fx.correct(&name, typ, v, "always", "planner", ""), "SELF", true));
+            if let Some(&k) = index.get(&name) {
+                adj.push(json!([k, typ, v, 0]));
+            }
+        }
+        for tn in json::arr(p.at("tokuseiIds")) {
+            let tid = json::int(Some(tn));
+            if tid == 0 {
+                continue;
+            }
+            let def = data.tokusei_full(tid)?;
+            let target = def.as_ref().map_or_else(String::new, |d| d.target.clone());
+            // on a demon a PARTNER-aimed tokusei is its own (TokuseiManager: a PARTNER_DEMON keeps it); SUMMONER goes to the character
+            let own = target.is_empty() || target == "SELF" || target == "PARTNER";
+            let plain = def.as_ref().is_some_and(|d| d.conditions.is_empty() && d.skill_conditions.is_empty() && !d.target_conditions);
+            for e in fx.tokusei(tid, "planner", "")? {
+                if e.cond != "digitalized" {
+                    lines.push(line(&e, &target, own && plain));
+                }
+            }
+            if let (true, true, Some(d)) = (own, plain, def.as_ref()) {
+                for c in &d.correct {
+                    let per_level = c.mult == "LEVEL";
+                    if !(per_level || c.mult == "NONE" || c.mult.is_empty()) {
+                        continue;
+                    }
+                    let typ = if c.r#type >= 100 { c.r#type - 100 } else { c.r#type };
+                    let v = if c.precision > 0 { c.value / 10f64.powi(c.precision) } else { c.value };
+                    if let Some(&k) = c.id.as_deref().and_then(|n| index.get(n)) {
+                        adj.push(json!([k, typ, v, i32::from(per_level)]));
+                    }
+                }
+            }
+        }
+        if !lines.is_empty() {
+            out.insert(id.to_string(), json!({ "fx": lines, "adj": adj }));
+        }
+    }
+    Ok(json!({ "source": "Each passive skill's correct table and tokusei, as the server applies them to a demon (comp_hack ActiveEntityState::AdjustStats)", "skills": out }))
+}
+
+/// rbp-effects.json as the app serves it: made once with the sealed data (the repo's file is made without it).
+pub fn effects_bytes() -> Option<&'static [u8]> {
+    static BYTES: std::sync::OnceLock<Option<Vec<u8>>> = std::sync::OnceLock::new();
+    BYTES
+        .get_or_init(|| {
+            if !crate::data::pack::available() {
+                return None;
+            }
+            let v = effects_json(std::sync::Arc::new(GameData::new())).ok()?;
+            Some(json::serialize(&v, Escape::Relaxed, false).into_bytes())
+        })
+        .as_deref()
 }
 
 /// Writes app\ui\rebirth-planner.json.
@@ -241,5 +398,11 @@ pub fn build(data: &GameData, out_file: &Path) -> Result<()> {
         v["growth"].as_object().map_or(0, |a| a.len()),
         v["mitama"]["sets"].as_array().map_or(0, |a| a.len())
     ));
+    // beside it, rbp-effects.json: the skills' effects, made WITHOUT the sealed data (this file is committed; the app
+    // serves its own made with it, `effects_bytes`)
+    let fx_file = out_file.with_file_name("rbp-effects.json");
+    let fx = effects_json(std::sync::Arc::new(GameData::new().without_sealed_data()))?;
+    std::fs::write(&fx_file, json::serialize(&fx, Escape::Relaxed, false))?;
+    crate::console::write_line(&format!("Wrote {} ({} skills).", fx_file.display(), fx["skills"].as_object().map_or(0, |a| a.len())));
     Ok(())
 }

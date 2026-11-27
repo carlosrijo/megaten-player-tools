@@ -807,6 +807,14 @@ impl Dashboard {
                 }
             }
         }
+        // ... and every demon equipment item (reference\devil-equipment-items.tsv): the planner's equipment step shows them
+        if let Some(lines) = crate::data::game_data::reference_lines("devil-equipment-items.tsv")? {
+            for id in lines.iter().filter(|l| !l.is_empty() && !l.starts_with('#')).filter_map(|l| l.split('\t').next().and_then(crate::fmt::parse_i32)) {
+                if !pgs.contains(&id) {
+                    pgs.push(id);
+                }
+            }
+        }
         for id in pgs {
             icons.insert(format!("item{id}"), item_icons::item_asset(store, self.data(), id, 0)?);
         }

@@ -236,6 +236,10 @@ where
         // the Gear Database made with the sealed data (as the app does: site.rs)
         let body = crate::data::pack::entry(crate::data::pack::GEAR_DB).unwrap_or_default().to_vec();
         req.respond(tiny_http::Response::from_data(body).with_header(header("Content-Type", "application/json; charset=utf-8")).with_header(no_store))
+    } else if path.eq_ignore_ascii_case("app/ui/rbp-effects.json") && super::rebirth_planner::effects_bytes().is_some() {
+        // the Rebirth Planner's skill effects made with the sealed data (as the app does: site.rs)
+        let body = super::rebirth_planner::effects_bytes().unwrap_or_default().to_vec();
+        req.respond(tiny_http::Response::from_data(body).with_header(header("Content-Type", "application/json; charset=utf-8")).with_header(no_store))
     } else {
         // Only the page's own files (app/ui/, reference/ and the data folder) are ever served, and only from inside them.
         let found = served_file(&path, root, data_dir).and_then(|(base_dir, rel)| {
