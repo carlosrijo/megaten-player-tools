@@ -266,11 +266,12 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .notice b { font-weight: 600; }
 
 /* ---------- overview: the stat sheet ---------- */
-/* One heading over one row ("Key stats and affinities"): the stat sheet and, beside it, the affinity radar. Both boxes
-   start and end on the same lines. Sheet: one line per key stat: name, a bar only where the stat has a cap (how close
+/* One heading over one row ("Key stats and affinities"): the stat sheet with What changed under it and, beside them,
+   the affinity radar with its table. Each side is as tall as what it holds. Sheet: one line per key stat: name, a bar only where the stat has a cap (how close
    to it), the total. A click opens where the total comes from, under the line. */
 .stat-label { color: var(--text-2); font-size: 12px; }
-.over-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: stretch; }
+.over-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+.over-left { display: grid; gap: 18px; align-content: start; min-width: 0; }   /* the sheet, then What changed, spaced as the page's sections are */
 /* Overview: the one-line bands under your stats (expertise, the demon's own card, gear). Expertise and gear share this
    shape: title | what it holds, wrapping in a narrow window | View more. */
 .band { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 14px; padding: 10px 14px; }
@@ -393,7 +394,21 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .radar text.aff-value.bad { fill: var(--bad); }
 .radar text.aff-value.over { fill: var(--text-2); font-weight: 500; }   /* a cap past the rim, under All */
 .radar .aff-over { fill: var(--text-2); }
-.aff-pick { justify-self: center; }
+/* The radar's numbers as lines under it, in the stat sheet's style: Affinity | Boost | Cap | Resist */
+.aff-table { display: grid; margin-top: 27px; }   /* more air over the table than the card's 12px (39 in all) */
+.aff-tr { display: grid; grid-template-columns: minmax(0, 1fr) 64px 64px 64px; gap: 8px; align-items: center; min-height: 28px; border-top: 1px solid var(--border); }
+.aff-tr:not(.aff-th):hover { background: var(--hover); }
+.aff-tr:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
+.aff-th { border-top: 0; min-height: 0; }
+.aff-th .list-head { margin: 0; padding: 0 0 5px; text-align: right; }
+.aff-th .list-head:first-child { text-align: left; }
+.aff-table .aff-name { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aff-td { font: 600 13px/1.2 var(--font-display); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.aff-wb { border-top-style: dashed; }   /* not an element: the line under the elements */
+.aff-td.zero { color: var(--text-3); font-weight: 400; }
+.aff-td.bad { color: var(--bad); }
+.aff-td.raised { color: var(--text); }
+.aff-pick { justify-self: center; margin-top: -12px; }   /* right under the radar: the card's 12px gap taken back */
 .aff-pick button { gap: 6px; }
 .aff-key { display: inline-block; width: 9px; height: 9px; background: var(--aff); border-radius: 50%; }
 .aff-key-res { background: var(--aff-res); border-radius: 2px; }
@@ -898,6 +913,20 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .nav-subitem[aria-current="page"] { background: var(--selected); color: var(--text); font-weight: 600; }
 .nav-subitem:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 @media (max-width: 900px) { .nav-fold, .nav-sub { display: none; } }
+/* The "Databases" group: a fold-away entry with the database pages indented under it, open at every start */
+.nav-dbhead { color: var(--text-3); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.nav-dbhead:hover { color: var(--text); }
+.nav-dbchev { display: grid; place-items: center; width: 18px; }
+.nav-dbchev svg.icon { width: 14px; height: 14px; transition: transform .12s ease; }
+.nav-dbhead[aria-expanded="true"] .nav-dbchev svg.icon { transform: rotate(90deg); }
+.nav-dbhead.has-current { color: var(--text); }
+.nav-dbhead.has-current::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 2px; background: var(--focus); }
+.nav-dbs { display: grid; gap: 2px; margin: 0 0 4px 17px; padding-left: 4px; border-left: 1px solid var(--border); }
+.nav-dbs .nav-item { padding: 0 6px; gap: 8px; }
+.nav-dbs .nav-label { white-space: nowrap; }
+.nav-dbs[hidden] { display: none; }
+/* narrow (icon-only) sidebar: the pages stay reachable, no fold-away entry */
+@media (max-width: 900px) { .nav-dbhead { display: none; } .nav-dbs, .nav-dbs[hidden] { display: grid; margin: 0; padding: 0; border: 0; } }
 .nav-head { margin: 14px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
 @media (max-width: 900px) { .nav-head { margin: 10px 8px 4px; height: 1px; overflow: hidden; background: var(--border); color: transparent; } }
 .page-dcm { grid-template-columns: minmax(0, 1fr); }
@@ -2153,3 +2182,31 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-fxlist b { font-variant-numeric: tabular-nums; color: var(--rb); }
 .rbp-fxlist li.cond .rbp-fxlabel { color: var(--text-2); }
 .rbp-fxnote { flex-basis: 100%; color: var(--text-3); }
+
+/* Dungeon Guides (Tools): per dungeon its outcomes, each with numbered steps (the Quest Guide's step list and lines) */
+.guide-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.guide-tag-hidden { color: var(--aff); border-color: currentColor; }   /* the one tag to spot first: a boss you only get by doing something */
+.guide-detail { gap: 14px; }
+.guide-prep { display: grid; gap: 4px; padding: 8px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+.guide-out { display: grid; gap: 4px; }
+.guide-res { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.guide-res-text { font-weight: 600; }
+.guide-res .src-count { margin-left: 0; }
+.guide-steps > li { padding-top: 8px; padding-bottom: 8px; gap: 3px; }
+.guide-steps > li::before { top: 8px; }
+.guide-do { max-width: 80ch; }
+.guide-steps .q-line, .guide-prep .q-line, .guide-fails { grid-template-columns: 92px minmax(0, 1fr); }
+.guide-steps .q-line > span:last-child, .guide-prep .q-line > span:last-child { color: var(--text-2); max-width: 80ch; }
+.guide-fails > span:last-child { color: var(--warn-ink); max-width: 80ch; }
+.guide-linear { margin-top: 4px; }
+.guide-linear summary { cursor: pointer; font-weight: 600; }
+.guide-linear summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.guide-linear .note { margin: 6px 0 0; max-width: 110ch; }
+/* one row per outcome (a way the dungeon can go): closed rows stack as a list, an open one shows its steps under it */
+.guide-outs { display: grid; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.guide-outs > .guide-out { padding: 8px 10px; }
+.guide-outs > .guide-out + .guide-out { border-top: 1px solid var(--border); }
+.guide-out-btn { display: flex; width: 100%; box-sizing: border-box; }
+.guide-out-btn:hover .guide-res-text { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.guide-out.open > .q-steps { margin-left: 22px; }
+.guide-out.open > .guide-fails { margin-left: 22px; }

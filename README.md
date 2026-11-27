@@ -144,12 +144,15 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
 
   Then **Key stats and affinities**, one row: on the left one line per key stat (a bar only where the stat has a cap,
   showing how close you are; it changes colour past the cap). Click a line to see what gear, expertise and the
-  digitalize demon each add, and to jump to every source on Bonuses. On the right, one radar chart per element with
+  digitalize demon each add, and to jump to every source on Bonuses. An Experience group shows how much extra EXP
+  and expertise points you earn (gear and clan skills), and how much extra EXP your summoned partner earns (the
+  Demonology Sympathy skill for its race, if you have one). Action boosts (Spin, Attack, Rush, Rapid, Shot) and
+  Skill costs (how much less HP and MP your skills cost) have their own groups. On the right, one radar chart per element with
   your affinity boost, the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes
   Ice 150%) and your resistance; the buttons under it show all three or just one (its numbers then appear on the
   spokes, and the scale fits what is shown). With all three, the outer ring fits your boosts and resistances, and a
   cap that runs past it stops at the rim with its real value beside it.
-  At the bottom, across the page, **What changed**: the 5 biggest changes since an earlier snapshot ("Show all" lists
+  Under the key stats, **What changed**: the 5 biggest changes since an earlier snapshot ("Show all" lists
   the rest). The snapshot picker says how many changes each one has. The bin beside it deletes the picked snapshot
   (its row in your spreadsheet, which is copied first to `<name>.backup-before-delete-<time>.csv`); the latest
   snapshot is not in the picker and can't be deleted.
@@ -191,7 +194,7 @@ Working on the app's page:
     `reference\devil-models.tsv` (the demon table's model id looked up in the client's model table, the Shield copy CModelData2.sbin: the older BinaryData\Client copy lacks 181 demons' models). In a plain
     browser a demon needs its model file first: `imagine-reader.exe model <model>` (it writes `data\cache\models\<model>.json`).
 
-### Tools: Demon Rank
+### Tools: Demon Ranking
 
 Under **Tools** in the left bar, before the DCM Locator. The Demon Database's demons in one table with their STR, MAG,
 VIT, INT, SPD, LUCK, Max HP, Max MP, CLS-R, LNG-R, Spell, Support and Critical (P.Def and M.Def are left out); click a
@@ -476,6 +479,23 @@ Names, stats, skills and traits are the IMAGINE client's. Which enemies are wher
 their drops come from the public server data, so IMAGINE may have changed them. Stats are the server's formula for an
 enemy at that level (with the extra HP the game gives enemies), before its passive skills and traits. Not checked in
 game.
+
+### Tools: Dungeon Guides
+
+Under **Tools** in the left bar. The dungeons that aren't just "go in and kill everything" (122 of the Dungeon
+Database's 175): a hidden, extra or True boss you only get by doing something, demons that must be summoned at the
+right moment, objects to click, choices, random rolls, timers and score runs. Click a dungeon for each outcome it can
+end in (for example "Yamata no Orochi is the final boss") and the numbered steps to get it: what to do, **Where**, what
+it **Needs**, and what **Breaks** it. The two Diaspora runs also list what to bring and the item recipes.
+
+Search a dungeon, boss, demon, item or mechanic; the chips filter by three hand-picked tags: **Hidden boss** (a boss
+you only get by doing something on purpose), **Summon a demon** (a specific demon must be out at some step) and
+**Minigame** (an event run scored by points, waves, a race or a hunt). Hover a tag for what it means. A dungeon with several outcomes lists them as rows; click one for its steps. Each dungeon's button opens its enemies in the Dungeon Database. The 53 linear dungeons are listed at the
+bottom.
+
+Read from the public server's event scripts, so IMAGINE may have changed some; nothing was checked in game. Steps
+marked **inferred** were worked out from how the script fits together rather than stated by it.
+
 ### Tools: Demon Database
 
 Under **Tools** in the left bar. Every demon you can own (the compendium's 359 and 592 variants such as Open-minded Ishtar) with its picture, race, base level and
