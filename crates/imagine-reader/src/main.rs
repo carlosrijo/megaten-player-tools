@@ -13,6 +13,7 @@
 //!   alignment [LAW|NEUTRAL|CHAOS] [--name N]                    show or set the character's alignment (recalculates when it changes)
 //!   extras    [--quests N|none] [--compendium N|none] [--compendium-v2 yes|no] [--name N]
 //!                                                               show the clan; set the quest/compendium counts for their bonuses
+//!   damage-log [--name N] [--watch SECONDS] [--raw]             the game's damage log (own and partner hits); --watch follows new hits
 //!
 //! Without --name, the character is read from the running client (or is the only one with saved data).
 //! Each character keeps its own folder and CSV, listed in data\characters.json.
@@ -419,6 +420,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             Ok(0)
         }
         "digilevels" => digilevels(opts),
+        "damage-log" => damage_log(opts),
         _ => {
             console::write_line("usage: imagine-reader clients | snapshot|rebuild|recalc|sets [--name N] [--csv path] [--data dir] [--ignore-window]");
             Ok(if cmd == "help" { 0 } else { 2 })
@@ -1424,23 +1426,128 @@ fn print_demon(
     Ok(())
 }
 
+/// The character a live-only command reads: --name, else the one logged in (an error when none or several are).
+fn playing(opts: &HashMap<String, String>) -> Result<String> {
+    if let Some(n) = opts.get("name") {
+        return Ok(n.clone());
+    }
+    let in_game = logged_in();
+    if in_game.is_empty() {
+        return Err(user_error("No running client has a character logged in."));
+    }
+    if in_game.len() > 1 {
+        let names: Vec<String> = in_game.iter().map(|c| format!("{} ({})", c.character.as_deref().unwrap_or(""), c.folder)).collect();
+        return Err(user_error(format!("Several characters are logged in: {}. Pick one with --name.", names.join(", "))));
+    }
+    Ok(in_game[0].character.clone().unwrap_or_default())
+}
+
+/// imagine-reader damage-log [--name N] [--watch SECONDS] [--raw]: the game's damage log, read-only (game\chat_reader.rs).
+///   (nothing)        the hits the log holds now (about the last 100 lines), and their totals
+///   --watch 60       follow new hits for that many seconds, then totals and damage per second
+///   --raw            every line of the chat window's lists as the game wrote it (damage, own XP, partner XP)
+fn damage_log(opts: &HashMap<String, String>) -> Result<i32> {
+    use imagine::game::chat_reader::{self, DamageLog, DamageParser, Hit};
+    let who = playing(opts)?;
+    let proc = client_reader::find_client(&who)?;
+    let mem = GameMemory::new(proc.id())?;
+    let window = chat_reader::find_chat_window(&mem).ok_or_else(|| user_error("Couldn't find the chat window in the game's memory."))?;
+    if opts.contains_key("raw") {
+        for (name, at) in [("Damage", chat_reader::DAMAGE_LOG_AT), ("Own XP", chat_reader::OWN_XP_AT), ("Partner XP", chat_reader::PARTNER_XP_AT)] {
+            let lines = chat_reader::read_list(&mem, window, at, None).unwrap_or_default();
+            console::write_line(&format!("{name}: {} lines", lines.len()));
+            for l in lines {
+                console::write_line(&format!("  #{} ch{}  {}", l.number, l.channel, l.text));
+            }
+        }
+        return Ok(0);
+    }
+    let show = |h: &Hit, when: Option<f64>| {
+        let t = when.map(|s| format!("{:>7}s ", fmt::fixed(s, 1))).unwrap_or_default();
+        console::write_line(&format!("{t}#{:<6} {:<10} {:<17} {:>8}  {}", h.number, h.who, h.part, fmt::n0(h.amount as f64), h.target));
+    };
+    let Some(seconds) = opts.get("watch") else {
+        let lines = chat_reader::read_list(&mem, window, chat_reader::DAMAGE_LOG_AT, None).unwrap_or_default();
+        let mut parser = DamageParser::new(&who);
+        let mut hits: Vec<Hit> = Vec::new();
+        let mut unknown = 0;
+        for l in &lines {
+            let h = parser.line(l);
+            if h.is_empty() {
+                unknown += 1;
+            }
+            hits.extend(h);
+        }
+        for h in &hits {
+            show(h, None);
+        }
+        console::write_line(&format!("{} lines in the log, {} hits{}", lines.len(), hits.len(), if unknown > 0 { format!(", {unknown} lines not understood") } else { String::new() }));
+        print_damage_totals(&hits, None);
+        return Ok(0);
+    };
+    let seconds = fmt::parse_f64(seconds).filter(|s| *s > 0.0).ok_or_else(|| user_error("--watch needs a number of seconds, e.g. --watch 60."))?;
+    console::write_line(&format!("Following {who}'s damage log for {} s (only hits from now on)...", fmt::g(seconds)));
+    let mut log = DamageLog::new(&who);
+    log.poll(&mem, true);
+    let start = std::time::Instant::now();
+    let mut hits: Vec<(f64, Hit)> = Vec::new();
+    while start.elapsed().as_secs_f64() < seconds {
+        std::thread::sleep(std::time::Duration::from_millis(250));
+        let p = log.poll(&mem, true);
+        let now = start.elapsed().as_secs_f64();
+        for h in p.hits {
+            show(&h, Some(now));
+            hits.push((now, h));
+        }
+        for l in p.unknown {
+            console::write_line(&format!("   (not understood) #{} {}", l.number, l.text));
+        }
+    }
+    let span = match (hits.first(), hits.last()) {
+        (Some(a), Some(b)) if b.0 > a.0 => Some(b.0 - a.0),
+        _ => None,
+    };
+    let hits: Vec<Hit> = hits.into_iter().map(|(_, h)| h).collect();
+    print_damage_totals(&hits, span);
+    Ok(0)
+}
+
+/// Totals per source and part; with `span` (seconds from the first hit to the last), damage and main hits per second.
+fn print_damage_totals(hits: &[imagine::game::chat_reader::Hit], span: Option<f64>) {
+    use imagine::game::chat_reader::MAIN_HIT;
+    let mut rows: Vec<(String, String, usize, i64, i64)> = Vec::new();
+    for h in hits {
+        match rows.iter_mut().find(|r| r.0 == h.who && r.1 == h.part) {
+            Some(r) => {
+                r.2 += 1;
+                r.3 += h.amount;
+                r.4 = r.4.max(h.amount);
+            }
+            None => rows.push((h.who.clone(), h.part.clone(), 1, h.amount, h.amount)),
+        }
+    }
+    if rows.is_empty() {
+        console::write_line("No hits.");
+        return;
+    }
+    console::write_line(&format!("{:<10} {:<17} {:>5} {:>12} {:>9}{}", "who", "part", "count", "total", "biggest", if span.is_some() { "   per second" } else { "" }));
+    let total: i64 = hits.iter().map(|h| h.amount).sum();
+    for (who, part, n, sum, big) in &rows {
+        let ps = span.map(|s| format!("  {:>11}", fmt::n0(*sum as f64 / s))).unwrap_or_default();
+        console::write_line(&format!("{who:<10} {part:<17} {n:>5} {:>12} {:>9}{ps}", fmt::n0(*sum as f64), fmt::n0(*big as f64)));
+    }
+    let ps = span.map(|s| format!("  {:>11}", fmt::n0(total as f64 / s))).unwrap_or_default();
+    console::write_line(&format!("{:<10} {:<17} {:>5} {:>12} {:>9}{ps}", "all", "", hits.len(), fmt::n0(total as f64), ""));
+    if let Some(s) = span {
+        let main = hits.iter().filter(|h| h.part == MAIN_HIT).count();
+        console::write_line(&format!("{} s from the first hit to the last; {} main hits per second (follow-ups not counted).", fmt::fixed(s, 1), fmt::fixed(main as f64 / s, 2)));
+    }
+}
+
 fn digilevels(opts: &HashMap<String, String>) -> Result<i32> {
     // imagine-reader digilevels [--name N]: Digitalization Level of each race, learned assists and the extend
     // skills those levels give (read-only; independent of the saved data).
-    let who = match opts.get("name") {
-        Some(n) => n.clone(),
-        None => {
-            let in_game = logged_in();
-            if in_game.is_empty() {
-                return Err(user_error("No running client has a character logged in."));
-            }
-            if in_game.len() > 1 {
-                let names: Vec<String> = in_game.iter().map(|c| format!("{} ({})", c.character.as_deref().unwrap_or(""), c.folder)).collect();
-                return Err(user_error(format!("Several characters are logged in: {}. Pick one with --name.", names.join(", "))));
-            }
-            in_game[0].character.clone().unwrap_or_default()
-        }
-    };
+    let who = playing(opts)?;
     let proc = client_reader::find_client(&who)?;
     let mem = GameMemory::new(proc.id())?;
     let gd = Arc::new(GameData::new());

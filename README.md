@@ -521,11 +521,11 @@ target\release\imagine-reader.exe demon           # list the COMP demons
 target\release\imagine-reader.exe demon Specter   # one demon in detail and what digitalizing with it gives
 target\release\imagine-reader.exe demon Specter --use   # make it the digitalize demon the page adds
 target\release\imagine-reader.exe digilevels      # Digitalization Level and % per race, assists, level-unlock skills
+target\release\imagine-reader.exe damage-log      # the game's damage log: your and your demon's hits (Technical Attack, Pursuit) and totals
+target\release\imagine-reader.exe damage-log --watch 60   # follow new hits for 60 s, then totals, damage per second and hits per second
 target\release\imagine-reader.exe expertise       # re-read expertise ranks and Digitalization Levels, rebuild (no CSV row)
 target\release\imagine-reader.exe toggles         # which toggle skills are on, read from the game ("Name, ..." overrides when it isn't running)
 target\release\imagine-reader.exe labels          # regenerate reference\stat-labels-game.tsv: the game's own name for each stat (from the client's effect text)
-et10.0
-ewmoon-reader.exe toggles         # which toggle skills are on, read from the game (a "Name, ..." list overrides when it isn't running)
 ```
 
 `demon "<name>"` shows the demon's window values, rebirth ranks, skill slots, learned skills, traits, Mitama slots and
