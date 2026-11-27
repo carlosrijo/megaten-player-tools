@@ -393,7 +393,15 @@ Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before y
   every rune to rank 4 and plans the fusion. Then pick the Mitama (Ara, Nigi, Kusi or Saki, each card showing the stats
   its Mitama rank bonus raises; the chips on the demon band do the same), and whether you have **Mitama Demon
   Enhancement - Iron Man** (stronger sets).
-- **After the fusion: ranks and Mitamas** (step 4, or step 2 for a demon already fused): the four kinds' caps
+- **Demon Force** (step 4, right after the fusion; step 2 for a demon already fused): the demon's 8 Demon Force slots
+  as a bar like the skills'. Using a Demon Force item on your summoned demon puts its effect in the slot you pick, so a
+  click on a slot opens a picker with all 378 such items (Demon Souls, Marks of Skill, Orbs of Promise...), searchable
+  by name or effect ("reflect", "limit break"). Each slot shows the item, what its effect does (the game's own text)
+  and where to get the item. How many slots a demon opens depends on its type: every Mitama form opens all 8, while
+  many demons open fewer before the fusion (Seraph 2, Michael 1); the slots it doesn't open are greyed out, and the
+  effects stay through the fusion. A COMP demon starts from the effects BABEL last read on it, including the random
+  ones the game offers as you use the items (those can't be planned). The cost card lists the items to get.
+- **After the fusion: ranks and Mitamas** (step 5, or step 3 for a demon already fused): the four kinds' caps
   on top (how many of each the Mitama rank allows), then one row per rune: the ranks start from zero again, and a rank
   is a slot, so the rank bar's pills wear the Mitamas in the kinds' colours (solid = already on the rune, striped = to
   add); under the bar a − + counter per kind and the rune's four set bonuses as tiles with their requirement per kind.

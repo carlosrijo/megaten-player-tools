@@ -133,6 +133,8 @@ pub struct CompDemon {
     pub mitama_slots: Vec<i32>,
     /// The 8 learned-skill slots (0 = empty), for the planner's skill bar.
     pub skills: Vec<i32>,
+    /// The 8 Demon Force stack slots (DevilBoostExtraData stack ids, 0 = empty), for the planner's Demon Force bar.
+    pub force_stack_ids: Vec<i32>,
 }
 
 impl CompDemon {
@@ -143,7 +145,7 @@ impl CompDemon {
             "current": self.current, "inGame": self.in_game, "seenAt": self.seen_at, "forceStack": self.force_stack, "equipment": self.equipment,
             "icon": self.icon, "offer": self.offer.as_ref().map(DemonOffer::to_value), "unlock": self.unlock.as_ref().map(DemonUnlock::to_value),
             "loaded": self.loaded, "summoned": self.summoned, "inComp": self.in_comp,
-            "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots, "skills": self.skills,
+            "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots, "skills": self.skills, "forceStackIds": self.force_stack_ids,
         })
     }
 }
@@ -631,6 +633,7 @@ impl Pipeline {
                 mitama_rank: d.mitama_rank,
                 mitama_slots: d.mitama_reunion.iter().map(|&b| b as i32).collect(),
                 skills: d.skills.clone(),
+                force_stack_ids: d.force_stack.clone().unwrap_or_default(),
             });
         }
         // OrderByDescending(Current).ThenByDescending(InComp != false).ThenByDescending(Level).ThenBy(Name): stable
