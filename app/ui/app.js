@@ -8364,13 +8364,13 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       id.append(h('span', { class: 'tag', text: `Lv ${D.level}` }), h('span', { class: 'tag', text: x.race }),
         h('span', { class: 'tag', 'data-tip': 'G-Type: the growth type the demon is on', text: gname || '—' }),
         D.fused ? (D.kind ? h('span', { class: 'tag rbp-kindtag', style: `--k:var(--mt-${D.kind})`, 'data-tip': 'M-Type: the Mitama it was fused with, and its Mitama rank', text: `${RBP_KINDS[D.kind - 1]} Mitama · rank ${D.mitamaRank}` })
-          : h('span', { class: 'tag tag-off', 'data-tip': 'It is Mitama-fused, but the game only listed it: which Mitama and its rank were not read, so their bonus is not counted. Open its status window in game and import it again.', text: 'Mitama not read' }))
+          : h('span', { class: 'tag tag-warn', 'data-tip': 'It is Mitama-fused, but the game only listed it: which Mitama and its rank were not read, so their bonus is not counted. Open its status window in game and import it again.' }, icon('alert'), 'Mitama not read'))
           // not fused yet: the Mitama to fuse it with is picked here (the kind fixes which stats its Mitama rank bonus raises)
           : h('span', { class: 'rbp-fusewith', role: 'group', 'aria-label': 'Mitama to fuse with' }, h('span', { class: 'q-key', text: 'Fuse with' }),
             ...P.mitama.kinds.map((K) => h('button', { type: 'button', class: 'rbp-kindchip', style: `--k:var(--mt-${K.type})`, 'aria-pressed': String(!(plan.view === 'boosts' && plan.kindAuto) && plan.kind === K.type),
               'data-tip': `${K.demonName}: the Mitama rank bonus raises ${(K.ranks[12] || []).map(([, l]) => l).join(', ')}`, onclick: () => { plan.kind = K.type; plan.kindAuto = false; rbpSave(); render(); } }, rbpKindIcon(K.type - 1), K.name)),
             plan.view === 'boosts' ? h('button', { type: 'button', class: 'rbp-kindchip rbp-kindauto', 'aria-pressed': String(!!plan.kindAuto), 'data-tip': 'The kind the picked boosts use most', onclick: () => { plan.kindAuto = true; rbpSave(); render(); } }, 'Auto') : null),
-        D.comp && D.known === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed this demon: its ranks and slots were not read. Open its status window in game and read the demons again.', text: 'Ranks not read' }) : h('span', { hidden: true }),
+        D.comp && D.known === false ? h('span', { class: 'tag tag-warn', 'data-tip': 'The game only listed this demon: its ranks and slots were not read. Open its status window in game and read the demons again.' }, icon('alert'), 'Ranks not read') : h('span', { hidden: true }),
         D.comp ? h('span', { class: 'tag tag-off', 'data-tip': 'Imported from your COMP: its rebirth ranks and Mitama slots are the ones last read from the game', text: 'From your COMP' }) : h('span', { hidden: true }));   // (append(null) would write the word "null")
     } else id.append(h('span', { class: 'tag tag-off', text: 'Demon Database' }));
     const inputs = h('div', { class: 'rbp-inputs' },
