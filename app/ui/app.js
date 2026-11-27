@@ -5667,7 +5667,8 @@
   /**
    * A search field over the boosts you can aim for: the passive each level teaches (stats, affinities, Limit Break cap,
    * for you or for your demon), always on once learned. The digitalize-only choices (assists: duration, cooldown, the
-   * demon's stat share and skills, Demon Force, Mitama sets) and demons to digitalize are not goals here.
+   * demon's stat share and skills, Demon Force, Mitama sets) are not goals here. A demon to digitalize is one, found by
+   * its name (listed once something is typed): the goal is being able to digitalize it.
    * Each says what it costs from where you are, and the cheapest comes first among equal matches.
    * Pick as many as you like: a click (or Enter) ticks or unticks one and the list stays open with the same search;
    * "Add all shown" ticks every match you don't have yet. `toggle(goal)` adds or removes it, `isOn(goal)` says if it's in.
@@ -5685,15 +5686,22 @@
       if (r.unlock.length) items.push({ kind: 'Race', label: `Unlock ${r.name}`, race: r.name, tier: r.tier, l: 1, have: cur >= 1, open: cur,
         needs: r.unlock.map(([u, ul]) => `${E.raceName(u)} ${ul}`).join(' + '), goal: { k: 'race', race: r.id, level: 1 } });
     });
+    // every demon you can digitalize with, found by its name: the goal is being able to digitalize it. They are listed
+    // only once something is typed (there are hundreds), and match on the demon's name alone.
+    E.demons.forEach((d) => items.push({ kind: 'Digitalize', demon: true, label: d.name, race: E.raceName(d.race), d, have: E.canUse(d, st.lv),
+      needs: E.waysIn(d).map(([r, l]) => `${E.raceName(r)} ${l}`).join(' or ') || 'a special unlock', goal: { k: 'demon', id: d.id } }));
     let costed = false;
     const costAll = () => {   // a plan per boost, once, when the list is first opened (a few ms in all)
       if (costed) return;
       costed = true;
       items.forEach((x) => { const p = x.have ? null : E.solve(st, [x.goal]); x.dp = x.have ? 0 : p && p.ok ? p.cost : Infinity; });
-      items.forEach((x) => { x.sub = (x.kind === 'Race' ? (x.have ? `open, DLv ${x.open}` : `needs ${x.needs}`) : `${x.race} DLv ${x.l}`) + ` · ${x.have ? 'you have it' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`; });
+      items.forEach((x) => {
+        const where = x.demon ? `${x.race}, ${x.have ? 'you can digitalize it' : `needs ${x.needs}`}` : x.kind === 'Race' ? (x.have ? `open, DLv ${x.open}` : `needs ${x.needs}`) : `${x.race} DLv ${x.l}`;
+        x.sub = `${where} · ${x.have && !x.demon ? 'you have it' : x.have ? '' : x.dp === Infinity ? 'no way found' : `${dpShort(x.dp)} DP from here`}`.replace(/ · $/, '');
+      });
     };
     const wrap = h('div', { class: 'fus-combo' });
-    const ph = 'Add a goal: search a boost or a race to unlock, e.g. Intelligence, Slash, Limit Break, Seraphim';
+    const ph = 'Add a goal: search a boost, a race to unlock or a demon to digitalize, e.g. Intelligence, Limit Break, Seraphim, Pixie';
     const input = h('input', { class: 'input', type: 'search', placeholder: ph, 'aria-label': ph, spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
     const menu = h('div', { class: 'fus-menu dpl-menu', role: 'listbox', 'aria-multiselectable': 'true', hidden: true });
     let hits = [], at = 0;
@@ -5703,11 +5711,12 @@
       const q = input.value.trim().toLowerCase();
       const words = q.split(/\s+/).filter(Boolean);
       // "demon" / "you" in the search pick whose boost it is
-      hits = items.filter((x) => { const hay = `${x.kind}${x.tier ? ` t${x.tier}` : ''} ${x.label} ${x.race}`.toLowerCase(); return words.every((w) => hay.includes(w)); })
+      hits = items.filter((x) => { if (x.demon && !words.length) return false; const hay = (x.demon ? x.label : `${x.kind}${x.tier ? ` t${x.tier}` : ''} ${x.label} ${x.race}`).toLowerCase(); return words.every((w) => hay.includes(w)); })
         // the ones you have last (dimmed): still listed, so you can see where a boost comes from
         .sort((a, b) => (a.have ? 1 : 0) - (b.have ? 1 : 0) || (a.label.toLowerCase().startsWith(q) ? 0 : 1) - (b.label.toLowerCase().startsWith(q) ? 0 : 1) || a.dp - b.dp || a.label.localeCompare(b.label)).slice(0, 80);
       at = Math.min(at, Math.max(0, hits.length - 1));
-      const addable = hits.filter((x) => !x.have && !isOn(x.goal));
+      // "Add all" never takes demons: a short name ("a") matches hundreds, and each one is picked on purpose
+      const addable = hits.filter((x) => !x.have && !x.demon && !isOn(x.goal));
       const head = h('div', { class: 'dpl-menu-head' },
         h('span', { class: 'src-count', style: 'margin-left:0', text: `${hits.length}${hits.length === 80 ? '+' : ''} match${hits.length === 1 ? '' : 'es'} · ${U.goals.length} picked` }),
         h('span', { class: 'toolbar-spacer' }),
@@ -5718,11 +5727,13 @@
         if (x.have) return h('div', { class: 'fus-opt dpl-have', role: 'option', 'aria-selected': 'false', 'aria-disabled': 'true', onmousedown: (ev) => ev.preventDefault() },
           h('span', { class: 'dpl-check dpl-check-none', 'aria-hidden': 'true' }),
           h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : '') }, ...dplKindText(x)),
+          x.demon ? dplPic(x.d) : null,
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
         return h('div', { class: 'fus-opt' + (i === at ? ' on' : ''), role: 'option', 'aria-selected': String(on),
           onmousedown: (ev) => { ev.preventDefault(); at = i; pick(x); } },
           h('span', { class: 'dpl-check' + (on ? ' ticked' : ''), 'aria-hidden': 'true' }, on ? icon('check') : null),
-          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : x.kind === 'Race' ? 'A race to unlock: it opens at DLv 1 once every race it needs reaches its level' : 'A boost for you' }, ...dplKindText(x)),
+          h('span', { class: 'tag dpl-kind' + (x.kind === 'Demon' ? ' tag-demon' : x.kind === 'Race' ? ' tag-digi' : ''), 'data-tip': x.kind === 'Demon' ? 'A boost for your demon' : x.kind === 'Race' ? 'A race to unlock: it opens at DLv 1 once every race it needs reaches its level' : x.demon ? 'A demon to digitalize with: the goal is being able to digitalize it' : 'A boost for you' }, ...dplKindText(x)),
+          x.demon ? dplPic(x.d) : null,
           h('span', { class: 'fus-opt-name', text: x.label }), h('span', { class: 'src-count', text: x.sub }));
       }) : [h('div', { class: 'fus-opt empty', text: 'Nothing matches.' })]));
       menu.scrollTop = keep;
@@ -5841,7 +5852,7 @@
       const top = dplSuggestions(E, st, 6);
       return h('div', { class: 'dpl-empty' },
         h('p', { class: 'dpl-empty-title', text: 'What do you want from Digitalize?' }),
-        h('p', { class: 'note', text: 'Search the boosts the Digitalization Levels teach (stats, affinities, the Limit Break cap), for you or for your demon, or a race to unlock, and tick the ones you want. Or start from one of the strongest you don’t have yet:' }),
+        h('p', { class: 'note', text: 'Search the boosts the Digitalization Levels teach (stats, affinities, the Limit Break cap), for you or for your demon, a race to unlock, or a demon by name to digitalize, and tick the ones you want. Or start from one of the strongest you don’t have yet:' }),
         h('div', { class: 'dpl-suggs' }, top.map((c) => h('button', { type: 'button', class: 'dpl-sugg', 'data-tip': `Add “${c.text}” for ${c.who === 'demon' ? 'your demon' : 'you'} as a goal: ${c.r.name} DLv ${c.l}, ${nf.format(c.dp)} Digitalize points from here`, onclick: () => toggle(c.goal) },
           dplRaceOrbs(E, c.r),
           h('span', { class: 'dpl-goal-text' }, h('span', { class: 'dpl-goal-title' }, h('b', { text: c.text }), h('span', { class: 'tag dpl-kind' + (c.who === 'demon' ? ' tag-demon' : ''), text: c.who === 'demon' ? 'Demon' : 'You' })),

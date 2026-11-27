@@ -327,7 +327,7 @@ Digitalization Level, in what order, and how many Digitalize points (DP) that ta
   open with your search, **Add all shown** ticks every match you don't have yet, and the plan updates as you tick. Each
   goal card shows its race as three of its demons in small round pictures. Digitalize's own choices (the assists:
   duration, cooldown, the demon's stat share and skills, Demon Force, Mitama sets) are not goals. A race level itself
-  can be aimed at from the race's table (**Plan to here**), and a locked race from the search: type its name (or "race") and tick **Unlock <race>**; the list says what each race needs and its DP from where you are, and the goal card ticks the needs you already have. Goals are kept between visits. With no goals yet, the page
+  can be aimed at from the race's table (**Plan to here**), and a locked race from the search: type its name (or "race") and tick **Unlock <race>**; the list says what each race needs and its DP from where you are, and the goal card ticks the needs you already have. A demon can be searched by name too: type it and tick **Digitalize <demon>** to plan what it takes to be allowed to digitalize it (the list says its race and what lets it in). Goals are kept between visits. With no goals yet, the page
   offers six to click: the strongest boost of each kind you don't have, from the race that costs you the least.
 - **The plan**: the cheapest set of race levels that meets every goal. On top: the DP in all, the races to raise, and
   one bar with each step's share of the DP. Then the steps down a numbered line, in an order that works; a step's
