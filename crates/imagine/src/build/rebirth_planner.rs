@@ -10,7 +10,9 @@
 //!   level-xp.tsv            comp_hack LEVEL_XP_REQUIREMENTS
 //!   correct-table.tsv       CorrectTbl id -> name, for the stat ids the Mitama tables use
 //!   mitama-union-bonus.tsv, mitama-reunion-bonus.tsv, mitama-set-bonus.tsv   the Mitama tables (DemonTables)
-//!   mitama-pg.tsv           NPCBarterData: the Summon PG: <kind> Mitama trades
+//!   mitama-pg.tsv           NPCBarterData: the Summon PG: <kind> Mitama trades (two single-PG barters per kind, 10 and 8
+//!                           of each gem, and a ten-pack at 100; the data does not say which NPC offers which)
+//!   SACRED_SOUL_* below      NewMoon's Saien barter for "Summon PG: Sacred Soul" (read in game; not in NPCBarterData)
 //!   items-game.tsv / the website's items.json   item names
 //!
 //! The rules the page follows are the server's (comp_hack CharacterManager::ReunionDemon, AdjustDemonBaseStats,
@@ -30,6 +32,10 @@ use crate::data::stat_labels;
 
 /// Conversion points a rank is worth when extracted (comp_hack FusionTables.cpp REUNION_RANK_POINTS: rank 0..9).
 const RANK_POINTS: [i32; 10] = [0, 0, 1, 4, 10, 20, 40, 105, 320, 0];
+/// "Summon PG: Sacred Soul": NewMoon's PG for a Mitama of any kind, and what Saien asks for one (Fighting Spirit, item 12658).
+const SACRED_SOUL_PG: i32 = 21934;
+const FIGHTING_SPIRIT: i32 = 12658;
+const SACRED_SOUL_SPIRITS: i32 = 6;
 /// Magical Golden Apple, and the XP one gives (the public datastore's Vivian event N3400: 100,000 XP per 10).
 const APPLE_ITEM: i32 = 21941;
 const APPLE_XP: i64 = 10000;
@@ -185,6 +191,10 @@ pub fn planner_json(data: &GameData) -> Result<Value> {
         let demon_name = t.devils.get(&demon).map(|d| d.name.clone()).unwrap_or_else(|| format!("{} Mitama", MITAMA_NAMES[k + 1]));
         kinds.push(json!({ "type": typ, "name": MITAMA_NAMES[k + 1], "demon": demon, "demonName": demon_name, "pg": pg, "pgName": if pg > 0 { item_name(pg)? } else { String::new() }, "trades": trades, "ranks": ranks, "slots": slots }));
     }
+    // NewMoon's own way to a Mitama of any kind: Saien (Shinjuku Docks B1F) barters "Summon PG: Sacred Soul" (item 21934,
+    // the client's text: summons Ara / Nigi / Kusi / Saki Mitama) for 6 Fighting Spirit, or 10 of them for 60. Read in
+    // game 2026-11-27 (the user's barter window); the server's NPCBarterData has no such trade, so the numbers live here.
+    let spirit = json!({ "item": SACRED_SOUL_PG, "name": item_name(SACRED_SOUL_PG)?, "each": SACRED_SOUL_SPIRITS, "pack": [10, SACRED_SOUL_SPIRITS * 10], "currency": item_name(FIGHTING_SPIRIT)?, "where": "Saien, Shinjuku Docks B1F" });
     let mut sets: Vec<Value> = Vec::new();
     for set in &t.mitama_sets {
         let mut bonus_pairs = |b: &[i32]| -> Vec<Value> {
@@ -215,7 +225,7 @@ pub fn planner_json(data: &GameData) -> Result<Value> {
         "source": "The server's growth, rebirth and Mitama tables (DevilLVUpRateData, MitamaUnionBonusData, MitamaReunionBonusData, MitamaReunionSetBonusData, NPCBarterData), the client's texts, and comp_hack's rebirth rules",
         "runes": runes, "growth": growth, "growthNames": growth_names, "xp": xp, "rankPoints": RANK_POINTS,
         "apple": { "id": APPLE_ITEM, "name": item_name(APPLE_ITEM)?, "xp": APPLE_XP },
-        "mitama": { "kinds": kinds, "sets": sets, "boostSkill": boost_skill, "boostName": boost_name },
+        "mitama": { "kinds": kinds, "sets": sets, "boostSkill": boost_skill, "boostName": boost_name, "spirit": spirit },
         "stats": stats_used.iter().map(|(id, n)| (id.to_string(), json!(n))).collect::<IndexMap<String, Value>>(),
     }))
 }

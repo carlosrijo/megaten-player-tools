@@ -375,27 +375,33 @@ Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before y
   last read it, with its real rebirth ranks, Mitama and slots. Set the level the stats are shown at (93 by default) and
   your XP bonus from gear and incense (it lowers the apples). The runes wear the game's own glyphs and the Mitamas
   their own pictures, cut from your game folder like the other pages' pictures.
-- **Rebirths before the Mitama fusion**: one row per rune, like the game's Rebirth tab: its rank now, a bar of nine
-  pills (click a pill to make that rank the target, or use − +), the bonus that rank gives (Tiwaz: Close-Range +4 per
-  rank, Sowilo: every stat +3, Wyrd: Max HP +40 and MP +10, Ingwaz: cheaper summons...), the growth type it reaches, and
-  a flag to pick the path the demon should **end on** (its stats follow that growth type). **All to 4 / 6 / 8** sets
-  every rune at once. Under the rows: how many rebirths that is, the Magical Golden Apples the levels take at Vivian,
-  the macca, the rank points toward the Mitama fusion (48 needed, and the Mitama rank past it) and what the ranks are
-  worth as conversion points. **The steps and items** lists every rebirth in an order the game accepts (the rune the
-  demon is on first, since its own growth can skip rank 1; each rune fully before the next; the end path last) and the
-  cost items taking the first choice of each rank (every rank accepts one of several: runestones, incense, soul stones,
-  a Primordial Runestone).
-- **Mitama fusion**: a bar of the rank points toward 48; tick the fusion once it is reached, pick the Mitama (Ara, Nigi,
-  Kusi or Saki, each card showing the stats its Mitama rank bonus raises), and whether you have **Mitama Demon
+- **Rebirths before the Mitama fusion** (step 1): one row per rune under a header that names every column, like the
+  game's Rebirth tab: a bar of nine pills (click a pill to make that rank the target, or use − +; a COMP demon's rank
+  now is a column of its own), the bonus that rank gives (Tiwaz: Close-Range +4 per rank, Sowilo: every stat +3, Wyrd:
+  Max HP +40 and MP +10, Ingwaz: cheaper summons...; hover it for the growth type reached), and an **Ends on** radio on
+  every raised rune to pick the path the demon should end on (its stats follow that growth type). **Quick fill** sets
+  every rune at once (All to 4 is exactly the 48 rank points a fusion needs). Under the rows: how many rebirths that
+  is, the Magical Golden Apples the levels take at Vivian, the macca, what the ranks are worth as conversion points,
+  and a bar of the rank points toward the Mitama fusion (48 needed; every 4 past it is a Mitama rank). **The steps and
+  items** lists every rebirth in an order the game accepts (the rune the demon is on first, since its own growth can
+  skip rank 1; each rune fully before the next; the end path last) and the cost items taking the first choice of each
+  rank (every rank accepts one of several: runestones, incense, soul stones, a Primordial Runestone).
+- **Mitama fusion** (step 2): a switch that comes alive once the rank points are there; before that, one button sets
+  every rune to rank 4 and plans the fusion. Then pick the Mitama (Ara, Nigi, Kusi or Saki, each card showing the stats
+  its Mitama rank bonus raises; the chips on the demon band do the same), and whether you have **Mitama Demon
   Enhancement - Iron Man** (stronger sets).
-- **Rebirths after the fusion**: the same rows again from zero (a Mitama-fused demon gets 60% less XP, so 2.5 x the
-  apples).
-- **Mitama slots**: the four kinds' caps on top (how many of each the Mitama rank allows), then per rune its eight slots
-  in the kinds' colours (solid = already on the rune, striped = to add), a − + counter per kind, and the rune's four set
-  bonuses as chips with their requirement per kind: a chip lights up when the set is on, and clicking one adds the
-  Mitamas it still needs. Under the rows: the Mitamas to place (as Summon PGs from Rag's gem exchange, with the gems),
-  the macca, and the random bonus each placed Mitama can give. A COMP demon's Mitamas already on a rune count and are
-  never removed.
+- **After the fusion: ranks and Mitamas** (step 3, and the only step for a demon already fused): the four kinds' caps
+  on top (how many of each the Mitama rank allows), then one row per rune: the ranks start from zero again, and a rank
+  is a slot, so the rank bar's pills wear the Mitamas in the kinds' colours (solid = already on the rune, striped = to
+  add); under the bar a − + counter per kind and the rune's four set bonuses as tiles with their requirement per kind.
+  A tile lights up when the set is on; clicking one adds the Mitamas it still needs and raises the rank to make room
+  for them (a counter does the same), and lowering the rank drops the planned Mitamas past it. Under the rows: the
+  rebirths, apples (a Mitama-fused demon gets 60% less XP, so 2.5 x) and macca, the Mitamas to place and what they
+  cost (a rune never holds more than its slots: the page drops what would not fit), then **Mitamas to get**: a tile per kind with how many Summon PGs, the gems they cost at Rag's
+  gem exchange, the Fighting Spirit they cost at Saien (NewMoon's own "Summon PG: Sacred Soul", 6 each, summons a
+  Mitama of the kind you pick; read in game, not in the server tables), and the random bonus each placed Mitama rolls
+  (one of the kind's list, not counted in the stats). A COMP demon's Mitamas already on a rune count and are never
+  removed.
 - On the right, always in view: **What it costs** (rebirths, apples, macca and Mitamas in all, then per phase) and
   **Stats at the level**: the demon's 14 stats as a fresh demon beside the planned one, with the change, the summon
   magnetite cut and the active sets. **Reset the plan** starts over.

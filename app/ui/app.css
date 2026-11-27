@@ -1721,7 +1721,6 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-rune { font-weight: 600; white-space: nowrap; }
 .rbp-own { height: 16px; font-size: 10px; padding: 0 5px; }
 .rbp-rnow { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
-.rbp-rnow .q-key { font-size: 10px; letter-spacing: .04em; }
 .rbp-bar { display: inline-flex; gap: 3px; }
 .rbp-pill { all: unset; box-sizing: border-box; width: 22px; height: 12px; border-radius: 3px; border: 1px solid var(--border-strong); background: transparent; cursor: pointer; }
 .rbp-pill.now { background: var(--text-2); border-color: var(--text-2); cursor: default; }
@@ -1776,7 +1775,6 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-capbar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
 .rbp-capbar i { display: block; height: 100%; background: var(--k); }
 .rbp-cap.over .rbp-capbar i { background: var(--over-ink); }
-.rbp-srow { grid-template-columns: 112px auto auto minmax(0, 1fr); }
 .rbp-ksteps { display: inline-flex; gap: 6px; }
 .rbp-sets { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
 .rbp-set { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px 0 4px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; color: var(--text-2); cursor: pointer; max-width: 100%; }
@@ -1797,10 +1795,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-down { color: var(--over-ink); }
 .rbp-setlines { margin: 0; padding-left: 18px; font-size: 12px; color: var(--text-2); display: grid; gap: 2px; }
 .rbp-setlines b { color: var(--text); }
-@media (max-width: 760px) { .rbp-rrow { grid-template-columns: 100px auto 1fr; } .rbp-rbonus, .rbp-endbtn { grid-column: 1 / -1; } .rbp-srow { grid-template-columns: 100px 1fr; } .rbp-caps { grid-template-columns: repeat(2, 1fr); } }
-.rbp-srow { grid-template-columns: 112px auto minmax(0, 1fr); row-gap: 6px; }
-.rbp-srow .rbp-sets { grid-column: 1 / -1; }
-.rbp-srow .rbp-ksteps { justify-self: end; }
+@media (max-width: 760px) { .rbp-caps { grid-template-columns: repeat(2, 1fr); } }
 .rbp-pill.free, .rbp-pill.off { background: color-mix(in srgb, var(--text-3) 12%, transparent); }
 /* "Pick boosts first" */
 .rbp-brows { display: grid; gap: 4px; }
@@ -1977,3 +1972,75 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
 .rbp-needlist { padding-right: 0; }
 #rbp-demons .menu-note:empty { display: none; }   /* no note under the Any-demon list */
+/* The rune view, revamped (2026-11-27): each phase is one grid with a header row and subgrid rows, so the bars, steppers
+   and bonuses of the twelve runes line up and the header names every column. The "ends on" flag is a radio; the rank
+   points toward the fusion sit under step 1's rows; the fusion is a switch; the ranks after the fusion and the Mitama
+   slots are one step (a rank is a slot) */
+.rbp-rows { display: grid; grid-template-columns: 112px auto auto minmax(0, 1fr) auto; gap: 2px 0; }
+.rbp-rows.has-now { grid-template-columns: 112px auto auto auto minmax(0, 1fr) auto; }
+.rbp-rows > .rbp-rrow, .rbp-rows > .rbp-colhead { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; column-gap: 14px; row-gap: 6px; padding: 6px 10px; border-radius: 8px; }
+.rbp-rows > .rbp-rrow:nth-child(even) { background: var(--surface-2); }
+.rbp-rows > .rbp-rrow:nth-child(odd) { background: transparent; }
+.rbp-rows > .rbp-colhead { padding: 0 10px 4px; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); white-space: nowrap; }
+.rbp-colhead .span2 { grid-column: span 2; }
+.rbp-colhead span[data-tip] { cursor: help; }
+.rbp-rnow { font-variant-numeric: tabular-nums; text-align: center; color: var(--text-2); }
+.rbp-rrow > .rbp-mrow { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 16px; }
+.rbp-mrow .rbp-ksteps { flex: none; padding-top: 3px; }
+.rbp-mrow .rbp-sets { flex: 1 1 400px; min-width: 0; }
+.rbp-rname .src-count { margin-left: 0; font-size: 11px; }
+.rbp-pill { width: 24px; height: 13px; }
+.rbp-how { max-width: none; }
+.rbp-quick { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.rbp-quick .chips { gap: 4px; }
+.rbp-quick .chip-btn { height: 24px; padding: 0 9px; font-size: 11px; }
+/* the rank points toward the fusion */
+.rbp-points { display: grid; gap: 6px; padding-top: 2px; }
+.rbp-points-text { display: flex; align-items: baseline; gap: 8px; }
+.rbp-points-text b { font: 600 18px/1.1 var(--font-display); font-variant-numeric: tabular-nums; color: var(--rb); }
+.rbp-points:not(.ok) .rbp-points-text b { color: var(--over-ink); }
+.rbp-points-text span { font-size: 12px; color: var(--text-2); }
+.rbp-points:not(.ok) .rbp-ptsbar i:not(.mark) { background: var(--over-ink); }
+/* "ends on" as a radio */
+.rbp-endbtn { gap: 6px; padding: 0 6px 0 4px; }
+.rbp-endph { display: inline-block; height: 22px; }
+.rbp-rows > .rbp-rrow { min-height: 34px; box-sizing: border-box; }   /* padding 6 + the 22 px radio + 6: the height whether or not a rune is raised */
+.rbp-radio { box-sizing: border-box; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--text-3); flex: none; }
+.rbp-endbtn:hover .rbp-radio { border-color: var(--rb); }
+.rbp-endbtn[aria-checked="true"] { color: var(--rb); font-weight: 600; }
+.rbp-endbtn[aria-checked="true"] .rbp-radio { border-color: var(--rb); background: var(--rb); box-shadow: inset 0 0 0 2.5px var(--surface); }
+.rbp-rows > .rbp-rrow:nth-child(even) .rbp-endbtn[aria-checked="true"] .rbp-radio { box-shadow: inset 0 0 0 2.5px var(--surface-2); }
+/* the fusion switch and the gate before it */
+.rbp-switch { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); cursor: pointer; }
+.rbp-switch .switch:checked { background: var(--rb); }
+.rbp-switch input:checked + span { color: var(--text); font-weight: 600; }
+.rbp-switch.off { opacity: .55; cursor: default; }
+.rbp-gate { display: grid; gap: 8px; justify-items: start; }
+.rbp-kind .src-count { white-space: normal; margin-left: 0; line-height: 1.3; }
+@media (max-width: 900px) {
+  .rbp-rows, .rbp-rows.has-now { grid-template-columns: 100px auto minmax(0, 1fr); }
+  .rbp-rows > .rbp-colhead, .rbp-rnow { display: none; }
+  .rbp-rbonus, .rbp-endbtn, .rbp-ksteps { grid-column: 1 / -1; }
+}
+/* the Mitamas to get (step 3): a tile per kind with how many, where they come from and the random bonus each one rolls */
+.rbp-gets { display: grid; gap: 6px; }
+.rbp-getlist { display: grid; gap: 6px; }
+.rbp-get { display: grid; gap: 5px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); box-shadow: inset 3px 0 0 var(--k); }
+.rbp-get-head { display: flex; align-items: center; gap: 8px; }
+.rbp-get-head b { color: var(--k); }
+.rbp-get-head .rbp-kindface { width: 24px; height: 24px; }
+.rbp-get-ways { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; }
+.rbp-get-way { display: inline-flex; gap: 6px; align-items: baseline; }
+.rbp-get-pool { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.rbp-poolchip { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* a phase's totals as a strip of tiles with the cost card's pictures (user, 2026-11-27) */
+.rbp-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: stretch; }
+.rbp-sumtile { display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); min-width: 0; }
+.rbp-sumtile .rbp-orbs, .rbp-sumtile .rbp-costicon, .rbp-sumblank { flex: none; width: 30px; height: 30px; margin: 0; align-self: center; }
+.rbp-sumtile .rbp-costicon { width: 26px; height: 26px; }
+.rbp-sumblank { display: inline-block; width: 0; }
+.rbp-sumtext { display: grid; gap: 1px; min-width: 0; }
+.rbp-sumtile b { font: 600 18px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.rbp-sumtile span { font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rbp-sumsub { color: var(--text-3); }
+.rbp-sumtile[data-tip] { cursor: help; }
