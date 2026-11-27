@@ -608,6 +608,9 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
         if !skills_seen.contains_key(&id) {
             let mut s = Map::new();
             s.insert("name".into(), json!(data.skill_names()?.get(&id).cloned().flatten().unwrap_or_else(|| "A skill the game data does not name".to_string())));
+            if let Some(ja) = data.skill_name_ja(id)? {
+                s.insert("ja".into(), json!(ja));   // the name is BABEL's translation of the client's Japanese one
+            }
             s.insert("desc".into(), json!(data.skill_text(id)?.unwrap_or_default()));
             let icon = match data.skill_icon_asset(id)? {
                 Some(a) => picture(&a, None, &format!("{a}.png"))?,

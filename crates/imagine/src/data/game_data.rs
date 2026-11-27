@@ -596,6 +596,7 @@ pub struct GameData {
     tokusei_text: OnceLock<HashMap<i32, String>>,
     skill_icons: OnceLock<HashMap<i32, Option<String>>>,
     skill_names: OnceLock<IndexMap<i32, Option<String>>>,
+    skill_translations: OnceLock<HashMap<i32, (String, String)>>,
     enchants: OnceLock<IndexMap<i32, Enchant>>,
     enchant_by_crystal: OnceLock<HashMap<String, Vec<i32>>>,
     enchant_sets: OnceLock<Vec<EnchantSet>>,
@@ -649,6 +650,7 @@ impl GameData {
             tokusei_text: OnceLock::new(),
             skill_icons: OnceLock::new(),
             skill_names: OnceLock::new(),
+            skill_translations: OnceLock::new(),
             enchants: OnceLock::new(),
             enchant_by_crystal: OnceLock::new(),
             enchant_sets: OnceLock::new(),
@@ -1142,6 +1144,12 @@ impl GameData {
                     }
                 }
             }
+            // BABEL's English where the client's name is Japanese (reference\skill-names-en.tsv); the pages show it greyed out
+            for (id, (_, en)) in self.skill_translations()? {
+                if !res.get(id).cloned().flatten().is_some_and(|n| is_english_game_name(&n)) {
+                    res.insert(*id, Some(en.clone()));
+                }
+            }
             // IMAGINE-only skills the website lacks: tokusei-missing.tsv names the SkillData records that use each tokusei ("SkillData:id:name").
             if let Some(lines) = reference_lines("tokusei-missing.tsv")? {
                 for line in &lines {
@@ -1166,6 +1174,43 @@ impl GameData {
             }
             Ok(res)
         })
+    }
+
+    /// BABEL's own English for skills the client names only in Japanese (or half in Japanese, like "Vileの牙"):
+    /// reference\skill-names-en.tsv (id, the client's name, the translation), id -> (Japanese, English). A line counts only
+    /// while the client's name in skill-text.tsv is still that Japanese one, so a client update that renames or translates
+    /// the skill wins over it.
+    pub fn skill_translations(&self) -> Result<&HashMap<i32, (String, String)>> {
+        once(&self.skill_translations, || {
+            let mut client: HashMap<i32, String> = HashMap::new();
+            for line in reference_lines("skill-text.tsv")?.unwrap_or_default() {
+                let r: Vec<&str> = line.split('\t').collect();
+                if let (Some(id), Some(n)) = (crate::fmt::parse_i32(r[0]), r.get(1)) {
+                    client.insert(id, n.trim().to_string());
+                }
+            }
+            let mut res = HashMap::new();
+            for line in reference_lines("skill-names-en.tsv")?.unwrap_or_default() {
+                let r: Vec<&str> = line.split('\t').collect();
+                if line.starts_with('#') || r.len() < 3 {
+                    continue;
+                }
+                if let Some(id) = crate::fmt::parse_i32(r[0]) {
+                    let (ja, en) = (r[1].trim(), r[2].trim());
+                    if !en.is_empty() && client.get(&id).map(String::as_str) == Some(ja) {
+                        res.insert(id, (ja.to_string(), en.to_string()));
+                    }
+                }
+            }
+            Ok(res)
+        })
+    }
+
+    /// The client's Japanese name of a skill whose shown name (`skill_names`) is BABEL's translation; `None` when the
+    /// name shown is the game's own. Pages show such a name greyed out, with the Japanese in its tooltip.
+    pub fn skill_name_ja(&self, id: i32) -> Result<Option<String>> {
+        let Some((ja, en)) = self.skill_translations()?.get(&id) else { return Ok(None) };
+        Ok((self.skill_names()?.get(&id).cloned().flatten().as_deref() == Some(en.as_str())).then(|| ja.clone()))
     }
 
     // ---------- Enchants (tarot/soul crystals) and fusion sets ----------

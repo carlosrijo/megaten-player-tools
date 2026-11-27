@@ -544,7 +544,9 @@ that learns it (with the level) or has it as a feature; click a demon to open it
 The list opens on the skills you can get (learned by a compendium demon, a demon feature, from expertise, from an NPC
 exchange, or a fusion skill: 2,034). "Who can get it" narrows that down or shows every skill in the game data (3,120, with enemy and event
 skills). Search by name, element, words of the description, expertise or demon; filter by element; sort by name,
-modifier, stiffness or cooldown. Item uses, debug skills and the 777 skills the client only names in Japanese are left out.
+modifier, stiffness or cooldown. Item uses and debug skills are left out. Skills the game names only in Japanese (848,
+mostly enemy, event and unused ones) show BABEL's English translation greyed out, with the Japanese name small under it;
+the Demon Database and the Rebirth Planner grey those names too, with the Japanese in the tooltip.
 Destruction magic (Agi, Zio...) is a Shot skill in the game data; healing, support and curse spells are Curative.
 
 ### Tools: Build Planner

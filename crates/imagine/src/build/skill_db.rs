@@ -16,7 +16,9 @@
 //! what an exchange asks of the demon (`lv`, `needs`).
 //!
 //! Left out: item uses (family ITEM: what an item does when used), the demons' own item uses (DEMON_SOLO), DEBUG skills,
-//! skills without a name and skills whose name the client never translated (only Japanese: test or unused records).
+//! skills without a name and skills whose name the client never translated (only Japanese: test or unused records) that
+//! referenceskill-names-en.tsv has no English for; the ones it has are kept with that English as `name` and the
+//! client's Japanese as `ja`.
 //! Which demons learn a skill is not written here: the page works it out from demon-db.json, which already holds every
 //! compendium demon's skills and features.
 
@@ -111,6 +113,16 @@ pub fn build(data: &GameData, decoded: &Path, store: Option<&Path>, client_dir: 
                     names.insert(id, p[1].trim().to_string());
                 }
             }
+        }
+    }
+
+    // BABEL's English for the names the client has only (or half) in Japanese (referenceskill-names-en.tsv); the
+    // Japanese is kept as `ja`, and the page shows such a name greyed out
+    let mut name_ja: HashMap<i32, String> = HashMap::new();
+    for (id, (ja, en)) in data.skill_translations()? {
+        if names.get(id).is_some_and(|n| n == ja) {
+            names.insert(*id, en.clone());
+            name_ja.insert(*id, ja.clone());
         }
     }
 
@@ -385,7 +397,8 @@ pub fn build(data: &GameData, decoded: &Path, store: Option<&Path>, client_dir: 
     // ---- the skills ----
     let mut skills: Vec<Map<String, Value>> = Vec::new();
     let (mut untranslated, mut unnamed, mut items) = (0, 0, 0);
-    let latin = Regex::new("[A-Za-z]").expect("latin");
+    // full-width letters count: "ＤＯＯＲ－01", "Ｔｒｉｃｋ", "Ｃ4Ｕ！" are English names the client writes full width
+    let latin = Regex::new("[A-Za-zＡ-Ｚａ-ｚ]").expect("latin");
     let skill_text = xml::read_text(&decoded.join("SkillData.xml"))?;
     let skill_doc = xml::parse(&skill_text)?;
     for o in xml::records(&skill_doc) {
@@ -400,7 +413,8 @@ pub fn build(data: &GameData, decoded: &Path, store: Option<&Path>, client_dir: 
             items += 1;
             continue;
         }
-        let Some(name) = names.get(&id) else {
+        // "-" is no name either (50325-50334, the curative limit passives)
+        let Some(name) = names.get(&id).filter(|n| n.as_str() != "-") else {
             unnamed += 1;
             continue;
         };
@@ -414,6 +428,9 @@ pub fn build(data: &GameData, decoded: &Path, store: Option<&Path>, client_dir: 
         let mut s = Map::new();
         s.insert("id".into(), json!(id));
         s.insert("name".into(), json!(name));
+        if let Some(ja) = name_ja.get(&id) {
+            s.insert("ja".into(), json!(ja));   // the name is BABEL's translation of the client's Japanese one
+        }
         s.insert("type".into(), json!(ty));
         if let Some(desc) = data.skill_text(id)? {
             s.insert("desc".into(), json!(desc));

@@ -2324,3 +2324,5 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-radar-key { display: inline-flex; align-items: center; gap: 6px; }
 .rbp-radar-key i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
 .rbp-radar-key b { color: var(--text); font-variant-numeric: tabular-nums; }
+/* A name BABEL translated because the game has it only in Japanese (skill-db.json / demon-db.json `ja`): greyed out */
+.tl-name, .char-name.tl-name, .row-btn .tl-name { color: var(--text-3); }

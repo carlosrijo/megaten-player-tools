@@ -1,0 +1,849 @@
+#id	the client's name (Japanese, as reference\skill-text.tsv has it)	BABEL's English (shown greyed out; the game has no English name for these)
+108	Frost窶冱 Punch	Frost's Punch
+229	光る眼	Glowing Eyes
+230	ヒートウェイブ	Heat Wave
+231	マルカジリ	Gobble
+234	豪雪ラッシュ（敵専用）	Heavy Snow Rush (Enemy Only)
+235	回雪スピン（敵専用）	Whirling Snow Spin (Enemy Only)
+236	ハロ！ウィン！ボンバァ！（敵）	Hallo! Ween! Bomber! (Enemy)
+237	大回転パイブロー（敵専用）	Giant Spinning Pie Blow (Enemy Only)
+272	乱入剣（人修羅）	Intrusion Sword (Demi-fiend)
+273	原色の舞踏（人修羅）	Dance of Primary Colors (Demi-fiend)
+274	冥界破（人修羅）	Hades Blast (Demi-fiend)
+275	アイスブレス（人修羅）	Ice Breath (Demi-fiend)
+276	突撃（人修羅）	Lunge (Demi-fiend)
+277	アイアンクロウ（人修羅）	Iron Claw (Demi-fiend)
+278	死亡遊戯（人修羅）	Deadly Fury (Demi-fiend)
+279	鬼神楽（人修羅）	Oni-Kagura (Demi-fiend)
+280	破邪の光弾（人修羅）	Divine Shot (Demi-fiend)
+281	マグマ・アクシス（人修羅）	Magma Axis (Demi-fiend)
+282	螺旋の蛇（人修羅）	Spiral Viper (Demi-fiend)
+283	至高の魔弾（人修羅）	Freikugel (Demi-fiend)
+284	キッスカノン	Kiss Cannon
+285	深淵のゲート・オブ・バビロン	Abyssal Gate of Babylon
+286	深淵の宣告	Abyssal Sentence
+287	深淵のメギドファイア・Ⅰ	Abyssal Megido Fire I
+288	深淵のメギドファイア・Ⅱ	Abyssal Megido Fire II
+289	深淵のメギドファイア・Ⅰ＋	Abyssal Megido Fire I+
+290	深淵のメギドファイア・Ⅱ＋	Abyssal Megido Fire II+
+291	深淵のエクリプス	Abyssal Eclipse
+292	深淵のメディアラハン	Abyssal Mediarahan
+293	深淵の地獄の業火	Abyssal Hellfire
+294	深淵の絶対零度	Abyssal Absolute Zero
+295	深淵の放電	Abyssal Electrical Discharge
+296	深淵の真空刃	Abyssal Vacuum Blade
+297	深淵のプロミネンス	Abyssal Prominence
+298	深淵のコキュートスペイン	Abyssal Cocytus Pain
+299	深淵のショックウェーブ	Abyssal Shockwave
+300	深淵の竜巻	Abyssal Tornado
+342	雪ダッジ（敵専用）	Snow Dodge (Enemy Only)
+343	雪ガード（敵専用）	Snow Guard (Enemy Only)
+344	パイは見えているか	Can You See the Pie?
+345	雪カウンター（敵専用）	Snow Counter (Enemy Only)
+346	雪崩（敵専用）	Avalanche (Enemy Only)
+349	ヘルエギゾースト	Hell Exhaust
+350	ヘルスロットル	Hell Throttle
+389	挑発	Taunt
+421	八頭の焔甌	Eight-Headed Flame Jar
+422	死蝿の葬列	Procession of Dead Flies
+423	ジャベリンレイン（人修羅）	Javelin Rain (Demi-fiend)
+424	妬みの波動	Blast of Envy
+425	乙女の祈り	Maiden's Prayer
+426	ペンタウォール	Penta Wall
+427	死蝿の葬列	Procession of Dead Flies
+428	地母の晩餐（人修羅）	Gaea Rage (Demi-fiend)
+430	ゼロス・ビート（人修羅）	Xeros-Beat (Demi-fiend)
+431	ヒートウェイブ	Heat Wave
+432	耐特殊プログラム112	Special Resistance Program 112
+434	刻延の呪詛・陰	Curse of Delayed Time: Yin
+435	刻延の呪詛・陽	Curse of Delayed Time: Yang
+436	日々精進砲	Daily Diligence Cannon
+437	生死即涅槃	Samsara Is Nirvana
+439	煩悩即菩提	Earthly Desires Are Enlightenment
+446	コロナカノン（同士討ち）	Corona Cannon (Friendly Fire)
+447	八頭の焔甌（同士討ち）	Eight-Headed Flame Jar (Friendly Fire)
+448	猛る牙（同士討ち）	Raging Fang (Friendly Fire)
+449	ヘルズアイ（同士討ち）	Hell's Eyes (Friendly Fire)
+450	稲妻突き（同士討ち）	Lightning Thrust (Friendly Fire)
+451	混沌の海（同士討ち）	Sea of Chaos (Friendly Fire)
+452	バインドボイス（同士討ち）	Bind Voice (Friendly Fire)
+453	ハマオン（同士討ち）	Hamaon (Friendly Fire)
+454	ギロチンカット（同士討ち）	Guillotine Cut (Friendly Fire)
+455	ダズリングアーク	Dazzling Arc
+456	ルミナスチェイサー	Luminous Chaser
+457	やすむ	Rest
+458	侵蝕の大口	Eroding Maw
+459	アビススランバー	Abyss Slumber
+460	催眠波	Hypnotic Wave
+461	火炎・詠唱のみ	Fire (Incantation Only)
+462	氷結・詠唱のみ	Ice (Incantation Only)
+463	電撃・詠唱のみ	Electric (Incantation Only)
+464	衝撃・詠唱のみ	Force (Incantation Only)
+466	明星光（敵専用）	Morning Star's Light (Enemy Only)
+467	HP23％減少（敵専用）	HP 23% Decrease (Enemy Only)
+468	ムーンライトアーク	Moonlight Arc
+469	生クリームガードナー	Whipped Cream Guarder
+470	雪玉（敵専用）	Snowball (Enemy Only)
+472	アギラオ（装填2）	Agilao (Load 2)
+473	マハラギ（装填2）	Maragi (Load 2)
+474	マハラギオン（装填2）	Maragion (Load 2)
+475	ザンマ（装填2）	Zanma (Load 2)
+476	マハザン（装填2）	Mazan (Load 2)
+477	ハマ（装填2）	Hama (Load 2)
+478	ハンマ（装填2）	Hanma (Load 2)
+479	マジカルメテオ（装填2）	Magical Meteor (Load 2)
+480	メギド（装填2）	Megido (Load 2)
+481	魅惑かみつき（装填2）	Charming Bite (Load 2)
+482	地獄突き（装填2）	Hell Thrust (Load 2)
+483	マハンマ（装填2）	Manma (Load 2)
+484	妬みの波動（万能）	Blast of Envy (Almighty)
+485	パイスロー（敵専用）	Pie Throw (Enemy Only)
+486	パイアベンジャー	Pie Avenger
+547	火炎の壁	Fire Wall
+548	氷結の壁	Ice Wall
+549	電撃の壁	Electric Wall
+550	衝撃の壁	Force Wall
+552	呪殺の壁	Curse Wall
+563	死への慧眼	Keen Eye for Death
+592	ダークブレス	Dark Breath
+593	永夜のオーロラ	Aurora of Eternal Night
+660	テトラカーン（ルキフグス）	Tetrakarn (Lucifuge)
+661	マカラカーン（ルキフグス）	Makarakarn (Lucifuge)
+662	ロストワード（敵専用）	Lost Word (Enemy Only)
+713	ソルニゲル	Sol Niger
+715	ディバイン・シールド（敵専用）	Divine Shield (Enemy Only)
+716	ディバイン・バリア（敵専用）	Divine Barrier (Enemy Only)
+717	英傑の激励（敵専用）	Hero's Encouragement (Enemy Only)
+718	パルス・オブ・アサルト（敵専用）	Pulse of Assault (Enemy Only)
+719	パルス・オブ・ソリッド（敵専用）	Pulse of Solid (Enemy Only)
+720	インテンシブアタック（敵専用）	Intensive Attack (Enemy Only)
+721	霊魂流出	Soul Outflow
+722	サマリカーム（分霊）	Samarecarm (Divided Spirit)
+805	爆風	Blast Wind
+809	プレヴィアスワールド	Previous World
+811	プレゲトン	Phlegethon
+819	ヤればデキる	Do It and You Can
+831	万能レインフォース	Almighty Reinforce
+832	メギドファイア・Ⅰ	Megido Fire I
+833	メギドファイア・Ⅱ	Megido Fire II
+834	Vileの牙	Vile's Fang
+835	アゲンストペイン	Against Pain
+836	砂漠の風	Desert Wind
+837	サイレントハウル	Silent Howl
+838	終わる世界	The World Ends
+839	反撃1	Counter 1
+840	反撃2	Counter 2
+841	反撃3	Counter 3
+842	反撃4	Counter 4
+843	メギドファイア・Ⅰ	Megido Fire I
+844	メギドファイア・Ⅱ	Megido Fire II
+846	状態変化無効	Status Effect Null
+848	恋するバイナルストライク	Vinal Strike of Love
+851	大喝一声	Great Shout
+852	祝福の光庭	Garden of Blessed Light
+853	八艘跳び（同士討ち）	Hassou Tobi (Friendly Fire)
+854	秘剣・刀鏡幻影刃（同士討ち）	Secret Sword: Mirror Phantom Blade (Friendly Fire)
+855	アカシャアーツ・鬼（同士討ち）	Akasha Arts: Oni (Friendly Fire)
+856	透過防止	Anti-Penetration
+858	メディアラハン	Mediarahan
+859	移動不能（敵専用）	Immobilized (Enemy Only)
+860	ゲート・オブ・バビロン（敵専用）	Gate of Babylon (Enemy Only)
+861	全耐性低下ＬＶ1（敵専用）	All Resistance Down Lv1 (Enemy Only)
+862	全耐性低下ＬＶ2（敵専用）	All Resistance Down Lv2 (Enemy Only)
+863	全耐性低下ＬＶ3（敵専用）	All Resistance Down Lv3 (Enemy Only)
+864	全耐性低下ＬＶ4（敵専用）	All Resistance Down Lv4 (Enemy Only)
+865	インテンシブアタック（同士討ち）	Intensive Attack (Friendly Fire)
+866	メディアラハン（同士討ち）	Mediarahan (Friendly Fire)
+867	英傑の激励（同士討ち）	Hero's Encouragement (Friendly Fire)
+868	パルス・オブ・アサルト（同士）	Pulse of Assault (Ally)
+869	パルス・オブ・ソリッド（同士）	Pulse of Solid (Ally)
+870	全耐性低下ＬＶ5（敵専用）	All Resistance Down Lv5 (Enemy Only)
+871	全耐性低下ＬＶ6（敵専用）	All Resistance Down Lv6 (Enemy Only)
+872	全耐性低下ＬＶ7（敵専用）	All Resistance Down Lv7 (Enemy Only)
+875	緊縛反撃	Binding Counter
+876	猛毒反撃	Deadly Poison Counter
+891	暴虐の顎	Tyrannical Jaw
+892	ソウルパニッシュ	Soul Punish
+893	ライフブレイク	Life Break
+894	霊魂流出	Soul Outflow
+895	気分爽快！	Feeling Great!
+896	やけのやんぱち	Reckless Desperation
+897	ブラックサンシャイン	Black Sunshine
+898	ホワイトミスト	White Mist
+902	二元の鼓動・極	Duality Pulse Extreme
+903	風力招来	Summon Wind Power
+904	雨力招来	Summon Rain Power
+905	反撃（賢者）	Counter (Sage)
+917	マハブフダイン（同士討ち）	Mabufudyne (Friendly Fire)
+918	樹海の糸（同士討ち）	Thread of the Forest (Friendly Fire)
+919	メギドラ（同士討ち）	Megidora (Friendly Fire)
+920	永夜のオーロラ（同士討ち）	Aurora of Eternal Night (Friendly Fire)
+921	マハジオダイン（同士討ち）	Maziodyne (Friendly Fire)
+922	バイナルストライク（同士討ち）	Vinal Strike (Friendly Fire)
+923	ご立派ウェーブ	Magnificent Wave
+924	インテンシブアタック（同士討ち）	Intensive Attack (Friendly Fire)
+925	英傑の激励（同士討ち）	Hero's Encouragement (Friendly Fire)
+926	パルス・オブ・アサルト（同士）	Pulse of Assault (Ally)
+927	パルス・オブ・ソリッド（同士）	Pulse of Solid (Ally)
+932	深淵のナーバスエッジ	Abyssal Nerve Edge
+933	深淵のマジックブラスト	Abyssal Magic Blast
+934	ヒホの晩餐（羅刹）	Hee-Ho's Feast (Rakshasa)
+935	ゼロス・ヒーホ（羅刹）	Zeros Hee-Ho (Rakshasa)
+936	原色の葡萄（羅刹）	Primary Color Grapes (Rakshasa)
+937	鬼！アクマ！（羅刹）	Demon! Fiend! (Rakshasa)
+938	破邪い光弾（羅刹）	Exorcising Light Bullet (Rakshasa)
+939	ヒホーの魔弾（羅刹）	Hee-Ho's Magic Bullet (Rakshasa)
+940	百烈フロストパンチ（羅刹）	Hundred-Strike Frost Punch (Rakshasa)
+941	ハーミットクラブラッシュ（羅刹）	Hermit Crab Rush (Rakshasa)
+942	チェストブレイクスピン（羅刹）	Chest Break Spin (Rakshasa)
+945	パトリカーム	Patricarm
+965	ビターパウダー	Bitter Powder
+1025	召喚【血返しの約定・火】	Summon (Pact of Returned Blood: Fire)
+1026	召喚【血返しの約定・水】	Summon (Pact of Returned Blood: Water)
+1027	召喚【血返しの約定・木】	Summon (Pact of Returned Blood: Wood)
+1028	召喚【血返しの約定・金】	Summon (Pact of Returned Blood: Metal)
+1029	召喚【死ニ叢ガルモノ】	Summon (Swarm of Death)
+1030	召喚【神の御前に立つ者Ⅰ】	Summon (One Who Stands Before God I)
+1031	召喚【神の御前に立つ者Ⅱ】	Summon (One Who Stands Before God II)
+1032	召喚【神の御前に立つ者Ⅲ】	Summon (One Who Stands Before God III)
+1033	召喚【神の御前に立つ者Ⅳ】	Summon (One Who Stands Before God IV)
+1034	召喚【身外身の法・一】	Summon (Clone Technique I)
+1035	召喚【身外身の法・二】	Summon (Clone Technique II)
+1036	召喚【身外身の法・三】	Summon (Clone Technique III)
+1037	召喚【赤き糸】	Summon (Red Thread)
+1038	召喚【偽りの主神】	Summon (False Supreme God)
+1039	召喚【執念の従者】	Summon (Obsessive Servant)
+1040	四Seraphim召喚	Summon the Four Seraphim
+1075	帰還【血返しの約定・火】	Return (Pact of Returned Blood: Fire)
+1076	帰還【血返しの約定・水】	Return (Pact of Returned Blood: Water)
+1077	帰還【血返しの約定・木】	Return (Pact of Returned Blood: Wood)
+1078	帰還【血返しの約定・金】	Return (Pact of Returned Blood: Metal)
+1079	帰還【死ニ叢ガルモノ】	Return (Swarm of Death)
+1080	帰還【神の御前に立つ者Ⅰ】	Return (One Who Stands Before God I)
+1081	帰還【神の御前に立つ者Ⅱ】	Return (One Who Stands Before God II)
+1082	帰還【神の御前に立つ者Ⅲ】	Return (One Who Stands Before God III)
+1083	帰還【神の御前に立つ者Ⅳ】	Return (One Who Stands Before God IV)
+1084	帰還【身外身の法・一】	Return (Clone Technique I)
+1085	帰還【身外身の法・二】	Return (Clone Technique II)
+1086	帰還【身外身の法・三】	Return (Clone Technique III)
+1087	帰還【偽りの主神】	Return (False Supreme God)
+1088	帰還【執念の従者】	Return (Obsessive Servant)
+1089	天罰（魔法）	Divine Punishment (Magic)
+1090	天罰（物理）	Divine Punishment (Physical)
+1094	キッスカノン	Kiss Cannon
+1107	ブレス攻撃	Breath Attack
+1108	色即是空（敵悪魔専用）	Form Is Emptiness (Enemy Demon Only)
+1109	力の簒奪	Usurpation of Power
+1110	霊体爆弾	Spirit Bomb
+1111	裁きの雷	Thunder of Judgment
+1112	裁きの大雷	Great Thunder of Judgment
+1113	裁きの轟雷	Roaring Thunder of Judgment
+1118	冥界破（サタン用）	Hades Blast (Satan)
+1120	雷警報	Thunder Warning
+1121	大雷警報	Great Thunder Warning
+1122	霊体爆弾警報	Spirit Bomb Warning
+1124	死の宣告詠唱	Death Sentence Incantation
+1125	神霊の爪（サタン）	Claw of the Divine Spirit (Satan)
+1126	汝の衣は無力なり（サタン）	Thy Garment Is Powerless (Satan)
+1127	神の裁き（サタン）	Divine Judgement (Satan)
+1382	地獄の業火(ノックバックを無効▼)	Hell Fire (Disable Knockback)
+1383	絶対零度(ノックバックを無効▼)	Absolute Zero (Disable Knockback)
+1384	放電(ノックバックを無効▼)	Electrical Discharge (Disable Knockback)
+1385	ソニックブーム(ノックバックを無効▼)	Sonic Boom (Disable Knockback)
+1128	メギドラオン（サタン）	Megidoraon (Satan)
+1129	射撃弾	Shot Bullet
+1130	貫通弾	Piercing Bullet
+1131	散弾	Spread Bullet
+1136	貫通メギドラオン	Piercing Megidoraon
+1137	せつなさみだれうち	Poignant Rapid Fire
+1138	スナイプショット・ブレイク	Snipe Shot - Break
+1139	スナイプショット・スペル	Snipe Shot - Spell
+1140	スナイプショット・ディスペル	Snipe Shot - Dispel
+1141	ギガパイルブレイク	Giga Pile Break
+1142	メギドスラッシュ	Megido Slash
+1143	ゴッドバード	God Bird
+1146	全快メディアラハン	Full-Heal Mediarahan
+1147	詠唱（サタン用）	Incantation (Satan)
+1148	自害	Suicide
+1149	ダメージアップ付与（アズラ）	Grant Damage Up (Azra)
+1150	被ダメージ減付与（アズラ）	Grant Damage Reduction (Azra)
+1151	ＴＡＢ付与（アズラ）	Grant TAB (Azra)
+1152	必ずクリティカル付与（アズラ）	Grant Guaranteed Critical (Azra)
+1153	混沌の海（ボス）発射	Sea of Chaos (Boss) Fire
+1154	混沌の海（ボス）詠唱	Sea of Chaos (Boss) Incantation
+1155	シャドウ爆弾	Shadow Bomb
+1156	奥義一閃	Secret Art Flash
+1163	審判の日	Day of Judgement
+1164	シナイの神火（敵専用）	Fire of Sinai (Enemy Only)
+1166	ランダマイザ（敵専用　特殊）	Randomizer (Enemy Only Special)
+1167	スーパーアーマー付与	Grant Super Armor
+1168	深淵のマララギダイン	Abyssal Maralagidyne
+1169	深淵のマラブフダイン	Abyssal Marabufudyne
+1170	深淵のマラジオダイン	Abyssal Maraziodyne
+1171	深淵のマラザンダイン	Abyssal Marazandyne
+1172	深淵のたたり生唾	Abyssal Cursed Saliva
+1173	重突撃	Heavy Assault
+1174	30％コロナカノン	30% Corona Cannon
+1175	30％ブリザードカノン	30% Blizzard Cannon
+1176	30％ライトニングカノン	30% Lightning Cannon
+1177	30％ハリケーンカノン	30% Hurricane Cannon
+1178	衰電のショックウェーブ	Waning Lightning Shockwave
+1179	衰火のプレゲトン	Waning Fire Phlegethon
+1180	劇場のメギドラオン	Theatrical Megidoraon
+1181	10％自爆（現在値）	10% Self-Explosion (Current Value)
+1182	30％自爆（最大値）	30% Self-Explosion (Max Value)
+1183	HP11％減少	11% HP Reduction
+1184	モト弱体化ＬＶ1	Moto Weakening Lv1
+1185	モト弱体化ＬＶ2	Moto Weakening Lv2
+1186	モト弱体化ＬＶ3	Moto Weakening Lv3
+1187	モト弱体化ＬＶ4	Moto Weakening Lv4
+1188	全相性無効解除	Cancel Null All Affinities
+1189	100％自爆（最大値）	100% Self-Explosion (Max Value)
+1190	衝撃耐性減少付与	Grant Force Resistance Down
+1194	言霊五月雨撃ち	Kotodama Rapid Fire
+1195	30％ナーバスエッジ	30% Nervous Edge
+1196	75％ブレイカー	75% Breaker
+1197	吸精空虚	Hollow Essence Drain
+1198	慈愛の祈り（敵専用）	Prayer of Mercy (Enemy Only)
+1199	全相性無効付与	Grant Null All Affinities
+1200	火炎吸収付与	Grant Fire Absorption
+1201	衝撃吸収付与	Grant Force Absorption
+1202	火炎吸収解除	Cancel Fire Absorption
+1203	衝撃吸収解除	Cancel Force Absorption
+1204	妬みの暴圧ＥＸ	Oppression of Envy EX
+1205	ショック無効	Null Shock
+1207	状態変化付与アップ	Status Effect Grant Up
+1208	侵蝕の呪詛	Curse of Erosion
+1209	硬結形態	Hardened Form
+1210	硬結反撃	Hardened Counter
+1211	硬結陣	Hardened Formation
+1212	神光破（敵専用）	Divine Light Blast (Enemy Only)
+2002	デバッグ用散弾（仲魔用）	Spread Shot for Debug use (Demon)
+5179	Ｍ．ティーパーティ	M. Tea Party
+5187	羽ばたき・豪	Mighty Flutter
+5192	巳への祈り	Prayer to the Serpent
+5199	雪玉	Snowball
+5200	豪雪ラッシュ	Heavy Snow Rush
+5201	回雪スピン	Whirling Snow Spin
+5281	デバッグ用火炎ブースト	Fire Boost (Debug Use)
+5282	デバッグ用氷結ブースト	Ice Boost (Debug Use)
+5283	デバッグ用電撃ブースト	Elec Boost (Debug Use)
+5284	デバッグ用衝撃ブースト	Force Boost (Debug Use)
+5285	デバッグ用破魔ブースト	Expel Boost (Debug Use)
+5286	デバッグ用呪殺ブースト	Curse Boost (Debug Use)
+5287	デバッグ用物理ブースト	Physical Boost (Debug Use)
+5288	デバッグ用魔法ブースト	Magic Boost (Debug Use)
+5518	【デバッグ用】Ｅ・Ｆ・Ｂ	[Debug Use] E.F.B
+5606	武の赤	Martial Red
+5607	銃の赤	Gun Red
+5609	魔の赤	Magic Red
+5610	召の赤	Summon Red
+5791	クラッカー	Cracker
+5792	肩組み	Arm in Arm
+5793	感激	Deeply Moved
+5794	地団駄	Stomping Tantrum
+5795	ツイスト	Twist
+5796	マッスルポーズ	Muscle Pose
+6123	ライド・リリム	Ride (Lilim)
+6124	ライド・ハヤグリーヴァ	Ride (Hayagriva)
+6125	ライド・ヴァルキリー	Ride (Valkyrie)
+6126	ライド・祭囃子	Ride (Festival Music)
+6127	ライド・陣風のスレイプニル	Ride (Gale Sleipnir)
+8036	影の鎌	Scythe of Shadow
+8037	アドレナリンブレイカー	Adrenaline Breaker
+8038	女の子の携帯を踏みつける趣味	Fondness for Stomping Girls' Phones
+8039	愛のカタチ	Form of Love
+8040	ナンパ心と義理人情	Pickup Heart and Loyalty
+8041	真・愛のカタチ	True Form of Love
+8043	ジーンエリミネイション	Gene Elimination
+8044	グラヴィティアブストラクション	Gravity Abstraction
+8045	トランス	Trance
+8047	血のポエム	Poem of Blood
+8048	亡者の憂い	Lament of the Dead
+8049	コロナライズ	Coronalize
+8050	デッドリーブレイク	Deadly Break
+8051	デッドリーレイジ	Deadly Rage
+8052	ダッジ・エレメンタル	Dodge Elemental
+8053	ブレイクチューナー	Break Tuner
+8054	ブレイクチューナー・デビル	Break Tuner - Devil
+8056	二連突き	Double Thrust
+8057	首狩り	Head Hunting
+8058	ダブルタップ	Double Tap
+8059	ヘッドショット	Headshot
+8062	メディア	Media
+8063	リカーム	Recarm
+8064	美麗陣・Godspeed	Splendid Array - Godspeed
+8065	ライジングセル	Rising Cell
+8066	ラブチアリング	Love Cheering
+8068	プリズムソード	Prism Sword
+8069	ブリリアントパウンス	Brilliant Pounce
+8072	デッドリーペネトレイト	Deadly Penetrate
+8073	デッドリージョルト	Deadly Jolt
+8076	ジアイの言の葉	Words of Jiai
+8079	【ＧＭ】ホームポイント送り	[GM] Send to Home Point
+8080	【ＧＭ】ワープ	[GM] Warp
+8081	【ＧＭ】ステルス	[GM] Stealth
+8082	【ＧＭ】○い彗星	[GM] Red Comet
+8083	【ＧＭ】召喚：だいそうじょう	[GM] Summon: Daisojo
+8084	【ＧＭ】石化ナパーム	[GM] Stone Napalm
+8085	（デバッグ用）一時習得スイッチ	Temporary Learning Switch (Debug Use)
+8086	（デバッグ用）一時習得スイッチ	Temporary Learning Switch (Debug Use)
+8087	【ＧＭ】激励	[GM] Encouragement
+8088	砂幻陵探索サポーター	Sagenryo Exploration Supporter
+8089	ブロッサム・ロー	Blossom Low
+8090	ブロッサム・ハイ	Blossom High
+8091	ライコウ	Raikou
+8092	真理の秘撃	Secret Strike of Truth
+8093	甘無料	Free Sweetness
+8094	荷重力弾	Gravity Load Bullet
+8095	グラビトン・チャージ	Graviton Charge
+8096	無尽無辺光	Boundless Inexhaustible Light
+8097	序曲	Overture
+8098	散華	Scattered Blossoms
+8099	虚空のアリア	Aria of the Void
+8100	序曲(敵専用)	Overture (Enemy Only)
+8101	パニッシュメントウィップ	Punishment Whip
+8102	エンカレッジウィップ	Encourage Whip
+8103	未実装スキル	Unimplemented Skill
+8104	ブレイクチューナー・マルチ	Break Tuner - Multi
+8106	ドラゴンスウィープ改	Improved Dragon Sweep
+8107	バルカンヒット改	Improved Vulcan Hit
+8108	アギ改	Improved Agi
+8109	ブフ改	Improved Bufu
+8110	ジオ改	Improved Zio
+8111	ザン改	Improved Zan
+8112	デバッグ用ラッシュ（残影）	Rush (Afterimage) (Debug Use)
+8113	九字切り	Kuji-Kiri
+8114	普遍化する律動の力	Power of Universalizing Rhythm
+8115	【ＧＭ】2ゲット	[GM] 2get
+8116	眠円月	Slumbering Round Moon
+8117	ＥＭカノン	EM Cannon
+8118	【ＧＭ】マッカアタック	[GM] Macca Attack
+8121	原色の舞踏	Dance of Primary Colors
+8122	死亡遊戯	Game of Death
+8126	至高の魔弾	Supreme Magic Bullet
+8127	破邪の光弾	Evil-Banishing Light Bullet
+8128	虚空のアリア・裏	Aria of the Void - Reverse
+8129	活性化する意志の輝き	Brilliance of Invigorating Will
+8130	獅子吼	Lion's Roar
+8132	Debug_絶対即死	Debug_Absolute Instant Death
+8134	プレイズ	Praise
+8135	ジール	Zeal
+8136	ワーシップ	Worship
+8141	虹の弓	Rainbow Bow
+8150	せつなさみだれうち	Fleeting Barrage
+8151	ブラッドボルト	Blood Bolt
+8152	シュブレンゲン	Schubrengen
+8153	鬼人降臨	Oni Descent
+8154	ギガパイルブレイク	Giga Pile Break
+8155	地下遺構探索サポーター	Underground Ruins Exploration Supporter
+8156	駐屯地探索サポーター	Garrison Exploration Supporter
+8157	坑道探索サポーター	Mine Exploration Supporter
+8159	Debug_吸引_1	Debug_Suction_1
+8160	Debug_吸引_2	Debug_Suction_2
+8161	モータルコレクト	Mortal Collect
+8162	モータルインヘイル	Mortal Inhale
+8163	コープスメイカー	Corpse Maker
+8164	クレマチス	Clematis
+8165	フェイタルブロウ	Fatal Blow
+9023	ボイスコマンド おめでとう	Voice command: Congrats
+9024	ボイスコマンド おやすみ	Voice command: Good-night
+9025	ボイスコマンド お礼	Voice command: Thanks
+9026	ボイスコマンド さよなら	Voice command: Good-bye
+9027	ボイスコマンド よろしく	Voice command: Regards
+9028	ボイスコマンド あいさつ	Voice command: Greeting
+9029	ボイスコマンド 気合	Voice command: Power-up
+9030	ボイスコマンド 起きて	Voice command: Wake-up
+9031	ボイスコマンド 泣く	Voice command: Cry
+9032	ボイスコマンド 号令	Voice command: Command
+9033	ボイスコマンド 指をさす	Voice command: Point
+9034	ボイスコマンド 笑う	Voice command: Laugh
+9035	ボイスコマンド 断る	Voice command: Decline
+9036	ボイスコマンド 賛同	Voice command: Agree
+9037	ボイスコマンド 拍手	Voice command: Applause
+9038	ボイスコマンド 了解	Voice command: Understand
+9039	ボイスコマンド おめでとう	Voice command: Congrats
+9040	ボイスコマンド おやすみ	Voice command: Good-night
+9041	ボイスコマンド お礼	Voice command: Thanks
+9042	ボイスコマンド さよなら	Voice command: Good-bye
+9043	ボイスコマンド よろしく	Voice command: Regards
+9044	ボイスコマンド あいさつ	Voice command: Greeting
+9045	ボイスコマンド 気合	Voice command: Power-up
+9046	ボイスコマンド 起きて	Voice command: Wake-up
+9047	ボイスコマンド 泣く	Voice command: Cry
+9048	ボイスコマンド 号令	Voice command: Command
+9049	ボイスコマンド 指をさす	Voice command: Point
+9050	ボイスコマンド 笑う	Voice command: Laugh
+9051	ボイスコマンド 断る	Voice command: Decline
+9052	ボイスコマンド 賛同	Voice command: Agree
+9053	ボイスコマンド 拍手	Voice command: Applause
+9054	ボイスコマンド 了解	Voice command: Understand
+11901	打ち上げ花火（千輪菊）	Launched Firework (Thousand-Petal Chrysanthemum)
+11902	噴出花火(開花）	Fountain Firework (Blooming)
+11916	クリスマスクラッカー2011	Christmas Cracker 2011
+12073	打ち上げ花火その1敵用	Launched Firework 1 (Enemy Only)
+12074	打ち上げ花火その2敵用	Launched Firework 2 (Enemy Only)
+12075	打ち上げ花火その3敵用	Launched Firework 3 (Enemy Only)
+12076	打ち上げ花火その4敵用	Launched Firework 4 (Enemy Only)
+20023	死天亢進	Death Heaven Surge
+20024	死兵亢進	Death Soldier Surge
+20025	死霊亢進	Death Spirit Surge
+20026	死魔亢進	Death Demon Surge
+20059	真姿うつし	Reflection of True Form
+20060	虚仮の岩座	Hollow Rock Throne
+20097	踏円の歩	Circle-Treading Steps
+20120	夢与精奪	Dream Given, Essence Stolen
+20122	現し身高揚	Manifest Body Exaltation
+20134	火宴千鳥	Fiery Banquet Stagger
+20155	偽想司りし者	Master of False Fancies
+20159	北門にありし最強	Strongest at the North Gate
+20169	不乱の猛攻	Unwavering Onslaught
+20175	煽情	Provocative
+20179	若駒	Young Colt
+20213	凧揚げ	Kite Flying
+20214	独楽回し	Top Spinning
+20229	金剛身	Diamond Body
+20232	回復、補助無効	Null Recovery and Support
+20233	移動不可	Unable to Move
+20236	白素貞	Bai Suzhen
+20237	維持神の和平条約	Preserver's Peace Treaty
+20252	神の運び手	God Bearer
+20255	幼気	Tender Youth
+21019	若駒	Young Colt
+21037	運命の車輪	Wheel of Fortune
+21038	実り豊かなるローマ	Fruitful Rome
+23035	幻想の番人	Illusory Watchman
+23036	幻想の指導者	Illusory Leader
+23037	幻想の父	Illusory Father
+23038	幻想の襲撃者	Illusory Assailant
+23039	幻想の同盟者	Illusory Ally
+23040	幻想の統括者	Illusory Overseer
+23041	幻想の師事者	Illusory Disciple
+23042	幻想の子	Illusory Child
+23043	踏ん張り	Standing Firm
+23051	幻想の善	Illusory Good
+23052	幻想の悪	Illusory Evil
+23053	嫉妬深き女性	Jealous Woman
+23054	嫉妬深き魔女	Jealous Witch
+23055	速成	Rapid Growth
+23056	泉源の編糸	Weaving Thread of the Wellspring
+23057	原初の冷闇	Primordial Cold Darkness
+23058	育成の果核	Growth Cortex
+23059	力の果核	Strength Cortex
+23060	魔力の果核	Magic Cortex
+23061	体力の果核	Vitality Cortex
+23062	知力の果核	Intelligence Cortex
+23063	速さの果核	Speed Cortex
+23064	運の果核	Luck Cortex
+23065	斬撃高揚	Slash Boost
+23066	打撃高揚	Blunt Boost
+23067	射撃高揚	Handgun Boost
+23068	貫通高揚	Penetrate Boost
+23069	散弾高揚	Spread Boost
+23070	波濤万雷	Myriad Waves and Thunder
+23080	経験値上昇	Experience Up
+23081	詠唱時間減少	Incantation Time Down
+23082	食いしばり	Endure
+23083	即死無効	Null Instant Death
+23084	必殺発生	Critical Chance
+23085	斬撃高揚ＥＸ	Slash Boost EX
+23086	斬撃耐性	Slash Resistance
+23087	突撃耐性	Thrust Resistance
+23088	打撃耐性	Blunt Resistance
+23089	射撃耐性	Handgun Resistance
+23090	貫通耐性	Penetrate Resistance
+23091	散弾耐性	Spread Resistance
+23092	火炎耐性	Fire Resistance
+23093	氷結耐性	Ice Resistance
+23094	電撃耐性	Electric Resistance
+23095	衝撃耐性	Force Resistance
+23096	破魔耐性	Expel Resistance
+23097	呪殺耐性	Death Resistance
+23098	突撃高揚ＥＸ	Thrust Boost EX
+23099	打撃高揚ＥＸ	Blunt Boost EX
+23100	魔力耐性	Mystic Resistance
+23101	神経耐性	Nerve Resistance
+23102	精神耐性	Mind Resistance
+23109	溢れ出るフェロモン	Overflowing Pheromones
+23110	独尊	Sole Supremacy
+23111	激情	Intense Passion
+23112	シビれさすテク	Paralyzing Technique
+23113	アゲ♂アゲ♂ＭＡＸ	Hype Hype MAX
+23114	冷黒な微笑み	Cold Black Smile
+23115	モテの全部盛り	Fully Loaded Popularity
+23116	時代が俺の後ろからやってくる	The Age Follows Behind Me
+23120	胡蝶乱舞	Butterfly Dance
+23121	武勇の栄光	Glory of Valor
+23123	ノックバック無効	Null Knockback
+23124	斬撃高揚・PC	Slash Boost・PC
+23125	突撃高揚・PC	Thrust Boost・PC
+23126	打撃高揚・PC	Blunt Boost・PC
+23127	射撃高揚・PC	Handgun Boost・PC
+23128	貫通高揚・PC	Penetrate Boost・PC
+23129	散弾高揚・PC	Spread Boost・PC
+23130	火炎高揚・PC	Fire Boost・PC
+23131	氷結高揚・PC	Ice Boost・PC
+23132	電撃高揚・PC	Electric Boost・PC
+23133	衝撃高揚・PC	Force Boost・PC
+23134	破魔高揚・PC	Expel Boost・PC
+23135	呪殺高揚・PC	Death Boost・PC
+23136	近接攻撃上昇Ⅰ	Close-Range Attack Up I
+23137	射撃攻撃上昇Ⅰ	Long-Range Attack Up I
+23138	魔力高揚・PC	Mystic Boost・PC
+23139	神経高揚・PC	Nerve Boost・PC
+23140	精神高揚・PC	Mind Boost・PC
+23141	脳吸う鳥は嘴を隠す	Brain-Sucking Bird Hides Its Beak
+23142	珠玉の瞳	Gem Eyes
+23143	才与精奪	Talent Given, Essence Stolen
+23144	バナス・パティ	Banaspati
+23145	子喰みの寡婦	Child-Devouring Widow
+23146	大元帥明王	Atavaka
+23147	馬頭人身	Horse Head, Human Body
+23148	王権の守護者	Guardian of Kingship
+23149	明星の輝き	Radiance of the Morning Star
+23150	呪いの巧手	Master of Curses
+23151	誇りの道を往く者	One Who Walks the Path of Pride
+23152	魔法効果上昇Ⅰ	Spell Effect Up I
+23153	塞翁が馬・禍	Sai Weng's Horse (Misfortune)
+23154	塞翁が馬・福	Sai Weng's Horse (Fortune)
+23155	馬耳東風	Wind in the Horse's Ear
+23163	火炎・氷結高揚・PC	Fire/Ice Boost・PC
+23164	電撃・衝撃高揚・PC	Electric/Force Boost・PC
+23165	射撃高揚ＥＸ	Handgun Boost EX
+23166	貫通高揚ＥＸ	Penetrate Boost EX
+23167	散弾高揚ＥＸ	Spread Boost EX
+23168	魔力高揚ＥＸ	Mystic Boost EX
+23169	精神高揚ＥＸ	Mind Boost EX
+23170	神経高揚ＥＸ	Nerve Boost EX
+23171	回復高揚ＥＸ	Curative Boost EX
+23172	破魔高揚ＥＸ	Expel Boost EX
+23173	呪殺高揚ＥＸ	Death Boost EX
+23174	万能高揚ＥＸ	Almighty Boost EX
+24008	神族破りの結実	Fruit of God Breaking
+24009	飛天破りの結実	Fruit of Aerial Breaking
+24010	鬼神破りの結実	Fruit of Guardian Breaking
+24011	Demoniac破りの結実	Fruit of Demoniac Breaking
+24012	Magica破りの結実	Fruit of Magica Breaking
+24013	Bird破りの結実	Fruit of Bird Breaking
+24014	獣族破りの結実	Fruit of Beast Breaking
+24021	黄界破りの結実	Fruit of Yellow Realm Breaking
+24022	紫界破りの結実	Fruit of Purple Realm Breaking
+24023	赤界破りの結実	Fruit of Red Realm Breaking
+24024	青界破りの結実	Fruit of Blue Realm Breaking
+24025	緑界破りの結実	Fruit of Green Realm Breaking
+24026	黄界破りの結実・PC	Fruit of Yellow Realm Breaking・PC
+24027	紫界破りの結実・PC	Fruit of Purple Realm Breaking・PC
+24028	赤界破りの結実・PC	Fruit of Red Realm Breaking・PC
+24029	青界破りの結実・PC	Fruit of Blue Realm Breaking・PC
+24030	緑界破りの結実・PC	Fruit of Green Realm Breaking・PC
+26038	百錬自得の果核	Fruits of Labor Cortex
+26039	才気煥発の果核	Great Wit Cortex
+26040	近接の果核	Close-R Cortex
+26041	射撃の果核	Long-R Cortex
+26043	物防の果核	Physical Defense Cortex
+26044	魔防の果核	Magic Defense Cortex
+26045	近接攻撃上昇Ⅰ・PC	Close-R Attack Up I・PC
+26046	射撃攻撃上昇Ⅰ・PC	Long-R Attack Up I・PC
+26047	魔法効果上昇Ⅰ・PC	Spell Effect Up I・PC
+26048	斬撃装填数	Slash Load Count
+26049	突撃装填数	Thrust Load Count
+26050	打撃装填数	Blunt Load Count
+26051	射撃装填数	Handgun Load Count
+26052	貫通装填数	Penetrate Load Count
+26053	散弾装填数	Spread Load Count
+26054	火炎装填数	Fire Load Count
+26055	氷結装填数	Ice Load Count
+26056	電撃装填数	Electric Load Count
+26057	衝撃装填数	Force Load Count
+26058	破魔装填数	Expel Load Count
+26059	呪殺装填数	Death Load Count
+26060	回復装填数	Curative Load Count
+26061	補助装填数	Support Load Count
+26062	魔力装填数	Mystic Load Count
+26063	神経装填数	Nerve Load Count
+26064	精神装填数	Mind Load Count
+26065	斬撃詠唱軽減	Slash Incantation Reduction
+26066	突撃詠唱軽減	Thrust Incantation Reduction
+26067	打撃詠唱軽減	Blunt Incantation Reduction
+26068	射撃詠唱軽減	Handgun Incantation Reduction
+26069	貫通詠唱軽減	Penetrate Incantation Reduction
+26070	散弾詠唱軽減	Spread Incantation Reduction
+26071	火炎詠唱軽減	Fire Incantation Reduction
+26072	氷結詠唱軽減	Ice Incantation Reduction
+26073	電撃詠唱軽減	Electric Incantation Reduction
+26074	衝撃詠唱軽減	Force Incantation Reduction
+26075	破魔詠唱軽減	Expel Incantation Reduction
+26076	呪殺詠唱軽減	Death Incantation Reduction
+26077	回復詠唱軽減	Curative Incantation Reduction
+26078	補助詠唱軽減	Support Incantation Reduction
+26079	魔力詠唱軽減	Mystic Incantation Reduction
+26080	神経詠唱軽減	Nerve Incantation Reduction
+26081	精神詠唱軽減	Mind Incantation Reduction
+26082	必殺の果核	Critical Cortex
+26083	Dragon破りの結実	Fruit of Dragon Breaking
+26084	凶刃魔窟	Fiendish Blade Den
+26085	凶弾魔窟	Fiendish Bullet Den
+26086	凶咒魔窟	Fiendish Curse Den
+26089	恋の果核	Love Cortex
+26090	恋の結実	Fruit of Love
+26091	斬撃上限解放	Slash Limit Release
+26092	突撃上限解放	Thrust Limit Release
+26093	打撃上限解放	Blunt Limit Release
+26094	射撃上限解放	Handgun Limit Release
+26095	貫通上限解放	Penetrate Limit Release
+26096	散弾上限解放	Spread Limit Release
+26097	火炎上限解放	Fire Limit Release
+26098	氷結上限解放	Ice Limit Release
+26099	衝撃上限解放	Force Limit Release
+26100	電撃上限解放	Electric Limit Release
+26101	万能上限解放	Almighty Limit Release
+26102	破魔上限解放	Expel Limit Release
+26103	呪殺上限解放	Death Limit Release
+26104	回復上限解放	Curative Limit Release
+26105	魔力上限解放	Mystic Limit Release
+26106	神経上限解放	Nerve Limit Release
+26107	精神上限解放	Mind Limit Release
+26108	破壊の衝動	Destructive Urge
+26110	棘の網	Net of Thorns
+26111	スイマー	Swimmer
+26112	幕ノ内	Makunouchi
+26113	ホワイトノイズ	White Noise
+26114	レインブラック	Rain Black
+26115	育成指南	Training Guidance
+26116	Debug_特徴	Debug_Trait
+26118	破壊の衝動・PC	Destructive Urge・PC
+26119	成長への誘い	Invitation to Growth
+26120	もてあます煩悩	Unbearable Worldly Desires
+26121	リビドー	Libido
+26122	カタい意思	Hard Resolve
+26123	ナニ者でもない	Nondescript
+26124	比類なきモノ	Peerless Thing
+26125	悩殺ボディ	Bewitching Body
+26126	ブラインダー	Blinder
+26127	瘴気纏い	Miasma Cloak
+26129	仁王立ち	Nio Stance
+26130	常夏の申し子	Child of Eternal Summer
+26131	焦熱	Scorching Heat
+26132	敏捷	Agility
+26133	極彩色・赤	Vivid Colors - Red
+26134	極彩色・青	Vivid Colors - Blue
+26135	極彩色・黄	Vivid Colors - Yellow
+26136	極彩色・緑	Vivid Colors - Green
+26137	Ｉ　ａｍ　暴徒	I Am a Rioter
+26138	極彩色・赤	Vivid Colors - Red
+26139	極彩色・青	Vivid Colors - Blue
+26140	極彩色・黄	Vivid Colors - Yellow
+26141	極彩色・緑	Vivid Colors - Green
+26145	百錬自得・PC	The Fruits of Labor・PC
+26146	才気煥発・PC	Great Wit・PC
+26147	戮力一心	United Effort
+26148	国崩し	Nation Crusher
+26149	クイックロード	Quick Load
+26150	刃鳴り	Clash of Blades
+26152	知勇兼備	Wisdom and Valor
+26153	七歩の才	Seven-Step Genius
+26154	万能高揚	Almighty Boost
+26155	ジャマー	Jammer
+26156	未使用	Unused
+26157	サボタージュ	Sabotage
+26158	大聖堂・攻略	Cathedral - Conquest
+26159	決戦者	Decisive Battler
+26160	決戦者・PC	Decisive Battler・PC
+26161	ハピネス	Happiness
+26163	告発者	Accuser
+26164	百錬自得の極み・PC	The Greatest Fruit・PC
+26165	才気煥発の極み・PC	Greatest Wit・PC
+26166	ＬＢマスタリー	LB Mastery
+26167	震撼	Terrify
+26168	必殺発生上昇Ⅰ	Critical Chance Up I
+26169	ＬＢ発生上昇Ⅰ	LB Chance Up I
+26170	ＴＡ発生上昇Ⅰ	TA Chance Up I
+26171	金剛食いしばり	Adamant Endurance
+26172	秩序の恩恵	Blessing of Order
+26173	均衡の恩恵	Blessing of Balance
+26174	混沌の恩恵	Blessing of Chaos
+26176	必殺補正・PC	Critical Correction・PC
+26177	行動短縮	Action Shortening
+26178	武士の起源	Origin of the Samurai
+26179	破壊集団	Destruction Troop
+26180	必殺集団	Critical Troop
+26181	知恵袋	Fount of Wisdom
+26182	用心棒	Bodyguard
+26186	斬撃激昂	Slash Fury
+26187	突撃激昂	Thrust Fury
+26188	打撃激昂	Blunt Fury
+26189	射撃激昂	Handgun Fury
+26190	貫通激昂	Penetrate Fury
+26191	散弾激昂	Spread Fury
+26192	火炎激昂	Fire Fury
+26193	氷結激昂	Ice Fury
+26194	電撃激昂	Electric Fury
+26195	衝撃激昂	Force Fury
+26196	呪殺激昂	Death Fury
+26197	破魔激昂	Expel Fury
+26198	魔力激昂	Mystic Fury
+26199	神経激昂	Nerve Fury
+26200	精神激昂	Mind Fury
+26201	万能激昂	Almighty Fury
+26202	堅忍不抜	Unyielding Resolve
+26203	リベンジャー	Avenger
+26204	啄木鳥	Woodpecker
+26205	ヴァナラ	Vanara
+26206	地獄の宰相	Chancellor of Hell
+26207	国士無双	Peerless Patriot
+26208	金城鉄壁	Impregnable Fortress
+26209	臥竜鳳雛	Sleeping Dragon, Young Phoenix
+26210	善隣友好	Good Neighbors
+26211	魔斥瘴耐性	Anti-Magic Miasma Resistance
+26213	煉獄の主	Lord of Purgatory
+26214	煉獄の主・PC	Lord of Purgatory・PC
+31865	Debug_確殺アタック	Debug_Sure-Kill Attack
+31866	Debug_確殺ナパーム	Debug_Sure-Kill Napalm
+45023	Debug_パトリカーム	Debug_Patricam
+50155	補助アディショナルLv1	Support Additional Lv1
+50156	補助アディショナルLv2	Support Additional Lv2
+50157	補助アディショナルLv3	Support Additional Lv3
+50158	補助アディショナルLv4	Support Additional Lv4
+50159	補助アディショナルLv5	Support Additional Lv5
+50160	補助アディショナルLv6	Support Additional Lv6
+50161	補助アディショナルLv7	Support Additional Lv7
+50162	補助アディショナルLv8	Support Additional Lv8
+50163	補助アディショナルLv9	Support Additional Lv9
+50164	補助アディショナルLv10	Support Additional Lv10
+50195	自爆アディショナルLv1	Self-Explosion Additional Lv1
+50196	自爆アディショナルLv2	Self-Explosion Additional Lv2
+50197	自爆アディショナルLv3	Self-Explosion Additional Lv3
+50198	自爆アディショナルLv4	Self-Explosion Additional Lv4
+50199	自爆アディショナルLv5	Self-Explosion Additional Lv5
+50200	自爆アディショナルLv6	Self-Explosion Additional Lv6
+50201	自爆アディショナルLv7	Self-Explosion Additional Lv7
+50202	自爆アディショナルLv8	Self-Explosion Additional Lv8
+50203	自爆アディショナルLv9	Self-Explosion Additional Lv9
+50204	自爆アディショナルLv10	Self-Explosion Additional Lv10
+50335	補助リミットマスタリーLv1	Support Limit Mastery Lv1
+50336	補助リミットマスタリーLv2	Support Limit Mastery Lv2
+50337	補助リミットマスタリーLv3	Support Limit Mastery Lv3
+50338	補助リミットマスタリーLv4	Support Limit Mastery Lv4
+50339	補助リミットマスタリーLv5	Support Limit Mastery Lv5
+50340	補助リミットマスタリーLv6	Support Limit Mastery Lv6
+50341	補助リミットマスタリーLv7	Support Limit Mastery Lv7
+50342	補助リミットマスタリーLv8	Support Limit Mastery Lv8
+50343	補助リミットマスタリーLv9	Support Limit Mastery Lv9
+50344	補助リミットマスタリーLv10	Support Limit Mastery Lv10
+50375	自爆リミットマスタリーLv1	Self-Explosion Limit Mastery Lv1
+50376	自爆リミットマスタリーLv2	Self-Explosion Limit Mastery Lv2
+50377	自爆リミットマスタリーLv3	Self-Explosion Limit Mastery Lv3
+50378	自爆リミットマスタリーLv4	Self-Explosion Limit Mastery Lv4
+50379	自爆リミットマスタリーLv5	Self-Explosion Limit Mastery Lv5
+50380	自爆リミットマスタリーLv6	Self-Explosion Limit Mastery Lv6
+50381	自爆リミットマスタリーLv7	Self-Explosion Limit Mastery Lv7
+50382	自爆リミットマスタリーLv8	Self-Explosion Limit Mastery Lv8
+50383	自爆リミットマスタリーLv9	Self-Explosion Limit Mastery Lv9
+50384	自爆リミットマスタリーLv10	Self-Explosion Limit Mastery Lv10
+50387	デジタライズ	Digitalize
+50388	デジタライズ解除	Digitalize Cancel
+50393	耐性強化・状態異常	Resistance Strengthening: Ailment Resistance
+50394	生体強化・自然回復量	Biological Enhancement: Natural Recovery
+50413	焚きつける	Incite
+103109	虚無への閃光	Flash to the Void
+103110	無尽無辺光	Boundless Light
