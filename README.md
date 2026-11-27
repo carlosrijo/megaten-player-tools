@@ -193,7 +193,7 @@ Working on the app's page:
     `reference\devil-models.tsv` (the demon table's model id looked up in the client's model table, the Shield copy CModelData2.sbin: the older BinaryData\Client copy lacks 181 demons' models). In a plain
     browser a demon needs its model file first: `imagine-reader.exe model <model>` (it writes `data\cache\models\<model>.json`).
 
-### Tools: Demon Rank
+### Tools: Demon Ranking
 
 Under **Tools** in the left bar, before the DCM Locator. The Demon Database's demons in one table with their STR, MAG,
 VIT, INT, SPD, LUCK, Max HP, Max MP, CLS-R, LNG-R, Spell, Support and Critical (P.Def and M.Def are left out); click a
