@@ -7629,8 +7629,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     const addPart = (id, label, v, pct) => { const k = RBP_STAT_IDX[id]; if (k !== undefined) s[k] += v; else other.push([label, v, pct]); };
     let mode2 = [];
     if (mit) {
-      const K = P.mitama.kinds[mit.kind - 1];
-      (K.ranks[Math.max(0, Math.min(12, mit.rank))] || []).forEach(([id, label, b]) => { const v = Math.round(L / 99 * Math.ceil(1.25 * b * b + b)); if (v && id <= 5) s[id] += v; else if (v) mode2.push([id, label, v]); });
+      const K = P.mitama.kinds[mit.kind - 1];   // none: a fused COMP demon whose Mitama the game didn't give (only listed), so no rank bonus is counted
+      if (K) (K.ranks[Math.max(0, Math.min(12, mit.rank))] || []).forEach(([id, label, b]) => { const v = Math.round(L / 99 * Math.ceil(1.25 * b * b + b)); if (v && id <= 5) s[id] += v; else if (v) mode2.push([id, label, v]); });
       mit.slots.forEach((id) => { const sb = P.mitama.kinds.flatMap((k) => k.slots).find((q) => q[0] === id); if (!sb) return; const [, st, label, v] = sb; if (st <= 5) s[st] += v; else mode2.push([st, label, v]); });
     }
     // the skills' changes to STR ... LUCK come before the stats that depend on them (RecalculateDemonStats: base mode first)
@@ -8301,7 +8301,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
         h('div', { class: 'rbp-cap-top' }, h('div', { class: 'rbp-cap-text' }, h('span', { class: 'rbp-cap-name', text: n }), h('b', { text: `${v} / ${cap}` })), rbpKindFace(k)), h('div', { class: 'rbp-capbar' }, h('i', { style: `width:${Math.min(100, cap ? v / cap * 100 : 0)}%` }))); })));
       const K = P.mitama.kinds[R.kind - 1];
       take.append(h('div', { class: 'rbp-line' }, h('span', { class: 'q-key', text: D.fused ? 'Fused with' : 'Mitama fusion' }),
-        D.fused ? h('span', { text: `${RBP_KINDS[D.kind - 1]} Mitama, rank ${D.mitamaRank}` }) : h('span', { text: `at Mitama rank ${R.mitamaRank} (${R.points} rank points before it), with` }), h('span', { class: 'rbp-kindtag', style: `--k:var(--mt-${R.kind})` }, rbpKindIcon(R.kind - 1), ` ${K.name}${plan.kindAuto ? ' (auto)' : ''}`),
+        D.fused ? h('span', { text: D.kind ? `${RBP_KINDS[D.kind - 1]} Mitama, rank ${D.mitamaRank}` : 'a Mitama, not read from the game' }) : h('span', { text: `at Mitama rank ${R.mitamaRank} (${R.points} rank points before it), with` }),
+        K ? h('span', { class: 'rbp-kindtag', style: `--k:var(--mt-${R.kind})` }, rbpKindIcon(R.kind - 1), ` ${K.name}${plan.kindAuto ? ' (auto)' : ''}`) : h('span', { hidden: true }),
         !D.fused ? h('span', { class: 'src-count', text: `rank bonus at level ${plan.level}: ${(K.ranks[Math.min(12, R.mitamaRank)] || []).map(([, l, b]) => `${l} +${rbpRankBonus(b, plan.level)}`).join(', ') || 'none below Mitama rank 3 (56 rank points)'}` }) : null));
       // the ranks, before and after, as bars
       // the ranks the boosts need are the floor; a click on a pill or the stepper raises a rune past it (for its
@@ -8362,7 +8363,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       const gname = P.growthNames[String(D.growth)] || '';
       id.append(h('span', { class: 'tag', text: `Lv ${D.level}` }), h('span', { class: 'tag', text: x.race }),
         h('span', { class: 'tag', 'data-tip': 'G-Type: the growth type the demon is on', text: gname || '—' }),
-        D.fused ? h('span', { class: 'tag rbp-kindtag', style: `--k:var(--mt-${D.kind})`, 'data-tip': 'M-Type: the Mitama it was fused with, and its Mitama rank', text: `${RBP_KINDS[D.kind - 1]} Mitama · rank ${D.mitamaRank}` })
+        D.fused ? (D.kind ? h('span', { class: 'tag rbp-kindtag', style: `--k:var(--mt-${D.kind})`, 'data-tip': 'M-Type: the Mitama it was fused with, and its Mitama rank', text: `${RBP_KINDS[D.kind - 1]} Mitama · rank ${D.mitamaRank}` })
+          : h('span', { class: 'tag tag-off', 'data-tip': 'It is Mitama-fused, but the game only listed it: which Mitama and its rank were not read, so their bonus is not counted. Open its status window in game and import it again.', text: 'Mitama not read' }))
           // not fused yet: the Mitama to fuse it with is picked here (the kind fixes which stats its Mitama rank bonus raises)
           : h('span', { class: 'rbp-fusewith', role: 'group', 'aria-label': 'Mitama to fuse with' }, h('span', { class: 'q-key', text: 'Fuse with' }),
             ...P.mitama.kinds.map((K) => h('button', { type: 'button', class: 'rbp-kindchip', style: `--k:var(--mt-${K.type})`, 'aria-pressed': String(!(plan.view === 'boosts' && plan.kindAuto) && plan.kind === K.type),
