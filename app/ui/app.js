@@ -7050,10 +7050,14 @@
   }
   /** The chosen demon: its Demon Database entry, whether it is already Mitama-fused, and its state (level, ranks, Mitama). */
   function rbpDemon() {
-    const U = S.rbp, d = S.ddb.data;
+    const U = S.rbp;
+    return rbpDemonOf(U.src, U.src === 'comp' ? U.compSnap || (U.comp || []).find((q) => q.key === U.compKey) : null, U.demonId);   // an imported demon is kept as it was when imported
+  }
+  /** The same for any build: where the demon is from ('comp' or 'db'), its COMP record, its Demon Database id. */
+  function rbpDemonOf(src, c, demonId) {
+    const d = S.ddb.data;
     if (!d) return null;
-    if (U.src === 'comp') {
-      const c = U.compSnap || (U.comp || []).find((q) => q.key === U.compKey);   // an imported demon is kept as it was when imported
+    if (src === 'comp') {
       if (!c) return null;
       const r = rbpResolve(c);
       if (!r) return { missing: c };
@@ -7062,7 +7066,7 @@
       return { x, comp: c, name: c.name, level: c.level, fused: fused || n0(c.mitamaType) > 0, kind: n0(c.mitamaType), mitamaRank: n0(c.mitamaRank), ranks,
         growth: n0(c.growthType) || (fused && x.mt ? x.mt.growth : x.growth), slots: Array.isArray(c.mitamaSlots) ? c.mitamaSlots.map(n0) : Array(96).fill(0), known: c.loaded !== false };
     }
-    const x = d.demons.find((q) => q.id === U.demonId && rbpPlannable(q));   // a pick kept from before the list was narrowed may no longer be one
+    const x = d.demons.find((q) => q.id === demonId && rbpPlannable(q));   // a pick kept from before the list was narrowed may no longer be one
     return x ? { x, name: x.name, level: x.level, fused: false, kind: 0, mitamaRank: 0, ranks: Array(12).fill(0), growth: x.growth, slots: Array(96).fill(0), known: true } : null;
   }
   // ---------- Demon Planner builds ----------
@@ -7223,10 +7227,13 @@
     const tags = [];
     if (plan.view === 'boosts') tags.push(plan.picks.length ? `${plan.picks.length} boost${plan.picks.length === 1 ? '' : 's'} picked` : 'Boosts view');
     else if (runes) tags.push(`${runes} rune${runes === 1 ? '' : 's'} planned`);
-    if (b.src === 'comp' && n0(b.comp && b.comp.mitamaType) > 0) tags.push(`${RBP_KINDS[n0(b.comp.mitamaType) - 1] || ''} Mitama`.trim());
-    else if (plan.fuse) tags.push(`Fusing with ${RBP_KINDS[plan.kind - 1]}`);
+    // the Mitama it has, or the one the plan fuses it with: { kind 1-4, fused, rank, text } (a card draws it as the planner does)
+    let mt = null;
+    if (b.src === 'comp' && n0(b.comp && b.comp.mitamaType) > 0) mt = { kind: n0(b.comp.mitamaType), fused: true, rank: n0(b.comp.mitamaRank), text: `${RBP_KINDS[n0(b.comp.mitamaType) - 1] || ''} Mitama`.trim() };
+    else if (plan.fuse) mt = { kind: plan.kind, fused: false, rank: 0, text: `Fusing with ${RBP_KINDS[plan.kind - 1]}` };
+    if (mt) tags.push(mt.text);
     if (b.src === 'comp') tags.push('From your COMP');
-    return { x, name: name || 'Unknown demon', level, tags };
+    return { x, name: name || 'Unknown demon', level, tags, mt };
   }
   const rbpCodeDlg = () => $('#sim-code');   // the Build Planner's share / import dialog, with this planner's words in it
   /** "Share": the code of a build ({ src, demonId, comp, plan }), to copy. */
@@ -7296,6 +7303,129 @@
     if (!dlg.open) dlg.showModal();
     box.focus();
   }
+  /**
+   * What a build holds, as a card shows it under the demon's line: the skill bar, the Demon Force bar, the features
+   * and the rune ranks, icons and numbers only, a tip on each (the planner's bars, compact). Worked out on a copy of
+   * the build's plan, so nothing of the planner or the build is touched. Left out until its data has loaded (the page
+   * draws again when it has).
+   */
+  function rbpMiniBars(b) {
+    const P = S.rbp.state === 'ready' ? S.rbp.P : null;
+    if (!P || S.ddb.state !== 'ready') return null;
+    const D = rbpDemonOf(b.src, b.src === 'comp' ? b.comp : null, b.demonId);
+    if (!D || D.missing) return null;
+    const plan = rbpPlanFrom(b.plan), out = [];
+    const bar = (title, cells, tip) => h('span', { class: 'rbp-minibar', role: 'group', 'aria-label': title }, h('span', { class: 'rbp-minibar-title', 'data-tip': tip || null, text: title }), h('span', { class: 'rbp-minislots' }, cells));
+    // the game-style tooltip of the expertise icons (expSkillTip): picture and name, what it is, then the game's own text.
+    // The plain data-tip stays for the keyboard (focus shows it), the rich one is what the pointer shows.
+    const tt = (iconEl, title, sub, lines, ...more) => h('div', { class: 'tt' }, tipHead(iconEl, title, sub), ...lines, ...more);
+    const note = (text, why) => h('div', { class: 'tt-line tt-gap' + (why ? ' tt-why' : ''), text });
+    const skills = rbpSkills(plan, D);
+    out.push(bar('Skills', skills.map((id, i) => {
+      const s = id ? rbpSkill(id) : null;
+      const el = h('span', { class: 'rbp-mini' + (s ? '' : ' rbp-mini-blank'), tabindex: 0, 'data-tip': s ? `${s.name}${s.desc ? '\n' + s.desc : ''}` : `Slot ${i + 1}: empty`, 'aria-label': s ? s.name : `Slot ${i + 1}: empty` }, s ? ddbImg(s.icon, 24, 'rbp-mini-pic') : null);
+      return s ? withTip(el, () => {
+        const from = rbpSkillFrom(id, D), kind = rbpSkillTypeName(s) ? `${rbpSkillTypeName(s)} skill` : 'Skill';
+        return tt(ddbImg(s.icon, 24, 'skill-ico'), s.name, [kind, s.el && s.el !== 'Support' ? s.el : null, `Slot ${i + 1}`].filter(Boolean).join(' · '),
+          tipLines(s.desc), note(from.how === 'own' ? `${D.name} ${from.text}` : from.text));
+      }) : el;
+    })));
+    const endFused = rbpEndFused(P, plan, D), byId = rbpForceById(P);
+    if (byId) {
+      const force = rbpForce(plan, D), count = rbpForceCount(P, rbpFormType(D, endFused)), before = rbpForceCount(P, D.x.id);
+      out.push(bar('Demon Force', force.map((id, i) => {
+        const e = id ? rbpForceEffect(P, byId, id) : null, locked = i >= count, fz = endFused && i >= before && i < count;
+        if (locked && !id) return h('span', { class: 'rbp-mini rbp-mini-locked', 'aria-label': `Slot ${i + 1}: not open`, tabindex: 0, 'data-tip': `${D.name} opens ${count} slots: slot ${i + 1} can’t be filled` });
+        const tip = e ? `${e.name}${e.texts.length ? '\n' + e.texts.join('\n') : ''}${locked ? `\n\n${D.name} opens ${count} slots: this one can’t be filled` : ''}${fz ? '\n\nOpened by the Mitama fusion' : ''}` : `Slot ${i + 1}: empty${fz ? '\n\nOpened by the Mitama fusion' : ''}`;
+        const el = h('span', { class: 'rbp-mini' + (e ? '' : ' rbp-mini-blank') + (fz ? ' rbp-mini-fused' : '') + (locked ? ' rbp-mini-bad' : ''), tabindex: 0, 'data-tip': tip, 'aria-label': e ? e.name : `Slot ${i + 1}: empty` },
+          e ? (rbpForcePic(e.item, 24, 'rbp-mini-pic') || h('span', { class: 'rbp-mini-pic rbp-mini-q', text: e.item ? '?' : '✦' })) : null);
+        return e ? withTip(el, () => tt(h('span', { class: 'skill-ico' }, rbpForcePic(e.item, 24) || h('span', { class: 'rbp-mini-q', text: e.item ? '?' : '✦' })), e.name, `Demon Force · Slot ${i + 1}`,
+          e.texts.length ? e.texts.map((x) => h('div', { class: 'tt-line', text: x })) : [h('div', { class: 'tt-line', text: 'The game has no text for it' })],
+          fz ? note('Opened by the Mitama fusion') : null, locked ? note(`${D.name} opens ${count} slots: this one can’t be filled`, true) : null)) : el;
+      })));
+    }
+    // the Epitaph Parts worn (only the equipment: not the features they stand in for), one square per slot
+    const eq = rbpEqById(P);
+    if (eq) {
+      const traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
+      out.push(bar('Equipment', equip.slice(0, RBP_EQ_SLOTS).map((id, i) => {
+        const it = id ? eq.get(id) : null, T = traits[i] ? rbpTrait(traits[i]) : null;
+        if (!it) return h('span', { class: 'rbp-mini rbp-mini-blank', tabindex: 0, 'aria-label': `Slot ${i + 1}: no part`, 'data-tip': `Slot ${i + 1}: no Epitaph Part` });
+        const letter = () => h('span', { class: 'rbp-mini-pic rbp-mini-q', text: String(it.name || '?').charAt(0) });
+        const el = h('span', { class: 'rbp-mini', tabindex: 0, 'aria-label': it.name, 'data-tip': `${it.name}
+${rbpEqText(it)}${T ? `
+In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
+        return withTip(el, () => {
+          const lines = tipLines(it.desc);
+          return tt(h('span', { class: 'skill-ico' }, rbpEqPic(it.id, 24) || h('span', { class: 'rbp-mini-q', text: String(it.name || '?').charAt(0) })), it.name, `Demon equipment · Slot ${i + 1}`,
+            lines.length ? lines : [h('div', { class: 'tt-line', text: it.gnames.join(', ') || it.skillName })],
+            T ? note(`In place of the feature ${T.name}`) : note('In a slot with no feature'));
+        });
+      }), 'The Epitaph Parts the demon wears, one per feature slot'));
+    }
+    // the rebirth ranks planned: a radar of the 12 runes, before the Mitama fusion and after it (a fused demon: only its ranks, as "after")
+    const rows = rbpMiniRanks(P, plan, D), sum = (r) => (r ? r.ranks.reduce((s, n) => s + n, 0) : 0);
+    const preRow = D.fused ? null : rows.find((r) => r.title === 'Ranks'), postRow = rows.find((r) => (D.fused ? r.title === 'Ranks' : r.title === 'After fusion'));
+    const before = preRow ? sum(preRow) : null, after = postRow ? sum(postRow) : 0;
+    const rankTip = D.fused ? `${after} rebirth rank${after === 1 ? '' : 's'} on the runes since the Mitama fusion, as planned`
+      : `${before} rebirth rank${before === 1 ? '' : 's'} before the Mitama fusion, then ${after} after it, as planned`;
+    const key = (cls, label, n) => h('span', { class: 'rbp-radar-key', 'data-tip': label }, h('i', { class: cls }), h('span', { text: label }), h('b', { text: String(n) }));
+    // the radar in a column of its own, to the right of the rows (a narrow card puts it under them)
+    const ranksBox = h('span', { class: 'rbp-miniranks', role: 'group', 'aria-label': 'Ranks' }, h('span', { class: 'rbp-minibar-title', 'data-tip': 'The rebirth rank of each rune (the centre is 0, the rim 9): before the Mitama fusion and after it', text: 'Ranks' }),
+      h('span', { class: 'rbp-radar-wrap', tabindex: 0, 'data-tip': rankTip, 'aria-label': rankTip },
+        rbpRanksRadar(P, preRow ? preRow.ranks : null, postRow ? postRow.ranks : null),
+        h('span', { class: 'rbp-radar-keys' }, preRow ? key('rbp-radar-pre', 'Before the fusion', before) : null, key('rbp-radar-post', D.fused ? 'On the runes now' : 'After the fusion', after))));
+    return h('span', { class: 'rbp-minibars' }, h('span', { class: 'rbp-minirows' }, out), ranksBox);
+  }
+  /**
+   * The 12 runes' rebirth ranks as a radar: one spoke per rune (the rim is rank 9), the ranks before the Mitama fusion
+   * and after it as two outlines (pre / post: null leaves one out). Small, for a gallery card; each spoke has its numbers in its tip.
+   */
+  function rbpRanksRadar(P, pre, post) {
+    const W = 124, cx = W / 2, cy = W / 2, R = 54, N = 12, MAX = 9;   // (the pictures sit on the rim, so they reach R + 7: the box is that and a 1 unit edge, no empty margin)
+    const svg = s('svg', { class: 'rbp-radar', viewBox: `0 0 ${W} ${W}`, width: W, height: W, role: 'img', 'aria-hidden': 'true' });
+    const ang = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / N;
+    const at = (i, v) => { const r = R * Math.max(0, Math.min(1, v / MAX)); return [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))]; };
+    const path = (vals) => vals.map((v, i) => { const [x, y] = at(i, v); return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`; }).join('') + 'Z';
+    const idx = [...Array(N).keys()];
+    idx.forEach((i) => { const [x, y] = at(i, MAX); svg.append(s('line', { class: 'rbp-radar-grid', x1: cx, y1: cy, x2: x, y2: y })); });
+    [3, 6, 9].forEach((v) => svg.append(s('path', { class: 'rbp-radar-grid', d: path(idx.map(() => v)) })));
+    [['rbp-radar-pre', pre], ['rbp-radar-post', post]].forEach(([cls, vals]) => { if (vals && vals.some(Boolean)) svg.append(s('g', { class: cls }, s('path', { class: 'rbp-radar-area', d: path(vals) }), s('path', { class: 'rbp-radar-line', d: path(vals) }))); });
+    // the runes' pictures on the rim, and a wide invisible spoke over each for its tip
+    const I = (S.data && S.data.icons) || {};
+    idx.forEach((i) => {
+      const Ru = P.runes[i], [x, y] = at(i, MAX + 2.6), [hx, hy] = at(i, MAX);
+      const a = pre ? pre[i] : null, b = post ? post[i] : 0;
+      const tip = `${Ru.name}: ${a === null ? `rank ${b}` : `rank ${a} before the fusion, ${b} after it`}`;
+      svg.append(s('g', { 'data-tip': tip },
+        s('line', { x1: cx, y1: cy, x2: hx, y2: hy, stroke: 'transparent', 'stroke-width': 14 }),
+        I[`rune${i}`] ? s('image', { class: 'rbp-radar-ico', href: I[`rune${i}`], x: (x - 7).toFixed(1), y: (y - 7).toFixed(1), width: 14, height: 14 })
+          : Object.assign(s('text', { class: 'rbp-radar-name', x: x.toFixed(1), y: (y + 3.5).toFixed(1), 'text-anchor': 'middle' }), { textContent: Ru.name.charAt(0) })));
+    });
+    return svg;
+  }
+  /** The rune ranks a build plans: [{ title, ranks[12], cur[12] (what the demon has), tip }], before the fusion and after it. */
+  function rbpMiniRanks(P, plan, D) {
+    const zeros = Array(12).fill(0), rows = [];
+    const defaultRune = P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1, onRune = P.runeOf.has(D.growth) ? P.runeOf.get(D.growth) : -1;
+    const mtRune = D.x.mt && P.runeOf.has(D.x.mt.growth) ? P.runeOf.get(D.x.mt.growth) : -1;
+    let pre = null, post = null;
+    if (plan.view === 'boosts') {
+      const R = rbpDerive(P, plan, D, { defaultRune, onRune, xpMult: 1 });
+      if (plan.picks.length) { pre = R.pre ? R.pre.ranks : null; post = R.post ? R.post.ranks : null; }
+      else if (!D.fused) pre = D.ranks;
+    } else if (!D.fused) {
+      const r = rbpSteps(P, D.ranks, onRune, D.level, plan.pre, plan.last, 1);
+      pre = r.ranks;
+      if (plan.fuse && D.x.mt && rbpPoints(r.ranks, defaultRune) >= 48) post = rbpSteps(P, zeros, mtRune, 1, plan.post, plan.postLast, 1).ranks;
+    } else post = rbpSteps(P, D.ranks, onRune, D.level, plan.post, plan.postLast, 1).ranks;
+    if (D.fused) { if (post) rows.push({ title: 'Ranks', ranks: post, cur: D.ranks, tip: 'The rebirth rank of each rune, as planned' }); }
+    else {
+      if (pre) rows.push({ title: 'Ranks', ranks: pre, cur: D.ranks, tip: 'The rebirth rank of each rune before the Mitama fusion, as planned' });
+      if (post) rows.push({ title: 'After fusion', ranks: post, cur: zeros, tip: 'The rebirth rank of each rune after the Mitama fusion (they start again from 0)' });
+    }
+    return rows;
+  }
   /** One saved build as a card in the gallery. */
   function rbpCard(b) {
     const s = rbpSummary(b);
@@ -7310,13 +7440,24 @@
         h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Delete ${b.name}`, 'data-tip': 'Delete', onclick: () => drawActs(true) }, icon('trash'))]);
     drawActs(false);
     const pic = h('span', { class: 'rbp-build-pic' + (s && s.x ? '' : ' none') }, s && s.x ? ddbImg(b.comp && b.comp.icon ? b.comp.icon : s.x.icon || (S.ddb.data && S.ddb.data.noIcon), 56, 'rbp-build-img') : null);
-    simFill(el, pic, h('span', { class: 'sim-build-body' },
-      h('span', { class: 'sim-build-head' },
-        h('span', { class: 'dgt-id' }, h('button', { type: 'button', class: 'sim-build-name', 'data-tip': `Open ${b.name}`, text: b.name }),
-          h('span', { class: 'dgt-line', text: s ? (s.x ? `${s.name} · Lv ${s.level}` : `${s.name} is not in the Demon Database`) : 'Loading the demons…' })),
-        acts),
-      s && s.tags.length ? h('span', { class: 'dgt-tags' }, s.tags.map((t) => h('span', { class: 'tag', text: t }))) : null,
-      b.saved_at ? h('span', { class: 'dgt-line sim-build-saved', text: `Saved ${when(b.saved_at)}` }) : null));
+    if (s && s.x && s.mt && s.mt.fused) mitamaMark(pic, true);   // as on the planner's demon picture
+    // the Mitama chip as the planner's demon card draws it: the kind's picture and colour; a demon already fused shows the tag, one to be fused the "Fusing with" chip
+    const P = S.rbp.state === 'ready' ? S.rbp.P : null, K = s && s.mt && P ? P.mitama.kinds[s.mt.kind - 1] : null;
+    const mtChip = !s || !s.mt ? null : s.mt.fused
+      ? h('span', { class: 'tag rbp-kindtag', style: `--k:var(--mt-${s.mt.kind})`, 'data-tip': 'M-Type: the Mitama it was fused with, and its Mitama rank' }, rbpKindIcon(s.mt.kind - 1), `${RBP_KINDS[s.mt.kind - 1]} Mitama · rank ${s.mt.rank}`)
+      : h('span', { class: 'rbp-fusewith' }, h('span', { class: 'q-key', text: 'Fusing with' }),
+        h('span', { class: 'rbp-kindchip', 'aria-pressed': 'true', style: `--k:var(--mt-${s.mt.kind})`, 'data-tip': K ? `${K.demonName}: the Mitama rank bonus raises ${(K.ranks[12] || []).map(([, l]) => l).join(', ')}` : null }, rbpKindIcon(s.mt.kind - 1), RBP_KINDS[s.mt.kind - 1]));
+    const tags = s ? s.tags.filter((t) => !s.mt || t !== s.mt.text) : [];
+    const bars = rbpMiniBars(b);
+    simFill(el,
+      h('span', { class: 'rbp-build-top' }, pic, h('span', { class: 'sim-build-body' },
+        h('span', { class: 'sim-build-head' },
+          h('span', { class: 'dgt-id' }, h('button', { type: 'button', class: 'sim-build-name', 'data-tip': `Open ${b.name}`, text: b.name }),
+            h('span', { class: 'dgt-line', text: s ? (s.x ? `${s.name} · Lv ${s.level}` : `${s.name} is not in the Demon Database`) : 'Loading the demons…' })),
+          acts),
+        tags.length || mtChip ? h('span', { class: 'dgt-tags' }, tags.map((t) => h('span', { class: 'tag', text: t })), mtChip) : null)),
+      bars ? h('span', { class: 'rbp-build-bars' }, bars) : null,
+      b.saved_at ? h('span', { class: 'dgt-line sim-build-saved', text: `Saved ${when(b.saved_at)}` }) : null);
     return el;
   }
   /** The page of builds: "New build" (the unsaved plan, or a fresh one), "Import build", and every saved build. */
@@ -7903,7 +8044,7 @@
       const block = it ? rbpEqBlock(P, byId, traits, equip, i, it.id) : null;
       const slot = h('button', { type: 'button', class: 'rbp-skillslot rbp-eqslot' + (it ? ' swapped' : ' empty') + (block ? ' bad' : ''), popovertarget: 'rbp-equip-menu', 'aria-haspopup': 'menu',
         'aria-label': it ? `Slot ${i + 1}: ${it.name}` : `Slot ${i + 1}: ${T ? T.name : 'no feature'}`, 'data-tip': it ? `${it.name}\n${rbpEqText(it)}` : 'Click to pick a part for this slot',
-        onclick: (ev) => { rbpEqFor = ev.currentTarget; rbpEqSlot = i; } }, it ? (rbpEqPic(it.id, 40) || h('span', { class: 'rbp-skillpic rbp-skillnone', text: '?' })) : h('span', { class: 'rbp-skillpic rbp-skillnone', text: '+' }));
+        onclick: (ev) => { rbpEqFor = ev.currentTarget; rbpEqSlot = i; } }, it ? (rbpEqPic(it.id, 40) || h('span', { class: 'rbp-skillpic rbp-skillnone', text: '?' })) : h('span', { class: 'rbp-skillpic rbp-skillnone rbp-plus', 'aria-hidden': 'true' }));   // the plus is drawn (not a "+" glyph, which sits low), so it is in the exact middle
       const feat = T ? h('span', { class: 'rbp-eqfeat' + (it ? ' covered' : ''), 'data-tip': T.desc || null, tabindex: T.desc ? 0 : null }, T.name) : h('span', { class: 'rbp-eqfeat none', text: 'no feature' });
       const text = it
         ? h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }),
@@ -8221,7 +8362,7 @@
               'data-tip': `${K.demonName}: the Mitama rank bonus raises ${(K.ranks[12] || []).map(([, l]) => l).join(', ')}`, onclick: () => { plan.kind = K.type; plan.kindAuto = false; rbpSave(); render(); } }, rbpKindIcon(K.type - 1), K.name)),
             plan.view === 'boosts' ? h('button', { type: 'button', class: 'rbp-kindchip rbp-kindauto', 'aria-pressed': String(!!plan.kindAuto), 'data-tip': 'The kind the picked boosts use most', onclick: () => { plan.kindAuto = true; rbpSave(); render(); } }, 'Auto') : null),
         D.comp && D.known === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed this demon: its ranks and slots were not read. Open its status window in game and read the demons again.', text: 'Ranks not read' }) : h('span', { hidden: true }),
-        D.comp ? h('span', { class: 'tag tag-off', 'data-tip': 'Imported from your COMP: its rebirth ranks and Mitama slots are the ones last read from the game', text: 'From your COMP' }) : null);
+        D.comp ? h('span', { class: 'tag tag-off', 'data-tip': 'Imported from your COMP: its rebirth ranks and Mitama slots are the ones last read from the game', text: 'From your COMP' }) : h('span', { hidden: true }));   // (append(null) would write the word "null")
     } else id.append(h('span', { class: 'tag tag-off', text: 'Demon Database' }));
     const inputs = h('div', { class: 'rbp-inputs' },
       h('label', { class: 'rbp-field', 'data-tip': 'The level the stats on the right are shown at' }, 'Stats at level', rbpNum(plan.level, 1, 99, (v) => { plan.level = v; plan.levelSet = true; rbpSave(); render(); })),
@@ -8661,7 +8802,7 @@
     if (lines.length) card.append(h('p', { class: 'note', text: lines.join(' · ') }));
     if (r.setLines.length) card.append(h('ul', { class: 'rbp-setlines' }, r.setLines.map(({ set, text }) => h('li', null, h('b', { text: P.runes[set.rune].name }), ` ${text}`))));
     card.append(rbpBoostList(owned, L));
-    card.append(h('p', { class: 'note', text: 'No Demon Force or familiarity; the random bonus of each planned Mitama is not added. Switch skills are left out (whether they are on is up to you).' }));
+    card.append(h('p', { class: 'note', text: 'No familiarity; the random bonus of each planned Mitama is not added. Switch skills are left out (whether they are on is up to you).' }));
     return card;
   }
   /**
@@ -8680,6 +8821,12 @@
         if (it) out.push({ id: it.skill, kind: 'part', name: it.name });
         else if (tr) out.push({ id: tr, kind: 'feature', name: rbpTrait(tr).name });
       });
+    }
+    // the Demon Force effects in the demon's slots (the open ones: a slot the form doesn't open holds nothing); the id is "f<stack>" in rbp-effects.json
+    const P2 = P && P.force ? rbpForceById(P) : null;
+    if (P2) {
+      const count = rbpForceCount(P, rbpFormType(D, endFused));
+      rbpForce(plan, D).forEach((stack, i) => { if (stack && i < count) { const e = rbpForceEffect(P, P2, stack); out.push({ id: `f${stack}`, kind: 'Demon Force', name: e.name }); } });
     }
     return out;
   }
@@ -8709,7 +8856,7 @@
       });
     });
     const all = [...by.values()].filter((e) => e.value !== 0 || e.value === null);
-    box.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'Boosts' }), h('span', { class: 'src-count', text: all.length ? 'skills, features and equipment' : '' })));
+    box.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'Boosts' }), h('span', { class: 'src-count', text: all.length ? 'skills, features, equipment and Demon Force' : '' })));
     if (!all.length) { box.append(h('p', { class: 'note', text: 'None beyond the stats above: the demon’s passives, features and parts change nothing else.' })); return box; }
     RBP_FX_GROUPS.forEach(([g, title]) => {
       const list = all.filter((e) => e.g === g).sort((a, b) => (a.cond === 'always' ? 0 : 1) - (b.cond === 'always' ? 0 : 1) || a.label.localeCompare(b.label));
