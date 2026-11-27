@@ -94,6 +94,22 @@ pub fn data_uri(store: &Store, data: &GameData, item_id: i32, pid: u32) -> Resul
     Ok(uri(png(store, data, item_id, pid)?.as_deref()))
 }
 
+/// One of the client's interface pictures (Interface\tga or tga2, by file name without the extension) as a data: URI,
+/// whole; kept in cache\ui-icons\<name>.png. None when the client was never seen or has no such picture.
+pub fn client_data_uri(store: &Store, name: &str, pid: u32) -> Option<String> {
+    if name.is_empty() || name.chars().any(is_invalid_file_name_char) {
+        return None;
+    }
+    let cached = store.ui_icon_path(name);
+    if cached.is_file() {
+        return uri(std::fs::read(&cached).ok().as_deref());
+    }
+    let png = client_png(&client_dir(store, pid)?, name, &[])?;
+    std::fs::create_dir_all(cached.parent()?).ok()?;
+    std::fs::write(&cached, &png).ok()?;
+    uri(Some(&png))
+}
+
 /// The Demonic Compendium's icon: the game's own menu picture for it, cut out of the menu icon sheet
 /// (Interface\tga\menu_icon_00.tga, 32x32 cells; the book with a summoning circle is column 1, row 3 from the top
 /// left, counting from 0). Kept in cache\ui-icons\compendium.png.
@@ -117,6 +133,25 @@ pub fn quest_data_uri(store: &Store, pid: u32) -> Option<String> {
 /// Interface\tga\union_mark_mitama.tga (14x14, white; the game tints it). Kept in cache\ui-icons\mitama.png.
 pub fn mitama_mark_data_uri(store: &Store, pid: u32) -> Option<String> {
     menu_icon(store, "mitama", 0, 0, pid, "union_mark_mitama.tga", 14)
+}
+
+/// The glyph of a rebirth rune (Interface\tga\reunion_icon00.tga: twelve 32x32 cells, six per row, in the server's
+/// rune order Tiwaz, Peorth, Eoh, Eihwaz, Uruz, Hagalaz, Laguz, Ansuz, Nauthiz, Ingwaz, Sigel, Wyrd; white on
+/// transparent, the game tints it). `rune` 0-11. Kept in cache\ui-icons\rune<n>.png.
+pub fn rune_data_uri(store: &Store, rune: usize, pid: u32) -> Option<String> {
+    if rune >= 12 {
+        return None;
+    }
+    menu_icon(store, &format!("rune{rune}"), (rune % 6) as i32 * 32, (rune / 6) as i32 * 32, pid, "reunion_icon00.tga", 32)
+}
+
+/// The picture of a Mitama kind (Interface\tga\mitama_icon_00.tga: four 19x19 cells down the sheet, Ara, Nigi, Kusi,
+/// Saki, the game's Mitama Enhancement counters). `kind` 0-3. Kept in cache\ui-icons\kind<n>.png.
+pub fn mitama_kind_data_uri(store: &Store, kind: usize, pid: u32) -> Option<String> {
+    if kind >= 4 {
+        return None;
+    }
+    menu_icon(store, &format!("kind{kind}"), 0, kind as i32 * 19, pid, "mitama_icon_00.tga", 19)
 }
 
 /// Pictures of the game's menu in Interface\tga\menu_icon_00.tga (32x32 cells; x, y of the cell's top left corner).

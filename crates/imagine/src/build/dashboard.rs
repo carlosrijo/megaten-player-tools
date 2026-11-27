@@ -750,6 +750,39 @@ impl Dashboard {
         self.build_digitalize(dsave.as_ref(), dres.as_ref(), (gear_digi("Max HP"), gear_digi("Max MP")))?;
         let mut icons: IndexMap<String, Option<String>> = IndexMap::new(); // icons.json: "quest" / "clan" / "compendium" / "mitama" -> data: URI
         icons.insert("mitama".into(), item_icons::mitama_mark_data_uri(store, 0)); // the mark on a Mitama demon's picture (every page that shows one)
+        // the Rebirth Planner's pictures: the twelve rune glyphs and the four Mitama kinds, from the game's Rebirth window
+        for i in 0..12 {
+            icons.insert(format!("rune{i}"), item_icons::rune_data_uri(store, i, 0));
+        }
+        for k in 0..4 {
+            icons.insert(format!("kind{k}"), item_icons::mitama_kind_data_uri(store, k, 0));
+        }
+        // ... and the four Mitama demons' own faces (32 x 32, the sharpest the client has: reference\devil-icons.tsv,
+        // 624 Ara, 623 Nigi, 622 Kusi, 621 Saki), for the bigger tiles
+        for (k, name) in ["icon_D2_07_004a", "icon_D2_07_003a", "icon_D2_07_002a", "icon_D2_07_001a"].iter().enumerate() {
+            icons.insert(format!("face{k}"), item_icons::client_data_uri(store, name, 0));
+        }
+        // ... and its cost pictures: the Magical Golden Apple's item icon and the Macca item's (799: the gold coin the
+        // inventory shows by the macca count; Interface\tga\win_macca.tga is only the small "M" sign)
+        icons.insert("apple".into(), item_icons::data_uri(store, self.data(), 21941, 0)?);
+        icons.insert("macca".into(), item_icons::data_uri(store, self.data(), 799, 0)?);
+        // ... and the rebirth cost items (runestones, incense, soul stones, relics: reference\reunion-growth.tsv): their
+        // icons go beside the skill icons (dash\skill-icons\<name>.png, item_asset); icons.json holds the name per item
+        if let Some(lines) = crate::data::game_data::reference_lines("reunion-growth.tsv")? {
+            let mut ids: Vec<i32> = Vec::new();
+            for line in lines.iter().filter(|l| !l.is_empty() && !l.starts_with('#')) {
+                if let Some(col) = line.split('\t').nth(4) {
+                    for id in col.split(';').filter_map(|p| p.split_once(':')).filter_map(|(a, _)| crate::fmt::parse_i32(a)) {
+                        if !ids.contains(&id) {
+                            ids.push(id);
+                        }
+                    }
+                }
+            }
+            for id in ids {
+                icons.insert(format!("item{id}"), item_icons::item_asset(store, self.data(), id, 0)?);
+            }
+        }
         let mut parts = Dashboard::parts(&gear, &self.short_names(&recs)?, dres.as_ref(), expertise_rows);
         // What VIT, INT and SPD take off cooldown and incantation time (from the last saved normal stats)
         if store.last_stats_path().exists() {

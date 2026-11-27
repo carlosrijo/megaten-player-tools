@@ -1,0 +1,231 @@
+#growth type id	rune (groupID 1-12)	rank (subID; 0 = a demon's own growth of that rune)	name	cost items (any one: id:amount;...)	rune description (client, on the rank-1 row)
+8	1	0	Cls-R 1 Lv		
+9	1	0	Cls-R 2 Lv		
+10	1	0	Cls-R 3 Lv		
+11	1	0	Cls-R 4 Lv		
+44	1	0	近接特化Lv1		
+45	1	0	近接特化Lv2		
+46	1	0	近接特化Lv3		
+47	1	0	近接特化Lv4		
+60	1	0	Novice Tiwaz		
+61	1	0	Small Tiwaz		
+62	1	0	Tiwaz		
+63	1	0	Big Tiwaz		
+64	1	0	Master Tiwaz		
+110	1	0	Dwarf		
+114	1	0	Wandering Tiwaz		
+227	1	0	輝くTiwaz		
+215	1	1	Tiwaz		Well-balanced growth, with a focus on Strength. Protected by Tiwaz, rune of War and Victory.
+117	1	2	Tiwaz of Daath	5614:1;5615:1;5616:1;21590:1	
+118	1	3	Tiwaz of Assiah	5614:5;5615:1;5616:1;21590:1	
+119	1	4	Tiwaz of Yetzirah	5614:20;5615:1;5616:1;21590:1	
+120	1	5	Tiwaz of Briah	5615:1;5616:1;286:5;21590:1	
+121	1	6	Tiwaz of Atziluth	5615:5;5616:1;286:20;21590:1	
+122	1	7	Tiwaz of Ain	5615:20;5616:3;286:100;21590:1	
+123	1	8	Tiwaz of Ain Soph	5616:5;7802:3;40143:1;21590:1	
+124	1	9	Tiwaz of Ain Soph Aur	5616:20;7802:5;40146:1;21590:1	
+16	2	0	魔法1Lv		
+17	2	0	魔法2Lv		
+18	2	0	魔法3Lv		
+19	2	0	魔法4Lv		
+52	2	0	魔法特化Lv1		
+53	2	0	魔法特化Lv2		
+54	2	0	魔法特化Lv3		
+55	2	0	魔法特化Lv4		
+75	2	0	Novice Peorth		
+76	2	0	Small Peorth		
+77	2	0	Peorth		
+78	2	0	Big Peorth		
+79	2	0	Master Peorth		
+100	2	0	Peorth of Assiah		
+112	2	0	Lilim		
+116	2	0	Wandering Peorth		
+230	2	0	輝くぺオース		
+216	2	1	Peorth		Well-balanced growth, with a focus on Magic. Protected by Peorth, rune of Mystery and Secrets.
+125	2	2	Peorth of Daath	5617:1;5618:1;5619:1;21590:1	
+126	2	3	Peorth of Assiah	5617:5;5618:1;5619:1;21590:1	
+127	2	4	Peorth of Yetzirah	5617:20;5618:1;5619:1;21590:1	
+128	2	5	Peorth of Briah	5618:1;5619:1;287:5;21590:1	
+129	2	6	Peorth of Atziluth	5618:5;5619:1;287:20;21590:1	
+130	2	7	Peorth of Ain	5618:20;5619:3;287:100;21590:1	
+131	2	8	Peorth of Ain Soph	5619:5;7811:3;40140:1;21590:1	
+132	2	9	Peorth of Ain Soph Aur	5619:20;7811:5;40147:1;21590:1	
+12	3	0	射撃1Lv		
+13	3	0	射撃2Lv		
+14	3	0	射撃3Lv		
+15	3	0	射撃4Lv		
+32	3	0	近射1Lv		
+33	3	0	近射2Lv		
+34	3	0	近射3Lv		
+35	3	0	近射4Lv		
+48	3	0	射撃特化Lv1		
+49	3	0	射撃特化Lv2		
+50	3	0	射撃特化Lv3		
+51	3	0	射撃特化Lv4		
+65	3	0	Novice Fehu		
+66	3	0	Small Fehu		
+67	3	0	Fehu		
+68	3	0	Big Fehu		
+69	3	0	Master Fehu		
+115	3	0	Wandering Fehu		
+228	3	0	輝くFehu		
+217	3	1	Fehu		Well-balanced growth, with a focus on Speed. Protected by Fehu, rune of Freedom and Change.
+133	3	2	Fehu of Daath	5620:1;5621:1;5622:1;21590:1	
+134	3	3	Fehu of Assiah	5620:5;5621:1;5622:1;21590:1	
+135	3	4	Fehu of Yetzirah	5620:20;5621:1;5622:1;21590:1	
+136	3	5	Fehu of Briah	5621:1;5622:1;290:5;21590:1	
+137	3	6	Fehu of Atziluth	5621:5;5622:1;290:20;21590:1	
+138	3	7	Fehu of Ain	5621:20;5622:3;290:100;21590:1	
+139	3	8	Fehu of Ain Soph	5622:5;7808:3;40142:1;21590:1	
+140	3	9	Fehu of Ain Soph Aur	5622:20;7808:5;40144:1;21590:1	
+20	4	0	補助1Lv		
+21	4	0	補助2Lv		
+22	4	0	補助3Lv		
+23	4	0	補助4Lv		
+56	4	0	補助特化Lv1		
+57	4	0	補助特化Lv2		
+58	4	0	補助特化Lv3		
+59	4	0	補助特化Lv4		
+70	4	0	Novice Eihwaz		
+71	4	0	Small Eihwaz		
+72	4	0	Eihwaz		
+73	4	0	Big Eihwaz		
+74	4	0	Master Eihwaz		
+103	4	0	Blessed Eihwaz		
+113	4	0	Pixie		
+229	4	0	輝くEihwaz		
+218	4	1	Eihwaz		Well-balanced growth, with a focus on Intelligence. Protected by Eihwaz, rune of Death and Protection.
+141	4	2	Eihwaz of Daath	5623:1;5624:1;5625:1;21590:1	
+142	4	3	Eihwaz of Assiah	5623:5;5624:1;5625:1;21590:1	
+143	4	4	Eihwaz of Yetzirah	5623:20;5624:1;5625:1;21590:1	
+144	4	5	Eihwaz of Briah	5624:1;5625:1;289:5;21590:1	
+145	4	6	Eihwaz of Atziluth	5624:5;5625:1;289:20;21590:1	
+146	4	7	Eihwaz of Ain	5624:20;5625:3;289:100;21590:1	
+147	4	8	Eihwaz of Ain Soph	5625:5;7806:3;40139:1;21590:1	
+148	4	9	Eihwaz of Ain Soph Aur	5625:20;7806:5;40152:1;21590:1	
+80	5	0	Novice Uruz		
+81	5	0	Small Uruz		
+82	5	0	Uruz		
+83	5	0	Big Uruz		
+84	5	0	Master Uruz		
+231	5	0	輝くUruz		
+219	5	1	Uruz		Extraordinary focus on Strength and Speed. Protected by Uruz, rune of Strength and Courage.
+149	5	2	Uruz of Daath	5626:1;5627:1;5628:1;21590:1	
+150	5	3	Uruz of Assiah	5626:5;5627:1;5628:1;21590:1	
+151	5	4	Uruz of Yetzirah	5626:20;5627:1;5628:1;21590:1	
+152	5	5	Uruz of Briah	5627:1;5628:1;286:5;21590:1	
+153	5	6	Uruz of Atziluth	5627:5;5628:1;290:20;21590:1	
+154	5	7	Uruz of Ain	5627:20;5628:3;286:100;21590:1	
+155	5	8	Uruz of Ain Soph	5628:5;7805:3;40138:1;21590:1	
+156	5	9	Uruz of Ain Soph Aur	5628:20;7805:5;40151:1;21590:1	
+36	6	0	近魔1Lv		
+37	6	0	近魔2Lv		
+38	6	0	近魔3Lv		
+39	6	0	近魔4Lv		
+85	6	0	Novice Hagalaz		
+86	6	0	Small Hagalaz		
+87	6	0	Hagalaz		
+88	6	0	Big Hagalaz		
+89	6	0	Master Hagalaz		
+101	6	0	Blessed Hagalaz		
+232	6	0	輝くHagalaz		
+220	6	1	Hagalaz		Extraordinary focus on Strength and Magic. Protected by Hagalaz, rune of Storms and Destruction.
+157	6	2	Hagalaz of Daath	5629:1;5630:1;5631:1;21590:1	
+158	6	3	Hagalaz of Assiah	5629:5;5630:1;5631:1;21590:1	
+159	6	4	Hagalaz of Yetzirah	5629:20;5630:1;5631:1;21590:1	
+160	6	5	Hagalaz of Briah	5630:1;5631:1;287:5;21590:1	
+161	6	6	Hagalaz of Atziluth	5630:5;5631:1;286:20;21590:1	
+162	6	7	Hagalaz of Ain	5630:20;5631:3;287:100;21590:1	
+163	6	8	Hagalaz of Ain Soph	5631:5;7803:3;40150:1;21590:1	
+164	6	9	Hagalaz of Ain Soph Aur	5631:20;7803:5;40141:1;21590:1	
+40	7	0	射魔1Lv		
+41	7	0	射魔2Lv		
+42	7	0	射魔3Lv		
+43	7	0	射魔4Lv		
+90	7	0	Novice Laguz		
+91	7	0	Small Laguz		
+92	7	0	Laguz		
+93	7	0	Big Laguz		
+94	7	0	Master Laguz		
+102	7	0	Blessed Laguz		
+111	7	0	Artemis		
+233	7	0	輝くLaguz		
+235	7	0	輝くNauthiz		
+221	7	1	Laguz		Extraordinary focus on Magic and Speed. Protected by Laguz, rune of Exploration and Travel.
+165	7	2	Laguz of Daath	5632:1;5633:1;5634:1;21590:1	
+166	7	3	Laguz of Assiah	5632:5;5633:1;5634:1;21590:1	
+167	7	4	Laguz of Yetzirah	5632:20;5633:1;5634:1;21590:1	
+168	7	5	Laguz of Briah	5633:1;5634:1;290:5;21590:1	
+169	7	6	Laguz of Atziluth	5633:5;5634:1;287:20;21590:1	
+170	7	7	Laguz of Ain	5633:20;5634:3;290:100;21590:1	
+171	7	8	Laguz of Ain Soph	5634:5;7809:3;40153:1;21590:1	
+172	7	9	Laguz of Ain Soph Aur	5634:20;7809:5;40148:1;21590:1	
+95	8	0	Novice Ansuz		
+96	8	0	Small Ansuz		
+97	8	0	Ansuz		
+98	8	0	Big Ansuz		
+99	8	0	Master Ansuz		
+222	8	1	Ansuz		Growth revolving around Strength, Magic and Speed. Protected by Ansuz, rune of Language and Knowledge.
+173	8	2	Ansuz of Daath	5635:1;5636:1;5637:1;21590:1	
+174	8	3	Ansuz of Assiah	5635:5;5636:1;5637:1;21590:1	
+175	8	4	Ansuz of Yetzirah	5635:20;5636:1;5637:1;21590:1	
+176	8	5	Ansuz of Briah	5636:1;5637:1;286:5;21590:1	
+177	8	6	Ansuz of Atziluth	5636:5;5637:1;287:20;21590:1	
+178	8	7	Ansuz of Ain	5636:20;5637:3;289:100;21590:1	
+179	8	8	Ansuz of Ain Soph	5637:5;7807:3;40149:1;21590:1	
+180	8	9	Ansuz of Ain Soph Aur	5637:20;7807:5;40145:1;21590:1	
+105	9	0	Novice Nauthiz		
+106	9	0	Small Nauthiz		
+107	9	0	Nauthiz		
+108	9	0	Big Nauthiz		
+109	9	0	Master Nauthiz		
+234	9	0	輝くAnsuz		
+223	9	1	Nauthiz		Growth revolving around Magic, Intelligence and Speed. Protected by Nauthiz, rune of Poverty and Endurance.
+181	9	2	Nauthiz of Daath	5638:1;5639:1;5640:1;21590:1	
+182	9	3	Nauthiz of Assiah	5638:5;5639:1;5640:1;21590:1	
+183	9	4	Nauthiz of Yetzirah	5638:20;5639:1;5640:1;21590:1	
+184	9	5	Nauthiz of Briah	5639:1;5640:1;289:5;21590:1	
+185	9	6	Nauthiz of Atziluth	5639:5;5640:1;290:20;21590:1	
+186	9	7	Nauthiz of Ain	5639:20;5640:3;287:100;21590:1	
+187	9	8	Nauthiz of Ain Soph	5640:5;7804:3;40144:1;21590:1	
+188	9	9	Nauthiz of Ain Soph Aur	5640:20;7804:5;40148:1;21590:1	
+189	10	0	Ingwaz		
+224	10	1	Ingwaz		Growth revolving around Magic, Intelligence and Luck. Protected by Ingwaz, rune of Birth and Harvest.
+190	10	2	Ingwaz of Daath	5641:1;5642:1;5643:1;21590:1	
+191	10	3	Ingwaz of Assiah	5641:5;5642:1;5643:1;21590:1	
+192	10	4	Ingwaz of Yetzirah	5641:20;5642:1;5643:1;21590:1	
+193	10	5	Ingwaz of Briah	5642:1;5643:1;291:5;21590:1	
+194	10	6	Ingwaz of Atziluth	5642:5;5643:1;291:20;21590:1	
+195	10	7	Ingwaz of Ain	5642:20;5643:3;291:100;21590:1	
+196	10	8	Ingwaz of Ain Soph	5643:5;7810:3;40152:1;21590:1	
+197	10	9	Ingwaz of Ain Soph Aur	5643:20;7810:5;40138:1;21590:1	
+198	11	0	Sowilo		
+225	11	1	Sowilo		Growth equally focused on all attributes. Protected by Sowilo, rune of the Sun and Life.
+199	11	2	Sowilo of Daath	5644:1;5645:1;5646:1;21590:1	
+200	11	3	Sowilo of Assiah	5644:5;5645:1;5646:1;21590:1	
+201	11	4	Sowilo of Yetzirah	5644:20;5645:1;5646:1;21590:1	
+202	11	5	Sowilo of Briah	5645:1;5646:1;275:5;21590:1	
+203	11	6	Sowilo of Atziluth	5645:5;5646:1;275:20;21590:1	
+204	11	7	Sowilo of Ain	5645:20;5646:3;275:100;21590:1	
+205	11	8	Sowilo of Ain Soph	5646:5;7812:3;40143:1;21590:1	
+206	11	9	Sowilo of Ain Soph Aur	5646:20;7812:5;40142:1;21590:1	
+24	12	0	体力1Lv		
+25	12	0	体力2Lv		
+26	12	0	体力3Lv		
+27	12	0	体力4Lv		
+28	12	0	運1Lv		
+29	12	0	運2Lv		
+30	12	0	運3Lv		
+31	12	0	運4Lv		
+104	12	0	Irregular		
+236	12	0	ベルカナ		
+255	12	0	ウィン		
+226	12	1	Wyrd		No noticeable growth until high levels due to the fate decreed by Wyrd, blank rune of Fate.
+207	12	2	Wyrd of Daath	5647:1;5648:1;5649:1;21590:1	
+208	12	3	Wyrd of Assiah	5647:5;5648:1;5649:1;21590:1	
+209	12	4	Wyrd of Yetzirah	5647:20;5648:1;5649:1;21590:1	
+210	12	5	Wyrd of Briah	5648:1;5649:1;288:5;21590:1	
+211	12	6	Wyrd of Atziluth	5648:5;5649:1;288:20;21590:1	
+212	12	7	Wyrd of Ain	5648:20;5649:3;288:100;21590:1	
+213	12	8	Wyrd of Ain Soph	5649:5;7801:3;40141:1;21590:1	
+214	12	9	Wyrd of Ain Soph Aur	5649:20;7801:5;40147:1;21590:1	

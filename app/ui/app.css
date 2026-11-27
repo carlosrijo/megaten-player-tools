@@ -1677,3 +1677,294 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .assistant canvas.summon-in { animation: summon-in .5s ease-out; }
 @keyframes summon-out { to { opacity: 0; filter: brightness(3); } }
 @keyframes summon-in { from { opacity: 0; filter: brightness(3.5); } 60% { opacity: 1; } to { opacity: 1; filter: none; } }
+/* ---- Tools: Rebirth Planner ---- */
+/* The four Mitama kinds in the game's own colours (its rune bars: Ara red, Nigi blue, Kusi green, Saki yellow), Tokyo Night tones */
+:root { --mt-1: #f7768e; --mt-2: #7aa2f7; --mt-3: #9ece6a; --mt-4: #e0af68; --rb: #007197; --rb-ink: #ffffff; --rb-slot: #e8f2f7; }   /* --rb: the planner's own accent, the teal of the game's Rebirth window (Tokyo Night Day cyan on light) */
+:root[data-theme="dark"] { --rb: #7dcfff; --rb-ink: #1a1b26; --rb-slot: #16233a; }   /* dark: the game's teal on its navy slots */
+.page-rbp .card { gap: 10px; }
+.rbp-headright { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rbp-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.rbp-pick { flex: 1 1 240px; max-width: 380px; min-width: 0; }
+.rbp-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.rbp-head-text { display: grid; gap: 3px; min-width: 0; }
+.rbp-head-name { display: flex; align-items: baseline; gap: 8px; }
+.rbp-head-name b { font-size: 15px; font-family: var(--font-display); }
+.rbp-head-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12px; }
+.rbp-kv { display: inline-flex; gap: 6px; align-items: baseline; }
+.rbp-kindtag { color: var(--k); font-weight: 600; }
+.rbp-face { width: 44px; height: 44px; border-radius: 8px; margin: 0; position: relative; }
+.rbp-face img { width: 44px; height: 44px; }
+.rbp-inputs { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-left: auto; }
+.rbp-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.rbp-num { width: 64px; height: 28px; padding: 0 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.rbp-cols { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+.rbp-main, .rbp-side { display: grid; gap: 18px; min-width: 0; }
+.rbp-side { position: sticky; top: 12px; }
+@media (max-width: 1000px) { .rbp-cols { grid-template-columns: minmax(0, 1fr); } .rbp-side { position: static; } }
+.rbp-title { display: inline-flex; align-items: center; gap: 10px; }
+.rbp-step { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--rb); color: #fff; font: 700 12px/1 var(--font-display); font-style: normal; }
+.rbp-rows { display: grid; gap: 2px; }
+.rbp-rrow { display: grid; grid-template-columns: 112px 58px auto auto minmax(0, 1fr) auto; align-items: center; gap: 6px 12px; padding: 6px 10px; border-radius: 8px; }
+.rbp-rrow:nth-child(odd) { background: var(--surface-2); }
+.rbp-rrow.up { box-shadow: inset 3px 0 0 var(--rb); }
+.rbp-rrow.over { box-shadow: inset 3px 0 0 var(--over-ink); }
+.rbp-rname { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.rbp-rune { font-weight: 600; white-space: nowrap; }
+.rbp-own { height: 16px; font-size: 10px; padding: 0 5px; }
+.rbp-rnow { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+.rbp-rnow .q-key { font-size: 10px; letter-spacing: .04em; }
+.rbp-bar { display: inline-flex; gap: 3px; }
+.rbp-pill { all: unset; box-sizing: border-box; width: 22px; height: 12px; border-radius: 3px; border: 1px solid var(--border-strong); background: transparent; cursor: pointer; }
+.rbp-pill.now { background: var(--text-2); border-color: var(--text-2); cursor: default; }
+.rbp-pill.plan { background: color-mix(in srgb, var(--rb) 70%, transparent); border-color: var(--rb); }
+.rbp-pill.off:hover { border-color: var(--rb); background: color-mix(in srgb, var(--rb) 25%, transparent); }
+.rbp-pill:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.rbp-slotbar .rbp-pill { cursor: default; }
+.rbp-pill.have { background: var(--k); border-color: var(--k); }
+.rbp-pill.add { background: repeating-linear-gradient(135deg, var(--k) 0 3px, color-mix(in srgb, var(--k) 35%, transparent) 3px 6px); border-color: var(--k); }
+.rbp-pill.locked { border-style: dashed; opacity: .45; }
+.rbp-stepper { display: inline-flex; align-items: center; gap: 2px; --k: var(--text-2); }
+.rbp-stepper.off { opacity: .35; pointer-events: none; }
+.rbp-stepbtn { all: unset; box-sizing: border-box; width: 20px; height: 20px; border-radius: 5px; display: inline-grid; place-items: center; cursor: pointer; color: var(--text-2); font-weight: 700; line-height: 1; }
+.rbp-stepbtn:hover { background: var(--hover); color: var(--text); }
+.rbp-stepbtn:disabled { opacity: .3; cursor: default; }
+.rbp-stepbtn:focus-visible { outline: 2px solid var(--focus); }
+.rbp-stepval { min-width: 18px; text-align: center; font-variant-numeric: tabular-nums; color: var(--k); }
+.rbp-rbonus { font-size: 12px; color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rbp-endbtn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px; border-radius: 6px; font-size: 11px; color: var(--text-3); cursor: pointer; white-space: nowrap; }
+.rbp-endbtn .icon { width: 14px; height: 14px; }
+.rbp-endbtn:hover { background: var(--hover); color: var(--text); }
+.rbp-endbtn[aria-pressed="true"] { color: var(--rb); font-weight: 600; }
+.rbp-endbtn:focus-visible { outline: 2px solid var(--focus); }
+.rbp-sum, .rbp-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 24px; }
+.rbp-stat { display: inline-flex; align-items: baseline; gap: 6px; }
+.rbp-stat b { font: 600 20px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.rbp-total .rbp-stat b { font-size: 24px; }
+.rbp-stat span { font-size: 12px; color: var(--text-2); }
+.rbp-short { color: var(--over-ink); }
+.rbp-details { display: grid; gap: 8px; justify-items: start; }
+.rbp-items { display: grid; gap: 4px; font-size: 13px; }
+.rbp-item-list { margin: 0; padding-left: 18px; display: grid; gap: 2px; color: var(--text-2); }
+.rbp-item-list b { color: var(--text); font-weight: 600; }
+.rbp-steps { margin: 0; padding-left: 22px; display: grid; gap: 3px; font-size: 13px; }
+.rbp-check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.rbp-check input { accent-color: var(--rb); }
+.rbp-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rbp-ptsbar { position: relative; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: visible; }
+.rbp-ptsbar i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; background: var(--rb); }
+.rbp-ptsbar i.mark { width: 2px; height: 14px; top: -3px; border-radius: 1px; background: var(--text-2); }
+.rbp-kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.rbp-kind { all: unset; box-sizing: border-box; display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; min-width: 0; border-left: 4px solid var(--k); }
+.rbp-kind:hover { background: var(--hover); }
+.rbp-kind[aria-pressed="true"] { background: color-mix(in srgb, var(--k) 14%, var(--surface)); border-color: var(--k); }
+.rbp-kind b { color: var(--k); }
+.rbp-kind:focus-visible { outline: 2px solid var(--focus); }
+.rbp-caps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.rbp-cap { display: grid; gap: 4px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); }
+.rbp-cap-name { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--k); }
+.rbp-cap b { font: 600 18px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.rbp-cap.over b { color: var(--over-ink); }
+.rbp-capbar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.rbp-capbar i { display: block; height: 100%; background: var(--k); }
+.rbp-cap.over .rbp-capbar i { background: var(--over-ink); }
+.rbp-srow { grid-template-columns: 112px auto auto minmax(0, 1fr); }
+.rbp-ksteps { display: inline-flex; gap: 6px; }
+.rbp-sets { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.rbp-set { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px 0 4px; border-radius: 999px; border: 1px solid var(--border); font-size: 11px; color: var(--text-2); cursor: pointer; max-width: 100%; }
+.rbp-set:hover { background: var(--hover); color: var(--text); }
+.rbp-set.on { background: color-mix(in srgb, var(--rb) 16%, var(--surface)); border-color: var(--rb); color: var(--text); cursor: default; }
+.rbp-set.nofit { opacity: .45; cursor: default; }
+.rbp-set:focus-visible { outline: 2px solid var(--focus); }
+.rbp-set-req { display: inline-flex; gap: 2px; }
+.rbp-set-req i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 700 10px/1 var(--font-display); font-style: normal; color: var(--k); border: 1px solid var(--k); }
+.rbp-set-req i.met { background: var(--k); color: #1a1b26; }
+.rbp-set-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rbp-costs td { padding: 4px 8px; font-size: 12px; }
+.rbp-costs tr td:first-child { color: var(--text-2); }
+.rbp-stats th, .rbp-stats td { padding: 5px 8px; font-size: 13px; }
+.rbp-stats .num, .rbp-costs .num { text-align: right; font-variant-numeric: tabular-nums; }
+.rbp-planned { font-weight: 600; }
+.rbp-up { color: var(--rb); font-weight: 600; }
+.rbp-down { color: var(--over-ink); }
+.rbp-setlines { margin: 0; padding-left: 18px; font-size: 12px; color: var(--text-2); display: grid; gap: 2px; }
+.rbp-setlines b { color: var(--text); }
+@media (max-width: 760px) { .rbp-rrow { grid-template-columns: 100px auto 1fr; } .rbp-rbonus, .rbp-endbtn { grid-column: 1 / -1; } .rbp-srow { grid-template-columns: 100px 1fr; } .rbp-caps { grid-template-columns: repeat(2, 1fr); } }
+.rbp-srow { grid-template-columns: 112px auto minmax(0, 1fr); row-gap: 6px; }
+.rbp-srow .rbp-sets { grid-column: 1 / -1; }
+.rbp-srow .rbp-ksteps { justify-self: end; }
+.rbp-pill.free, .rbp-pill.off { background: color-mix(in srgb, var(--text-3) 12%, transparent); }
+/* "Pick boosts first" */
+.rbp-brows { display: grid; gap: 4px; }
+.rbp-brow { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px; }
+.rbp-brow:nth-child(odd) { background: var(--surface-2); }
+.rbp-pick { height: 26px; cursor: pointer; }
+.rbp-pick.on { cursor: pointer; }
+.rbp-pick.over { border-color: var(--over-ink); color: var(--over-ink); }
+.rbp-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; }
+.rbp-kinds-sm { display: inline-flex; gap: 4px; }
+.rbp-kinds-sm .rbp-kind { padding: 3px 8px; border-radius: 999px; border-left-width: 1px; }
+.rbp-kinds-sm .rbp-kind:disabled { cursor: default; }
+.rbp-twobars { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.rbp-ranksbox { display: grid; gap: 4px; }
+.rbp-ranks { display: grid; gap: 1px; }
+.rbp-rmini { grid-template-columns: 76px auto 24px; padding: 2px 8px; gap: 8px; }
+.rbp-rmini .rbp-pill { pointer-events: none; width: 16px; height: 9px; }
+.rbp-rank-n { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; }
+/* the sets as a fixed 4-column grid: every rune has four, so each sits in the same place (muscle memory) */
+.rbp-setgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rbp-setgrid .rbp-set { height: auto; min-height: 40px; padding: 5px 8px; border-radius: 8px; align-items: flex-start; }
+.rbp-setgrid .rbp-set-req { flex: none; margin-top: 1px; }
+.rbp-setgrid .rbp-set-text { white-space: normal; line-height: 1.25; }
+.rbp-setgrid .rbp-set.on { box-shadow: inset 0 0 0 1px var(--rb); }
+@media (max-width: 760px) { .rbp-setgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rbp-pill.kind { background: var(--k); border-color: var(--k); }   /* after the fusion: the Mitama planned for the slot */
+/* the pills as the game draws its slots: a navy box with a teal edge, filled teal when the rank is there */
+.rbp-pill { background: var(--rb-slot); border-color: color-mix(in srgb, var(--rb) 55%, transparent); }
+.rbp-pill.now { background: var(--rb); border-color: var(--rb); }
+.rbp-pill.plan { background: color-mix(in srgb, var(--rb) 45%, var(--rb-slot)); border-color: var(--rb); }
+.rbp-pill.off, .rbp-pill.free { background: var(--rb-slot); }
+.rbp-pill.off:hover { background: color-mix(in srgb, var(--rb) 30%, var(--rb-slot)); }
+.rbp-pill.locked { border-style: dashed; opacity: .4; }
+.rbp-step { color: var(--rb-ink); }
+.rbp-rrow.up { box-shadow: inset 3px 0 0 var(--rb); }
+.rbp-setgrid .rbp-set.on, .rbp-set.on { background: color-mix(in srgb, var(--rb) 14%, var(--surface)); border-color: var(--rb); }
+.rbp-ptsbar { background: var(--rb-slot); border: 1px solid color-mix(in srgb, var(--rb) 45%, transparent); }
+.rbp-capbar { background: var(--rb-slot); }
+.rbp-pill.kind, .rbp-pill.plan.kind, .rbp-pill.now.kind { background: var(--k); border-color: var(--k); }   /* the Mitama's colour wins over the teal (this rule comes last on purpose) */
+.rbp-rmini { grid-template-columns: 76px auto auto; }
+.rbp-rmini .rbp-pill { pointer-events: auto; cursor: pointer; }
+.rbp-rmini .rbp-pill.now { cursor: default; }
+.rbp-rmini.raised .rbp-stepval { color: var(--rb); }
+.rbp-unraise { justify-self: start; }
+/* slotted Mitamas vs planned ranks: a planned rank is a teal-edged box with a light wash; a slotted Mitama is a solid
+   gem of its kind with a dark core, and Nigi's blue sits deeper than the teal so the two never read the same */
+:root { --mt-2: #4c6fe0; }
+:root[data-theme="dark"] { --mt-2: #5d7fe8; }
+.rbp-pill.plan { background: color-mix(in srgb, var(--rb) 22%, var(--rb-slot)); border-color: var(--rb); }
+.rbp-pill.now { background: color-mix(in srgb, var(--rb) 70%, var(--rb-slot)); border-color: var(--rb); }
+.rbp-pill.kind, .rbp-pill.plan.kind, .rbp-pill.now.kind, .rbp-pill.have, .rbp-pill.add { position: relative; background: var(--k); border-color: var(--k); }
+.rbp-pill.kind::after, .rbp-pill.have::after, .rbp-pill.add::after { content: ''; position: absolute; left: 50%; top: 50%; width: 6px; height: 4px; margin: -2px 0 0 -3px; border-radius: 2px; background: var(--rb-slot); opacity: .85; }
+.rbp-pill.add { background: repeating-linear-gradient(135deg, var(--k) 0 3px, color-mix(in srgb, var(--k) 40%, var(--rb-slot)) 3px 6px); }
+/* slotted Mitamas as bold glossy capsules (the user's pick, 2026-11-27): a strong light edge on top, a dark band below,
+   a dark rim so the colour stands off the navy; no core */
+.rbp-pill.kind, .rbp-pill.plan.kind, .rbp-pill.now.kind, .rbp-pill.have, .rbp-pill.add { background: var(--k); border: 1px solid rgba(0, 0, 0, .55); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .4); }
+.rbp-pill.kind::after, .rbp-pill.have::after, .rbp-pill.add::after { content: none; }
+.rbp-pill.add { background: repeating-linear-gradient(135deg, var(--k) 0 3px, color-mix(in srgb, var(--k) 55%, var(--rb-slot)) 3px 6px); }
+:root:not([data-theme="dark"]) .rbp-pill.kind, :root:not([data-theme="dark"]) .rbp-pill.have, :root:not([data-theme="dark"]) .rbp-pill.add { border-color: rgba(0, 0, 0, .35); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -3px 0 rgba(0, 0, 0, .28); }
+/* ... plus a thin bright border of the Mitama's colour outside the dark rim; the fill, rim and gloss are untouched */
+.rbp-pill.kind, .rbp-pill.plan.kind, .rbp-pill.now.kind, .rbp-pill.have, .rbp-pill.add { box-shadow: inset 0 3px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .4), 0 0 0 1px color-mix(in srgb, var(--k) 70%, white); }
+:root:not([data-theme="dark"]) .rbp-pill.kind, :root:not([data-theme="dark"]) .rbp-pill.have, :root:not([data-theme="dark"]) .rbp-pill.add { box-shadow: inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -3px 0 rgba(0, 0, 0, .28), 0 0 0 1px color-mix(in srgb, var(--k) 75%, black); }
+/* the four cap bars in the same style: a navy track with the kind's edge, the filled part a glossy capsule with the bright border */
+.rbp-capbar { height: 12px; border-radius: 4px; overflow: visible; background: var(--rb-slot); border: 1px solid color-mix(in srgb, var(--k) 45%, transparent); box-sizing: border-box; }
+.rbp-capbar i { box-sizing: border-box; height: 12px; margin: -1px 0 0 -1px; border-radius: 4px; background: var(--k); border: 1px solid rgba(0, 0, 0, .55); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .4), 0 0 0 1px color-mix(in srgb, var(--k) 70%, white); min-width: 0; }
+.rbp-capbar i[style*="width:0%"] { display: none; }
+.rbp-cap.over .rbp-capbar i { background: var(--over-ink); }
+:root:not([data-theme="dark"]) .rbp-capbar i { border-color: rgba(0, 0, 0, .35); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -3px 0 rgba(0, 0, 0, .28), 0 0 0 1px color-mix(in srgb, var(--k) 75%, black); }
+/* the cap bars: the bright border sits inside the filled part instead of around it, so it stays within the track */
+.rbp-capbar { overflow: hidden; }
+.rbp-capbar i { margin: -1px 0 0 -1px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 70%, white), inset 0 3px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .4); }
+:root:not([data-theme="dark"]) .rbp-capbar i { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 75%, black), inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -3px 0 rgba(0, 0, 0, .28); }
+.rbp-namebtn { font: 600 15px/1.3 var(--font-display); margin: 0; padding: 6px 8px 6px 10px; border: 1px solid var(--border-strong); background: var(--surface); }
+.rbp-namebtn:hover { background: var(--surface-2); }
+#rbp-demons .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
+/* the demon band as the Overview's: the inputs sit at the right of the band */
+.rbp-demon.demon-card { align-items: center; }
+.rbp-demon .rbp-inputs { align-self: center; }
+.rbp-demon .demon-pic.none { border-color: var(--border-strong); }
+.rbp-demons-search { margin: 0 0 6px; max-width: none; }
+.rbp-dm-icon { margin: 0; }
+.rbp-dm-icon img { width: 32px; height: 32px; }
+/* the boosts search lights the matches and dims the rest; nothing is hidden */
+.rbp-setgrid .rbp-set.miss { opacity: .35; }
+.rbp-setgrid .rbp-set.hit { border-color: var(--rb); box-shadow: inset 0 0 0 1px var(--rb); }
+.rbp-demon.demon-card.closed { grid-template-columns: auto minmax(0, 1fr) auto; }
+/* every set tile the same size: the kind circles on top, the full text under them (up to three lines) */
+.rbp-setgrid .rbp-set { display: grid; grid-template-rows: 16px minmax(0, 1fr); align-items: start; justify-items: start; gap: 4px; height: 64px; padding: 6px 8px; }
+.rbp-setgrid .rbp-set-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 11px; line-height: 1.25; text-wrap: balance; }
+/* picked vs found: a picked tile wears a check in its corner and the teal wash; a tile the search finds gets a purple
+   ring and brighter text, the others dim; a picked tile that also matches shows both */
+.rbp-setgrid .rbp-set { position: relative; }
+.rbp-set-check { position: absolute; right: 5px; top: 5px; width: 16px; height: 16px; border-radius: 50%; background: var(--rb); color: var(--rb-ink); display: inline-grid; place-items: center; }
+.rbp-set-check .icon { width: 11px; height: 11px; stroke-width: 3; }
+.rbp-setgrid .rbp-set.hit { border-color: var(--aff); box-shadow: inset 0 0 0 1px var(--aff); color: var(--text); }
+.rbp-setgrid .rbp-set.hit .rbp-set-text { font-weight: 600; }
+.rbp-setgrid .rbp-set.on.hit { box-shadow: inset 0 0 0 1px var(--aff), inset 0 0 0 2px var(--rb); }
+.rbp-setgrid .rbp-set.on.miss { opacity: .6; }   /* a picked tile the search skips stays readable */
+/* a search match in red, not purple (user: purple wasn't enough); Iron Man at the end of the search row */
+:root { --rb-hit: #d8365e; }
+:root[data-theme="dark"] { --rb-hit: #f7768e; }
+.rbp-setgrid .rbp-set.hit { border-color: var(--rb-hit); box-shadow: inset 0 0 0 1px var(--rb-hit); }
+.rbp-setgrid .rbp-set.on.hit { box-shadow: inset 0 0 0 1px var(--rb-hit), inset 0 0 0 2px var(--rb); }
+.rbp-searchrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.rbp-searchrow .search { flex: 1 1 240px; max-width: none; }
+.rbp-searchrow .rbp-check { margin-left: auto; white-space: nowrap; }
+/* no check on picked tiles (user): the teal border and wash say it; a match adds the red ring inside it */
+.rbp-set-check { display: none; }
+.rbp-setgrid .rbp-set.on { border-color: var(--rb); box-shadow: inset 0 0 0 1px var(--rb); }
+.rbp-setgrid .rbp-set.on.hit { border-color: var(--rb); box-shadow: inset 0 0 0 1px var(--rb), inset 0 0 0 3px var(--rb-hit); }
+/* the Mitama to fuse with, on the demon band of a demon not fused yet: four kind chips (and Auto in the boosts view) */
+.rbp-fusewith { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
+.rbp-fusewith .q-key { margin-right: 2px; }
+.rbp-kindchip { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--k, var(--text-3)) 60%, transparent); color: var(--k, var(--text-2)); font-size: 11px; font-weight: 600; cursor: pointer; }
+.rbp-kindchip:hover { background: color-mix(in srgb, var(--k, var(--text-3)) 15%, transparent); }
+.rbp-kindchip[aria-pressed="true"] { background: var(--k, var(--text-2)); color: #1a1b26; border-color: var(--k, var(--text-2)); }
+.rbp-kindauto[aria-pressed="true"] { background: var(--text-2); color: var(--bg); border-color: var(--text-2); }
+.rbp-kindchip:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+/* the game's own pictures: rune glyphs (white, tinted to the text colour) and the Mitama kinds' counters */
+.rbp-runeicon { width: 18px; height: 18px; flex: none; opacity: .85; image-rendering: auto; }
+:root:not([data-theme="dark"]) .rbp-runeicon { filter: invert(1); opacity: .7; }
+.rbp-rname { display: inline-flex; align-items: center; gap: 6px; }
+.rbp-kindicon { width: 16px; height: 16px; flex: none; image-rendering: pixelated; vertical-align: -3px; }
+.rbp-cap-name { display: inline-flex; align-items: center; gap: 5px; }
+.rbp-kindchip .rbp-kindicon { width: 14px; height: 14px; margin-left: -4px; margin-right: 3px; }
+.rbp-kind-name { display: inline-flex; align-items: center; gap: 6px; }
+.rbp-kstep { display: inline-flex; align-items: center; gap: 2px; }
+.rbp-kstep .rbp-kindicon { width: 14px; height: 14px; }
+/* cost pictures: four runes or four Mitamas as a cluster of orbs, the apple, the macca sign */
+.rbp-total .rbp-stat { gap: 8px; }
+.rbp-orbs { width: 34px; height: 34px; align-self: center; margin-right: 2px; image-rendering: auto; }
+.rbp-orbs img { background: var(--rb-slot); box-shadow: 0 0 0 1px color-mix(in srgb, var(--rb) 45%, transparent); }
+.rbp-orbs-runes img { padding: 2px; box-sizing: border-box; }
+:root:not([data-theme="dark"]) .rbp-orbs-runes img { filter: invert(1); background: #1a2b4c; }
+.rbp-costicon { width: 24px; height: 24px; align-self: center; image-rendering: pixelated; }
+.rbp-costicon.rbp-macca { width: 28px; height: 16px; image-rendering: pixelated; }
+:root:not([data-theme="dark"]) .rbp-costicon.rbp-macca { filter: invert(1); }
+/* cap tiles: name and count left, the Mitama's picture right, the bar under both */
+.rbp-cap-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rbp-cap-text { display: grid; gap: 2px; }
+.rbp-cap-top .rbp-kindicon { width: 26px; height: 26px; }
+.rbp-costicon.rbp-macca { width: 24px; height: 24px; filter: none; }   /* the Macca item's coin, same size as the apple */
+:root:not([data-theme="dark"]) .rbp-costicon.rbp-macca { filter: none; }
+/* the cost table's header: the pictures of the three numbers, small, right-aligned over their columns */
+.rbp-costs thead th { padding: 2px 8px 4px; background: transparent; position: static; }
+.rbp-costs thead th.num { text-align: right; }
+.rbp-costs thead th .rbp-orbs-sm { width: 22px; height: 22px; display: inline-block; vertical-align: middle; }
+.rbp-costs thead th .rbp-orbs-sm img { width: 12px; height: 12px; }
+.rbp-costs thead th .orbs-4.rbp-orbs-sm img:nth-child(1) { left: 0; top: 0; } .rbp-costs thead th .orbs-4.rbp-orbs-sm img:nth-child(2) { left: 10px; top: 0; } .rbp-costs thead th .orbs-4.rbp-orbs-sm img:nth-child(3) { left: 0; top: 10px; } .rbp-costs thead th .orbs-4.rbp-orbs-sm img:nth-child(4) { left: 10px; top: 10px; }
+.rbp-costs thead th .rbp-costicon-sm { width: 18px; height: 18px; vertical-align: middle; }
+/* the Mitama demons' faces on the bigger tiles: 32 px native, no scaling, so they stay sharp */
+.rbp-kindface { width: 32px; height: 32px; flex: none; border-radius: 6px; image-rendering: auto; }
+.rbp-cap-top .rbp-kindface { box-shadow: 0 0 0 1px color-mix(in srgb, var(--k) 60%, transparent); }
+.rbp-kindface { width: 29px; height: 29px; }   /* square again, 10% smaller (user) */
+/* the cost items under the per-step table: the item's icon, its name, how many */
+.rbp-needs { display: grid; gap: 6px; }
+.rbp-needlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rbp-needlist li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 12px; }
+.rbp-need-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.rbp-needlist b { font-variant-numeric: tabular-nums; }
+.rbp-itemicon { width: 24px; height: 24px; image-rendering: pixelated; border-radius: 4px; }
+.rbp-itemicon-none { display: inline-block; background: var(--surface-2); }
+/* the kind-of-item selector over the cost items; a pick swipes the list in from the left */
+.rbp-needs-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; }
+.rbp-kindpick { justify-self: end; }
+.rbp-kindpick button { height: 22px; padding: 0 8px; font-size: 11px; }
+.rbp-needlist.swipe { animation: rbp-swipe .28s ease-out; }
+@keyframes rbp-swipe { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rbp-needlist.swipe { animation: none; } }
+/* the runestone list scrolls past about eight rows, so the sticky cost card stays short */
+.rbp-needlist { max-height: 212px; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
+/* the same thin scrollbar as the Overview's demon picker (#demons .char-list) on the runestone list and the planner's own picker */
+.rbp-needlist::-webkit-scrollbar, #rbp-demons .char-list::-webkit-scrollbar { width: 8px; }
+.rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
+.rbp-needlist { padding-right: 0; }
+#rbp-demons .menu-note:empty { display: none; }   /* no note under the Any-demon list */
