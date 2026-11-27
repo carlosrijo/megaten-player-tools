@@ -15,6 +15,7 @@ pub mod item_icons;
 pub mod page_icons;
 pub mod pipeline;
 pub mod preview_server;
+pub mod rebirth_planner;
 pub mod share_code;
 pub mod simulator;
 pub mod skill_db;

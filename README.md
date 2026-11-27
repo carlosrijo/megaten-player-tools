@@ -365,6 +365,50 @@ with the client's own names and texts. The rules (DP go to the race of the demon
 when all its needs are met; DLv 10 at most, 5 without a Mitama-fused demon) are the comp_hack server's code, which
 NewMoon may have changed. Not checked in game yet. The page data is `app\ui\digi-planner.json`, made by
 `imagine-reader digiplanner` from the reference tables.
+
+### Tools: Rebirth Planner
+
+Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before you spend anything:
+
+- **The demon**: any demon from the Demon Database (fresh: no ranks), or **My COMP**: one of your own demons as BABEL
+  last read it, with its real rebirth ranks, Mitama and slots. Set the level the stats are shown at (93 by default) and
+  your XP bonus from gear and incense (it lowers the apples). The runes wear the game's own glyphs and the Mitamas
+  their own pictures, cut from your game folder like the other pages' pictures.
+- **Rebirths before the Mitama fusion**: one row per rune, like the game's Rebirth tab: its rank now, a bar of nine
+  pills (click a pill to make that rank the target, or use − +), the bonus that rank gives (Tiwaz: Close-Range +4 per
+  rank, Sowilo: every stat +3, Wyrd: Max HP +40 and MP +10, Ingwaz: cheaper summons...), the growth type it reaches, and
+  a flag to pick the path the demon should **end on** (its stats follow that growth type). **All to 4 / 6 / 8** sets
+  every rune at once. Under the rows: how many rebirths that is, the Magical Golden Apples the levels take at Vivian,
+  the macca, the rank points toward the Mitama fusion (48 needed, and the Mitama rank past it) and what the ranks are
+  worth as conversion points. **The steps and items** lists every rebirth in an order the game accepts (the rune the
+  demon is on first, since its own growth can skip rank 1; each rune fully before the next; the end path last) and the
+  cost items taking the first choice of each rank (every rank accepts one of several: runestones, incense, soul stones,
+  a Primordial Runestone).
+- **Mitama fusion**: a bar of the rank points toward 48; tick the fusion once it is reached, pick the Mitama (Ara, Nigi,
+  Kusi or Saki, each card showing the stats its Mitama rank bonus raises), and whether you have **Mitama Demon
+  Enhancement - Iron Man** (stronger sets).
+- **Rebirths after the fusion**: the same rows again from zero (a Mitama-fused demon gets 60% less XP, so 2.5 x the
+  apples).
+- **Mitama slots**: the four kinds' caps on top (how many of each the Mitama rank allows), then per rune its eight slots
+  in the kinds' colours (solid = already on the rune, striped = to add), a − + counter per kind, and the rune's four set
+  bonuses as chips with their requirement per kind: a chip lights up when the set is on, and clicking one adds the
+  Mitamas it still needs. Under the rows: the Mitamas to place (as Summon PGs from Rag's gem exchange, with the gems),
+  the macca, and the random bonus each placed Mitama can give. A COMP demon's Mitamas already on a rune count and are
+  never removed.
+- On the right, always in view: **What it costs** (rebirths, apples, macca and Mitamas in all, then per phase) and
+  **Stats at the level**: the demon's 14 stats as a fresh demon beside the planned one, with the change, the summon
+  magnetite cut and the active sets. **Reset the plan** starts over.
+- **Pick boosts first** (the other way round, an experiment): tick the set boosts you want from the 48 (search by
+  effect; Iron Man shows the stronger texts) and the page works out the rest: how many Mitamas of each kind, the Mitama
+  rank that allows them, the rank points the fusion then needs and the cheapest ranks that give them, each rune's rank
+  after the fusion, the costs and the stats. It flags boosts that can't share a rune (more than 8 Mitamas together).
+  **Open in the rune planner** hands the result over to fine-tune it.
+
+The growth types, rank costs, Mitama bonuses, sets and PG trades are the server's tables and the client's texts. The rules
+(levels per rank, macca, one cost item, the 48 points, 12 + Mitama rank of each kind, the stat formulas) are the
+comp_hack server's code, and 10,000 XP per apple is the public server data's Vivian: NewMoon may have changed any of
+them. Not checked in game yet. Demon Force and familiarity are left out. The page data is `app\ui\rebirth-planner.json`,
+made by `imagine-reader rebirthplanner` from the reference tables.
 ### Tools: Dungeon Database
 
 Under **Tools** in the left bar. Every dungeon (175; each difficulty such as Bronze, Silver and Gold on its own), field and other place with enemies, and the enemies in it that

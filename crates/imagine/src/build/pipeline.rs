@@ -124,6 +124,13 @@ pub struct CompDemon {
     pub loaded: bool,
     pub summoned: bool,
     pub in_comp: Option<bool>,
+    /// For the Rebirth Planner: the demon's growth type, its 12 rebirth ranks, Mitama type (0 = none) and rank, and
+    /// the 96 Mitama slot bonus ids (0 = empty), as last read from the game.
+    pub growth_type: i32,
+    pub reunion: Vec<i32>,
+    pub mitama_type: i32,
+    pub mitama_rank: i32,
+    pub mitama_slots: Vec<i32>,
 }
 
 impl CompDemon {
@@ -134,6 +141,7 @@ impl CompDemon {
             "current": self.current, "inGame": self.in_game, "seenAt": self.seen_at, "forceStack": self.force_stack, "equipment": self.equipment,
             "icon": self.icon, "offer": self.offer.as_ref().map(DemonOffer::to_value), "unlock": self.unlock.as_ref().map(DemonUnlock::to_value),
             "loaded": self.loaded, "summoned": self.summoned, "inComp": self.in_comp,
+            "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots,
         })
     }
 }
@@ -615,6 +623,11 @@ impl Pipeline {
                 loaded: d.loaded(),
                 summoned: !k.ends_with(SAVED_KEY) && d.summoned(),
                 in_comp: s.in_comp,
+                growth_type: d.growth_type,
+                reunion: d.reunion.clone(),
+                mitama_type: d.mitama_type,
+                mitama_rank: d.mitama_rank,
+                mitama_slots: d.mitama_reunion.iter().map(|&b| b as i32).collect(),
             });
         }
         // OrderByDescending(Current).ThenByDescending(InComp != false).ThenByDescending(Level).ThenBy(Name): stable
