@@ -4363,6 +4363,15 @@
     D.byDemon = m; D.byDemonFrom = dd;
     return m;
   }
+  /** "Spell, Long-range" -> "Spell 100% + Long-range 50%". The game lists a skill's stats in order (skill-db.json `stat`): with
+   *  two, the first counts in full and the second at half (server: LNGR_SPELL = lngr + spell/2); the three-stat types add
+   *  all three in full. One stat (or Weapon, Support) has nothing to split. The game has no four-stat type. */
+  function sklStatRates(stat) {
+    const p = (stat || '').split(', ').filter(Boolean);
+    if (p.length < 2) return stat;
+    // each "Stat 100%" is one unbreakable piece, so a narrow box wraps only at the "+" and never inside "Long-range"
+    return p.flatMap((s, i) => [i ? ' + ' : '', h('span', { style: 'white-space:nowrap', text: `${s} ${p.length === 2 && i === 1 ? 50 : 100}%` })]).filter(Boolean);
+  }
   function sklDetail(x, who) {
     const box = h('div', { class: 'q-detail skl-detail' });
     const block = (label, ...kids) => h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('div', null, ...kids));
@@ -4370,11 +4379,11 @@
       ` is BABEL's translation. The game has no English name for this skill: it calls it ${x.ja}.`)));
     if (x.desc) box.append(block('In game', h('p', { class: 'ddb-desc skl-desc', text: x.desc })));
     const facts = [['Target', x.target], ['Reach', x.reach != null ? String(x.reach) : null, 'In the game\'s own distance units: compare skills with each other.'],
-      ['Damage from', x.stat, 'The stat its damage or effect is worked out from.'], ['Needs', x.weapon],
+      ['Damage from', sklStatRates(x.stat), 'The stat its damage or effect is worked out from. With two stats the first counts in full and the second at half; with three, each counts in full and they are added.'], ['Needs', x.weapon],
       ['Heals', x.heal != null ? String(x.heal) : null, 'The healing modifier (a % is of the target\'s Max HP).'],
       ['MP while held', x.drain ? `${x.drain} MP` : null, 'Drained while the stance is held.']].filter((f) => f[1]);
     if (facts.length) box.append(block('Details', h('div', { class: 'skl-facts' }, facts.map(([k, v, tip]) =>
-      h('div', { class: 'ddb-stat', 'data-tip': tip || null }, h('span', { class: 'q-key', text: k }), h('b', { text: v }))))));
+      h('div', { class: 'ddb-stat', 'data-tip': tip || null }, h('span', { class: 'q-key', text: k }), h('b', Array.isArray(v) ? null : { text: v }, ...(Array.isArray(v) ? v : [])))))));
     const get = h('ul', { class: 'gdb-list gdb-get' });
     (x.exp || []).forEach((e) => get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Expertise' }), h('b', { text: e }))));
     // `at`: who opens the exchange list, and where, traced in the server data (skill-db.json, npc_places); absent when no event there
