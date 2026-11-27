@@ -6,7 +6,7 @@ license.workspace = true
 
 [dependencies]
 anyhow = "1.0.105"
-imagine = { version = "0.9.1", path = "../imagine" }
+imagine = { version = "0.10.0", path = "../imagine" }
 regex = "1.13.2"
 serde_json = "1.0.154"
 
