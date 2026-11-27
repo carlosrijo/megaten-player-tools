@@ -6953,7 +6953,8 @@
       slots = rbpSlotsModel(P, plan, D, post.ranks, mitamaRank);
       main.append(rbpAfterCard(P, plan, D, post, slots, mitamaRank, { fusedNow: D.fused, step: step++ }));
     }
-    side.append(rbpSummaryCard(P, plan, D, pre, post, fused, slots), rbpResultCard(P, plan, D, pre, post, fused, kind, mitamaRank, slots));
+    main.append(rbpSummaryCard(P, plan, D, pre, post, fused, slots));
+    side.append(rbpResultCard(P, plan, D, pre, post, fused, kind, mitamaRank, slots));
     page.append(h('div', { class: 'rbp-cols' }, main, side));
     return page;
   }
@@ -7098,7 +7099,8 @@
       }
       main.append(take);
     }
-    side.append(rbpSummaryCard(P, plan, D, R.pre, R.post, R.fused, R.M), rbpResultCard(P, plan, D, R.pre, R.post, R.fused, R.kind, R.mitamaRank, R.M));
+    main.append(rbpSummaryCard(P, plan, D, R.pre, R.post, R.fused, R.M));
+    side.append(rbpResultCard(P, plan, D, R.pre, R.post, R.fused, R.kind, R.mitamaRank, R.M));
     return h('div', { class: 'rbp-cols' }, main, side);
   }
   /** A small number box. */
@@ -7191,12 +7193,13 @@
   function rbpStepsDetails(P, res, key) {
     if (!res.steps.length) return null;
     const items = new Map();   // the first listed item of each rank, as the default choice, per rune
-    res.steps.forEach((st) => { const it = rbpItemFor(st.items, 'rune'); if (!it) return; if (!items.has(st.rune)) items.set(st.rune, new Map()); const m = items.get(st.rune); m.set(it[1], (m.get(it[1]) || 0) + it[2]); });
+    const pay = rbpPay();   // the items follow the "pay with" choice of the cost card
+    res.steps.forEach((st) => { const it = rbpStepItem(st, pay); if (!it) return; if (!items.has(st.rune)) items.set(st.rune, new Map()); const m = items.get(st.rune); m.set(it[1], (m.get(it[1]) || 0) + it[2]); });
     const open = S.rbp[key];
     const det = h('div', { class: 'rbp-details' },
       h('button', { type: 'button', class: 'btn btn-sm', 'aria-expanded': String(!!open), onclick: () => { S.rbp[key] = !open; render(); } }, open ? 'Hide the steps' : `The ${res.steps.length} steps and items`));
     if (open) {
-      if (items.size) det.append(h('div', { class: 'rbp-items' }, h('span', { class: 'q-key', 'data-tip': 'The runestones of each rank (a rank also accepts incense, soul stones, relics or a Primordial Runestone instead; the steps list them).', tabindex: 0, text: 'Runestones' }),
+      if (items.size) det.append(h('div', { class: 'rbp-items' }, h('span', { class: 'q-key', 'data-tip': 'The runestones of each rank (a rank also accepts incense, soul stones, relics or a Primordial Runestone instead; the steps list them).', tabindex: 0, text: 'Items' }),
         h('ul', { class: 'rbp-item-list' }, [...items].map(([rune, m]) => h('li', null, h('b', { text: P.runes[rune].name + ': ' }), [...m].map(([n, a]) => `${n} ×${a}`).join(', '))))));
       det.append(h('ol', { class: 'rbp-steps' }, res.steps.map((st) => h('li', null,
         h('b', { text: st.enter ? `Switch to ${P.runes[st.rune].name}` : `${P.runes[st.rune].name} to rank ${st.rank}` }),
@@ -7211,12 +7214,12 @@
   const rbpCostIcon = (src, cls) => (src ? h('img', { class: 'rbp-costicon ' + (cls || ''), src, alt: '', 'aria-hidden': 'true' }) : null);
   const rbpIcons = () => (S.data && S.data.icons) || {};
   /** A phase total as a tile: the picture, the number, the word, and a second line when there is one. */
-  const rbpSumTile = (pic, n, label, o) => h('div', { class: 'rbp-sumtile', 'data-tip': o && o.tip ? o.tip : null }, pic || h('span', { class: 'rbp-sumblank' }), h('div', { class: 'rbp-sumtext' }, h('b', { text: fmt(n) }), h('span', { text: label }), o && o.sub ? h('span', { class: 'rbp-sumsub', text: o.sub }) : null));
-  /** A phase's rebirths, apples and macca as tiles; `fused`: the demon is Mitama-fused in this phase (XP −60%, 2.5 × the apples). */
-  const rbpPhaseStats = (P, T, fused) => { const I = rbpIcons(); return [
-    rbpSumTile(rbpOrbs([0, 1, 10, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes'), T.rebirths, T.rebirths === 1 ? 'rebirth' : 'rebirths'),
-    rbpSumTile(rbpCostIcon(I.apple), T.apples, 'apples', { tip: `${P.apple.name}s at Vivian, 10,000 XP each plus your XP bonus${fused ? '. A Mitama-fused demon gets 60% less XP, so 2.5 × the apples' : ''}`, sub: fused ? '× 2.5: XP −60% once fused' : null }),
-    rbpSumTile(rbpCostIcon(I.macca, 'rbp-macca'), T.macca, 'macca')]; };
+  const rbpSumTile = (pic, n, label, o) => h('div', { class: 'rbp-sumtile', 'data-tip': o && o.tip ? o.tip : null }, pic || h('span', { class: 'rbp-sumblank' }), h('div', { class: 'rbp-sumtext' }, h('b', { text: fmt(n) }), h('span', null, label, o && o.sub ? h('span', { class: 'rbp-sumsub', text: ` · ${o.sub}` }) : null)));   // one line, ellipsed; the tip has the rest (user, 2026-11-27)
+  /** A phase's rebirths, apples and macca as tiles; `fused`: the demon is Mitama-fused in this phase (XP −60%, 2.5 × the apples); `slotMacca`: what placing the phase's Mitamas costs, added to the macca tile with the split under it (user, 2026-11-27: one macca tile, not two). */
+  const rbpPhaseStats = (P, T, fused, slotMacca) => { const I = rbpIcons(); return [
+    rbpSumTile(rbpOrbs([0, 1, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes'), T.rebirths, T.rebirths === 1 ? 'rebirth' : 'rebirths'),
+    rbpSumTile(rbpCostIcon(I.apple), T.apples, 'apples', { tip: `${P.apple.name}s at Vivian, 10,000 XP each plus your XP bonus${fused ? '. XP −60% once fused: a Mitama-fused demon gets 60% less XP, so 2.5 × the apples' : ''}`, sub: fused ? '× 2.5: XP −60% once fused' : null }),
+    rbpSumTile(rbpCostIcon(I.macca, 'rbp-macca'), T.macca + (slotMacca || 0), 'macca', slotMacca ? { sub: `${fmt(T.macca)} rebirths + ${fmt(slotMacca)} Mitamas`, tip: `${fmt(T.macca)} macca from the rebirths (rank × 500 × level each); ${fmt(slotMacca)} macca from the Mitamas ((slots filled on that rune + 1) × 50,000 each)` } : { tip: 'Rank × 500 × level for each rebirth' })]; };
   /** Step 1 of a demon not fused yet: the rebirths before the Mitama fusion, a row per rune, then the rank points toward it. */
   function rbpPreCard(P, plan, D, res, info) {
     const targets = plan.pre, cur = D.ranks, lastKey = 'last';
@@ -7360,9 +7363,8 @@
     card.append(rows);
     M.warnings.forEach((w) => card.append(h('p', { class: 'note rbp-short', text: w })));
     const I = rbpIcons();
-    card.append(h('div', { class: 'rbp-sum' }, ...rbpPhaseStats(P, res.total, true),
-      rbpSumTile(rbpOrbs([0, 1, 2, 3].map((k) => I[`kind${k}`])), M.pgs.reduce((a, b) => a + b, 0), 'Mitamas to place'),
-      rbpSumTile(rbpCostIcon(I.macca, 'rbp-macca'), M.macca, 'macca for them', { tip: 'A placed Mitama costs (slots filled on that rune + 1) × 50,000 macca' })));
+    card.append(h('div', { class: 'rbp-sum' }, ...rbpPhaseStats(P, res.total, true, M.macca),
+      rbpSumTile(rbpOrbs([0, 1, 2, 3].map((k) => I[`kind${k}`])), M.pgs.reduce((a, b) => a + b, 0), 'Mitamas to place', { tip: 'Each one costs (slots filled on that rune + 1) × 50,000 macca, counted in the macca tile' })));
     // ---- the Mitamas to get: a row per kind with how many, where they come from and the random bonus each one rolls ----
     if (M.pgs.some(Boolean)) {
       const list = h('div', { class: 'rbp-getlist' });
@@ -7392,38 +7394,112 @@
     K.slots.forEach(([, , label, v]) => { const r = by.get(label) || [v, v]; r[0] = Math.min(r[0], v); r[1] = Math.max(r[1], v); by.set(label, r); });
     return [...by].map(([label, [lo, hi]]) => `${label} ${lo === hi ? `+${lo}` : `+${lo} to +${hi}`}`);
   }
-  /** The whole plan's cost, phase by phase. */
-  function rbpSummaryCard(P, plan, D, pre, post, fused, M) {
-    const card = h('div', { class: 'card rbp-summary' });
-    const lines = [];
-    if (pre && pre.steps.length) lines.push(['Rebirths', pre.total.rebirths, pre.total.apples, pre.total.macca]);
-    if (fused && !D.fused) lines.push(['Mitama fusion', 0, 0, 50000]);
-    if (post && post.steps.length) lines.push(['Rebirths after it', post.total.rebirths, post.total.apples, post.total.macca]);
-    if (M && M.macca) lines.push(['Mitama slots', 0, 0, M.macca]);
-    const rebirths = lines.reduce((s, l) => s + l[1], 0), apples = lines.reduce((s, l) => s + l[2], 0), macca = lines.reduce((s, l) => s + l[3], 0);
-    card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'What it costs' })));
-    if (!lines.length) { card.append(h('p', { class: 'note', text: 'Nothing planned yet: set a rune’s target on the left.' })); return card; }
-    const I = (S.data && S.data.icons) || {};
-    const orbs = rbpOrbs, one = rbpCostIcon;
-    card.append(h('div', { class: 'rbp-total' },
-      h('div', { class: 'rbp-stat' }, orbs([0, 1, 10, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes'), h('b', { text: fmt(rebirths) }), h('span', { text: rebirths === 1 ? 'rebirth' : 'rebirths' })),
-      h('div', { class: 'rbp-stat' }, one(I.apple), h('b', { text: fmt(apples) }), h('span', { 'data-tip': P.apple.name + 's at Vivian, 10,000 XP each plus your XP bonus', text: 'apples' })),
-      h('div', { class: 'rbp-stat' }, one(I.macca, 'rbp-macca'), h('b', { text: fmt(macca) }), h('span', { text: 'macca' })),
-      M && M.pgs.some(Boolean) ? h('div', { class: 'rbp-stat' }, orbs([0, 1, 2, 3].map((k) => I[`kind${k}`])), h('b', { text: fmt(M.pgs.reduce((a, b) => a + b, 0)) }), h('span', { text: 'Mitamas' })) : null));
-    // the same three numbers step by step; the header is the pictures of the totals above (a word under each as a tip)
-    const headPic = (pic, word) => h('th', { class: 'num', 'data-tip': word, 'aria-label': word }, pic || word);
-    card.append(h('table', { class: 'tbl rbp-costs' }, h('thead', null, h('tr', null, h('th', { text: 'Step' }),
-      headPic(orbs([0, 1, 10, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes rbp-orbs-sm'), 'Rebirths'), headPic(one(I.apple, 'rbp-costicon-sm'), 'Apples'), headPic(one(I.macca, 'rbp-macca rbp-costicon-sm'), 'Macca'))),
-      h('tbody', null, lines.map(([n, r, a, m]) => h('tr', null, h('td', { text: n }), h('td', { class: 'num', text: r ? fmt(r) : '' }), h('td', { class: 'num', text: a ? fmt(a) : '' }), h('td', { class: 'num', text: fmt(m) }))))));
-    // the cost items of every rebirth, both phases, taking the first choice of each rank (runestones before incense,
-    // soul stones and relics); the icons come from the client like the skill icons (icons.json item<id> -> file name)
-    const need = new Map();
-    [pre, post].filter(Boolean).forEach((ph) => ph.steps.forEach((st) => { const it = rbpItemFor(st.items, 'rune'); if (!it) return; const e = need.get(it[0]) || { id: it[0], name: it[1], n: 0 }; e.n += it[2]; need.set(it[0], e); }));
-    if (need.size) {
-      const itemPic = (id) => { const name = I[`item${id}`]; return name && S.meta.skillIcons ? h('img', { class: 'rbp-itemicon', src: S.meta.skillIcons + name + '.png', alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }) : h('span', { class: 'rbp-itemicon rbp-itemicon-none' }); };
-      card.append(h('div', { class: 'rbp-needs' }, h('span', { class: 'q-key', 'data-tip': 'The runestones of every rebirth (each rank also accepts incense, soul stones, relics or a Primordial Runestone instead; the steps under each phase list them).', tabindex: 0, text: 'Runestones' }),
-        h('ul', { class: 'rbp-needlist' }, [...need.values()].sort((x, y) => x.name.localeCompare(y.name)).map((e) => h('li', { 'data-tip': e.name }, itemPic(e.id), h('span', { class: 'rbp-need-name', text: e.name }), h('b', { text: `×${fmt(e.n)}` }))))));
+  const FIGHTING_SPIRIT_ITEM = 12658;   // Saien's currency (its icon is exported with the PGs')
+  // ---- paying for the rebirths: each rank takes ONE of several items (reference\reunion-growth.tsv), the same shape
+  // for every rune (checked 2026-11-27):
+  //   ranks 2-4: Small Runestone x1/5/20, Runestone x1, Large Runestone x1
+  //   ranks 5-7: Runestone x1/5/20, Large Runestone x1/1/3, Incense (Small) x5/20/100
+  //   ranks 8-9: Large Runestone x5/20, Soul Stone x3/5, a relic x1
+  //   any rank:  Primordial Runestone x1
+  // The cost card shows a column per rank with its options as tiles (the first rune's item stands for the category),
+  // the player picks one per rank (user, 2026-11-27), and every rebirth to that rank, on any rune, takes that
+  // category's item of its rune. Kept between visits (rbp-pay: rank -> category).
+  const RBP_TIERS = { small: 'Small Runestone', mid: 'Runestone', large: 'Large Runestone', incense: 'Incense', soul: 'Soul Stone', relic: 'Relic', primordial: 'Primordial Runestone' };
+  const rbpTier = (name) => (/^Primordial Runestone/.test(name) ? 'primordial' : /^Small Runestone/.test(name) ? 'small' : /^Large Runestone/.test(name) ? 'large' : /^Runestone/.test(name) ? 'mid' : /^Incense/.test(name) ? 'incense' : /^Soul Stone/.test(name) ? 'soul' : 'relic');
+  function rbpPay() {
+    if (!S.rbp.pay) {
+      let p = null;
+      try { p = JSON.parse(store.get('rbp-pay') || 'null'); } catch (e) { p = null; }
+      S.rbp.pay = {};
+      for (let r = 2; r <= 9; r++) S.rbp.pay[r] = p && RBP_TIERS[p[r]] ? p[r] : 'large';   // large runestones: one item at most ranks (an older shape starts over)
     }
+    return S.rbp.pay;
+  }
+  const rbpPaySave = () => store.set('rbp-pay', JSON.stringify(S.rbp.pay));
+  /** The item a step takes: the category picked for its rank (of the step's own rune), else the option with the fewest items. */
+  function rbpStepItem(st, pay) {
+    if (!st.items || !st.items.length) return null;
+    return st.items.find((x) => rbpTier(x[1]) === pay[st.rank]) || st.items.slice().sort((a, b) => a[2] - b[2])[0];
+  }
+  /**
+   * The whole plan's cost, under the steps (an experiment, 2026-11-27: it was the sticky card on the right): the totals
+   * as tiles, then a step-by-step table that says what each step is (the runes raised and to what rank, the fusion's
+   * form and Mitama rank, the Mitamas by kind), then the items to gather (every runestone with its icon, and the
+   * Mitama PGs by either route).
+   */
+  function rbpSummaryCard(P, plan, D, pre, post, fused, M) {
+    const card = h('div', { class: 'card rbp-summary rbp-costcard' });
+    const I = rbpIcons();
+    const raisedText = (ranks, from) => { const r = P.runes.map((R, i) => (ranks[i] > from[i] ? `${R.name} ${from[i] ? `${from[i]} → ` : ''}${ranks[i]}` : null)).filter(Boolean); return r.length ? `${r.length} ${r.length === 1 ? 'rune' : 'runes'} raised: ${r.join(', ')}` : 'no rune raised'; };
+    const lines = [];   // [step, title, what, rebirths, apples, macca]
+    if (pre && pre.steps.length) lines.push([1, D.fused ? 'Rebirths' : 'Rebirths before the fusion', `${raisedText(pre.ranks, D.ranks)}; the demon ends on ${P.runes[pre.on] ? P.runes[pre.on].name : '—'}${pre.growth ? ` (${pre.growth.name})` : ''}. Each rebirth takes the demon to level 1; the apples bring it back to the next rank’s level at Vivian.`, pre.total.rebirths, pre.total.apples, pre.total.macca]);
+    if (fused && !D.fused) { const K = P.mitama.kinds[plan.kind - 1]; const pts = pre ? rbpPoints(pre.ranks, P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1) : 48; lines.push([2, 'Mitama fusion', `${D.name} fused with ${K ? K.demonName : 'a Mitama'} at the Cathedral: it becomes ${D.x.mt && D.x.mt.name ? D.x.mt.name : 'its Mitama form'} at Mitama rank ${Math.min(12, Math.floor((pts - 48) / 4))} (${pts} rank points). 50,000 macca, or 2,500 Kreuz for a sure success.`, 0, 0, 50000]); }
+    if (post && post.steps.length) lines.push([D.fused ? 1 : 3, D.fused ? 'Rebirths' : 'Rebirths after the fusion', `${raisedText(post.ranks, D.fused ? D.ranks : Array(12).fill(0))}; the demon ends on ${P.runes[post.on] ? P.runes[post.on].name : '—'}${post.growth ? ` (${post.growth.name})` : ''}. A Mitama-fused demon gets 60% less XP, so 2.5 × the apples.`, post.total.rebirths, post.total.apples, post.total.macca]);
+    if (M && M.pgs.some(Boolean)) lines.push([D.fused ? 1 : 3, 'Mitama slots', `${fmt(M.pgs.reduce((a, b) => a + b, 0))} Mitamas placed (${M.pgs.map((n, k) => (n ? `${n} ${RBP_KINDS[k]}` : null)).filter(Boolean).join(', ')}) for ${M.activeSets.length} ${M.activeSets.length === 1 ? 'set' : 'sets'}; each one costs (slots already filled on that rune + 1) × 50,000 macca.`, 0, 0, M.macca]);
+    const rebirths = lines.reduce((s, l) => s + l[3], 0), apples = lines.reduce((s, l) => s + l[4], 0), macca = lines.reduce((s, l) => s + l[5], 0), mitamas = M ? M.pgs.reduce((a, b) => a + b, 0) : 0;
+    card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'What it all costs' }), h('span', { class: 'src-count', text: lines.length ? 'everything above, added up' : '' })));
+    if (!lines.length) { card.append(h('p', { class: 'note', text: 'Nothing planned yet: set a rune’s target above.' })); return card; }
+    card.append(h('div', { class: 'rbp-sum rbp-sum-big' },
+      rbpSumTile(rbpOrbs([0, 1, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes'), rebirths, rebirths === 1 ? 'rebirth' : 'rebirths', { tip: 'Every rebirth of the plan, both phases' }),
+      rbpSumTile(rbpCostIcon(I.apple), apples, 'apples', { tip: P.apple.name + 's at Vivian, 10,000 XP each plus your XP bonus' }),
+      rbpSumTile(rbpCostIcon(I.macca, 'rbp-macca'), macca, 'macca', { tip: 'Rebirths, the fusion and the placed Mitamas together' }),
+      mitamas ? rbpSumTile(rbpOrbs([0, 1, 2, 3].map((k) => I[`kind${k}`])), mitamas, 'Mitamas', { tip: 'Summon PGs to get, or Mitama demons to fuse' }) : null));
+    // step by step: what each one is, and its three numbers
+    const headPic = (pic, word) => h('th', { class: 'num', 'data-tip': word, 'aria-label': word }, pic || word);
+    card.append(h('table', { class: 'tbl rbp-costs rbp-costs-wide' }, h('thead', null, h('tr', null, h('th', { text: 'Step' }), h('th', { text: 'What' }),
+      headPic(rbpOrbs([0, 1, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes rbp-orbs-sm'), 'Rebirths'), headPic(rbpCostIcon(I.apple, 'rbp-costicon-sm'), 'Apples'), headPic(rbpCostIcon(I.macca, 'rbp-macca rbp-costicon-sm'), 'Macca'))),
+      h('tbody', null, lines.map(([step, title, what, r, a, m]) => h('tr', null, h('td', { class: 'rbp-cost-step' }, h('span', null, h('i', { class: 'rbp-step', text: step }), h('b', { text: title }))), h('td', { class: 'rbp-cost-what', text: what }), h('td', { class: 'num', text: r ? fmt(r) : '' }), h('td', { class: 'num', text: a ? fmt(a) : '' }), h('td', { class: 'num', text: fmt(m) })))),
+      h('tfoot', null, h('tr', null, h('td', { text: 'Total' }), h('td'), h('td', { class: 'num', text: fmt(rebirths) }), h('td', { class: 'num', text: fmt(apples) }), h('td', { class: 'num', text: fmt(macca) })))));
+    // the items to gather: every runestone of both phases (first choice of each rank), then the Mitama PGs by either route
+    const pay = rbpPay(), steps = [pre, post].filter(Boolean).flatMap((ph) => ph.steps);
+    const need = new Map();
+    steps.forEach((st) => { const it = rbpStepItem(st, pay); if (!it) return; const e = need.get(it[0]) || { id: it[0], name: it[1], n: 0 }; e.n += it[2]; need.set(it[0], e); });
+    const itemPic = (id) => { const name = I[`item${id}`]; return name && S.meta.skillIcons ? h('img', { class: 'rbp-itemicon', src: S.meta.skillIcons + name + '.png', alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }) : h('span', { class: 'rbp-itemicon rbp-itemicon-none' }); };
+    const tile = (pic, name, count, tip) => h('div', { class: 'rbp-itemtile', 'data-tip': tip || name }, pic, h('span', { class: 'rbp-need-name', text: name }), h('b', { text: `×${fmt(count)}` }));
+    const gather = h('div', { class: 'rbp-gather' });
+    if (need.size) {
+      // a column per rank: how many rebirths reach it, then its options as tiles (the first rune's item for the picture
+      // and the name, the per-rune items in the tip); a click picks what every rebirth to that rank pays with
+      const perRank = new Map();
+      steps.forEach((st) => { if (st.items && st.items.length) perRank.set(st.rank, (perRank.get(st.rank) || 0) + 1); });
+      const cols = [];
+      for (let r = 2; r <= 9; r++) {
+        const n = perRank.get(r) || 0, opts = P.runes[0].ranks[r - 1] ? P.runes[0].ranks[r - 1].items : [];
+        if (!opts.length) continue;
+        cols.push(h('div', { class: 'rbp-rankcol' + (n ? '' : ' idle') },
+          h('div', { class: 'rbp-rankcol-head' }, h('b', { text: `Rank ${r}` }), h('span', { class: 'src-count', text: n ? `${n} ${n === 1 ? 'rebirth' : 'rebirths'}` : 'none planned' })),
+          ...opts.map((it) => {
+            const tier = rbpTier(it[1]), on = pay[r] === tier;
+            const perRune = P.runes.map((R) => { const g = R.ranks[r - 1], x = g && g.items.find((y) => rbpTier(y[1]) === tier); return x ? `${R.name}: ${x[1]}` : null; }).filter(Boolean);
+            const same = new Set(perRune.map((s) => s.slice(s.indexOf(': ') + 2))).size === 1;   // the item name itself may hold a colon ("Soul Stone: The Bull")
+            return h('button', { type: 'button', class: 'rbp-rankopt', 'aria-pressed': String(on), 'data-tip': `${RBP_TIERS[tier]} ×${it[2]} for each rebirth to rank ${r}${n ? ` (×${fmt(it[2] * n)} in all)` : ''}. ${same ? it[1] : 'Per rune: ' + perRune.join(', ')}`,
+              onclick: () => { pay[r] = tier; rbpPaySave(); render(); } },
+              itemPic(it[0]), h('span', { class: 'rbp-rankopt-text' }, h('span', { class: 'rbp-rankopt-name', text: same ? it[1] : RBP_TIERS[tier] }), h('b', { text: `×${it[2]}` })));
+          })));
+      }
+      gather.append(h('div', { class: 'rbp-gather-group' },
+        h('span', { class: 'q-key', 'data-tip': 'Each rebirth takes one of several items. Pick, for every rank, which one to pay with; the list under the columns follows', tabindex: 0, text: `Rebirth items · ${fmt([...need.values()].reduce((s, e) => s + e.n, 0))}` }),
+        h('div', { class: 'rbp-rankgrid' }, ...cols),
+        h('div', { class: 'rbp-itemgrid' }, [...need.values()].sort((x, y) => x.name.localeCompare(y.name)).map((e) => tile(itemPic(e.id), e.name, e.n)))));
+    }
+    if (mitamas) {
+      const SP = P.mitama.spirit;
+      const pgTiles = [];   // three per row: the PG, its two gems
+      // a PG tile's picture is a cluster: the PG card and the Mitama it summons (Sacred Soul: the four, with the card on top)
+      const pgSrc = (id) => (I[`item${id}`] && S.meta.skillIcons ? S.meta.skillIcons + I[`item${id}`] + '.png' : null);
+      // a row per kind: the PG tile, then the gems that many cost at the first single-PG barter (user, 2026-11-27)
+      M.pgs.forEach((n, k) => { if (!n) return; const K = P.mitama.kinds[k], single = K.trades.find((t) => t.pgs === 1);
+        pgTiles.push(tile(rbpOrbs([pgSrc(K.pg), I[`face${k}`]], 'rbp-orbs-pg'), K.pgName || `${RBP_KINDS[k]} Mitama`, n, `${n} ${RBP_KINDS[k]} Mitamas to place`), ...(single ? single.gems.map((g) => tile(itemPic(g[0]), g[1], g[2] * n, `${g[2]} ${g[1]} per ${K.pgName || 'PG'}`)) : [])); });
+      const soulTile = SP && SP.each ? tile(rbpOrbs([I.face0, I.face1, I.face2, I.face3, pgSrc(SP.item)], 'rbp-orbs-pg'), SP.name, mitamas, `${SP.name} summons a Mitama of the kind you pick: one per Mitama, instead of the kinds’ own PGs (NewMoon only, from ${SP.where})`) : null;
+      gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'A Summon PG per Mitama, one way or the other: the kinds’ own PGs for gems at Rag’s, or NewMoon’s Sacred Soul for Fighting Spirit at Saien', tabindex: 0, text: `Mitamas · ${fmt(mitamas)}` }),
+        // way 1: the kinds’ own PGs and the gems they cost at Rag’s; way 2: Sacred Souls and the Fighting Spirit they cost at Saien
+        h('div', { class: 'rbp-gather-sub' }, h('span', { class: 'q-key', 'data-tip': 'One PG per Mitama of its kind, at the first single-PG barter (10 of each gem per PG)', tabindex: 0, text: 'At Rag’s gem exchange' }),
+          h('div', { class: 'rbp-itemgrid rbp-pgrows' }, ...pgTiles)),
+        soulTile ? h('div', { class: 'rbp-gather-sub' }, h('span', { class: 'q-key', 'data-tip': `${SP.where}: ${SP.each} per ${SP.name}, or ${SP.pack[1]} for ${SP.pack[0]}. NewMoon only; each PG summons the kind you pick`, tabindex: 0, text: 'Or at Saien (NewMoon)' }),
+          h('div', { class: 'rbp-itemgrid rbp-pgrows' }, soulTile, tile(itemPic(FIGHTING_SPIRIT_ITEM), SP.currency || 'Fighting Spirit', SP.each * mitamas, `${fmt(mitamas)} × ${SP.name} at ${SP.each} each`))) : null,
+        h('p', { class: 'note', text: 'Or fuse Mitama demons yourself from two different elementals.' })));
+    }
+    if (gather.children.length) card.append(gather);
     return card;
   }
   /** The stats the demon ends with, beside a fresh demon of the same level. */

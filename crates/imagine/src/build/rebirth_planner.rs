@@ -33,8 +33,8 @@ use crate::data::stat_labels;
 /// Conversion points a rank is worth when extracted (comp_hack FusionTables.cpp REUNION_RANK_POINTS: rank 0..9).
 const RANK_POINTS: [i32; 10] = [0, 0, 1, 4, 10, 20, 40, 105, 320, 0];
 /// "Summon PG: Sacred Soul": NewMoon's PG for a Mitama of any kind, and what Saien asks for one (Fighting Spirit, item 12658).
-const SACRED_SOUL_PG: i32 = 21934;
-const FIGHTING_SPIRIT: i32 = 12658;
+pub const SACRED_SOUL_PG: i32 = 21934;
+pub const FIGHTING_SPIRIT: i32 = 12658;
 const SACRED_SOUL_SPIRITS: i32 = 6;
 /// Magical Golden Apple, and the XP one gives (the public datastore's Vivian event N3400: 100,000 XP per 10).
 const APPLE_ITEM: i32 = 21941;

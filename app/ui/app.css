@@ -2042,5 +2042,50 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-sumtext { display: grid; gap: 1px; min-width: 0; }
 .rbp-sumtile b { font: 600 18px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
 .rbp-sumtile span { font-size: 11px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rbp-sumsub { color: var(--text-3); }
+.rbp-sumsub { color: var(--text-3); white-space: inherit; }   /* inline after the label, on its one ellipsed line */
 .rbp-sumtile[data-tip] { cursor: help; }
+/* "What it all costs" under the steps (experiment, 2026-11-27): bigger total tiles, a step-by-step table with a "what" column, the items to gather as a grid */
+.rbp-costcard { gap: 14px; }
+.rbp-sum-big .rbp-sumtile { min-height: 58px; }
+.rbp-sum-big .rbp-sumtile b { font-size: 22px; }
+.rbp-sum-big .rbp-sumtile .rbp-orbs, .rbp-sum-big .rbp-sumtile .rbp-costicon { width: 34px; height: 34px; }
+.rbp-costs-wide td { vertical-align: top; padding: 7px 8px; }
+.rbp-costs-wide tr td:first-child { color: var(--text); }
+.rbp-cost-step { white-space: nowrap; }
+.rbp-cost-step > span { display: inline-flex; align-items: center; gap: 8px; }
+.rbp-costs-wide td, .rbp-costs-wide th { vertical-align: top; }
+.rbp-cost-step .rbp-step { width: 18px; height: 18px; font-size: 11px; }
+.rbp-cost-what { color: var(--text-2); font-size: 12px; line-height: 1.4; min-width: 0; }
+.rbp-costs-wide tfoot td { border-top: 1px solid var(--border); font-weight: 600; }
+.rbp-costs-wide thead th { text-align: left; }
+.rbp-costs-wide thead th.num { text-align: right; }
+.rbp-gather { display: grid; gap: 12px; }
+.rbp-gather-group { display: grid; gap: 6px; }
+.rbp-itemgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 8px; }
+.rbp-itemtile { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 3px 8px 3px 4px; border-radius: 6px; font-size: 12px; background: var(--surface-2); min-width: 0; }
+.rbp-itemtile b { font-variant-numeric: tabular-nums; }
+.rbp-itemtile .rbp-kindface { width: 24px; height: 24px; border-radius: 4px; }
+/* the rebirth cluster is three glyphs, not four (user, 2026-11-27): the small header version needs its own places */
+.rbp-costs thead th .orbs-3.rbp-orbs-sm img:nth-child(1) { left: 5px; top: 0; } .rbp-costs thead th .orbs-3.rbp-orbs-sm img:nth-child(2) { left: 0; top: 10px; } .rbp-costs thead th .orbs-3.rbp-orbs-sm img:nth-child(3) { left: 10px; top: 10px; }
+.rbp-gather-sub { display: grid; gap: 4px; margin-top: 4px; }
+/* a Summon PG tile's picture: the PG card with the Mitama it summons as an orb cluster (user, 2026-11-27); Sacred Soul: the four Mitamas with the card on top */
+.rbp-itemtile { grid-template-columns: auto minmax(0, 1fr) auto; }
+.rbp-itemtile .rbp-orbs-pg { width: 34px; height: 34px; margin: 0; }
+.orbs-5 img:nth-child(1) { left: 0; top: 0; } .orbs-5 img:nth-child(2) { left: 16px; top: 0; } .orbs-5 img:nth-child(3) { left: 0; top: 16px; } .orbs-5 img:nth-child(4) { left: 16px; top: 16px; } .orbs-5 img:nth-child(5) { left: 8px; top: 8px; z-index: 1; box-shadow: 0 0 0 2px var(--surface-2); }
+/* paying for the rebirths: a column per rank with its item options as tiles, one picked (user, 2026-11-27) */
+.rbp-rankgrid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.rbp-rankcol { display: grid; gap: 4px; align-content: start; padding: 6px; border-radius: 8px; background: var(--surface-2); min-width: 0; }
+.rbp-rankcol.idle { opacity: .55; }
+.rbp-rankcol-head { display: grid; gap: 1px; padding: 0 2px 3px; }
+.rbp-rankcol-head b { font-size: 12px; }
+.rbp-rankcol-head .src-count { margin: 0; font-size: 11px; white-space: normal; }
+.rbp-rankopt { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 6px 4px 4px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; min-width: 0; }
+.rbp-rankopt:hover { background: var(--hover); }
+.rbp-rankopt[aria-pressed="true"] { background: color-mix(in srgb, var(--rb) 14%, var(--surface)); border-color: var(--rb); }
+.rbp-rankopt:focus-visible { outline: 2px solid var(--focus); }
+.rbp-rankopt-text { display: grid; gap: 1px; min-width: 0; }
+.rbp-rankopt-name { font-size: 11px; line-height: 1.2; color: var(--text-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rbp-rankopt[aria-pressed="true"] .rbp-rankopt-name { color: var(--text); }
+.rbp-rankopt b { font-size: 12px; font-variant-numeric: tabular-nums; }
+@media (max-width: 1300px) { .rbp-rankgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.rbp-pgrows { grid-template-columns: repeat(3, minmax(0, 1fr)); }   /* a PG per row, its gems (or Fighting Spirit) beside it */

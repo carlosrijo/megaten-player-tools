@@ -402,8 +402,13 @@ Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before y
   Mitama of the kind you pick; read in game, not in the server tables), and the random bonus each placed Mitama rolls
   (one of the kind's list, not counted in the stats). A COMP demon's Mitamas already on a rune count and are never
   removed.
-- On the right, always in view: **What it costs** (rebirths, apples, macca and Mitamas in all, then per phase) and
-  **Stats at the level**: the demon's 14 stats as a fresh demon beside the planned one, with the change, the summon
+- Under the steps, **What it all costs**: the totals (rebirths, apples, macca, Mitamas), a step-by-step table that says
+  what each step is (the runes raised and to what rank, the fusion's form and Mitama rank, the Mitamas by kind) with
+  its three numbers, then the items to gather. Each rebirth takes one of several items (a rank to 4, say, takes 20
+  small runestones, or 1 runestone, or 1 large one), so **pay with** shows a column per rank with its options as
+  tiles (icon, item, how many per rebirth); pick one per rank and the item list follows, every item with its icon
+  and count. Then the Summon PGs for the
+  Mitamas (the kind's own, or Sacred Soul for any kind) with the gems at Rag's or the Fighting Spirit at Saien. On the right, always in view, **Stats at the level**: the demon's 14 stats as a fresh demon beside the planned one, with the change, the summon
   magnetite cut and the active sets. **Reset the plan** starts over.
 - **Pick boosts first** (the other way round, an experiment): tick the set boosts you want from the 48 (search by
   effect; Iron Man shows the stronger texts) and the page works out the rest: how many Mitamas of each kind, the Mitama

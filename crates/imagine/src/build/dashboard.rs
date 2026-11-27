@@ -783,6 +783,24 @@ impl Dashboard {
                 icons.insert(format!("item{id}"), item_icons::item_asset(store, self.data(), id, 0)?);
             }
         }
+        // ... and the Summon PGs the Rebirth Planner lists as the Mitamas' sources: the four kinds' (reference\mitama-pg.tsv)
+        // and NewMoon's Sacred Soul, with the PG item's own picture (user, 2026-11-27: not the Mitama's face), the gems
+        // those trades ask, and the Fighting Spirit Saien asks (the cost card shows them as item tiles)
+        let mut pgs: Vec<i32> = vec![super::rebirth_planner::SACRED_SOUL_PG, super::rebirth_planner::FIGHTING_SPIRIT];
+        if let Some(lines) = crate::data::game_data::reference_lines("mitama-pg.tsv")? {
+            for line in lines.iter().filter(|l| !l.is_empty() && !l.starts_with('#')) {
+                let cols: Vec<&str> = line.split('\t').collect();
+                let gems = cols.get(4).map(|c| c.split(';').filter_map(|p| p.split_once(':')).filter_map(|(a, _)| crate::fmt::parse_i32(a)).collect::<Vec<i32>>()).unwrap_or_default();
+                for id in cols.get(1).and_then(|c| crate::fmt::parse_i32(c)).into_iter().chain(gems) {
+                    if !pgs.contains(&id) {
+                        pgs.push(id);
+                    }
+                }
+            }
+        }
+        for id in pgs {
+            icons.insert(format!("item{id}"), item_icons::item_asset(store, self.data(), id, 0)?);
+        }
         let mut parts = Dashboard::parts(&gear, &self.short_names(&recs)?, dres.as_ref(), expertise_rows);
         // What VIT, INT and SPD take off cooldown and incantation time (from the last saved normal stats)
         if store.last_stats_path().exists() {
