@@ -263,11 +263,13 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     }
     if cmd == "skilldb" {
         // The Skill Database page's data: every skill grouped by action type, from the client's decoded tables (no game, no character).
-        //   skilldb --decoded <dir with SkillData.xml, CHelpData.xml> [--client <game folder, for icons>] [--out app\ui\skill-db.json]
+        //   skilldb --decoded <dir with SkillData.xml, CHelpData.xml> [--store <server datastore: which NPC teaches a skill, and where>]
+        //           [--client <game folder, for icons>] [--out app\ui\skill-db.json]
         let decoded = get("decoded").ok_or_else(|| user_error("skilldb needs --decoded <folder with SkillData.xml and CHelpData.xml>."))?;
+        let store = get("store").map(Path::new);
         let client = client_arg(get("client"))?;
         let out = get_or("out", path_combine(&path_combine("app", "ui"), "skill-db.json"));
-        skill_db::build(&GameData::new(), Path::new(decoded), client.as_deref(), Path::new(&out))?;
+        skill_db::build(&GameData::new(), Path::new(decoded), store, client.as_deref(), Path::new(&out))?;
         return Ok(0);
     }
     if cmd == "page-icons" {

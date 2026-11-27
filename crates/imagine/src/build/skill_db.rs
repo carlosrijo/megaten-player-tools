@@ -10,6 +10,10 @@
 //!                   order of the action type numbers (comp_hack skilldata.xml: ATTACK 0 ... SUPPORT 11), and the page
 //!                   that explains each one
 //!   reference       skill-text.tsv (names, descriptions), skill-icons.tsv, expertise-rank-skills.tsv, expertise-imagine.tsv
+//!   NPCBarterData.xml, NPCBarterGroupData.xml   the NPC exchanges that teach a skill, and the lists they are on
+//! With `--store <server datastore>`: which NPC opens each list, and where (`npc_places`: the events of zones, partials
+//! and events traced back to the ServerNPC that starts them), written as each barter's `at`. NPCBarterConditionData.xml:
+//! what an exchange asks of the demon (`lv`, `needs`).
 //!
 //! Left out: item uses (family ITEM: what an item does when used), the demons' own item uses (DEMON_SOLO), DEBUG skills,
 //! skills without a name and skills whose name the client never translated (only Japanese: test or unused records).
@@ -24,7 +28,7 @@ use anyhow::anyhow;
 use regex::Regex;
 use serde_json::{Map, Value, json};
 
-use super::item_icons;
+use super::{item_icons, npc_places};
 use super::xml::{self, elements, element, m, mem, obj, title};
 use crate::Result;
 use crate::console;
@@ -90,7 +94,7 @@ fn ms(sw: &Instant) -> u128 {
     sw.elapsed().as_millis()
 }
 
-pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_file: &Path) -> Result<()> {
+pub fn build(data: &GameData, decoded: &Path, store: Option<&Path>, client_dir: Option<&Path>, out_file: &Path) -> Result<()> {
     let sw = Instant::now();
     let reference = |f: &str| reference_file(f).ok_or_else(|| anyhow!("reference\\{f} is missing."));
 
@@ -219,21 +223,36 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
     // ---- NPC exchanges (barter) that teach a skill ----
     // NPCBarterData (client, so IMAGINE's own): resultItems SKILL_DEMON (the barter window's "Skill: Demon": your summoned
     // demon learns it) or SKILL_CHARACTER (you learn it), for tradeItems. Only exchanges an NPC list offers count
-    // (NPCBarterGroupData entries); which NPC opens a list is in the live server's events, which the public data lacks.
-    // per skill: (who it is for, the cost as text, the items asked [id, name, amount], the Soul Points asked)
-    let mut barter_of: HashMap<i32, Vec<(String, String, Vec<(i32, String, i32)>, i32)>> = HashMap::new();
+    // (NPCBarterGroupData entries). Which NPC opens a list, and where, is in the server datastore's events (`store`,
+    // npc_places): a list no event there opens is the client's only, and its `at` stays empty.
+    // NPCBarterConditionData (by barter id) gates an exchange, checked by the server on the summoned demon for a SKILL_DEMON
+    // result (comp_hack packets\game\Barter.cpp BarterConditionValid): DEMON_LEVEL (`lv`), CHARACTER_NO_SKILL (the target
+    // must not know the skill, learned or inherited: the wiki's "incompatible" skills), DEMON_SKILL, DEMON_SKILL_INHERITANCE
+    // (the demon's growth allows the skill's inheritance type), DEMON_BASE_TYPE (a demon-specific orb), CHARACTER_LEVEL.
+    // per skill: (who it is for, the cost as text, the items asked [id, name, amount], the Soul Points asked, where, the
+    // demon level asked, the other conditions as text)
+    let mut barter_of: HashMap<i32, Vec<(String, String, Vec<(i32, String, i32)>, i32, String, i32, String)>> = HashMap::new();
     let mut barter_items: std::collections::BTreeMap<i32, String> = std::collections::BTreeMap::new();   // every item a demon-skill barter asks, for the dashboard's icons
     let (barter_file, group_file) = (decoded.join("NPCBarterData.xml"), decoded.join("NPCBarterGroupData.xml"));
     if barter_file.is_file() && group_file.is_file() {
+        let places = match store {
+            Some(s) => {
+                let p = npc_places::NpcPlaces::load(decoded, s)?;
+                console::write_line(&format!("{} exchange lists are opened by an NPC the server data places ({} ms)", p.lists_opened, ms(&sw)));
+                Some(p)
+            }
+            None => None,
+        };
         let group_text = xml::read_text(&group_file)?;
         let group_doc = xml::parse(&group_text)?;
-        let mut offered: std::collections::HashSet<i32> = std::collections::HashSet::new();
+        let mut groups_of: HashMap<i32, Vec<i32>> = HashMap::new();   // exchange -> the lists it is on
         for g in xml::records(&group_doc).into_iter().filter(|o| o.attribute("name") == Some("MiNPCBarterGroupData")) {
+            let gid = int_of(Some(g), "ID");
             if let Some(es) = mem(Some(g), "entries") {
                 for e in elements(es, "element").filter_map(|e| element(e, "object")) {
                     let b = int_of(Some(e), "barterID");
                     if b != 0 {
-                        offered.insert(b);
+                        groups_of.entry(b).or_default().push(gid);
                     }
                 }
             }
@@ -249,6 +268,33 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
                 }
             }
         }
+        // the conditions by barter id: (type, value1, value2)
+        let mut cond_of: HashMap<i32, Vec<(String, i32, i32)>> = HashMap::new();
+        let cond_file = decoded.join("NPCBarterConditionData.xml");
+        if cond_file.is_file() {
+            let cond_text = xml::read_text(&cond_file)?;
+            let cond_doc = xml::parse(&cond_text)?;
+            for c in xml::records(&cond_doc).into_iter().filter(|o| o.attribute("name") == Some("MiNPCBarterConditionData")) {
+                let list = cond_of.entry(int_of(Some(c), "ID")).or_default();
+                for e in mem(Some(c), "conditions").into_iter().flat_map(|cs| elements(cs, "element")).filter_map(|e| element(e, "object")) {
+                    let t = m(Some(e), "type").unwrap_or_default();
+                    if !t.is_empty() && t != "NONE" {
+                        list.push((t, int_of(Some(e), "value1"), int_of(Some(e), "value2")));
+                    }
+                }
+            }
+        }
+        // demon names, for a demon-specific orb (DEMON_BASE_TYPE)
+        let mut demon_names: HashMap<i32, String> = HashMap::new();
+        for line in reference("devils-game.tsv")?.lines()? {
+            let p: Vec<&str> = line.split('\t').collect();
+            if let (Some(id), Some(n)) = (p.first().and_then(|s| fmt::parse_i32(s)), p.get(1)) {
+                if !n.trim().is_empty() {
+                    demon_names.insert(id, n.trim().to_string());
+                }
+            }
+        }
+        let skill_name = |id: i32| names.get(&id).cloned().unwrap_or_else(|| format!("skill {id}"));
         let barter_text = xml::read_text(&barter_file)?;
         let barter_doc = xml::parse(&barter_text)?;
         let parts = |o: roxmltree::Node, member: &str| -> Vec<(String, i32, i32)> {
@@ -263,9 +309,39 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
                 .unwrap_or_default()
         };
         for b in xml::records(&barter_doc).into_iter().filter(|o| o.attribute("name") == Some("MiNPCBarterData")) {
-            if !offered.contains(&int_of(Some(b), "ID")) {
-                continue;
+            let barter_id = int_of(Some(b), "ID");
+            let Some(groups) = groups_of.get(&barter_id) else { continue };
+            let at = places.as_ref().map(|p| npc_places::say(&p.of_groups(groups))).unwrap_or_default();
+            // the conditions: the demon level apart (a number), the rest as text ("not knowing Satisfaction 1, Overkiller 1")
+            let (mut lv, mut not, mut has, mut inherit, mut demon, mut you_lv) = (0, Vec::new(), Vec::new(), Vec::new(), Vec::new(), 0);
+            for (t, v1, _) in cond_of.get(&barter_id).into_iter().flatten() {
+                match t.as_str() {
+                    "DEMON_LEVEL" => lv = lv.max(*v1),
+                    "CHARACTER_NO_SKILL" => not.push(skill_name(*v1)),
+                    "DEMON_SKILL" | "CHARACTER_SKILL" => has.push(skill_name(*v1)),
+                    "DEMON_SKILL_INHERITANCE" => inherit.push(skill_name(*v1)),
+                    "DEMON_BASE_TYPE" | "DEMON_TYPE" => demon.push(demon_names.get(v1).cloned().unwrap_or_else(|| format!("demon {v1}"))),
+                    "CHARACTER_LEVEL" => you_lv = you_lv.max(*v1),
+                    _ => {}
+                }
             }
+            let mut needs: Vec<String> = Vec::new();
+            if !demon.is_empty() {
+                needs.push(format!("{} (any form)", demon.join(" or ")));
+            }
+            if !has.is_empty() {
+                needs.push(format!("knowing {}", has.join(", ")));
+            }
+            if !inherit.is_empty() {
+                needs.push(format!("able to inherit {}", inherit.join(", ")));
+            }
+            if !not.is_empty() {
+                needs.push(format!("not knowing {}", not.join(", ")));
+            }
+            if you_lv > 0 {
+                needs.push(format!("you at Lv {you_lv}"));
+            }
+            let needs = needs.join("; ");
             let taught: Vec<(String, i32)> =
                 parts(b, "resultItems").into_iter().filter(|(t, _, _)| t == "SKILL_DEMON" || t == "SKILL_CHARACTER").map(|(t, s, _)| (t, s)).collect();
             if taught.is_empty() {
@@ -299,8 +375,8 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
             for (t, sid) in taught {
                 let who = if t == "SKILL_DEMON" { "demon" } else { "you" }.to_string();
                 let l = barter_of.entry(sid).or_default();
-                if !l.iter().any(|(w, c, _, _)| *w == who && *c == cost) {
-                    l.push((who, cost.clone(), items.clone(), soul));
+                if !l.iter().any(|(w, c, _, _, _, l2, n)| *w == who && *c == cost && *l2 == lv && *n == needs) {
+                    l.push((who, cost.clone(), items.clone(), soul, at.clone(), lv, needs.clone()));
                 }
             }
         }
@@ -362,13 +438,22 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
             s.insert("exp".into(), json!(ex));
         }
         if let Some(bs) = barter_of.get(&id) {
-            s.insert("barter".into(), Value::Array(bs.iter().map(|(who, cost, items, soul)| {
+            s.insert("barter".into(), Value::Array(bs.iter().map(|(who, cost, items, soul, at, lv, needs)| {
                 let mut b = json!({ "for": who, "cost": cost });
                 if !items.is_empty() {
                     b["items"] = Value::Array(items.iter().map(|(id, name, n)| json!([id, name, n])).collect());
                 }
                 if *soul > 0 {
                     b["soul"] = json!(soul);
+                }
+                if !at.is_empty() {
+                    b["at"] = json!(at);   // "Incubus in Home II": who opens the list, and where (npc_places)
+                }
+                if *lv > 0 {
+                    b["lv"] = json!(lv);   // the demon (or you) must be this level (NPCBarterConditionData)
+                }
+                if !needs.is_empty() {
+                    b["needs"] = json!(needs);   // "not knowing Satisfaction 1, Overkiller 1": the other conditions
                 }
                 b
             }).collect()));

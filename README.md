@@ -411,7 +411,8 @@ Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before y
   learns (fusion inheritance) or one bought for a demon at an NPC (the Soul Points exchange, Sacrifice Orbs, Life
   Orbs, gems...), each with where it comes from. Under the bar, what each slot holds and how it is got; the demon's
   other skills as chips (a click puts one on the bar); **Back to its own skills** undoes it all. The skills swapped in
-  are listed in the cost card with their price (Soul Points added up).
+  are listed in the cost card with their price (Soul Points added up) and who sells them where, as the server data has
+  it ("Incubus in Home II", "Utai-Gaikotsu in Halloween Party (Halloween 2015 event)").
 - **Demon equipment** (step 2): the demon's four feature slots, each with its feature, and a square to put an Epitaph
   Parts item in it (the part replaces that slot's feature with its own). A COMP demon starts with the parts BABEL last
   read on it. The picker searches every part by name or effect (STR, fire, crit...) and greys out the ones the game
@@ -528,7 +529,8 @@ Passive and Switch skills, which have no action type. Each row has the skill's p
 bullets or items), cast time, cooldown, modifier and stiffness (the two numbers the game's description ends with) and who can get it. Pick a type at the top to
 see only those skills and what the game's Help says about that type (what it beats and what beats it). Click a skill
 for its in-game description, its target, reach and the stat it uses, the expertise rank that teaches it, the NPC
-exchanges (barter) that teach it and what they cost ("Skill: Demon" ones teach your summoned demon), and every demon
+exchanges (barter) that teach it, what they cost, who offers them where ("Incubus in Home II") and what they ask of
+the demon (its level, skills it must not know; "Skill: Demon" ones teach your summoned demon), and every demon
 that learns it (with the level) or has it as a feature; click a demon to open it in the Demon Database.
 
 The list opens on the skills you can get (learned by a compendium demon, a demon feature, from expertise, from an NPC
