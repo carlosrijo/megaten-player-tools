@@ -329,6 +329,33 @@ pub fn effects_json(data: std::sync::Arc<GameData>) -> Result<Value> {
         let table = own && e.cond == "always" && e.value.is_some() && table_labels.contains(&e.label);
         json!([e.label, e.value, i32::from(e.pct), e.cond, e.cond_note, target, i32::from(lv), i32::from(table)])
     };
+    // one tokusei's effects as lines, and its unconditional changes to the demon's own stats as adj
+    let add_tokusei = |tid: i32, lines: &mut Vec<Value>, adj: &mut Vec<Value>| -> Result<()> {
+        let def = data.tokusei_full(tid)?;
+        let target = def.as_ref().map_or_else(String::new, |d| d.target.clone());
+        // on a demon a PARTNER-aimed tokusei is its own (TokuseiManager: a PARTNER_DEMON keeps it); SUMMONER goes to the character
+        let own = target.is_empty() || target == "SELF" || target == "PARTNER";
+        let plain = def.as_ref().is_some_and(|d| d.conditions.is_empty() && d.skill_conditions.is_empty() && !d.target_conditions);
+        for e in fx.tokusei(tid, "planner", "")? {
+            if e.cond != "digitalized" {
+                lines.push(line(&e, &target, own && plain));
+            }
+        }
+        if let (true, true, Some(d)) = (own, plain, def.as_ref()) {
+            for c in &d.correct {
+                let per_level = c.mult == "LEVEL";
+                if !(per_level || c.mult == "NONE" || c.mult.is_empty()) {
+                    continue;
+                }
+                let typ = if c.r#type >= 100 { c.r#type - 100 } else { c.r#type };
+                let v = if c.precision > 0 { c.value / 10f64.powi(c.precision) } else { c.value };
+                if let Some(&k) = c.id.as_deref().and_then(|n| index.get(n)) {
+                    adj.push(json!([k, typ, v, i32::from(per_level)]));
+                }
+            }
+        }
+        Ok(())
+    };
     let mut out: IndexMap<String, Value> = IndexMap::new();
     for id in ids {
         let Some(p) = passives.get(&id.to_string()).filter(|v| !v.is_null()) else { continue };
@@ -344,38 +371,27 @@ pub fn effects_json(data: std::sync::Arc<GameData>) -> Result<Value> {
         }
         for tn in json::arr(p.at("tokuseiIds")) {
             let tid = json::int(Some(tn));
-            if tid == 0 {
-                continue;
-            }
-            let def = data.tokusei_full(tid)?;
-            let target = def.as_ref().map_or_else(String::new, |d| d.target.clone());
-            // on a demon a PARTNER-aimed tokusei is its own (TokuseiManager: a PARTNER_DEMON keeps it); SUMMONER goes to the character
-            let own = target.is_empty() || target == "SELF" || target == "PARTNER";
-            let plain = def.as_ref().is_some_and(|d| d.conditions.is_empty() && d.skill_conditions.is_empty() && !d.target_conditions);
-            for e in fx.tokusei(tid, "planner", "")? {
-                if e.cond != "digitalized" {
-                    lines.push(line(&e, &target, own && plain));
-                }
-            }
-            if let (true, true, Some(d)) = (own, plain, def.as_ref()) {
-                for c in &d.correct {
-                    let per_level = c.mult == "LEVEL";
-                    if !(per_level || c.mult == "NONE" || c.mult.is_empty()) {
-                        continue;
-                    }
-                    let typ = if c.r#type >= 100 { c.r#type - 100 } else { c.r#type };
-                    let v = if c.precision > 0 { c.value / 10f64.powi(c.precision) } else { c.value };
-                    if let Some(&k) = c.id.as_deref().and_then(|n| index.get(n)) {
-                        adj.push(json!([k, typ, v, i32::from(per_level)]));
-                    }
-                }
+            if tid != 0 {
+                add_tokusei(tid, &mut lines, &mut adj)?;
             }
         }
         if !lines.is_empty() {
             out.insert(id.to_string(), json!({ "fx": lines, "adj": adj }));
         }
     }
-    Ok(json!({ "source": "Each passive skill's correct table and tokusei, as the server applies them to a demon (comp_hack ActiveEntityState::AdjustStats)", "skills": out }))
+    // Demon Force: each effect of the force stack (devil-boost-extra.tsv, its tokusei) the same way, under "f<stack id>"
+    // (the server adds a stack effect's tokusei to the demon's own, DemonState.cpp: the same path as a skill's tokusei)
+    for r in rows("devil-boost-extra.tsv")? {
+        let stack = int(&r[0]);
+        let (mut lines, mut adj) = (Vec::new(), Vec::new());
+        for tid in r.get(3).map_or("", String::as_str).split(',').map(int).filter(|&x| x > 0) {
+            add_tokusei(tid, &mut lines, &mut adj)?;
+        }
+        if !lines.is_empty() {
+            out.insert(format!("f{stack}"), json!({ "fx": lines, "adj": adj }));
+        }
+    }
+    Ok(json!({ "source": "Each passive skill's correct table and tokusei, and each Demon Force effect's tokusei (keys f<stack id>), as the server applies them to a demon (comp_hack ActiveEntityState::AdjustStats)", "skills": out }))
 }
 
 /// rbp-effects.json as the app serves it: made once with the sealed data (the repo's file is made without it).
