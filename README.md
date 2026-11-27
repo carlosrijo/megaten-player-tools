@@ -265,19 +265,30 @@ compact line each; click a quest to open or close it. An open quest shows the st
 to go, the answers to pick, what comes first, and your kill counts. It updates every few seconds from the game, also
 while BABEL's own window is minimised, and never touches the game (IMAGINE has to run in a window or borderless:
 nothing can be shown over exclusive full screen).
-### Tools: Gear Database
+### Tools: Item Database
 
-Under **Tools** in the left bar. Every piece of gear in the game (10,270) with what it gives: stats, effects, appearance
-bonus, the sets it belongs to, mod slots, and who can wear it. Where a piece comes from (dungeon, ticket, exchange)
-is traced through the game data (drops, chests, shops, NPC exchanges, the ticket a piece comes in), with community notes from
-SnowSheet's gear reference for IMAGINE beside it. Search with several
-words at once ("limit break celu"), filter by slot, and untick "Only gear with a known source" to see everything.
+Under **Tools** in the left bar. Every item in the game (17,520, plus 158 key items), filtered by kind: gear,
+consumables, materials, vouchers and boxes, tarot and soul crystals, demon equipment, appearance items, key items and
+the rest. A second row of chips narrows a kind down: the slot for gear, the game's own item class for everything else
+(Weapon Mod Tool, Demon Voucher, Junk...). The **Filters** button opens more chips, each with its count: who can use
+it (sex, alignment), how it can be got (shop, exchange, enemy drop, chest, ticket or box, event, quest...; pick several),
+a weapon's range and affinity, and a level limit. Click a column header to sort by it.
 
-Stats and effects are read from the IMAGINE client's current item tables, not from the spreadsheets. 963 spreadsheet
-rows matched no item in the game data (different spelling); they are listed with the sheet's own text, marked
-"sheet only". The cosmetic ticket tabs (Vanities) are left out.
+- **Gear** (10,266 pieces) shows what it gives: stats, effects, appearance bonus, the sets it belongs to, mod slots,
+  and who can wear it, with community notes from SnowSheet's gear reference for IMAGINE beside it.
+- **Other items** show the game's own description, who can use them, the stack size and the selling price. A tarot or
+  soul crystal shows what each side gives when fused into a piece. A voucher, ticket or random box lists what it can
+  give, when the server data links the box to the item that opens it. A fusion plugin says which quest or exchange gives it.
 
-Each piece shows the icon the game shows for it (10,168 of 10,270; 102 have no picture in the client).
+Where an item comes from (shop, exchange, enemy drop, chest, the ticket a piece comes in) is traced through the game data
+for every item, and an item handed out by a quest names the quest, with a link to it in the Quest Database. Search with several words at once ("limit break celu", "revival demon"), and untick "Only items with a
+known source" to see everything.
+
+Stats, effects and descriptions are read from the IMAGINE client's current item tables, not from the spreadsheets.
+369 spreadsheet rows matched no item in the game data (different spelling); they are listed with the sheet's own text,
+marked "sheet only". The cosmetic ticket tabs (Vanities) are left out.
+
+Each item shows the icon the game shows for it (17,382 of 17,520; 138 have no picture in the client; key items have none).
 The pictures are the game's own art, so they are not in the repository: they are made from your game folder by
 `imagine-reader geardb ... --client <game folder>`, into `app\ui\gear-db-icons\`. Without
 them the list shows empty boxes.

@@ -1,13 +1,21 @@
 //! Port of `src/Build/GearDb.cs`.
 //!
-//! The Gear Database page's data (app\ui\gear-db.json): every piece of gear in the IMAGINE client with what it gives,
-//! plus where the community's spreadsheets say it comes from.
+//! The Item Database page's data (app\ui\gear-db.json; the file keeps its old name): every item in the IMAGINE client
+//! with what it gives or does, plus where the game data and the community's spreadsheets say it comes from. Gear is
+//! what it always was (stats, effects, sets); the other kinds (consumables, materials, vouchers, tarot and soul crystals,
+//! demon equipment, appearance items, key items) carry the game's own description, and a voucher or box lists what it
+//! can give.
 //!
 //! What an item gives is read from the client's CURRENT tables, decoded to XML beforehand (reference\README.md):
-//!   ItemData.xml          equip type, gender, alignment, weapon type and affinity, mod slots, the correct table (stats)
+//!   ItemData.xml          equip type, gender, alignment, weapon type and affinity, mod slots, the correct table (stats),
+//!                         the sub-category (the item class the game shows, reference\item-classes.tsv), stack and price
 //!   SItemData.xml         the item's special-effect tokusei
 //!   EquipmentSetData.xml  sets (several pieces) and appearance bonuses (one-piece sets)
-//!   CItemData.xml         names and icon numbers
+//!   CItemData.xml         names, descriptions and icon numbers
+//!   CKeyItemData.xml      key items (plugins, passes): their own id space, name and description; how to get a fusion
+//!                         plugin comes from the Fusion Planner's data (app\ui\fusion-data.json beside the output)
+//! Tarot and soul crystals: the enchant table (`GameData::enchant_sides`) names the crystal item of each enchant side;
+//! the side's effects are worded by `ItemEffects::enchant`, as on the Gear page for a fused crystal.
 //! Icons: the icon number goes through the client's CIconData_Item.bin to its picture (Interface\tga or tga2, as for
 //! the Gear page's icons), saved once as app\ui\gear-db-icons\<picture>.png beside the json (game art, not in git).
 //! Tokusei are turned into text by the reader's own ItemEffects (the code that works out the worn gear's bonuses).
@@ -68,7 +76,25 @@ fn slot_name(equip: &str) -> Option<&'static str> {
     })
 }
 
+/// The page's kind of a non-gear item, from the game's sub-category (the item class, reference\item-classes.tsv) and the
+/// main category (3 = the tarot and soul crystals, which the client classes as consumables). Gear is decided by its equip
+/// type before this is asked. The kinds are the page's filter chips; the class stays beside it as the finer filter.
+fn kind_name(sub: i32, main: i32, equip: &str) -> &'static str {
+    if equip.starts_with("VIS_") || sub == 18 {
+        return "Appearance"; // hair, face and eye types and colours
+    }
+    match sub {
+        60 if main == 3 => "Enchant",
+        60 | 81 | 82 => "Consumable",             // Consumable, Demon Dungeon Only, Diaspora Only
+        63 | 64 | 65 | 66 | 69 | 70 | 84 => "Material", // Junk, Material, Disassembly Tool, Weapon/Armor Mod Tool, Synthesis Support, Spiritual Infusion
+        19 | 67 | 68 | 102 => "Voucher",          // Ticket, Item Voucher, Demon Voucher, Voucher
+        83 => "Demon equipment",
+        _ => "Other", // Quest Item, Money, Mount Item, Other and anything the client has no class for
+    }
+}
+
 static RE_WS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+").expect("ws"));
+static RE_COUNT_X: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[\d,]+ × ").expect("count x"));
 static RE_NON_KEY: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-z0-9]+").expect("key"));
 static RE_THE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^the\s+").expect("the"));
 static RE_NON_LOOSE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[^a-rt-z0-9]+").expect("loose key"));
@@ -457,7 +483,7 @@ fn get_lines(sources: &Sources, raw: &Value, depth: i32, visited: &mut HashSet<i
     outp
 }
 
-/// `ids_out`: write the ids to trace (all gear, and every ticket item) to this file and stop: the input of tools\dcmexport --ids.
+/// `ids_out`: write the ids to trace (every item the client names) to this file and stop: the input of tools\dcmexport --ids.
 /// `game_sources`: dcmexport's output for those ids: where each drops, is sold or handed out in the server's files.
 pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_file: &str, ids_out: Option<&str>, game_sources: Option<&str>, client_dir: Option<&Path>) -> Result<()> {
     let mut sources = Sources::default();
@@ -475,6 +501,9 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
 
     let mut name: IndexMap<i32, String> = IndexMap::new();
     let mut icon_key: HashMap<i32, i32> = HashMap::new();
+    let mut desc: HashMap<i32, Vec<Value>> = HashMap::new();
+    // the game's description, one line per line of the tooltip (the client breaks lines itself)
+    let desc_lines = |s: &str| -> Vec<Value> { s.lines().map(|l| squash(l)).filter(|l| !l.is_empty()).map(|l| json!(l)).collect() };
     {
         let xml = json::read_all_text(&dec.join("CItemData.xml"))?;
         let doc = parse_xml(&xml)?;
@@ -485,7 +514,18 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                 let cid = int(m(b, "ID").as_deref());
                 name.insert(cid, n);
                 icon_key.insert(cid, int(m(b, "icon").as_deref()));
+                let d = desc_lines(&m(b, "desc").unwrap_or_default());
+                if !d.is_empty() {
+                    desc.insert(cid, d);
+                }
             }
+        }
+    }
+    // the crystal item of each enchant side: a tarot or soul crystal's item id -> (enchant id, is tarot)
+    let mut enchant_of_item: HashMap<i32, Vec<(i32, bool)>> = HashMap::new();
+    for (&(eid, is_tarot), side) in data.enchant_sides()?.iter() {
+        if side.crystal_item > 0 {
+            enchant_of_item.entry(side.crystal_item).or_default().push((eid, is_tarot));
         }
     }
     let mut special: HashMap<i32, Vec<i32>> = HashMap::new();
@@ -545,6 +585,7 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
 
     let mut items: Vec<Obj> = Vec::new();
     let mut by_id: IndexMap<i32, usize> = IndexMap::new();
+    let mut gear_ids: HashSet<i32> = HashSet::new(); // the items with a slot: the sheets and the ticket rule are about these
     {
         let xml = json::read_all_text(&dec.join("ItemData.xml"))?;
         let doc = parse_xml(&xml)?;
@@ -552,8 +593,12 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             let common = obj(Some(it), "common");
             let basic = obj(Some(it), "basic");
             let restr = obj(Some(it), "restriction");
+            let poss = obj(Some(it), "possession");
             let id = int(m(common, "id").as_deref());
             let equip = m(basic, "equipType").unwrap_or_default();
+            let category = obj(common, "category");
+            let sub = int(m(category, "subCategory").as_deref());
+            let main_cat = int(m(category, "mainCategory").as_deref());
             let use_skill = int(it
                 .descendants()
                 .find(|n| n.is_element() && n.tag_name().name() == "member" && n.attribute("name") == Some("useSkill"))
@@ -566,19 +611,63 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                     }
                 }
             }
-            let Some(slot) = slot_name(&equip) else { continue };
             let Some(nm) = name.get(&id).cloned() else { continue };
+            let slot = slot_name(&equip);
             let mut o = Obj::new();
             o.insert("id".into(), json!(id));
             o.insert("name".into(), json!(nm));
-            o.insert("slot".into(), json!(slot));
+            // the game's own class of the item ("One-Handed Sword", "Consumable", "Weapon Mod Tool"); the page's kind groups them
+            if let Some(class) = crate::data::game_data::item_class_name(sub) {
+                o.insert("class".into(), json!(class));
+            }
+            match slot {
+                Some(s) => {
+                    o.insert("kind".into(), json!("Gear"));
+                    o.insert("slot".into(), json!(s));
+                    gear_ids.insert(id);
+                }
+                None => {
+                    o.insert("kind".into(), json!(kind_name(sub, main_cat, &equip)));
+                    if let Some(d) = desc.get(&id) {
+                        o.insert("desc".into(), Value::Array(d.clone()));
+                    }
+                    let stack = int(m(poss, "stackSize").as_deref());
+                    if stack > 1 {
+                        o.insert("stack".into(), json!(stack));
+                    }
+                    let sell = int(m(basic, "sellPrice").as_deref());
+                    if sell > 0 {
+                        o.insert("sell".into(), json!(sell));
+                    }
+                }
+            }
+            let lvl = int(m(restr, "level").as_deref());
+            if lvl > 0 {
+                o.insert("level".into(), json!(lvl));
+            }
             let g = int(m(restr, "gender").as_deref());
             o.insert("gender".into(), json!(if g == 0 { "Male" } else if g == 1 { "Female" } else { "Any" }));
             let al = m(restr, "alignment").unwrap_or_else(|| "ALL".into());
             if al != "ALL" {
                 o.insert("alignment".into(), json!(to_title_case(&al.to_lowercase().replace('_', " "))));
             }
-            if slot == "Weapon" {
+            // a tarot or soul crystal: what each side gives when fused into a piece (the Gear page's words for it)
+            if let Some(sides) = enchant_of_item.get(&id) {
+                for &(eid, is_tarot) in sides {
+                    let mut lines: Vec<Value> = Vec::new();
+                    for e in fx.enchant(eid, is_tarot, &nm)? {
+                        let line = text(&e, &data)?;
+                        if !no_words(&line) {
+                            lines.push(json!(line));
+                        }
+                    }
+                    let lines = distinct(lines);
+                    if !lines.is_empty() {
+                        o.insert(if is_tarot { "tarot" } else { "soul" }.into(), Value::Array(lines));
+                    }
+                }
+            }
+            if slot == Some("Weapon") {
                 let wt = m(basic, "weaponType");
                 o.insert(
                     "weapon".into(),
@@ -697,32 +786,44 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             by_id.insert(id, items.len() - 1); // byId[id] = o: a repeated id points at the later record
         }
     }
+    // What a voucher, ticket or random box can give: every item whose sources include a box this item opens.
+    let mut contents: IndexMap<i32, Vec<i32>> = IndexMap::new();
     for o in items.iter_mut() {
-        if let Some(rs) = sources.raw.get(&json::int(o.get("id"))) {
+        let id = json::int(o.get("id"));
+        if let Some(rs) = sources.raw.get(&id) {
+            for x in json::arr(Some(rs)).filter_map(Value::as_object) {
+                if str_of(x, "kind") == "box" {
+                    for &op in sources.openers.get(&(dbl(x, "giftBox") as i32)).map(Vec::as_slice).unwrap_or(&[]) {
+                        let list = contents.entry(op).or_default();
+                        if !list.contains(&id) {
+                            list.push(id);
+                        }
+                    }
+                }
+            }
             let gl = get_lines(&sources, rs, 0, &mut HashSet::new());
             if !gl.is_empty() {
                 o.insert("get".into(), Value::Array(gl.into_iter().map(Value::Object).collect()));
             }
         }
     }
-
     // Tickets: items that are not gear and are called a ticket ("... Data Ticket", "... DT"); gear comes out of them.
     let mut ticket_by_key: IndexMap<String, i32> = IndexMap::new();
     for (&kid, kname) in &name {
-        if !by_id.contains_key(&kid) && RE_TICKET.is_match(kname) {
+        if !gear_ids.contains(&kid) && RE_TICKET.is_match(kname) {
             ticket_by_key.entry(key(kname)).or_insert(kid); // TryAdd
         }
     }
     if let Some(ids_out) = ids_out {
-        let box_items: Vec<i32> = sources.openers.values().flatten().copied().collect::<IndexSet<i32>>().into_iter().collect();
-        let mut all: Vec<i32> = by_id.keys().copied().chain(ticket_by_key.values().copied()).chain(box_items.iter().copied()).collect::<IndexSet<i32>>().into_iter().collect();
+        // every item the client names: tools\dcmexport traces them all (gear, tickets, consumables, materials...)
+        let mut all: Vec<i32> = name.keys().copied().collect();
         all.sort();
         let mut text_out = String::new();
-        for x in all {
+        for x in &all {
             text_out.push_str(&format!("{x}\r\n"));
         }
         std::fs::write(ids_out, text_out)?;
-        println!("{} gear ids, {} ticket ids and {} box-opening items written to {}.", by_id.len(), ticket_by_key.len(), box_items.len(), ids_out);
+        println!("{} item ids ({} of them gear) written to {}.", all.len(), gear_ids.len(), ids_out);
         return Ok(());
     }
 
@@ -763,10 +864,60 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
         }
     }
 
-    // ---- the spreadsheets: where it comes from ----
+    // ---- key items (plugins, passes): their own ids, with the Fusion Planner's ways to get a plugin ----
+    let mut key_items: Vec<Obj> = Vec::new();
+    let key_file = dec.join("CKeyItemData.xml");
+    if key_file.is_file() {
+        let mut plugin_how: HashMap<i32, Vec<String>> = HashMap::new();
+        let fusion = std::path::absolute(out_file)?.parent().map(Path::to_path_buf).unwrap_or_default().join("fusion-data.json");
+        if fusion.is_file() {
+            let root = json::load(&fusion)?;
+            if let Some(plugins) = root.at("plugins").and_then(Value::as_object) {
+                for (k, p) in plugins {
+                    if let (Some(id), Some(how)) = (fmt::parse_i32(k), json::str(p.at("how"))) {
+                        plugin_how.insert(id, how.split(" · ").map(str::to_string).filter(|s| !s.is_empty()).collect());
+                    }
+                }
+            }
+        }
+        let xml = json::read_all_text(&key_file)?;
+        let doc = parse_xml(&xml)?;
+        for k in records(&doc) {
+            let b = obj(Some(k), "itemData");
+            let n = squash(&m(b, "name").unwrap_or_default());
+            if n.is_empty() {
+                continue;
+            }
+            let kid = int(m(b, "ID").as_deref());
+            let mut o = Obj::new();
+            o.insert("id".into(), json!(kid));
+            o.insert("keyItem".into(), json!(true));
+            o.insert("name".into(), json!(n));
+            o.insert("kind".into(), json!("Key item"));
+            o.insert("class".into(), json!("Key item"));
+            let d = desc_lines(&m(b, "desc").unwrap_or_default());
+            if !d.is_empty() {
+                o.insert("desc".into(), Value::Array(d));
+            }
+            if let Some(how) = plugin_how.get(&kid) {
+                o.insert("how".into(), Value::Array(how.iter().map(|s| json!(s)).collect()));
+            }
+            o.insert("stats".into(), Value::Array(Vec::new()));
+            o.insert("effects".into(), Value::Array(Vec::new()));
+            o.insert("sources".into(), Value::Array(Vec::new()));
+            key_items.push(o);
+        }
+    }
+
+    // ---- the spreadsheets: where it comes from (gear only: the sheet is a gear reference) ----
+    let gear_idx: HashSet<usize> = items.iter().enumerate().filter(|(_, o)| gear_ids.contains(&json::int(o.get("id")))).map(|(i, _)| i).collect();
+    let is_gear = |i: usize| gear_idx.contains(&i);
     let mut by_name: IndexMap<String, Vec<usize>> = IndexMap::new();
     let mut by_loose: IndexMap<String, Vec<usize>> = IndexMap::new();
     for (i, o) in items.iter().enumerate() {
+        if !is_gear(i) {
+            continue;
+        }
         let n = o.get("name").and_then(Value::as_str).unwrap_or("");
         by_name.entry(key(n)).or_default().push(i);
         by_loose.entry(loose_key(n)).or_default().push(i);
@@ -809,7 +960,7 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             let mut ticket = 0;
             if let Some(idm) = RE_ITEM_ID.captures(&how_raw) {
                 let tid = int_parse(&idm[1])?;
-                if name.contains_key(&tid) && !by_id.contains_key(&tid) {
+                if name.contains_key(&tid) && !gear_ids.contains(&tid) {
                     ticket = tid;
                 }
             }
@@ -829,7 +980,7 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             }
             let mut hit: Vec<usize> = Vec::new();
             for mm in RE_DIGITS.find_iter(&f(&p, "item_id")) {
-                if let Some(&i) = by_id.get(&int_parse(mm.as_str())?) {
+                if let Some(&i) = by_id.get(&int_parse(mm.as_str())?).filter(|&&i| is_gear(i)) {
                     hit.push(i);
                 }
             }
@@ -870,6 +1021,7 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                 let mut so = Obj::new();
                 so.insert("id".into(), json!(0));
                 so.insert("name".into(), json!(f(&p, "item_name")));
+                so.insert("kind".into(), json!("Gear"));
                 so.insert("slot".into(), json!(f(&p, "equip_slot_type")));
                 so.insert("gender".into(), json!(f(&p, "mf_restriction")));
                 so.insert("sheetOnly".into(), json!(true));
@@ -885,12 +1037,92 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                 if !done.insert(i) {
                     continue; // Distinct
                 }
+                // the sheet says this piece comes in that ticket: the ticket lists the piece among what it gives
+                if ticket != 0 {
+                    let pid = json::int(items[i].get("id"));
+                    let list = contents.entry(ticket).or_default();
+                    if !list.contains(&pid) {
+                        list.push(pid);
+                    }
+                }
                 if let Some(Value::Array(list)) = items[i].get_mut("sources") {
                     if !list.iter().any(|x| x.to_string() == src_text) {
                         list.push(Value::Object(src.clone()));
                     }
                 }
             }
+        }
+    }
+
+    // Quests that hand the item over: the Quest Database's data (app\ui\quest-guide.json beside the output) words every
+    // reward as "N × <name>" or the bare name in its "get" lists (steps, ways, walkthrough); the names are matched to items.
+    // The page links each quest to the Quest Database by its title.
+    const QUESTS_CAP: usize = 40;
+    let quest_file = std::path::absolute(out_file)?.parent().map(Path::to_path_buf).unwrap_or_default().join("quest-guide.json");
+    if quest_file.is_file() {
+        // a name with no Latin letters or digits (Japanese names) has an empty key: never matched, or every such item would match
+        let mut by_key_all: HashMap<String, Vec<usize>> = HashMap::new();
+        for (i, o) in items.iter().enumerate() {
+            let k = key(o.get("name").and_then(Value::as_str).unwrap_or(""));
+            if !k.is_empty() {
+                by_key_all.entry(k).or_default().push(i);
+            }
+        }
+        fn gets<'a>(v: &'a Value, out: &mut Vec<&'a str>) {
+            match v {
+                Value::Array(a) => a.iter().for_each(|x| gets(x, out)),
+                Value::Object(o) => {
+                    for (k, x) in o {
+                        if k == "get" {
+                            out.extend(json::arr(Some(x)).filter_map(Value::as_str));
+                        } else {
+                            gets(x, out);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        let mut quests_of: HashMap<usize, Vec<String>> = HashMap::new();
+        let root = json::load(&quest_file)?;
+        for q in json::arr(root.at("quests")) {
+            let Some(title) = json::str(q.at("title")).filter(|t| !t.is_empty()) else { continue };
+            let mut rewards: Vec<&str> = Vec::new();
+            gets(q, &mut rewards);
+            for r in rewards {
+                // "10 × Ointment" -> Ointment; XP, expertise and valuables are not items
+                let nm = RE_COUNT_X.replace(r, "");
+                if nm.is_empty() || nm.starts_with("the valuable ") || nm.ends_with(" XP") || nm.contains(" expertise ") || nm.contains("XP (") {
+                    continue;
+                }
+                for &i in by_key_all.get(&key(&nm)).map(Vec::as_slice).unwrap_or(&[]) {
+                    let list = quests_of.entry(i).or_default();
+                    if !list.contains(&title) {
+                        list.push(title.clone());
+                    }
+                }
+            }
+        }
+        for (i, mut titles) in quests_of {
+            if titles.len() > QUESTS_CAP {
+                items[i].insert("questsMore".into(), json!(titles.len() - QUESTS_CAP));
+                titles.truncate(QUESTS_CAP);
+            }
+            items[i].insert("quests".into(), Value::Array(titles.into_iter().map(|t| json!(t)).collect()));
+        }
+    }
+
+    // What a voucher, ticket or box can give: the box tables above, and the pieces the sheet files under the ticket
+    const GIVES_CAP: usize = 120;
+    for o in items.iter_mut() {
+        if let Some(list) = contents.get(&json::int(o.get("id"))) {
+            let mut names: Vec<String> = list.iter().filter_map(|i| name.get(i).cloned()).collect::<IndexSet<_>>().into_iter().collect();
+            names.sort_by(|a, b| crate::text::cmp_invariant(a, b));
+            if names.len() > GIVES_CAP {
+                o.insert("givesMore".into(), json!(names.len() - GIVES_CAP));
+                names.truncate(GIVES_CAP);
+            }
+            o.insert("gives".into(), Value::Array(names.into_iter().map(|n| json!(n)).collect()));
         }
     }
 
@@ -902,12 +1134,21 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
         .count();
     let with_src = items.iter().filter(|o| src_len(o) > 0).count();
     let item_count = items.len();
+    let gear_count = gear_ids.len();
+    let with_gives = items.iter().filter(|o| o.get("gives").is_some()).count();
+    let with_quests = items.iter().filter(|o| o.get("quests").is_some()).count();
+    let mut per_kind: IndexMap<String, usize> = IndexMap::new();
+    for o in &items {
+        *per_kind.entry(o.get("kind").and_then(Value::as_str).unwrap_or("").to_string()).or_default() += 1;
+    }
 
     let mut all: Vec<Value> = items.into_iter().map(Value::Object).collect();
     all.extend(sheet_only.into_iter().map(Value::Object));
+    let key_count = key_items.len();
+    all.extend(key_items.into_iter().map(Value::Object));
     let mut result = Obj::new();
     result.insert("generatedAt".into(), json!(chrono::Utc::now().format("%Y-%m-%d").to_string()));
-    result.insert("note".into(), json!("Stats, effects and sets: the IMAGINE client's current tables. Community notes: SnowSheet's gear reference for IMAGINE."));
+    result.insert("note".into(), json!("Names, descriptions, stats, effects and sets: the IMAGINE client's current tables. Community notes: SnowSheet's gear reference for IMAGINE."));
     result.insert("items".into(), Value::Array(all));
     let out_path = Path::new(out_file);
     let full = std::path::absolute(out_path)?;
@@ -920,8 +1161,12 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
     } else {
         println!("No icons: the game folder is not known (pass --client <game folder>).");
     }
-    println!("In-game source found for {in_game} pieces directly and {via_ticket} more through their ticket.");
-    println!("{item_count} pieces of gear from the client, {with_src} with a source from the sheets. {} KB.", std::fs::metadata(out_path)?.len() / 1024);
+    println!("In-game source found for {in_game} items directly and {via_ticket} more through their ticket; {with_gives} vouchers and boxes list what they can give; {with_quests} items are quest rewards.");
+    println!(
+        "{item_count} items from the client ({gear_count} gear; {}) and {key_count} key items, {with_src} pieces of gear with a source from the sheets. {} KB.",
+        per_kind.iter().filter(|(k, _)| k.as_str() != "Gear").map(|(k, n)| format!("{n} {}", k.to_lowercase())).collect::<Vec<_>>().join(", "),
+        std::fs::metadata(out_path)?.len() / 1024
+    );
     println!(
         "Sheet rows: {rows}; matched by id {by_id_hits}, by name {by_name_hits}, not matched {unmatched} (kept as sheet-only entries). {vanity} cosmetic ticket rows (Vanities tabs) left out. {other_server} rows of the other server's sheet (Re:FC) ignored."
     );

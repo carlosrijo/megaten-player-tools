@@ -387,7 +387,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Gear Database', 'shield'], ['quests', 'Quest Database', 'book'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -461,7 +461,7 @@
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
     dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle', live: null, liveRaw: null, typeTouched: false },
-    gdb: { q: '', slot: 'all', known: true, open: new Set(), shown: 150, data: null, state: 'idle' },
+    gdb: { q: '', kind: 'all', cls: 'all', known: true, gender: '', align: '', src: [], range: '', aff: [], maxLv: '', sort: 'name', dir: 1, fopen: false, open: new Set(), pg: 0, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
@@ -472,7 +472,7 @@
     ddb: { q: '', kind: 'contract', race: '', align: '', sort: 'level', open: new Set(), level: {}, mtView: new Set(), data: null, state: 'idle', only: null,   // only: a demon id a link opened
       variants: store.get('ddb-variants') !== '0' },   // list the variants (Lucky, Inexperienced ...) too; saved for next time
     // Skill Database: the action type shown ('' = all), who can get it, element, sort, opened skills, how many rows drawn
-    skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), shown: 200, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
+    skl: { q: '', type: '', who: 'get', el: '', sort: 'name', open: new Set(), pg: 0, data: null, state: 'idle', byDemon: null, byDemonFrom: null },
     // Build Planner: the character as read (init, base), the build being tried and its result (build, cur), what is open
     sim: { state: 'idle', error: '', init: null, base: null, cur: null, build: null, catalog: {}, tab: 'gear', open: null, expOpen: new Set(), allDiff: false, cap: null, seq: 0, timer: null, working: false, redraw: null,
       // saved builds: the list, which page is up ('home' = the builds, 'edit' = one build), the build in the editor
@@ -718,9 +718,9 @@
     gear: { gear: ['view', 'sel', 'colq'] },
     expertise: { exp: ['q', 'closed'] },
     digitalize: { dg: ['q', 'closed'] },
-    skills: { skl: ['q', 'type', 'who', 'el', 'sort', 'open', 'shown'] },
+    skills: { skl: ['q', 'type', 'who', 'el', 'sort', 'open', 'pg'] },
     ddb: { ddb: ['q', 'kind', 'race', 'align', 'sort', 'open', 'mtView', 'only'] },
-    geardb: { gdb: ['q', 'slot', 'known', 'open', 'shown'] },
+    geardb: { gdb: ['q', 'kind', 'cls', 'known', 'gender', 'align', 'src', 'range', 'aff', 'maxLv', 'sort', 'dir', 'fopen', 'open', 'pg'] },
     rank: { rank: ['q', 'kind', 'race', 'at', 'mt', 'sort', 'dir'] },
     dcm: { dcm: ['q', 'kind', 'open'] },
     dungeons: { dun: ['q', 'kind', 'open', 'mob', 'shown'] },
@@ -3017,11 +3017,52 @@
     questLiveTick();
     return page;
   }
-  // ---------- Tools: Gear Database ----------
-  // gear-db.json is made by "imagine-reader geardb": what each piece gives is read from the IMAGINE client's current
-  // tables; where it comes from is what the community spreadsheets say. It sits beside this file.
-  // Item pictures are in gear-db-icons\ beside it (the game's own art, made locally with geardb --client, not in git).
+  // ---------- Pages for the long lists (Item Database, Skill Database) ----------
+  // Pages of S.perPage rows (one saved choice for every list, babel-rows-per-page): 17,000 table rows at once is too
+  // slow, and a page number can be come back to. pageOf keeps st.pg in range and gives this page's rows; drawPager fills
+  // the pager under a table: "a–b of N", the per-page picker (when the list is longer than the smallest page),
+  // Previous / Next, the first and last page and the two around this one, gaps as "…". A page change scrolls the table
+  // back into view. Every filter or search change on a page sets st.pg = 0 itself.
+  const PAGE_SIZES = [100, 200, 500];
+  S.perPage = PAGE_SIZES.includes(Number(store.get('rows-per-page') || store.get('gdb-per'))) ? Number(store.get('rows-per-page') || store.get('gdb-per')) : 100;
+  function pageOf(st, rows) {
+    const per = S.perPage, pages = Math.max(1, Math.ceil(rows.length / per));
+    st.pg = Math.min(Math.max(0, st.pg | 0), pages - 1);
+    return { per, pages, rows: rows.slice(st.pg * per, (st.pg + 1) * per) };
+  }
+  function drawPager(pager, st, total, { per, pages }, draw, anchor, what) {
+    const goPage = (p) => { st.pg = p; draw(); const a = anchor && anchor(); if (a) a.scrollIntoView({ block: 'start' }); };
+    const nums = [...new Set([0, pages - 1, st.pg - 2, st.pg - 1, st.pg, st.pg + 1, st.pg + 2].filter((p) => p >= 0 && p < pages))].sort((a, b) => a - b);
+    const kids = [h('span', { class: 'note', text: total ? `${fmt(st.pg * per + 1)}–${fmt(Math.min((st.pg + 1) * per, total))} of ${fmt(total)}${what ? ' ' + what : ''}` : '' })];
+    if (total > PAGE_SIZES[0]) kids.push(h('label', { class: 'gdb-check pager-per' }, 'Per page',
+      h('select', { class: 'input ddb-select', 'aria-label': 'Rows per page', onchange: (ev) => { S.perPage = Number(ev.target.value); store.set('rows-per-page', String(S.perPage)); st.pg = 0; draw(); } },
+        PAGE_SIZES.map((n) => h('option', { value: String(n), selected: n === per ? true : null, text: String(n) })))));
+    if (pages > 1) {
+      kids.push(h('button', { type: 'button', class: 'btn btn-sm', disabled: st.pg === 0 ? true : null, onclick: () => goPage(st.pg - 1) }, 'Previous'));
+      nums.forEach((p, i) => {
+        if (i && p !== nums[i - 1] + 1) kids.push(h('span', { class: 'pager-gap', text: '…' }));
+        kids.push(h('button', { type: 'button', class: 'btn btn-sm pager-num', 'aria-current': p === st.pg ? 'page' : null, 'aria-label': `Page ${p + 1}`, onclick: () => goPage(p) }, String(p + 1)));
+      });
+      kids.push(h('button', { type: 'button', class: 'btn btn-sm', disabled: st.pg >= pages - 1 ? true : null, onclick: () => goPage(st.pg + 1) }, 'Next'));
+    }
+    pager.replaceChildren(...kids);
+  }
+  // ---------- Tools: Item Database ----------
+  // gear-db.json (the file keeps its old name) is made by "imagine-reader geardb": every item the IMAGINE client names.
+  // What gear gives is read from the client's current tables; other items carry the game's own description; where an
+  // item comes from is traced through the server data, with the community spreadsheets' notes for gear. It sits beside
+  // this file. Item pictures are in gear-db-icons\ beside it (the game's own art, made locally with geardb --client, not in git).
   const GDB_SLOTS = ['Weapon', 'Head', 'Face', 'Neck', 'Top', 'Arms', 'Bottom', 'Feet', 'Ring', 'Earring', 'Extra', 'Back', 'Talisman', 'COMP', 'Bullets'];
+  // the kinds of item (it.kind, from the builder), in the order of the chips, with the chip's label
+  const GDB_KINDS = [['Gear', 'Gear'], ['Consumable', 'Consumables'], ['Material', 'Materials'], ['Voucher', 'Vouchers & boxes'], ['Enchant', 'Tarot & soul crystals'],
+    ['Demon equipment', 'Demon equipment'], ['Appearance', 'Appearance'], ['Key item', 'Key items'], ['Other', 'Other']];
+  const gdbKindLabel = (k) => (GDB_KINDS.find((x) => x[0] === k) || [k, k])[1];
+  // the source filter: how a "Where to get it" line's kind is grouped, and the choices offered (smtwiki.ru splits its item
+  // tables by where things come from: shops, drops, events; the same idea, from the traced sources)
+  const GDB_SRC_OF = { Buy: 'Shop', Exchange: 'Exchange', 'Enemy drop': 'Drop', Chest: 'Chest', Plasma: 'Chest', Open: 'Box', 'Random box': 'Box', 'Event or NPC': 'Event', 'Demon present': 'Present', 'Drop table': 'Table', 'Destiny box': 'Table', 'Demon quest': 'Table' };
+  const GDB_SRC = [['Shop', 'Bought in a shop'], ['Exchange', 'NPC exchange'], ['Drop', 'Enemy drop'], ['Chest', 'Chest or plasma'], ['Box', 'Ticket or random box'], ['Event', 'Event or NPC'], ['Quest', 'Quest reward'], ['Present', 'Demon present'], ['Table', 'Drop table only'], ['Notes', 'Community notes only'], ['None', 'No known source']];
+  // the columns, each sortable by a click on its header (D.sort, D.dir)
+  const GDB_COLS = [['name', 'Item'], ['type', 'Type'], ['gives', 'Gives'], ['where', 'Where to get it']];
   function loadGearDb() {
     if (S.gdb.state !== 'idle') return;
     S.gdb.state = 'loading';
@@ -3029,19 +3070,36 @@
       S.gdb.data = d; S.gdb.state = d ? 'ready' : 'failed';
       if (d) {
         d.items.forEach((it, i) => {
-          it.key = it.id || 'sheet' + i;
+          // key items have their own id space; sheet-only rows have no id
+          it.key = it.keyItem ? 'key' + it.id : it.id || 'sheet' + i;
+          it.kind = it.kind || 'Gear';
+          if (it.kind === 'Enchant' && it.class === 'Consumable') delete it.class;   // the client files every crystal as a consumable: no finer type to show
+          // sheet-only rows carry the sheet's own sex column ("M/F", "M", "F", "N/A"): the game's words for the filter
+          it.gender = { 'M/F': 'Any', M: 'Male', F: 'Female', 'N/A': 'Any' }[it.gender] || it.gender || 'Any';
           // the game's own effect text packs several lines into one, with a written-out line break between them
           const lines = (list) => (list || []).flatMap((x) => String(x).split(/\s*\\n\s*/)).map((x) => x.trim()).filter(Boolean);
           it.stats = lines(it.stats); it.effects = lines(it.effects); it.appearance = lines(it.appearance);
+          it.tarot = lines(it.tarot); it.soul = lines(it.soul); it.desc = it.desc || []; it.gives = it.gives || []; it.how = it.how || []; it.quests = it.quests || [];
           (it.sets || []).forEach((s) => { s.effects = lines(s.effects); });
           it.all = [...(it.stats || []), ...(it.effects || []), ...(it.appearance || []), ...(it.sets || []).flatMap((s) => s.effects)];
-          it.get = it.get || [];
+          it.get = it.get || []; it.sources = it.sources || [];
           const getWords = (list) => (list || []).flatMap((g) => [g.k, g.t, g.s || '']);
-          it.known = it.get.length > 0 || it.sources.length > 0;
-          it.hay = [it.name, it.slot, ...it.all, ...(it.sets || []).flatMap((s) => s.with), ...getWords(it.get),
+          it.known = it.get.length > 0 || it.sources.length > 0 || it.how.length > 0 || it.quests.length > 0;
+          // the ways to get it, as the source filter groups them (every line counts, not only the first)
+          it.src = new Set(it.get.map((g) => GDB_SRC_OF[g.k] || '').filter(Boolean));
+          if (it.quests.length || it.how.some((w) => /^Quest/.test(w))) it.src.add('Quest');
+          if (it.how.some((w) => /^Exchange/.test(w))) it.src.add('Exchange');
+          if (it.sources.some((s) => s.ticket)) it.src.add('Box');
+          if (it.sources.length) it.src.add('Notes');
+          if (!it.src.size) it.src.add('None');
+          it.hay = [it.name, it.kind, it.class || '', it.slot || '', ...it.all, ...it.tarot, ...it.soul, ...it.desc, ...it.gives, ...it.how, ...it.quests,
+            ...(it.sets || []).flatMap((s) => s.with), ...getWords(it.get),
             ...it.sources.flatMap((s) => [s.tab, s.how, s.ticket || '', ...getWords(s.ticketGet)])].join(' ').toLowerCase();
         });
         d.items.sort((a, b) => a.name.localeCompare(b.name));
+        // the classes (the game's own item classes) in each kind, for the second row of chips
+        d.classes = {};
+        d.items.forEach((it) => { if (it.class) (d.classes[it.kind] = d.classes[it.kind] || new Set()).add(it.class); });
       }
       if (S.page === 'geardb') render();
     });
@@ -3049,9 +3107,22 @@
   function gearDbDetail(it) {
     const box = h('div', { class: 'q-detail' });
     const block = (label, list) => (list && list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('ul', { class: 'gdb-list' }, list.map((x) => h('li', { text: x })))) : null);
-    const facts = [it.slot, it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : '', it.weapon || '', it.affinity ? it.affinity + ' affinity' : ''].filter(Boolean);
+    // what kind of item it is: the slot for gear, the game's own class for the rest (never both when they say the same)
+    const gear = it.kind === 'Gear';
+    const facts = [gear ? it.slot : gdbKindLabel(it.kind), it.class && it.class !== it.slot && it.class !== gdbKindLabel(it.kind) && it.class !== it.kind ? it.class : '',
+      it.level ? `Level ${it.level}+` : '', it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : '', it.weapon || '', it.affinity ? it.affinity + ' affinity' : '',
+      it.stack ? `Stacks to ${fmt(it.stack)}` : '', it.sell ? `Sells for ${fmt(it.sell)} Macca` : ''].filter(Boolean);
     box.append(h('div', { class: 'detail-meta' }, facts.map((x) => h('span', { class: 'tag', text: x }))));
     if (it.sheetOnly) box.append(h('p', { class: 'note', text: 'This row is from the spreadsheet only: its name matched no item in the game data, so the effects below are the sheet\'s own text.' }));
+    // the game's own description (its tooltip), then what a tarot or soul crystal gives when fused into a piece
+    const descBlock = block('Description', it.desc); if (descBlock) box.append(descBlock);
+    [block('Tarot Fusion', it.tarot), block('Soul Fusion', it.soul)].filter(Boolean).forEach((b) => box.append(b));
+    // a voucher, ticket or random box: the items it can give (the server's box tables)
+    if (it.gives.length) {
+      const b = block('Can give', it.gives);
+      if (it.givesMore) b.lastChild.append(h('li', { class: 'gdb-with', text: `and ${fmt(it.givesMore)} more` }));
+      box.append(b);
+    }
     // The sections are named and ordered as in a worn piece's tooltip on the Gear page: set bonus, then TIP_ORDER.
     // s.any: the bonus needs one of the listed pieces; otherwise it needs all of them
     (it.sets || []).forEach((s) => {
@@ -3061,7 +3132,7 @@
     // sheet-only rows: "effects" is the sheet's slot text, not the game's characteristics
     [block('Appearance Bonus', it.appearance), block('Basic Features', it.stats), block(it.sheetOnly ? 'Effects' : 'Characteristics', it.effects),
       it.mods ? block('Modification Slot', [`${it.mods} slot${it.mods === 1 ? '' : 's'}`]) : null].filter(Boolean).forEach((b) => box.append(b));
-    if (!it.all.length && !it.sheetOnly) box.append(h('p', { class: 'note', text: 'This piece gives no stats or effects in the game data.' }));
+    if (gear && !it.all.length && !it.sheetOnly) box.append(h('p', { class: 'note', text: 'This piece gives no stats or effects in the game data.' }));
     // Where to get it, in the game: what the game data says about the piece itself, then about the ticket it comes in.
     // g.d: how deep the line sits under the one before it ("Open X", then where X comes from)
     const getLine = (g, extra) => h('li', { style: (g.d || 0) + (extra || 0) ? `padding-left:${22 * ((g.d || 0) + (extra || 0))}px` : null },
@@ -3069,6 +3140,12 @@
       g.s ? h('span', { class: 'src-count', text: g.s }) : null, g.v ? h('span', { class: 'gdb-rate', text: g.v }) : null);
     const where = [];
     it.get.forEach((g) => where.push(getLine(g)));
+    // a fusion plugin: the Fusion Planner's ways to get it (a quest, an exchange); several are alternatives
+    if (it.how.length > 1) where.push(h('li', { class: 'any-one', text: `Any one of these ${it.how.length} ways gives it:` }));
+    it.how.forEach((w) => where.push(h('li', null, questLine(w))));
+    // quests that hand it over as a reward (the Quest Database's data), each with a link to the quest
+    it.quests.forEach((t) => where.push(h('li', { class: 'gdb-quest' }, h('span', { class: 'gdb-kind', text: 'Quest' }), questLine(`Quest “${t}”`))));
+    if (it.questsMore) where.push(h('li', { class: 'gdb-with', text: `and ${fmt(it.questsMore)} more quests` }));
     const tickets = new Map();
     it.sources.forEach((s) => { if (s.ticket && !tickets.has(s.ticket)) tickets.set(s.ticket, s.ticketGet || []); });
     tickets.forEach((lines, ticket) => {
@@ -3080,59 +3157,141 @@
     // What players wrote down about it (the place is the name of the sheet's page, usually the dungeon).
     const notes = [...new Set(it.sources.map((s) => [s.tab, s.how].filter(Boolean).join(' · ')))];
     if (notes.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Community notes' }), h('ul', { class: 'gdb-list' }, notes.map((n) => h('li', { text: n })))));
-    if (!where.length && !notes.length) box.append(h('p', { class: 'note', text: 'Neither the game data nor the community notes say where this piece comes from.' }));
-    if (it.id) box.append(h('p', { class: 'note', text: `Item ${it.id}` }));
+    if (!where.length && !notes.length) box.append(h('p', { class: 'note', text: gear ? 'Neither the game data nor the community notes say where this piece comes from.' : 'The game data does not say where this item comes from.' }));
+    if (it.id) box.append(h('p', { class: 'note', text: it.keyItem ? `Key item ${it.id}` : `Item ${it.id}` }));
     return box;
   }
   function pageGearDb() {
     const D = S.gdb, page = h('div', { class: 'page page-dcm' });
     loadGearDb();
-    page.append(pageHead('Every piece of gear: what it gives and where it comes from. Click a row for the details.'));
+    page.append(pageHead('Every item in the game: what it gives or does, and where it comes from. Click a row for the details.'));
     if (D.state !== 'ready') {
-      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The gear list could not be loaded (gear-db.json is missing beside the page).' : 'Loading the gear list…' }));
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The item list could not be loaded (gear-db.json is missing beside the page).' : 'Loading the item list…' }));
       return page;
     }
     page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Two sources. ' }),
-      'Stats, effects and sets are read from the IMAGINE client\'s current item tables. "Where to get it" is traced through the public server data (drops, chests, shops, events), which IMAGINE may have changed. "Community notes" are what the community wrote down for IMAGINE, and can be imprecise.')));
+      'Names, descriptions, stats, effects and sets are read from the IMAGINE client\'s current item tables. "Where to get it" and what a box can give are traced through the public server data (drops, chests, shops, events, exchanges), which IMAGINE may have changed. "Community notes" are what the community wrote down for IMAGINE, and can be imprecise.')));
     const items = D.data.items;
-    const pass = (it, slot) => (!D.known || it.known) && (slot === 'all' || it.slot === slot);
-    const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by slot' });
-    const body = h('tbody'), more = h('div', { class: 'gdb-more' });
-    const drawChips = () => chips.replaceChildren(...[['all', 'All']].concat(GDB_SLOTS.map((s) => [s, s])).map(([id, label]) =>
-      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.slot === id), onclick: () => { D.slot = id; D.shown = 150; drawChips(); draw(); } },
-        label, h('span', { class: 'count', text: items.filter((it) => pass(it, id)).length }))));
+    // two rows of chips: the kind of item, then within it the slot (gear) or the game's own class (everything else)
+    const sub = (it) => (it.kind === 'Gear' ? it.slot : it.class) || '';
+    // the finer filters (the folded chip groups): who can use it, where it comes from, weapon range and affinity, level.
+    // `f` is the set of picks to test against: the page's (D), or one with a single group changed for a chip's count
+    const fine = (it, f = D) => (!f.gender || (it.gender || 'Any') === f.gender)
+      && (!f.align || (f.align === 'Any' ? !it.alignment : it.alignment === f.align))
+      && (!f.src.length || f.src.some((s) => it.src.has(s)))
+      && (!f.range || it.weapon === f.range) && (!f.aff.length || f.aff.includes(it.affinity))
+      && (!f.maxLv || (it.level || 0) <= Number(f.maxLv));
+    const pass = (it, kind, cls, f) => (!D.known || it.known) && fine(it, f) && (kind === 'all' || it.kind === kind) && (cls === 'all' || sub(it) === cls);
+    const fineCount = () => (D.gender ? 1 : 0) + (D.align ? 1 : 0) + D.src.length + (D.range ? 1 : 0) + D.aff.length + (D.maxLv ? 1 : 0);
+    // the last column's text: the game's own answer first, then a plugin's way, a quest, the ticket, then the place the community notes file it under
+    const whereText = (it) => {
+      const ticket = (it.sources.find((s) => s.ticket) || {}).ticket;
+      return it.get.length ? (it.get[0].k === 'Open' ? `Open ${it.get[0].t}` : `${it.get[0].k}: ${it.get[0].t}`) : it.how.length ? it.how[0] : it.quests.length ? `Quest: ${it.quests[0]}` : ticket ? `Open ${ticket}`
+        : it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') : '';
+    };
+    const typeText = (it) => D.kind === 'all' && it.kind !== 'Gear' ? [gdbKindLabel(it.kind), sub(it) !== gdbKindLabel(it.kind) && sub(it) !== it.kind ? sub(it) : ''].filter(Boolean).join(' · ') : sub(it) || gdbKindLabel(it.kind);
+    const kindChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of item' });
+    const classChips = h('div', { class: 'chips gdb-sub-chips', role: 'group', 'aria-label': 'Filter by type' });
+    const body = h('tbody'), pager = h('nav', { class: 'pager', 'aria-label': 'Pages' });
+    const chip = (pressed, label, n, onclick) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(pressed), onclick }, label, h('span', { class: 'count', text: n }));
+    const drawChips = () => {
+      const kinds = GDB_KINDS.filter(([k]) => items.some((it) => it.kind === k));
+      kindChips.replaceChildren(...[['all', 'All']].concat(kinds).map(([id, label]) =>
+        chip(D.kind === id, label, items.filter((it) => pass(it, id, 'all')).length, () => { D.kind = id; D.cls = 'all'; D.pg = 0; drawChips(); drawFilters(); draw(); })));
+      // the second row: slots for gear (the game's order), the classes the kind has otherwise; only when there is a choice
+      const subs = D.kind === 'Gear' ? GDB_SLOTS : D.kind === 'all' ? [] : [...(D.data.classes[D.kind] || [])].sort((a, b) => a.localeCompare(b));
+      const shown = subs.filter((s) => items.some((it) => it.kind === D.kind && sub(it) === s));
+      classChips.replaceChildren(...(shown.length > 1 ? [['all', 'All']].concat(shown.map((s) => [s, s])).map(([id, label]) =>
+        chip(D.cls === id, label, items.filter((it) => pass(it, D.kind, id)).length, () => { D.cls = id; D.pg = 0; drawChips(); drawFilters(); draw(); })) : []));
+      classChips.hidden = shown.length <= 1;
+    };
+    // the Gives column: what a piece gives, what a crystal fuses in, what a box can give, else the game's description
+    const givesText = (it) => {
+      const list = it.all.length ? it.all : it.tarot.length || it.soul.length ? [...it.tarot.map((x) => `Tarot: ${x}`), ...it.soul.map((x) => `Soul: ${x}`)]
+        : it.gives.length ? [`Can give ${it.gives.slice(0, 2).join(', ')}` + (it.gives.length + (it.givesMore || 0) > 2 ? ` and ${fmt(it.gives.length + (it.givesMore || 0) - 2)} more` : '')] : it.desc;
+      // a description is the game's whole tooltip: the start of it here, all of it in the opened row
+      if (list === it.desc) { const d = it.desc.join(' '); return d.length > 110 ? d.slice(0, 108).replace(/\s+\S*$/, '') + '…' : d; }
+      return list.slice(0, 3).join(' · ') + (list.length > 3 ? ` · and ${list.length - 3} more` : '');
+    };
     const draw = () => {
       body.replaceChildren();
       const words = D.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      const rows = items.filter((it) => pass(it, D.slot) && words.every((w) => it.hay.includes(w)));
-      rows.slice(0, D.shown).forEach((it) => {
+      const rows = items.filter((it) => pass(it, D.kind, D.cls) && words.every((w) => it.hay.includes(w)));
+      // the sorted column (a click on its header): the list is by name already; Gives sorts by how much an item gives
+      // (most first when descending); Type and Where by their text, with the empty ones last
+      const gives = (it) => it.all.length + it.tarot.length + it.soul.length + it.gives.length;
+      const text = (it) => D.sort === 'type' ? typeText(it) : whereText(it);
+      if (D.sort === 'name' && D.dir === -1) rows.reverse();
+      else if (D.sort === 'gives') rows.sort((a, b) => D.dir * (gives(a) - gives(b)) || a.name.localeCompare(b.name));
+      else if (D.sort !== 'name') rows.sort((a, b) => { const ta = text(a), tb = text(b); return (!ta !== !tb) ? (ta ? -1 : 1) : D.dir * ta.localeCompare(tb) || a.name.localeCompare(b.name); });
+      const pg = pageOf(D, rows);
+      pg.rows.forEach((it) => {
         const open = D.open.has(it.key);
         const toggle = () => { if (D.open.has(it.key)) D.open.delete(it.key); else D.open.add(it.key); draw(); };
-        const gives = it.all.slice(0, 3).join(' · ') + (it.all.length > 3 ? ` · and ${it.all.length - 3} more` : '');
-        // the game's own answer first, then the ticket, then the place the community notes file it under
-        const ticket = (it.sources.find((s) => s.ticket) || {}).ticket;
-        const src = it.get.length ? (it.get[0].k === 'Open' ? `Open ${it.get[0].t}` : `${it.get[0].k}: ${it.get[0].t}`) : ticket ? `Open ${ticket}`
-          : it.sources.length ? [...new Set(it.sources.map((s) => s.tab))].slice(0, 2).join(', ') : '';
+        const gives = givesText(it), src = whereText(it), type = typeText(it);
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')), ddbImg(it.icon, 28, 'dcm-icon gdb-icon'), h('span', null, it.name, it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null))),
-          h('td', null, it.slot || h('span', { class: 'zero', text: '—' })),
+          h('td', null, type || h('span', { class: 'zero', text: '—' })),
           h('td', { class: gives ? 'gdb-gives' : 'zero', text: gives || '—' }),
           h('td', { class: src ? '' : 'zero', text: src || 'Not known' })));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, gearDbDetail(it))));
       });
-      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 4, class: 'empty-row', text: words.length ? `Nothing matches “${D.q.trim()}”.` : 'No gear in this group.' })));
-      more.replaceChildren(...[h('span', { class: 'note', text: `Showing ${Math.min(D.shown, rows.length)} of ${rows.length}.` }),
-        rows.length > D.shown ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.shown += 300; draw(); } }, 'Show more') : null].filter(Boolean));
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 4, class: 'empty-row', text: words.length ? `Nothing matches “${D.q.trim()}”.` : 'No items in this group.' })));
+      drawPager(pager, D, rows.length, pg, draw, () => page.querySelector('.tbl-wrap'));
     };
-    const known = h('label', { class: 'gdb-check' }, h('input', { type: 'checkbox', checked: D.known ? true : null, onchange: (ev) => { D.known = ev.target.checked; D.shown = 150; drawChips(); draw(); } }), 'Only gear with a known source');
-    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a name, effect or place (e.g. limit break celu)', (v) => { D.q = v; D.shown = 150; draw(); }), known));
-    page.append(chips);
-    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Gear' }), h('th', { scope: 'col', text: 'Slot' }), h('th', { scope: 'col', text: 'Gives' }), h('th', { scope: 'col', text: 'Where to get it' }))), body)));
-    page.append(more);
-    page.append(h('p', { class: 'note', text: `${items.filter((x) => x.id).length} pieces in the game data; ${items.filter((x) => x.id && x.known).length} with a known way to get them. Data made on ${D.data.generatedAt}. Community notes are from SnowSheet's gear reference.` }));
-    drawChips(); draw();
+    const known = h('label', { class: 'gdb-check' }, h('input', { type: 'checkbox', checked: D.known ? true : null, onchange: (ev) => { D.known = ev.target.checked; D.pg = 0; drawChips(); draw(); } }), 'Only items with a known source');
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a name, effect, description or place (e.g. limit break celu)', (v) => { D.q = v; D.pg = 0; draw(); }), known));
+    page.append(kindChips, classChips);
+    // The finer filters: labelled chip groups behind a "Filters" button (folded until opened or something is picked), each
+    // chip with the count it would give with the other picks as they are. Who, Alignment and Range take one pick; Source
+    // and Affinity take several (any of them). The level limit is a number box: typed, not picked.
+    const fbtn = h('button', { type: 'button', class: 'btn btn-sm gdb-fbtn', 'aria-expanded': 'false' });
+    const filters = h('div', { class: 'gdb-filters' });
+    const drawFilters = () => {
+      const n = fineCount();
+      fbtn.replaceChildren(icon('sliders'), n ? `Filters · ${n}` : 'Filters');
+      fbtn.setAttribute('aria-expanded', String(D.fopen));
+      filters.hidden = !D.fopen;
+      if (!D.fopen) return;
+      const affs = [...new Set(items.filter((it) => it.affinity).map((it) => it.affinity))].sort((a, b) => a.localeCompare(b));
+      const weapons = D.kind === 'Gear' && (D.cls === 'all' || D.cls === 'Weapon') || D.kind === 'all';
+      const count = (key, val) => items.filter((it) => pass(it, D.kind, D.cls, { ...D, [key]: val })).length;
+      const redraw = () => { D.pg = 0; drawChips(); drawFilters(); draw(); };
+      // one group: its label, an "Any" chip that clears it, and a chip per choice; `multi` groups keep an array of picks
+      const group = (label, key, options, multi) => {
+        const picked = (v) => (multi ? D[key].includes(v) : D[key] === v);
+        const pick = (v) => { if (multi) D[key] = picked(v) ? D[key].filter((x) => x !== v) : D[key].concat(v); else D[key] = picked(v) ? '' : v; redraw(); };
+        const none = multi ? !D[key].length : !D[key];
+        return h('div', { class: 'gdb-fgroup', role: 'group', 'aria-label': label }, h('span', { class: 'gdb-flabel', text: label }),
+          h('div', { class: 'chips' }, chip(none, 'Any', count(key, multi ? [] : ''), () => { D[key] = multi ? [] : ''; redraw(); }),
+            options.map(([v, t]) => chip(picked(v), t, count(key, multi ? (picked(v) ? D[key] : D[key].concat(v)) : v), () => pick(v)))));
+      };
+      filters.replaceChildren(...[
+        group('Who', 'gender', [['Any', 'Both sexes'], ['Male', 'Male only'], ['Female', 'Female only']]),
+        group('Alignment', 'align', [['Any', 'No restriction'], ['Law', 'Law only'], ['Neutral', 'Neutral only'], ['Chaos', 'Chaos only']]),
+        group('Source', 'src', GDB_SRC, true),
+        weapons ? group('Range', 'range', [['Close range', 'Close range'], ['Long range', 'Long range']]) : null,
+        weapons ? group('Affinity', 'aff', affs.map((a) => [a, a]), true) : null,
+        h('div', { class: 'gdb-fgroup' }, h('span', { class: 'gdb-flabel', text: 'Level' }),
+          h('label', { class: 'gdb-check' }, 'Usable up to level', h('input', { type: 'number', class: 'input gdb-lv', min: 1, max: 999, placeholder: 'any', value: D.maxLv || '', 'aria-label': 'Usable up to this level',
+            oninput: (ev) => { D.maxLv = ev.target.value.replace(/\D/g, ''); D.pg = 0; drawChips(); draw(); } })),
+          n ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { Object.assign(D, { gender: '', align: '', src: [], range: '', aff: [], maxLv: '' }); redraw(); } }, 'Clear filters') : null)].filter(Boolean));
+    };
+    fbtn.onclick = () => { D.fopen = !D.fopen; drawFilters(); };
+    page.append(h('div', { class: 'toolbar' }, fbtn), filters);
+    // the headers sort: a click sorts by that column, a second click turns it round
+    const head = h('tr');
+    const drawHead = () => head.replaceChildren(...GDB_COLS.map(([id, label]) => { const on = D.sort === id;
+      return h('th', { scope: 'col', 'aria-sort': on ? (D.dir === 1 ? 'ascending' : 'descending') : null },
+        h('button', { type: 'button', class: 'th-btn', 'data-tip': `Sort by ${label.toLowerCase()}${on ? ' the other way' : ''}.`, onclick: () => { if (on) D.dir = -D.dir; else { D.sort = id; D.dir = id === 'gives' ? -1 : 1; } D.pg = 0; drawHead(); draw(); } },   // Gives: the most first on the first click
+          h('span', { text: label }), on ? h('span', { class: 'sort-mark', text: D.dir === 1 ? '▲' : '▼' }) : null)); }));
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' }, h('thead', null, head), body)));
+    page.append(pager);
+    const real = items.filter((x) => x.id && !x.keyItem), keys = items.filter((x) => x.keyItem).length;
+    page.append(h('p', { class: 'note', text: `${fmt(real.length)} items in the game data (${fmt(real.filter((x) => x.kind === 'Gear').length)} pieces of gear) and ${fmt(keys)} key items; ${fmt(real.filter((x) => x.known).length)} items with a known way to get them. Data made on ${D.data.generatedAt}. Community notes are from SnowSheet's gear reference.` }));
+    if (fineCount()) D.fopen = true;   // picks kept from last time stay visible
+    drawChips(); drawFilters(); drawHead(); draw();
     return page;
   }
   // ---------- Tools: Dungeon Explorer ----------
@@ -3804,11 +3963,11 @@
     const words = () => sklWords(D.q).trim().split(' ').filter(Boolean);   // each must start a word: "agi" finds Agi, not Magic
     const match = (x) => inWho(x, D.who) && (!D.el || x.el === D.el) && words().every((w) => (x.hay || x.hay0).includes(' ' + w));
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Action type' });
-    const helpBox = h('div'), body = h('tbody'), more = h('div', { class: 'skl-more' }), count = h('p', { class: 'note' });
+    const helpBox = h('div'), body = h('tbody'), more = h('nav', { class: 'pager', 'aria-label': 'Pages' }), count = h('p', { class: 'note' });
     const drawChips = () => {
       const pool = all.filter(match);
       chips.replaceChildren(...[['', 'All types']].concat(types.map((t) => [t.key, t.name])).map(([k, label]) =>
-        h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.type === k), onclick: () => { D.type = k; D.shown = 200; drawChips(); draw(); } },
+        h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.type === k), onclick: () => { D.type = k; D.pg = 0; drawChips(); draw(); } },
           label, h('span', { class: 'count', text: k ? pool.filter((x) => x.type === k).length : pool.length }))));
     };
     const drawHelp = () => {
@@ -3850,31 +4009,32 @@
       const rows = all.filter((x) => (!D.type || x.type === D.type) && match(x));
       const order = types.map((t) => t.key);
       rows.sort((a, b) => (D.type ? 0 : order.indexOf(a.type) - order.indexOf(b.type)) || SORTS[D.sort](a, b));
-      let shown = 0, last = null;
-      for (const x of rows) {
-        if (shown >= D.shown) break;
+      // this page's rows; under "All" a group row names each action type where it starts (also at the top of a page)
+      const pg = pageOf(D, rows);
+      let last = null;
+      for (const x of pg.rows) {
         if (!D.type && x.type !== last) {
           last = x.type;
           const n = rows.filter((r) => r.type === x.type).length;
-          body.append(h('tr', { class: 'dun-group-row', onclick: () => { D.type = x.type; D.shown = 200; drawChips(); draw(); window.scrollTo(0, 0); } },
+          body.append(h('tr', { class: 'dun-group-row', onclick: () => { D.type = x.type; D.pg = 0; drawChips(); draw(); window.scrollTo(0, 0); } },
             h('td', { colspan: COLS }, typeOf[x.type].name, h('span', { class: 'src-count', text: `${n} skill${n === 1 ? '' : 's'} · show only these` }))));
         }
-        row(x); shown++;
+        row(x);
       }
       if (!rows.length) body.append(h('tr', null, h('td', { colspan: COLS, class: 'empty-row', text: D.q.trim() ? `Nothing matches “${D.q.trim()}”.` : 'No skill in this group.' })));
-      if (rows.length > D.shown) more.append(h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { D.shown += 300; draw(); } }, `Show more (${rows.length - D.shown} left)`));
+      drawPager(more, D, rows.length, pg, draw, () => body.closest('.tbl-wrap') || body.closest('table'), 'skills');
       drawHelp();
       const nGet = all.filter((x) => inWho(x, 'get')).length;
-      count.textContent = `Showing ${Math.min(rows.length, D.shown)} of ${rows.length} skills (${all.length} in the game data, ${nGet} of them can be learned by a demon, come from expertise or an NPC exchange (barter), or are fusion skills). `
+      count.textContent = `${fmt(rows.length)} skills listed (${all.length} in the game data, ${nGet} of them can be learned by a demon, come from expertise or an NPC exchange (barter), or are fusion skills). `
         + (S.ddb.state === 'ready' ? '' : 'Still loading the demons: who learns each skill shows once they are in. ')
         + `${d.skipped.untranslated} skills the client only names in Japanese, item uses and debug skills are left out. Data made on ${d.generatedAt}.`;
     };
     const sel = (label, value, options, onchange) => h('label', { class: 'gdb-check' }, label,
       h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
     const els = [...new Set(all.map((x) => x.el).filter(Boolean))].sort();
-    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a skill, element, effect, expertise or demon', (v) => { D.q = v; D.shown = 200; drawChips(); draw(); }),
-      sel('Who can get it', D.who, SKL_WHO, (v) => { D.who = v; D.shown = 200; drawChips(); draw(); }),
-      sel('Element', D.el, [['', 'All']].concat(els.map((e) => [e, e])), (v) => { D.el = v; D.shown = 200; drawChips(); draw(); }),
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a skill, element, effect, expertise or demon', (v) => { D.q = v; D.pg = 0; drawChips(); draw(); }),
+      sel('Who can get it', D.who, SKL_WHO, (v) => { D.who = v; D.pg = 0; drawChips(); draw(); }),
+      sel('Element', D.el, [['', 'All']].concat(els.map((e) => [e, e])), (v) => { D.el = v; D.pg = 0; drawChips(); draw(); }),
       sel('Sort', D.sort, [['name', 'Name'], ['power', 'Modifier'], ['stiff', 'Stiffness'], ['cd', 'Cooldown']], (v) => { D.sort = v; draw(); })));
     page.append(chips, helpBox);
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl skl-tbl' },
