@@ -546,7 +546,9 @@ exchange, or a fusion skill: 2,034). "Who can get it" narrows that down or shows
 skills). Search by name, element, words of the description, expertise or demon; filter by element; sort by name,
 modifier, stiffness or cooldown. Item uses and debug skills are left out. Skills the game names only in Japanese (848,
 mostly enemy, event and unused ones) show BABEL's English translation greyed out, with the Japanese name small under it;
-the Demon Database and the Rebirth Planner grey those names too, with the Japanese in the tooltip.
+the Demon Database, the Dungeon Database and the Demon Planner use the same English and grey it too, with the Japanese in
+the tooltip. Demon growth types the game names only in Japanese (全能, 射撃1Lv, 輝くTiwaz...: 67) and the Network
+dungeon's Izar α, β and γ (garbled in the game data as "Izar ﾎｱ") are shown the same way.
 Destruction magic (Agi, Zio...) is a Shot skill in the game data; healing, support and curse spells are Curative.
 
 ### Tools: Build Planner

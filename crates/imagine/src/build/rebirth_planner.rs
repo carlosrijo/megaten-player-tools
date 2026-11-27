@@ -149,6 +149,8 @@ pub fn planner_json(data: &GameData) -> Result<Value> {
     }
     let growth: IndexMap<String, Value> = t.growth.iter().map(|(id, g)| (id.to_string(), json!(g))).collect();
     let growth_names: IndexMap<String, Value> = t.growth_names.iter().map(|(id, n)| (id.to_string(), json!(n))).collect();
+    // the game's Japanese for the growth names above that are BABEL's translation (the page greys them out)
+    let growth_names_ja: IndexMap<String, Value> = t.growth_names_ja.iter().map(|(id, n)| (id.to_string(), json!(n))).collect();
     let xp: Vec<i64> = rows("level-xp.tsv")?.iter().filter(|r| r.len() > 1).map(|r| r[1].trim().parse::<i64>().unwrap_or(0)).collect();
     if xp.len() != 99 {
         anyhow::bail!("reference\\level-xp.tsv has {} rows, expected 99", xp.len());
@@ -231,7 +233,7 @@ pub fn planner_json(data: &GameData) -> Result<Value> {
 
     Ok(json!({
         "source": "The server's growth, rebirth and Mitama tables (DevilLVUpRateData, MitamaUnionBonusData, MitamaReunionBonusData, MitamaReunionSetBonusData, NPCBarterData), the client's texts, and comp_hack's rebirth rules",
-        "runes": runes, "growth": growth, "growthNames": growth_names, "xp": xp, "rankPoints": RANK_POINTS,
+        "runes": runes, "growth": growth, "growthNames": growth_names, "growthNamesJa": growth_names_ja, "xp": xp, "rankPoints": RANK_POINTS,
         "apple": { "id": APPLE_ITEM, "name": item_name(APPLE_ITEM)?, "xp": APPLE_XP },
         "mitama": { "kinds": kinds, "sets": sets, "boostSkill": boost_skill, "boostName": boost_name, "spirit": spirit },
         "stats": stats_used.iter().map(|(id, n)| (id.to_string(), json!(n))).collect::<IndexMap<String, Value>>(),

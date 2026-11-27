@@ -94,6 +94,8 @@ pub struct DemonTables {
     /// Growth type -> 4 stages (A-D) of STR, MAG, VIT, INT, SPD, LUCK per boost level.
     pub growth: IndexMap<i32, Vec<Vec<i32>>>,
     pub growth_names: IndexMap<i32, String>,
+    /// Growth type -> the game's Japanese name, for the names `growth_names` has as BABEL's translation (growth-names-en.tsv).
+    pub growth_names_ja: IndexMap<i32, String>,
     /// Mitama slot bonus id -> (CorrectTbl type, value).
     pub reunion_bonus: IndexMap<i32, (i32, i32)>,
     pub mitama_sets: Vec<MitamaSet>,
@@ -179,6 +181,7 @@ impl DemonTables {
             devils: IndexMap::new(),
             growth: IndexMap::new(),
             growth_names: IndexMap::new(),
+            growth_names_ja: IndexMap::new(),
             reunion_bonus: IndexMap::new(),
             mitama_sets: Vec::new(),
             union_bonus: IndexMap::new(),
@@ -211,11 +214,22 @@ impl DemonTables {
                 },
             );
         }
+        let growth_en = super::game_data::name_translations("growth-names-en.tsv")?;
         for r in rows("devil-growth.tsv")? {
             let r = refs(&r);
             let id = i(col(&r, 0)?);
             t.growth.insert(id, r.iter().skip(2).take(4).map(|s| ints(s)).collect());
-            t.growth_names.insert(id, col(&r, 1)?.to_string());
+            let name = col(&r, 1)?.to_string();
+            // 全能, 射撃1Lv, 輝くTiwaz...: the game names 67 growth types only in Japanese; BABEL's English, greyed out on the page
+            match super::game_data::translated_name(&growth_en, id, &name) {
+                Some(en) => {
+                    t.growth_names.insert(id, en);
+                    t.growth_names_ja.insert(id, name);
+                }
+                None => {
+                    t.growth_names.insert(id, name);
+                }
+            }
         }
         for r in rows("mitama-reunion-bonus.tsv")? {
             let r = refs(&r);
