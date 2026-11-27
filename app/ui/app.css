@@ -395,7 +395,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .radar text.aff-value.over { fill: var(--text-2); font-weight: 500; }   /* a cap past the rim, under All */
 .radar .aff-over { fill: var(--text-2); }
 /* The radar's numbers as lines under it, in the stat sheet's style: Affinity | Boost | Cap | Resist */
-.aff-table { display: grid; margin-top: 4px; }
+.aff-table { display: grid; margin-top: 12px; }   /* more air over the table than the card's 12px (24 in all) */
 .aff-tr { display: grid; grid-template-columns: minmax(0, 1fr) 64px 64px 64px; gap: 8px; align-items: center; min-height: 28px; border-top: 1px solid var(--border); }
 .aff-tr:not(.aff-th):hover { background: var(--hover); }
 .aff-tr:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
@@ -408,7 +408,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .aff-td.zero { color: var(--text-3); font-weight: 400; }
 .aff-td.bad { color: var(--bad); }
 .aff-td.raised { color: var(--text); }
-.aff-pick { justify-self: center; }
+.aff-pick { justify-self: center; margin-top: -4px; }   /* closer to the radar than the card's 12px (8) */
 .aff-pick button { gap: 6px; }
 .aff-key { display: inline-block; width: 9px; height: 9px; background: var(--aff); border-radius: 50%; }
 .aff-key-res { background: var(--aff-res); border-radius: 2px; }
