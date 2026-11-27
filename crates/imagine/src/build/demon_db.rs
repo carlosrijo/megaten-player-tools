@@ -268,7 +268,8 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
     let evidence = demon_variants::gather(
         decoded,
         store,
-        &reference("items-game.tsv")?.lines()?,
+        // the client's item names, with BABEL's English where they are only Japanese ("Demon Ema [Unicorn] (Electric)")
+        &crate::data::game_data::items_game_lines_en()?,
         &reference("fusion-plugins.tsv").and_then(|f| f.lines()).unwrap_or_default(),
     )?;
     console::write_line(&format!(
@@ -612,6 +613,9 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
                 s.insert("ja".into(), json!(ja));   // the name is BABEL's translation of the client's Japanese one
             }
             s.insert("desc".into(), json!(data.skill_text(id)?.unwrap_or_default()));
+            if let Some(ja) = data.skill_text_ja(id)? {
+                s.insert("descJa".into(), json!(ja));   // the description is BABEL's translation of this
+            }
             let icon = match data.skill_icon_asset(id)? {
                 Some(a) => picture(&a, None, &format!("{a}.png"))?,
                 None => None,

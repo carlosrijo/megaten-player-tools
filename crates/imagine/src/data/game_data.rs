@@ -142,7 +142,70 @@ pub fn name_translations(file: &str) -> Result<HashMap<i32, (String, String)>> {
 
 /// The English for the game's `name` of `id` when `map` ([`name_translations`]) has one for exactly that name.
 pub fn translated_name(map: &HashMap<i32, (String, String)>, id: i32, name: &str) -> Option<String> {
-    map.get(&id).filter(|(game, _)| game == name.trim()).map(|(_, en)| en.clone())
+    // spaces compared loosely: the builders squash the client's runs of spaces (full width too) to one
+    let loose = |s: &str| s.split_whitespace().collect::<Vec<_>>().join(" ");
+    map.get(&id).filter(|(game, _)| loose(game) == loose(name)).map(|(_, en)| en.clone())
+}
+
+/// BABEL's English for the item names the client has only in Japanese (reference\item-names-en.tsv: id, the client's
+/// name, the English), loaded once; empty when the file is missing.
+pub fn item_translations() -> &'static HashMap<i32, (String, String)> {
+    static T: LazyLock<HashMap<i32, (String, String)>> = LazyLock::new(|| name_translations("item-names-en.tsv").unwrap_or_default());
+    &T
+}
+
+/// BABEL's English for the client's item name `name` of `id` (see [`item_translations`]); `None` when the name is the
+/// game's own English or has no translation.
+pub fn item_name_en(id: i32, name: &str) -> Option<String> {
+    translated_name(item_translations(), id, name)
+}
+
+/// A description as a lookup key: each line's spaces squashed (full width too), blank lines dropped. The builders tidy the
+/// client's text in different ways (the Item Database drops blank lines, skill texts keep them), so both meet here.
+fn desc_key(s: &str) -> String {
+    s.lines().map(|l| l.split_whitespace().collect::<Vec<_>>().join(" ")).filter(|l| !l.is_empty()).collect::<Vec<_>>().join("\n")
+}
+
+/// BABEL's English for the game's descriptions that are only (or partly) in Japanese: reference\desc-en.tsv, two columns,
+/// the game's text and the English, line breaks written as \n. Keyed by the game's own text ([`desc_key`]), so a client
+/// update that changes a description drops its translation instead of showing a wrong one.
+pub fn desc_translations() -> &'static HashMap<String, String> {
+    static T: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
+        let unescape = |s: &str| s.replace("\\n", "\n").replace("\\\\", "\\");
+        let mut res = HashMap::new();
+        for line in reference_lines("desc-en.tsv").ok().flatten().unwrap_or_default() {
+            let p: Vec<&str> = line.split('\t').collect();
+            if line.starts_with('#') || p.len() < 2 || p[1].trim().is_empty() {
+                continue;
+            }
+            res.insert(desc_key(&unescape(p[0])), unescape(p[1]).trim().to_string());
+        }
+        res
+    });
+    &T
+}
+
+/// BABEL's English for a description of the game (see [`desc_translations`]); `None` when it has none.
+pub fn desc_en(text: &str) -> Option<String> {
+    desc_translations().get(&desc_key(text)).cloned()
+}
+
+/// The client's item table (reference\items-game.tsv) as lines, with BABEL's English in the name column where the
+/// client's name is Japanese: for builders that only need a readable name (barter costs, exchange items).
+pub fn items_game_lines_en() -> Result<Vec<String>> {
+    Ok(reference_lines("items-game.tsv")?
+        .unwrap_or_default()
+        .into_iter()
+        .map(|line| {
+            let mut p: Vec<String> = line.split('\t').map(str::to_string).collect();
+            if let (Some(id), Some(n)) = (p.first().and_then(|s| crate::fmt::parse_i32(s)), p.get(1)) {
+                if let Some(en) = item_name_en(id, n) {
+                    p[1] = en;
+                }
+            }
+            p.join("\t")
+        })
+        .collect())
 }
 
 /// The lines of a reference file; `None` when it is missing.
@@ -878,6 +941,14 @@ impl GameData {
                             node.insert("webName".into(), json!(web));
                         }
                         node.insert("name".into(), json!(game));
+                    } else if let Some(en) = item_name_en(id, game) {
+                        // only Japanese in the client: BABEL's English (item-names-en.tsv) wins over the website's name,
+                        // which stays as webName for recalc_csv; `ja` keeps the client's name for the pages
+                        if !web.is_empty() && web != en {
+                            node.insert("webName".into(), json!(web));
+                        }
+                        node.insert("name".into(), json!(en));
+                        node.insert("ja".into(), json!(game));
                     }
                     node.insert("basicFeatures".into(), Value::Array(correct)); // the whole correct table; ItemCorrect reads both lists
                     node.insert("characteristics".into(), Value::Array(Vec::new()));
@@ -1135,6 +1206,18 @@ impl GameData {
 
     /// The game's own description of a skill (reference\skill-text.tsv, the client's CSkillData), with real line breaks; `None` if unknown.
     pub fn skill_text(&self, skill_id: i32) -> Result<Option<String>> {
+        // BABEL's English where the game's text is Japanese (desc-en.tsv); skill_text_ja gives the game's own
+        Ok(self.skill_text_game(skill_id)?.map(|t| desc_en(&t).unwrap_or(t)))
+    }
+
+    /// The game's own (Japanese) description of a skill when [`skill_text`](Self::skill_text) shows BABEL's translation of
+    /// it; `None` when the text shown is the game's.
+    pub fn skill_text_ja(&self, skill_id: i32) -> Result<Option<String>> {
+        Ok(self.skill_text_game(skill_id)?.filter(|t| desc_en(t).is_some()))
+    }
+
+    /// The client's description of a skill as it is (reference\skill-text.tsv), with real line breaks.
+    fn skill_text_game(&self, skill_id: i32) -> Result<Option<String>> {
         let t = once(&self.skill_text, || {
             let mut res = HashMap::new();
             if let Some(lines) = reference_lines("skill-text.tsv")? {

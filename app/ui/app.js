@@ -655,6 +655,8 @@
   /** Gives an element a game-style tooltip: `build` makes its content the first time the pointer is over it. */
   const withTip = (el, build) => { el.dataset.rich = ''; el._rich = build; return el; };
   const tipHead = (iconEl, title, sub) => h('div', { class: 'tt-head' }, iconEl, h('div', null, h('div', { class: 'tt-title', text: title }), sub ? h('div', { class: 'tt-sub', text: sub }) : null));
+  /** A tooltip's description lines; when `ja` is set the text is BABEL's translation of it: greyed, with a note first. */
+  const tlTipLines = (text, ja) => (ja ? [h('div', { class: 'tt-line tl-name tl-note', text: TL_DESC_NOTE }), h('div', { class: 'tl-name' }, ...tipLines(text))] : tipLines(text));
   /** Tooltip text as lines: "[Section]" lines become headings; Japanese flavour lines are left out. */
   const tipLines = (text) => {
     const out = []; let blank = true;
@@ -3533,7 +3535,7 @@
           if (it.sources.some((s) => s.ticket)) it.src.add('Box');
           if (it.sources.length) it.src.add('Notes');
           if (!it.src.size) it.src.add('None');
-          it.hay = [it.name, it.kind, it.class || '', it.slot || '', ...it.all, ...it.tarot, ...it.soul, ...it.desc, ...it.gives, ...it.how, ...it.quests,
+          it.hay = [it.name, it.ja || '', it.kind, it.class || '', it.slot || '', ...it.all, ...it.tarot, ...it.soul, ...it.desc, ...it.gives, ...it.how, ...it.quests,
             ...(it.sets || []).flatMap((s) => s.with), ...getWords(it.get),
             ...it.sources.flatMap((s) => [s.tab, s.how, s.ticket || '', ...getWords(s.ticketGet)])].join(' ').toLowerCase();
         });
@@ -3581,9 +3583,13 @@
       it.level ? `Level ${it.level}+` : '', it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : '', it.weapon || '', it.affinity ? it.affinity + ' affinity' : '',
       it.stack ? `Stacks to ${fmt(it.stack)}` : '', it.sell ? `Sells for ${fmt(it.sell)} Macca` : ''].filter(Boolean);
     box.append(h('div', { class: 'detail-meta' }, facts.map((x) => h('span', { class: 'tag', text: x }))));
+    // `ja`: the game names it only in Japanese and the name is BABEL's translation (item-names-en.tsv, or the Key Items page's)
+    if (it.ja) box.append(h('p', { class: 'note' }, h('span', { class: 'tl-name', text: it.name }), ` is BABEL's translation. The game has no English name for this item: it calls it ${it.ja}.`));
     if (it.sheetOnly) box.append(h('p', { class: 'note', text: 'This row is from the spreadsheet only: its name matched no item in the game data, so the effects below are the sheet\'s own text.' }));
     // the game's own description (its tooltip), then what a tarot or soul crystal gives when fused into a piece
-    const descBlock = block('Description', it.desc); if (descBlock) box.append(descBlock);
+    const descBlock = block(it.descJa ? 'Description (translated)' : 'Description', it.desc);
+    if (descBlock && it.descJa) { descBlock.classList.add('tl-name'); descBlock.setAttribute('data-tip', TL_DESC_TIP(it.descJa)); }
+    if (descBlock) box.append(descBlock);
     [block('Tarot Fusion', it.tarot), block('Soul Fusion', it.soul)].filter(Boolean).forEach((b) => box.append(b));
     // a voucher, ticket or random box: the items it can give (the server's box tables)
     if (it.gives.length) {
@@ -3679,9 +3685,11 @@
         const gives = givesText(it), src = whereText(it), type = typeText(it);
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
-            h('span', { class: 'chev' }, icon('chevron')), ddbImg(it.icon, 28, 'dcm-icon gdb-icon'), h('span', null, it.name, it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null))),
+            h('span', { class: 'chev' }, icon('chevron')), ddbImg(it.icon, 28, 'dcm-icon gdb-icon'), h('span', null, tlName(it.name, it.ja, 'item'), it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null,
+              it.ja ? h('span', { class: 'key-jp', lang: 'ja', text: it.ja }) : null))),
           h('td', null, type || h('span', { class: 'zero', text: '—' })),
-          h('td', { class: gives ? 'gdb-gives' : 'zero', text: gives || '—' }),
+          // the start of the description when nothing else is known; greyed when that description is BABEL's translation
+          h('td', { class: (gives ? 'gdb-gives' : 'zero') + (it.descJa && !it.all.length && !it.tarot.length && !it.soul.length && !it.gives.length ? ' tl-name' : ''), text: gives || '—' }),
           h('td', { class: src ? '' : 'zero', text: src || 'Not known' })));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, gearDbDetail(it))));
       });
@@ -3757,7 +3765,7 @@
         const sk = (id) => (d.skills[id] ? d.skills[id][0] : '');
         Object.values(d.mobs).forEach((m) => { m.hay = [m.name, m.ja || '', m.race || '', ...m.skills.map(sk), ...m.enemySkills.map(sk), ...m.traits.map(sk)].join(' ').toLowerCase(); });
         // a drop points at d.items[id] = [name, the game's description, picture]
-        const item = (g) => { const [name, desc, icon] = d.items[g.i] || ['', '', null]; return Object.assign(g, { item: name, desc, icon }); };
+        const item = (g) => { const [name, desc, icon, ja, dja] = d.items[g.i] || ['', '', null]; return Object.assign(g, { item: name, desc, icon, ja, dja }); };   // ja: BABEL translated the name
         (d.everywhere || []).forEach(item);   // the game-wide drops every enemy that inherits drops can give
         d.dungeons.forEach((x, i) => {
           x.key = i;
@@ -3799,17 +3807,17 @@
     const skills = (label, ids, kind, tip) => {
       const list = ids.filter((id) => D.skills[id]).sort((a, b) => !D.skills[a][2] - !D.skills[b][2]);
       return list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label, 'data-tip': tip || null }),
-        h('div', { class: 'dun-skill-row' }, list.map((id) => { const [n, d, icon, ja] = D.skills[id];   // ja: the game's Japanese when n is BABEL's translation
+        h('div', { class: 'dun-skill-row' }, list.map((id) => { const [n, d, icon, ja, dja] = D.skills[id];   // ja / dja: the game's Japanese name / description when BABEL translated it
           const el = icon ? h('span', { class: 'dun-skill', tabindex: 0, role: 'img', 'aria-label': n }, skillPic(icon))
             : h('span', { class: 'tag dun-skill-name' + (ja ? ' tl-name' : ''), tabindex: 0, text: n });
-          return withTip(el, () => h('div', null, tipHead(icon ? skillPic(icon) : null, n, kind), ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(ja, 'skill') }) : null, ...tipLines(d))); }))) : null;
+          return withTip(el, () => h('div', null, tipHead(icon ? skillPic(icon) : null, n, kind), ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(ja, 'skill') }) : null, ...tlTipLines(d, dja))); }))) : null;
     };
     [skills('Skills', m.skills, 'Skill'), skills('Enemy-only skills', m.enemySkills, 'Enemy-only skill', 'Skills only this enemy version uses'),
       skills('Traits', m.traits, 'Trait', 'Its innate passive features')].forEach((b) => b && box.append(b));
     if (e.drops) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Drops' }),
       h('ul', { class: 'gdb-list dun-drop-list' }, e.drops.map((g) => withTip(h('li', { tabindex: 0 }, h('span', { class: 'gdb-kind dun-rate', text: `${nf.format(g.rate)}%` }),
-        dunItemPic(g, 20), g.item, g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null),
-        () => h('div', null, tipHead(dunItemPic(g, 32), g.item, `${nf.format(g.rate)}% per kill${g.max ? ` · up to ${fmt(g.max)}` : ''}`), ...tipLines(g.desc)))))));
+        dunItemPic(g, 20), tlName(g.item, g.ja, 'item'), g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null),
+        () => h('div', null, tipHead(dunItemPic(g, 32), g.item, `${nf.format(g.rate)}% per kill${g.max ? ` · up to ${fmt(g.max)}` : ''}`), g.ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(g.ja, 'item') }) : null, ...tlTipLines(g.desc, g.dja)))))));
     return box;
   }
   /** A cell of the enemy list with one tag per affinity (weaknesses, or null / reflect / absorb), so nobody has to open the enemy. */
@@ -3837,7 +3845,7 @@
     const strip = (list, tip) => h('div', { class: 'dun-loot' }, list.map((l) => withTip(h('span', { class: 'dun-loot-item', tabindex: 0, role: 'img', 'aria-label': `${l.item}, up to ${nf.format(l.best)}%` },
       dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => tip(l))));
     // the chests its events open: the boss chest at the end of a stage, and any others (a stage's events decide which)
-    const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
+    const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, ja: g.ja, dja: g.dja, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
     const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest');
     // One short warning for all of it: the rates are the vanilla server data's, and a place whose enemies drop nothing
     // there (Dark Babel: IMAGINE sets those on its own server) says so. The game-wide drops any enemy anywhere can give
@@ -3866,7 +3874,7 @@
     if (x.loot) return x.loot;
     const by = new Map();
     const add = (g, who) => {
-      if (!by.has(g.i)) by.set(g.i, { i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: 0, max: 0, from: [] });
+      if (!by.has(g.i)) by.set(g.i, { i: g.i, item: g.item, ja: g.ja, dja: g.dja, desc: g.desc, icon: g.icon, best: 0, max: 0, from: [] });
       const l = by.get(g.i); l.best = Math.max(l.best, g.rate); l.max = Math.max(l.max, g.max || 0); l.from.push({ who, rate: g.rate });
     };
     (x.shared || []).forEach((g) => add(g, null));
@@ -3878,7 +3886,8 @@
     const shown = rows.slice(0, 10), more = rows.length - shown.length;
     const inChest = rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest');
     return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% ${inChest ? 'per chest' : 'per kill'}${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
-      ...tipLines(l.desc),
+      l.ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(l.ja, 'item') }) : null,
+      ...tlTipLines(l.desc, l.dja),
       h('div', { class: 'tt-sec', text: rows[0] && rows[0].who === 'all' ? 'Dropped by' : rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest') ? 'Found in' : 'Dropped here by' }),
       shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who === 'all' ? 'Any enemy, in any place' : r.who === 'boss' ? 'The boss chest at the end of a stage' : r.who === 'chest' ? 'A chest the events here open' : r.who ?`${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
       more > 0 ? h('div', { class: 'tt-line', text: `and ${more} more` }) : null);
@@ -4119,7 +4128,7 @@
 
     const skillRow = (id, tag, inline) => { const s = sk(id);
       return h('li', { class: 'ddb-skill', 'data-tip': inline ? null : s.desc || null }, ddbImg(s.icon, 24, 'skill-ico'),
-        h('span', null, sklName(s, 'b'), tag ? h('span', { class: 'src-count', text: tag }) : null, inline && s.desc ? h('small', { class: 'ddb-desc', text: s.desc }) : null)); };
+        h('span', null, sklName(s, 'b'), tag ? h('span', { class: 'src-count', text: tag }) : null, inline && s.desc ? h('small', { class: 'ddb-desc' + (s.descJa ? ' tl-name' : ''), 'data-tip': s.descJa ? TL_DESC_TIP(s.descJa) : null, text: s.desc }) : null)); };
     // Features. The Mitama-fused form keeps most and gains or swaps one: those are "Mitama features", shown in both views.
     const gained = x.mt ? x.mt.traits.filter((t) => !x.traits.includes(t)) : [], lost = x.mt ? x.traits.filter((t) => !x.mt.traits.includes(t)) : [];
     box.append(block('Features', v.traits.length ? h('ul', { class: 'gdb-list' }, v.traits.map((t) => skillRow(t, mv && gained.includes(t) ? 'Mitama feature' : '', true))) : h('span', { class: 'zero', text: 'None' })));
@@ -4305,6 +4314,10 @@
    *  growth-names-en.tsv); without it the name is the game's and shows as it is. */
   const TL_TIP = (ja, what) => `BABEL's translation: the game has no English name for this ${what}. In game it is called ${ja}`;
   const tlName = (name, ja, what, tag = 'span') => (ja ? h(tag, { class: 'tl-name', 'data-tip': TL_TIP(ja, what), text: name }) : h(tag, { text: name }));
+  /** A description BABEL translated because the game's is Japanese (`descJa`: skill-db, demon-db, gear-db, dungeons):
+   *  greyed out, the game's own text in the tooltip. */
+  const TL_DESC_TIP = (ja) => `BABEL's translation: the game has this text only in Japanese. In game it reads:\n\n${Array.isArray(ja) ? ja.join('\n') : ja}`;
+  const TL_DESC_NOTE = 'BABEL\'s translation of the game\'s Japanese text';
   const SKL_TL_TIP = (s) => TL_TIP(s.ja, 'skill');
   const sklName = (s, tag = 'span') => tlName(s ? s.name : '', s && s.ja, 'skill', tag);
   const sklIcon = (x) => { const box = ddbImg(x.icon, 24, 'skill-ico'); if (!x.icon && SKL_NO_ICON[x.noIcon]) box.setAttribute('data-tip', SKL_NO_ICON[x.noIcon]); return box; };
@@ -4392,7 +4405,7 @@
     const block = (label, ...kids) => h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('div', null, ...kids));
     if (x.ja) box.append(block('Name', h('p', { class: 'ddb-desc skl-desc' }, h('span', { class: 'tl-name', text: x.name }),
       ` is BABEL's translation. The game has no English name for this skill: it calls it ${x.ja}.`)));
-    if (x.desc) box.append(block('In game', h('p', { class: 'ddb-desc skl-desc', text: x.desc })));
+    if (x.desc) box.append(block(x.descJa ? 'In game (translated)' : 'In game', h('p', { class: 'ddb-desc skl-desc' + (x.descJa ? ' tl-name' : ''), 'data-tip': x.descJa ? TL_DESC_TIP(x.descJa) : null, text: x.desc })));
     const facts = [['Target', x.target], ['Reach', x.reach != null ? String(x.reach) : null, 'In the game\'s own distance units: compare skills with each other.'],
       ['Damage from', sklStatRates(x.stat), 'The stat its damage or effect is worked out from. With two stats the first counts in full and the second at half; with three, each counts in full and they are added.'], ['Needs', x.weapon],
       ['Heals', x.heal != null ? String(x.heal) : null, 'The healing modifier (a % is of the target\'s Max HP).'],

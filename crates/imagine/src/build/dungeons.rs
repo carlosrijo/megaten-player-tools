@@ -724,9 +724,14 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
                 let n = data.skill_names()?.get(&id).cloned().flatten();
                 let Some(n) = n.filter(|n| !n.trim().is_empty()) else { continue };
                 let mut row = vec![Some(n.trim().to_string()), Some(data.skill_text(id)?.unwrap_or_default()), skill_icon_of(id, skill_icons)?];
-                // a 4th entry: the game's Japanese when the name is BABEL's translation (skill-names-en.tsv; the page greys it out)
-                if let Some(ja) = data.skill_name_ja(id)? {
-                    row.push(Some(ja));
+                // a 4th entry: the game's Japanese when the name is BABEL's translation (skill-names-en.tsv; the page greys it
+                // out); a 5th: the game's Japanese description when the description is BABEL's translation (desc-en.tsv)
+                let (name_ja, desc_ja) = (data.skill_name_ja(id)?, data.skill_text_ja(id)?);
+                if name_ja.is_some() || desc_ja.is_some() {
+                    row.push(name_ja);
+                }
+                if desc_ja.is_some() {
+                    row.push(desc_ja);
                 }
                 skill_table.insert(id, row);
             }
@@ -793,16 +798,31 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
         Ok(rel)
     };
     let item_name_of = |id: i32, item_info: &HashMap<i32, ItemInfo>| -> Option<String> {
-        match item_info.get(&id) {
+        (match item_info.get(&id) {
             Some(i) if !i.name.is_empty() => Some(i.name.clone()),
             _ => item_name.get(&id).cloned(),
-        }
+        })
+        // BABEL's English where the client names it only in Japanese (item-names-en.tsv)
+        .map(|n| crate::data::game_data::item_name_en(id, &n).unwrap_or(n))
     };
     let mut item_ref = |id: i32, item_table: &mut BTreeMap<i32, Vec<Option<String>>>, skill_icons: &mut HashMap<String, Option<String>>| -> Result<i32> {
         if !item_table.contains_key(&id) {
-            let (desc, icon) = item_info.get(&id).map(|i| (i.desc.clone(), i.icon)).unwrap_or((String::new(), 0));
+            let (game_desc, icon) = item_info.get(&id).map(|i| (i.desc.clone(), i.icon)).unwrap_or((String::new(), 0));
+            // BABEL's English where the game's description is Japanese (desc-en.tsv); the Japanese goes in a 5th entry
+            let desc_en = crate::data::game_data::desc_en(&game_desc);
+            let desc = desc_en.clone().unwrap_or_else(|| game_desc.clone());
             let pic = if icon > 0 { item_picture(icon, skill_icons)? } else { None };
-            item_table.insert(id, vec![item_name_of(id, &item_info), Some(desc), pic]);
+            let shown = item_name_of(id, &item_info);
+            // a 4th entry: the client's Japanese when the name is BABEL's translation (item-names-en.tsv)
+            let ja = crate::data::game_data::item_translations().get(&id).filter(|(_, en)| shown.as_ref() == Some(en)).map(|(ja, _)| ja.clone());
+            let mut row = vec![shown, Some(desc), pic];
+            if ja.is_some() || desc_en.is_some() {
+                row.push(ja);
+            }
+            if desc_en.is_some() {
+                row.push(Some(game_desc));
+            }
+            item_table.insert(id, row);
         }
         Ok(id)
     };

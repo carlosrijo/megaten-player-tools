@@ -645,6 +645,22 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             }
         }
     }
+    // BABEL's English where the client names an item only in Japanese (reference\item-names-en.tsv); `name_ja` keeps the
+    // client's name, written as the item's `ja` (the page greys such a name out). Every name below (sets, sources) is English.
+    // the same for descriptions (desc-en.tsv, keyed by the game's text); `desc_ja` keeps the game's lines (`descJa`)
+    let mut desc_ja: HashMap<i32, Vec<Value>> = HashMap::new();
+    for (id, d) in desc.iter_mut() {
+        let text = d.iter().filter_map(Value::as_str).collect::<Vec<_>>().join("\n");
+        if let Some(en) = crate::data::game_data::desc_en(&text) {
+            desc_ja.insert(*id, std::mem::replace(d, en.lines().map(str::trim).filter(|l| !l.is_empty()).map(|l| json!(l)).collect()));
+        }
+    }
+    let mut name_ja: HashMap<i32, String> = HashMap::new();
+    for (id, n) in name.iter_mut() {
+        if let Some(en) = crate::data::game_data::item_name_en(*id, n) {
+            name_ja.insert(*id, std::mem::replace(n, en));
+        }
+    }
     // Two ways the game makes items that no drop, shop or event lists (comp_hack DemonCrystallize, Synthesize):
     // crystallizing a demon gives the crystal EnchantData names for it (devilCrystal demonID -> itemID), and synthesis
     // crafts SynthesisData's item from its materials with a crafting skill. They join dcmexport's raw sources as kinds
@@ -848,6 +864,9 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             let mut o = Obj::new();
             o.insert("id".into(), json!(id));
             o.insert("name".into(), json!(nm));
+            if let Some(ja) = name_ja.get(&id) {
+                o.insert("ja".into(), json!(ja));
+            }
             // the game's own class of the item ("One-Handed Sword", "Consumable", "Weapon Mod Tool"); the page's kind groups them
             if let Some(class) = crate::data::game_data::item_class_name(sub) {
                 o.insert("class".into(), json!(class));
@@ -862,6 +881,9 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                     o.insert("kind".into(), json!(kind_name(sub, main_cat, &equip)));
                     if let Some(d) = desc.get(&id) {
                         o.insert("desc".into(), Value::Array(d.clone()));
+                        if let Some(ja) = desc_ja.get(&id) {
+                            o.insert("descJa".into(), Value::Array(ja.clone()));
+                        }
                     }
                     let stack = int(m(poss, "stackSize").as_deref());
                     if stack > 1 {
@@ -1112,6 +1134,16 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                 }
             }
         }
+        // by the Japanese name: key-items.tsv numbers its rows its own way, not by KeyItemData's ID
+        let mut key_en: HashMap<String, (String, bool)> = HashMap::new();
+        for line in crate::data::game_data::reference_lines("key-items.tsv")?.unwrap_or_default() {
+            let p: Vec<&str> = line.split('\t').collect();
+            if let (Some(en), Some(src), Some(jp)) = (p.get(1), p.get(2), p.get(3)) {
+                if !en.trim().is_empty() && !jp.trim().is_empty() && crate::fmt::parse_i32(p[0]).is_some() {
+                    key_en.insert(squash(jp), (en.trim().to_string(), src.trim() == "translated"));
+                }
+            }
+        }
         let xml = json::read_all_text(&key_file)?;
         let doc = parse_xml(&xml)?;
         for k in records(&doc) {
@@ -1124,7 +1156,19 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             let mut o = Obj::new();
             o.insert("id".into(), json!(kid));
             o.insert("keyItem".into(), json!(true));
-            o.insert("name".into(), json!(n));
+            // the Key Items page's English (reference\key-items.tsv): the game's own English text where it has one, else a
+            // translation, which gets `ja` like the other translated names
+            match key_en.get(&n) {
+                Some((en, translated)) => {
+                    o.insert("name".into(), json!(en));
+                    if *translated {
+                        o.insert("ja".into(), json!(n));
+                    }
+                }
+                None => {
+                    o.insert("name".into(), json!(n));
+                }
+            }
             o.insert("kind".into(), json!("Key item"));
             o.insert("class".into(), json!("Key item"));
             let d = desc_lines(&m(b, "desc").unwrap_or_default());
@@ -1295,9 +1339,12 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
         // a name with no Latin letters or digits (Japanese names) has an empty key: never matched, or every such item would match
         let mut by_key_all: HashMap<String, Vec<usize>> = HashMap::new();
         for (i, o) in items.iter().enumerate() {
-            let k = key(o.get("name").and_then(Value::as_str).unwrap_or(""));
-            if !k.is_empty() {
-                by_key_all.entry(k).or_default().push(i);
+            // the quest guide names items as the client does, so a translated item is found by its Japanese (`ja`) too
+            for n in [o.get("name"), o.get("ja")].into_iter().flatten().filter_map(Value::as_str) {
+                let k = key(n);
+                if !k.is_empty() && !by_key_all.get(&k).is_some_and(|l| l.contains(&i)) {
+                    by_key_all.entry(k).or_default().push(i);
+                }
             }
         }
         fn gets<'a>(v: &'a Value, out: &mut Vec<&'a str>) {

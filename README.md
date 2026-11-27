@@ -294,6 +294,12 @@ the rest. A second row of chips narrows a kind down: the slot for gear, the game
 (Weapon Mod Tool, Demon Voucher, Junk...). The **Filters** button opens more chips, each with its count: who can use
 it (sex, alignment), how it can be got (shop, exchange, enemy drop, chest, ticket or box, event, quest...; pick several),
 a weapon's range and affinity, and a level limit. Click a column header to sort by it.
+Items the game names only in Japanese (3,828 of them, and the key items without an English name) show BABEL's
+English translation greyed out, with the Japanese small under it; the item's details say so. Search also finds the
+Japanese. Descriptions the game has only in Japanese (about 1,350 items, 840 skills) are translated the same way:
+greyed out, marked "(translated)", with the game's text in the tooltip. Other pages (skill barters, demon exchanges,
+dungeon drops) use the same English; the Dungeon Database greys
+its translated drops too.
 
 - **Gear** (10,266 pieces) shows what it gives: stats, effects, appearance bonus, the sets it belongs to, mod slots,
   and who can wear it, with community notes from SnowSheet's gear reference for IMAGINE beside it.
