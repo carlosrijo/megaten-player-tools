@@ -4109,7 +4109,7 @@
 
     const skillRow = (id, tag, inline) => { const s = sk(id);
       return h('li', { class: 'ddb-skill', 'data-tip': inline ? null : s.desc || null }, ddbImg(s.icon, 24, 'skill-ico'),
-        h('span', null, h('b', { text: s.name }), tag ? h('span', { class: 'src-count', text: tag }) : null, inline && s.desc ? h('small', { class: 'ddb-desc', text: s.desc }) : null)); };
+        h('span', null, sklName(s, 'b'), tag ? h('span', { class: 'src-count', text: tag }) : null, inline && s.desc ? h('small', { class: 'ddb-desc', text: s.desc }) : null)); };
     // Features. The Mitama-fused form keeps most and gains or swaps one: those are "Mitama features", shown in both views.
     const gained = x.mt ? x.mt.traits.filter((t) => !x.traits.includes(t)) : [], lost = x.mt ? x.traits.filter((t) => !x.mt.traits.includes(t)) : [];
     box.append(block('Features', v.traits.length ? h('ul', { class: 'gdb-list' }, v.traits.map((t) => skillRow(t, mv && gained.includes(t) ? 'Mitama feature' : '', true))) : h('span', { class: 'zero', text: 'None' })));
@@ -4288,6 +4288,10 @@
   const SKL_NO_ICON = { none: 'The game has no picture for this skill (fusion skills and most demon features have none).',
     missing: 'The game names a picture for this skill, but the client does not include it.' };
   /** A skill's picture; an empty box says why there is none. */
+  /** A skill's name. `ja` (skill-db.json, demon-db.json): the game names it only in Japanese and the name is BABEL's
+   *  translation (referenceskill-names-en.tsv), so it is greyed out with the game's own name in its tooltip. */
+  const SKL_TL_TIP = (s) => `BABEL's translation: the game has no English name for this skill. In game it is called ${s.ja}`;
+  const sklName = (s, tag = 'span') => (s && s.ja ? h(tag, { class: 'tl-name', 'data-tip': SKL_TL_TIP(s), text: s.name }) : h(tag, { text: s ? s.name : '' }));
   const sklIcon = (x) => { const box = ddbImg(x.icon, 24, 'skill-ico'); if (!x.icon && SKL_NO_ICON[x.noIcon]) box.setAttribute('data-tip', SKL_NO_ICON[x.noIcon]); return box; };
   function loadSkillDb() {
     loadDemonDb();   // who learns each skill
@@ -4299,7 +4303,7 @@
     S.skl.state = 'loading';
     fetch('skill-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
       S.skl.data = d; S.skl.state = d ? 'ready' : 'failed';
-      if (d) d.skills.forEach((x) => { x.hay0 = sklWords([x.name, x.el, x.desc, ...(x.exp || []), x.fusion ? 'fusion' : '', x.barter ? 'barter' : '', ...(x.barter || []).map((b) => b.cost)].join(' ')); });
+      if (d) d.skills.forEach((x) => { x.hay0 = sklWords([x.name, x.ja, x.el, x.desc, ...(x.exp || []), x.fusion ? 'fusion' : '', x.barter ? 'barter' : '', ...(x.barter || []).map((b) => b.cost)].join(' ')); });
       // tooltips made before the descriptions came in are made again on the next hover
       document.querySelectorAll('[data-rich]').forEach((el) => { delete el._richNode; });
       if (S.page === 'rebirth') render();   // the planner's Skills step waits for the list
@@ -4362,6 +4366,8 @@
   function sklDetail(x, who) {
     const box = h('div', { class: 'q-detail skl-detail' });
     const block = (label, ...kids) => h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('div', null, ...kids));
+    if (x.ja) box.append(block('Name', h('p', { class: 'ddb-desc skl-desc' }, h('span', { class: 'tl-name', text: x.name }),
+      ` is BABEL's translation. The game has no English name for this skill: it calls it ${x.ja}.`)));
     if (x.desc) box.append(block('In game', h('p', { class: 'ddb-desc skl-desc', text: x.desc })));
     const facts = [['Target', x.target], ['Reach', x.reach != null ? String(x.reach) : null, 'In the game\'s own distance units: compare skills with each other.'],
       ['Damage from', x.stat, 'The stat its damage or effect is worked out from.'], ['Needs', x.weapon],
@@ -4447,7 +4453,7 @@
       const cell = (v, cls) => h('td', { class: (cls || 'num') + (v ? '' : ' zero'), text: v || '—' });
       body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
         h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
-          h('span', { class: 'chev' }, icon('chevron')), sklIcon(x), h('span', null, x.name, x.el ? h('span', { class: 'src-count', text: x.el }) : null))),
+          h('span', { class: 'chev' }, icon('chevron')), sklIcon(x), h('span', null, sklName(x), x.el ? h('span', { class: 'src-count', text: x.el }) : null, x.ja ? h('span', { class: 'key-jp', lang: 'ja', text: x.ja }) : null))),
         cell(x.cost, 'dim'), cell(x.cast), cell(x.cd), cell(x.power != null ? String(x.power) : x.heal != null ? `heals ${x.heal}` : ''), cell(x.stiff != null ? fmt(x.stiff) : ''),
         h('td', null, whoSummary(x))));
       if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: COLS }, sklDetail(x, whoOf(x)))));
@@ -4475,7 +4481,8 @@
       const nGet = all.filter((x) => inWho(x, 'get')).length;
       count.textContent = `${fmt(rows.length)} skills listed (${all.length} in the game data, ${nGet} of them can be learned by a demon, come from expertise or an NPC exchange (barter), or are fusion skills). `
         + (S.ddb.state === 'ready' ? '' : 'Still loading the demons: who learns each skill shows once they are in. ')
-        + `${d.skipped.untranslated} skills the client only names in Japanese, item uses and debug skills are left out. Data made on ${d.generatedAt}.`;
+        + `${fmt(all.filter((x) => x.ja).length)} the game names only in Japanese are shown greyed out, under BABEL's English translation. `
+        + `${d.skipped.untranslated ? `${d.skipped.untranslated} skills with only a Japanese name and no translation yet, ` : ''}Item uses and debug skills are left out. Data made on ${d.generatedAt}.`;
     };
     const sel = (label, value, options, onchange) => h('label', { class: 'gdb-check' }, label,
       h('select', { class: 'input ddb-select', 'aria-label': label, onchange: (ev) => onchange(ev.target.value) }, options.map(([v, t]) => h('option', { value: v, selected: v === value ? true : null, text: t }))));
@@ -7760,7 +7767,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       const s = rbpSkill(id), from = rbpSkillFrom(id, D);
       const bits = [rbpSkillTypeName(s), s.el && s.el !== 'Support' ? s.el : null, s.cost || null, s.power ? `power ${s.power}` : null].filter(Boolean).join(' · ');
       return h('li', { class: 'rbp-skillrow' + (from.how !== 'own' ? ' swapped' : '') }, ddbImg(s.icon, 24, 'skill-ico'),
-        h('span', { class: 'rbp-skilltext' }, h('b', { text: s.name }), bits ? h('span', { class: 'src-count', text: bits }) : null, h('small', { class: 'rbp-skillfrom' + (from.how === 'own' ? '' : ' got'), text: from.text })));
+        h('span', { class: 'rbp-skilltext' }, sklName(s, 'b'), bits ? h('span', { class: 'src-count', text: bits }) : null, h('small', { class: 'rbp-skillfrom' + (from.how === 'own' ? '' : ' got'), text: from.text })));
     });
     card.append(h('ul', { class: 'gdb-list rbp-skilllist' }, rows));
     // the demon's own skills that are not on the bar: a click puts one in the first empty slot (or the last one)
@@ -7780,7 +7787,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     const slots = rbpSkills(plan, D), pool = rbpSkillPool() || [];
     const pick = (id) => { slots[rbpSkillsSlot] = id; plan.skills.touched = true; rbpSave(); rbpSkillsMenu.hidePopover(); render(); };
     const row = (s, line, tag) => h('button', { type: 'button', class: 'char', 'aria-current': slots[rbpSkillsSlot] === s.id ? 'true' : null, 'data-tip': s.desc || null, onclick: () => pick(s.id) },
-      ddbImg(s.icon, 32, 'dm-icon rbp-dm-icon'), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: s.name }), h('span', { class: 'char-line', text: line })), tag ? h('span', { class: 'tag', text: tag }) : null);
+      ddbImg(s.icon, 32, 'dm-icon rbp-dm-icon'), h('span', { class: 'char-text' }, h('span', { class: 'char-name' + (s.ja ? ' tl-name' : ''), 'data-tip': s.ja ? SKL_TL_TIP(s) : null, text: s.name }), h('span', { class: 'char-line', text: line })), tag ? h('span', { class: 'tag', text: tag }) : null);
     const matches = (s) => words.every((w) => (s.hayRbp || s.name.toLowerCase()).includes(w));
     const own = rbpOwnSkills(D).map(([id, lv]) => ({ s: rbpSkill(id), lv })).filter(({ s }) => matches(s));
     const ownIds = new Set(rbpOwnSkills(D).map(([id]) => id));
@@ -8750,7 +8757,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
               needs ? h('span', { class: 'rbp-way-needs src-count', 'data-tip': 'What the exchange asks, from the game’s barter condition table', text: `Needs ${needs}` }) : null);
           });
           if (x.from.who && x.from.who.length) ways.push(h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-where', text: `By fusion: ${x.from.who.slice(0, 4).join(', ')}${x.from.who.length > 4 ? ` and ${x.from.who.length - 4} more` : ''} learn it` })));
-          return h('li', { class: 'rbp-skillcost' }, h('div', { class: 'rbp-skillrow' }, ddbImg(x.s.icon, 24, 'skill-ico'), h('span', { class: 'rbp-skilltext' }, h('b', { text: x.s.name }), h('span', { class: 'src-count', text: rbpSkillTypeName(x.s) }))), h('div', { class: 'rbp-ways' }, ...ways));
+          return h('li', { class: 'rbp-skillcost' }, h('div', { class: 'rbp-skillrow' }, ddbImg(x.s.icon, 24, 'skill-ico'), h('span', { class: 'rbp-skilltext' }, sklName(x.s, 'b'), h('span', { class: 'src-count', text: rbpSkillTypeName(x.s) }))), h('div', { class: 'rbp-ways' }, ...ways));
         });
         gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'The skills on the bar that the demon does not learn itself: what each costs at an NPC (hover a picture for the item and how many), or who learns it for a fusion. The Soul Points of every priced skill are added up', tabindex: 0, text: `Skills to get · ${got.length}${sp ? ` · ${fmt(sp)} Soul Points` : ''}` }), h('ul', { class: 'gdb-list rbp-skilllist rbp-skillcosts' }, lines)));
       }
