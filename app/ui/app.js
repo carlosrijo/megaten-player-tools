@@ -34,6 +34,7 @@
     podium: '<path d="M3.5 20h17M4.5 20v-5.5h5V20M9.5 20V9h5v11M14.5 20v-7.5h5V20"/><path d="M12 4.2v2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     gate: '<path d="M5 20.5V10a7 7 0 0 1 14 0v10.5"/><path d="M3 20.5h18"/><path d="M9.5 20.5v-5a2.5 2.5 0 0 1 5 0v5"/>',
+    map: '<path d="M3.5 6.5l5.5-2.5 6 2.5 5.5-2.5v13.5l-5.5 2.5-6-2.5-5.5 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
     route: '<circle cx="6" cy="18.5" r="2.2"/><circle cx="18" cy="5.5" r="2.2"/><path d="M8.2 18.5H15a3.2 3.2 0 0 0 0-6.4H9a3.2 3.2 0 0 1 0-6.4h6.8"/>',
     rune: '<path d="M12 4v16M12 4l-5 5M12 4l5 5"/><path d="M7.5 20h9"/>',
@@ -424,7 +425,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Database', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Rebirth Planner', 'rune'], ['sim', 'Build Planner', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Rebirth Planner', 'rune'], ['sim', 'Build Planner', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -499,6 +500,7 @@
     dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle', live: null, liveRaw: null, typeTouched: false },
     keys: { q: '', cat: 'all', held: 'all', open: new Set(), pg: 0, data: null, state: 'idle', busy: false },
+    guides: { q: '', tag: 'all', open: new Set(), outOpen: new Set(), data: null, state: 'idle' },   // Dungeon Guides: filters, opened dungeons, opened outcomes
     gdb: { q: '', kind: 'all', cls: 'all', known: true, gender: '', align: '', src: [], range: '', aff: [], maxLv: '', sort: 'name', dir: 1, fopen: false, open: new Set(), pg: 0, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
@@ -775,6 +777,7 @@
     dcm: { dcm: ['q', 'kind', 'open'] },
     rebirth: { rbp: ['src', 'demonId', 'compKey', 'openSteps'] },
     dungeons: { dun: ['q', 'kind', 'open', 'mob', 'shown'] },
+    guides: { guides: ['q', 'tag', 'open', 'outOpen'] },
     quests: { quest: ['q', 'type', 'open'] },
   };
   const keepCopy = (v) => (v instanceof Set ? new Set(v) : v);
@@ -3298,6 +3301,108 @@
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Key item' }), h('th', { scope: 'col', text: 'What it does' }), h('th', { scope: 'col', text: 'Kind' }), h('th', { scope: 'col', text: 'You' }))), body));
     page.append(wrap, pager);
     page.append(h('p', { class: 'note', text: `${fmt(items.length)} key items the game shows (its hidden progress flags are left out). English names come from the game’s own English text where it has one; the rest are translations, marked. Data made on ${D.data.generatedAt}.` }));
+    drawChips(); draw();
+    return page;
+  }
+
+  // ---------- Tools: Dungeon Guides ----------
+  // dungeon-guides.json is made in the knowledge base (newmoon-kb\progression\guides\build.mjs, from the event-script
+  // research kept there): every Dungeon Database dungeon where something done inside the run (or a roll) changes the
+  // fight, the route or the reward, and for each outcome the steps to get it (what to do, where, what it needs, what
+  // breaks it). The rest are listed as linear. Read from the public server's scripts, not NewMoon's; not tested in game.
+  // The tags are picked by hand per dungeon in the knowledge base (research\tags.json), with what each one means:
+  const GUIDE_TAGS = [['all', 'Any', ''],
+    ['hidden', 'Hidden boss', 'A boss you only get by doing something on purpose (random rare spawns don’t count)'],
+    ['summon', 'Summon a demon', 'A specific demon has to be summoned at some step'],
+    ['minigame', 'Minigame', 'An event run scored by points, waves, a race or a hunt']];
+  const guideTagName = (t) => (GUIDE_TAGS.find(([id]) => id === t) || [, t])[1];
+  const guideKey = (g) => g.name + '|' + g.from;
+  function loadGuides() {
+    if (S.guides.state !== 'idle') return;
+    S.guides.state = 'loading';
+    fetch('dungeon-guides.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      S.guides.data = d; S.guides.state = d ? 'ready' : 'failed';
+      if (d) d.guides.forEach((g) => {
+        g.key = guideKey(g);
+        g.hay = [g.name, g.from, ...g.tags.map(guideTagName), ...g.outcomes.flatMap((o) => [o.result, o.fails, ...o.steps.flatMap((s) => [s.do, s.where, s.needs])])].join(' ').toLowerCase();
+      });
+      if (S.page === 'guides') render();
+    });
+  }
+  /** One dungeon's guide: what to bring (Diaspora), then one row per outcome; a row opens its numbered steps. A guide
+   *  with a single outcome shows it open. */
+  function guideDetail(g, redraw) {
+    const D = S.guides, box = h('div', { class: 'q-detail guide-detail' });
+    if (g.prep) {
+      const line = (k, v) => (v && v.length ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: k }), h('span', null, Array.isArray(v) ? v.join(' · ') : v)) : null);
+      box.append(h('div', { class: 'guide-prep' }, line('Before you go', g.prep.facts), line('You need', g.prep.needs), line('Recipes', g.prep.recipes), line('Expect', g.prep.expect)));
+    }
+    const single = g.outcomes.length === 1;
+    if (!single) box.append(h('span', { class: 'q-key', text: `${g.outcomes.length} ways this dungeon can go · click one for its steps` }));
+    const outs = h('div', { class: 'guide-outs' });
+    g.outcomes.forEach((o, i) => {
+      const k = g.key + '#' + i, open = single || D.outOpen.has(k);
+      const toggle = () => { if (D.outOpen.has(k)) D.outOpen.delete(k); else D.outOpen.add(k); redraw(); };
+      const head = h('div', { class: 'guide-res' }, h('span', { class: 'guide-res-text', text: o.result }),
+        o.inferred ? h('span', { class: 'tag tag-off', tabindex: 0, 'data-tip': 'Worked out from how the script fits together, not stated by it: check it in game first', text: 'inferred' }) : null,
+        h('span', { class: 'src-count', text: o.steps.length === 1 ? '1 step' : `${o.steps.length} steps` }));
+      if (!open) { outs.append(h('section', { class: 'guide-out' }, h('button', { type: 'button', class: 'row-btn guide-out-btn', 'aria-expanded': 'false', onclick: toggle }, h('span', { class: 'chev' }, icon('chevron')), head))); return; }
+      outs.append(h('section', { class: 'guide-out' + (single ? '' : ' open') },
+        single ? head : h('button', { type: 'button', class: 'row-btn guide-out-btn', 'aria-expanded': 'true', onclick: toggle }, h('span', { class: 'chev' }, icon('chevron')), head),
+        h('ol', { class: 'q-steps guide-steps' }, o.steps.map((s) => h('li', null,
+          h('span', { class: 'guide-do', text: s.do }),
+          s.where ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Where' }), h('span', { text: s.where })) : null,
+          s.needs ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Needs' }), h('span', { text: s.needs })) : null))),
+        o.fails ? h('div', { class: 'q-line guide-fails' }, h('span', { class: 'q-key', text: 'Breaks if' }), h('span', { text: o.fails })) : null));
+    });
+    box.append(outs);
+    box.append(h('div', null, h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { S.dun.q = g.name; S.dun.kind = 'all'; go('dungeons'); } }, icon('gate'), 'Its enemies in the Dungeon Database')));
+    return box;
+  }
+  function pageGuides() {
+    const D = S.guides, page = h('div', { class: 'page page-dcm' });
+    loadGuides();
+    page.append(pageHead('The dungeons that aren’t just “go in and kill everything”: hidden and True bosses, demons to summon, objects to click, choices, rolls and timers. Click a dungeon for each outcome and the steps to get it.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The guides could not be loaded (dungeon-guides.json is missing beside the page).' : 'Loading the guides…' }));
+      return page;
+    }
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from the server’s event scripts, not checked on IMAGINE. ' }),
+      'The steps come from the public server data, so IMAGINE may have changed some. Steps marked “inferred” were worked out from how the script fits together; try those first before planning a run around them.')));
+    const list = D.data.guides;
+    const inTag = (g, t) => t === 'all' || g.tags.includes(t);
+    const tagChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by what makes it special' });
+    const body = h('tbody');
+    const drawChips = () => {
+      tagChips.replaceChildren(...GUIDE_TAGS.map(([id, label, tip]) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.tag === id), 'data-tip': tip || null, onclick: () => { D.tag = id; drawChips(); draw(); } },
+        label, h('span', { class: 'count', text: fmt(list.filter((g) => inTag(g, id)).length) }))));
+    };
+    const draw = () => {
+      body.replaceChildren();
+      const q = D.q.trim().toLowerCase();
+      const rows = list.filter((g) => inTag(g, D.tag) && (!q || g.hay.includes(q)));
+      rows.forEach((g) => {
+        const open = D.open.has(g.key);
+        const toggle = () => { if (D.open.has(g.key)) D.open.delete(g.key); else D.open.add(g.key); draw(); };
+        const steps = g.outcomes.reduce((a, o) => a + o.steps.length, 0);
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+          h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+            h('span', { class: 'chev' }, icon('chevron')),
+            h('span', null, g.name, g.from && g.from !== g.name ? h('span', { class: 'src-count', text: `entered from ${g.from}` }) : null,
+              g.modes.length ? h('span', { class: 'src-count', text: `modes: ${g.modes.join(', ')}` }) : null))),
+          h('td', null, h('span', { class: 'guide-tags' }, g.tags.map((t) => h('span', { class: 'tag guide-tag guide-tag-' + t, tabindex: 0, 'data-tip': (GUIDE_TAGS.find(([id]) => id === t) || [])[2] || null, text: guideTagName(t) })))),
+          h('td', { class: 'num' }, String(g.outcomes.length), h('span', { class: 'src-count', text: steps === 1 ? '1 step' : `${fmt(steps)} steps` }))));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 }, guideDetail(g, draw))));
+      });
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 3, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No dungeon in this group.' })));
+    };
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a dungeon, boss, demon, item or mechanic', (v) => { D.q = v; draw(); }), tagChips));
+    page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl guide-tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Dungeon' }), h('th', { scope: 'col', text: 'Tags' }), h('th', { scope: 'col', class: 'num', text: 'Outcomes' }))), body)));
+    const lin = D.data.linear || [];
+    page.append(h('details', { class: 'guide-linear' }, h('summary', null, `${fmt(lin.length)} linear dungeons: get in, kill everything, done`),
+      h('p', { class: 'note', text: lin.map((x) => x.name).join(' · ') })));
+    page.append(h('p', { class: 'note', text: `${fmt(list.length)} dungeons with a guide, ${fmt(list.reduce((a, g) => a + g.outcomes.length, 0))} outcomes. Entry modes (WILDCAT, BEARCAT, Time trial, Hard) are listed on each dungeon but don't make it special on their own. Hover a tag for what it means. Data made on ${D.data.generatedAt}.` }));
     drawChips(); draw();
     return page;
   }
@@ -7451,7 +7556,7 @@
     return card;
   }
 
-  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
+  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, guides: pageGuides, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;

@@ -446,6 +446,23 @@ Names, stats, skills and traits are the IMAGINE client's. Which enemies are wher
 their drops come from the public server data, so IMAGINE may have changed them. Stats are the server's formula for an
 enemy at that level (with the extra HP the game gives enemies), before its passive skills and traits. Not checked in
 game.
+
+### Tools: Dungeon Guides
+
+Under **Tools** in the left bar. The dungeons that aren't just "go in and kill everything" (122 of the Dungeon
+Database's 175): a hidden, extra or True boss you only get by doing something, demons that must be summoned at the
+right moment, objects to click, choices, random rolls, timers and score runs. Click a dungeon for each outcome it can
+end in (for example "Yamata no Orochi is the final boss") and the numbered steps to get it: what to do, **Where**, what
+it **Needs**, and what **Breaks** it. The two Diaspora runs also list what to bring and the item recipes.
+
+Search a dungeon, boss, demon, item or mechanic; the chips filter by three hand-picked tags: **Hidden boss** (a boss
+you only get by doing something on purpose), **Summon a demon** (a specific demon must be out at some step) and
+**Minigame** (an event run scored by points, waves, a race or a hunt). Hover a tag for what it means. A dungeon with several outcomes lists them as rows; click one for its steps. Each dungeon's button opens its enemies in the Dungeon Database. The 53 linear dungeons are listed at the
+bottom.
+
+Read from the public server's event scripts, so IMAGINE may have changed some; nothing was checked in game. Steps
+marked **inferred** were worked out from how the script fits together rather than stated by it.
+
 ### Tools: Demon Database
 
 Under **Tools** in the left bar. Every demon you can own (the compendium's 359 and 592 variants such as Open-minded Ishtar) with its picture, race, base level and
