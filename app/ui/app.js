@@ -215,10 +215,10 @@
           await wait(args && args.cached ? 0 : 1200);   // seen before: at once; looking at the game: a moment
           const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
-            ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
+            ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false], ['Santa Black Frost', 42, 'Nocturne', 'Kusi', 1, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
             ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, summoned: name === 'Specter' && Q.get('summoned') !== '0', icon: null, loaded: name !== 'Pixie', inComp: name !== 'Seraph', seenAt: '2026-11-23T15:40:23',
               // the Rebirth Planner's fields: the demon's type, growth type, rebirth ranks, Mitama type and rank, slot bonus ids
-              type: { Specter: 11004, Shikigami: 11030, Alilat: 10041, Seraph: 22, Pixie: 570 }[name], growthType: { Specter: 215, Shikigami: 123, Alilat: 118, Seraph: 118 }[name] || 113,
+              type: { Specter: 11004, Shikigami: 11030, Alilat: 10041, Seraph: 22, Pixie: 570, 'Santa Black Frost': 10733 }[name], growthType: { Specter: 215, Shikigami: 123, Alilat: 118, Seraph: 118 }[name] || 113,
               reunion: mitama ? (name === 'Specter' ? [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8] : name === 'Shikigami' ? [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] : [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) : name === 'Seraph' ? [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0] : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
               mitamaType: { Kusi: 3, Ara: 1, Nigi: 2 }[mitama] || 0, mitamaRank: name === 'Specter' ? 12 : 0, mitamaSlots: name === 'Specter' ? [65, 66, 67, 68, 1, 2, 3, 4, ...Array(88).fill(0)] : Array(96).fill(0),
               // the Demon Force stack ids (Alilat's as read in game 2026-11-26: seven item effects and a random one; Shikigami: random ones only; Seraph: 2 of its 2 slots)
@@ -512,7 +512,8 @@
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
-    rbp: { state: 'idle', P: null, src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), compKey: store.get('rbp-comp') || null, comp: null, compState: 'idle', plan: null, openSteps: false },   // Rebirth Planner: the plan is rbpPlan() (kept in storage)
+    rbp: { state: 'idle', P: null, src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), compKey: store.get('rbp-comp') || null, compSnap: (() => { try { const v = JSON.parse(store.get('rbp-snap') || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } })(), comp: null, compState: 'idle', plan: null, openSteps: false,
+      view: 'home', id: null, name: '', builds: null, naming: false, confirmDel: false, saveState: '', navOpen: store.get('rbp-nav') !== '0' },   // view: the page of builds ('home') or the planner ('edit'), for the saved build `id` (null: the unsaved plan)   // Rebirth Planner: the plan is rbpPlan() (kept in storage)
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Database: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
     // Demon Rank: which demons, the level they are compared at ('base', '1' or '99'), the column sorted (an index of RANK_COLS) and its direction (1 = highest first)
@@ -752,6 +753,10 @@
   const simNavBox = h('div', { class: 'nav-sub', hidden: true });
   const simNavToggle = h('button', { type: 'button', class: 'nav-fold', hidden: true, 'aria-label': 'Show or hide your saved builds',
     onclick: () => { S.sim.navOpen = !S.sim.navOpen; store.set('sim-nav', S.sim.navOpen ? '1' : '0'); drawSimNav(); } }, icon('chevron'));
+  // the same for the Demon Planner's saved builds (drawRbpNav)
+  const rbpNavBox = h('div', { class: 'nav-sub', hidden: true });
+  const rbpNavToggle = h('button', { type: 'button', class: 'nav-fold', hidden: true, 'aria-label': 'Show or hide your saved demon builds',
+    onclick: () => { S.rbp.navOpen = !S.rbp.navOpen; store.set('rbp-nav', S.rbp.navOpen ? '1' : '0'); drawRbpNav(); } }, icon('chevron'));
   // Related tools sit together under one fold-away entry ("Databases", "Planners"), open every time the app starts; the
   // entry folds them away for this session only (nothing is saved, so they are open again next launch). Inside a group
   // the repeated word is left off each name ("Skill Database" -> "Skills", "Fusion Planner" -> "Fusion"); the page's own
@@ -781,12 +786,13 @@
   const looseTools = [];
   TOOLS.forEach(([id, fullLabel, ic]) => {
     const g = groupOf(id), label = g ? g.short(fullLabel) : fullLabel;
-    const btn = h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => (id === 'sim' ? simGoHome() : go(id)) },
+    const btn = h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => (id === 'sim' ? simGoHome() : id === 'rebirth' ? rbpGoHome() : go(id)) },
       icon(ic), h('span', { class: 'nav-label', text: label }));
-    const entry = id === 'sim' ? [h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox] : [btn];
+    const entry = id === 'sim' ? [h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox] : id === 'rebirth' ? [h('div', { class: 'nav-group' }, btn, rbpNavToggle), rbpNavBox] : [btn];
     if (g) g.box.append(...entry); else looseTools.push(...entry);
   });
   nav.append(...NAV_GROUPS.flatMap((g) => [g.head, g.box]), ...looseTools);
+  setTimeout(() => drawRbpNav(), 0);   // (the saved demon builds, once the page's code is all set up)
   function go(page) {
     if (S.page === page) return;
     remember();
@@ -812,7 +818,7 @@
     geardb: { gdb: ['q', 'kind', 'cls', 'known', 'gender', 'align', 'src', 'range', 'aff', 'maxLv', 'sort', 'dir', 'fopen', 'open', 'pg'] },
     rank: { rank: ['q', 'kind', 'race', 'at', 'mt', 'sort', 'dir'] },
     dcm: { dcm: ['q', 'kind', 'open'] },
-    rebirth: { rbp: ['src', 'demonId', 'compKey', 'openSteps'] },
+    rebirth: { rbp: ['openSteps'] },   // (which build is open is `rebirth` in here() and step())
     dungeons: { dun: ['q', 'kind', 'open', 'mob', 'shown'] },
     guides: { guides: ['q', 'tag', 'open', 'outOpen'] },
     quests: { quest: ['q', 'type', 'open'] },
@@ -824,7 +830,7 @@
   function here() {
     const kept = {};
     Object.entries(PAGE_KEEP[S.page] || {}).forEach(([part, keys]) => { kept[part] = {}; keys.forEach((k) => { kept[part][k] = keepCopy(S[part][k]); }); });
-    return { page: S.page, kept, scroll: $('#main').scrollTop, sim: S.page === 'sim' ? { view: S.sim.view, id: S.sim.id } : null };
+    return { page: S.page, kept, scroll: $('#main').scrollTop, sim: S.page === 'sim' ? { view: S.sim.view, id: S.sim.id } : null, rbp: S.page === 'rebirth' ? { view: S.rbp.view, id: S.rbp.id } : null };
   }
   function remember() {
     if (trail.quiet) return;
@@ -833,7 +839,8 @@
     trail.fwd = [];
   }
   const pageName = (id) => (PAGES.concat(TOOLS).find((p) => p[0] === id) || [])[1] || '';
-  const stepName = (e) => (e.page === 'sim' && e.sim && e.sim.view === 'edit' ? (e.sim.id ? ((S.sim.builds || []).find((b) => b.id === e.sim.id) || {}).name || 'a build' : 'the unsaved build') : pageName(e.page));
+  const stepName = (e) => (e.page === 'rebirth' && e.rbp && e.rbp.view === 'edit' ? (e.rbp.id ? ((rbpBuilds().find((b) => b.id === e.rbp.id) || {}).name || 'a demon build') : 'the unsaved demon build')
+    : e.page === 'sim' && e.sim && e.sim.view === 'edit' ? (e.sim.id ? ((S.sim.builds || []).find((b) => b.id === e.sim.id) || {}).name || 'a build' : 'the unsaved build') : pageName(e.page));
   /** Back (dir -1) or forward (+1) one step. */
   function step(dir) {
     const from = dir < 0 ? trail.back : trail.fwd, to = dir < 0 ? trail.fwd : trail.back;
@@ -849,6 +856,8 @@
     try {
       if (e.sim && e.sim.view === 'edit' && (S.sim.view !== 'edit' || S.sim.id !== e.sim.id)) simOpen(e.sim.id);
       else if (e.sim && e.sim.view === 'home' && S.sim.view === 'edit') simGoHome();
+      else if (e.rbp && e.rbp.view === 'edit' && (S.rbp.view !== 'edit' || S.rbp.id !== e.rbp.id)) rbpOpen(e.rbp.id);
+      else if (e.rbp && e.rbp.view === 'home' && S.rbp.view === 'edit') rbpGoHome();
       else render();
     } finally { trail.quiet = false; }
     scroll();
@@ -887,6 +896,7 @@
     $('#page-title').textContent = (PAGES.concat(TOOLS).find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
     document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.page === S.page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     drawSimNav();
+    drawRbpNav();
     drawGroupNav();
     drawNavButtons();
     const foot = $('#side-foot');
@@ -3529,7 +3539,7 @@
         d.classes = {};
         d.items.forEach((it) => { if (it.class) (d.classes[it.kind] = d.classes[it.kind] || new Set()).add(it.class); });
       }
-      if (S.page === 'geardb' || S.page === 'rebirth') render();   // the Rebirth Planner's Demon Force step says where each item comes from
+      if (S.page === 'geardb' || S.page === 'rebirth') render();   // the Rebirth Planner's equipment and Demon Force steps say where each part and item comes from
     });
   }
   function gearDbDetail(it) {
@@ -5077,79 +5087,95 @@
   }
   simDemonsMenu.addEventListener('toggle', (ev) => { if (ev.newState === 'open') { simPlace(simDemonsMenu, simDemonsFor); drawSimDemons(); } });
   $('#main').addEventListener('scroll', () => { if (simDemonsMenu.matches(':popover-open')) simDemonsMenu.hidePopover(); });   // its button moves away
-  // The Rebirth Planner's COMP demon picker: the same dropdown as the Overview's demon line, under the name in the
-  // planner's demon card. Rows are the COMP demons as last seen (S.rbp.comp); "Load demons from the game" looks at the
-  // game again (the same read the Overview's picker does). The pick is the planner's own.
-  const rbpDemonsMenu = $('#rbp-demons');
-  let rbpDemonsFor = null, rbpDemonsLook = 0;
-  function drawRbpDemons(status, loading) {
-    const U = S.rbp, list = $('#rbp-demons-list'), demons = U.comp || [];
-    const db = U.src === 'db', search = $('#rbp-demons-search');
-    search.hidden = !db;
-    $('#rbp-demons-load').parentElement.hidden = db;
-    $('#rbp-demons-note').textContent = db ? 'Only demons the game can Mitama-fuse and that you can get some way: a contract, a fusion, a DCM, an exchange or a gift.' : 'The demons as BABEL last read them, with their rebirth ranks and Mitama slots. The pick is the planner’s own: your digitalize demon is not changed.';
-    if (db) {
-      // the Demon Database's demons that can be planned: ones with a Mitama form (the server Mitama-fuses only a type
-      // with a mitamaFusionID, CharacterManager::MitamaDemon) that the player can get (ddbCanOwn); a search narrows
-      // them, the first 80 are listed
-      const d = S.ddb.data, q = (search.querySelector('input').value || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
-      const all = d ? d.demons.filter((x) => rbpPlannable(x) && words.every((w) => (x.name + ' ' + x.race).toLowerCase().includes(w))) : [];
-      all.sort((a, b) => (q && a.name.toLowerCase().startsWith(q) ? 0 : 1) - (q && b.name.toLowerCase().startsWith(q) ? 0 : 1) || a.name.localeCompare(b.name) || a.level - b.level);
-      const shown = all.slice(0, 80);
-      list.replaceChildren(...shown.map((x) => h('button', { type: 'button', class: 'char', 'aria-current': x.id === U.demonId ? 'true' : null,
-        onclick: () => { rbpDemonsMenu.hidePopover(); U.demonId = x.id; store.set('rbp-demon', String(x.id)); render(); } },
-        ddbImg(x.icon || (d && d.noIcon), 32, 'dm-icon rbp-dm-icon'), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: x.name }), h('span', { class: 'char-line', text: `Lv ${x.level} · ${x.race}${x.mt ? ' · has a Mitama form' : ''}` })))));
-      $('#rbp-demons-status').textContent = !d ? 'Loading the demons…' : !all.length ? 'No demon matches.' : all.length > shown.length ? `${shown.length} of ${all.length} shown: type more to narrow it.` : '';
-      simPlace(rbpDemonsMenu, rbpDemonsFor);
-      return;
-    }
-    const pick = (d) => { rbpDemonsMenu.hidePopover(); U.compKey = d.key; store.set('rbp-comp', d.key); render(); };
+  // The Rebirth Planner's demon picker: under the name in the planner's demon card, any demon from the Demon Database
+  // with a search. "Import demon" (top right) is the other way in: one of the COMP demons as last seen (S.rbp.comp),
+  // with its ranks and Mitama slots; "Load demons from the game" there looks at the game again (the same read the
+  // Overview's picker does). Either pick is the planner's own: the digitalize demon is not changed.
+  const rbpDemonsMenu = $('#rbp-demons'), rbpImportMenu = $('#rbp-import');
+  let rbpDemonsFor = null, rbpImportFor = null, rbpDemonsLook = 0;
+  function drawRbpDemons() {
+    const U = S.rbp, list = $('#rbp-demons-list'), search = $('#rbp-demons-search');
+    $('#rbp-demons-note').textContent = 'Only demons the game can Mitama-fuse and that you can get some way: a contract, a fusion, a DCM, an exchange or a gift.';
+    // the Demon Database's demons that can be planned: ones with a Mitama form (the server Mitama-fuses only a type
+    // with a mitamaFusionID, CharacterManager::MitamaDemon) that the player can get (ddbCanOwn); a search narrows
+    // them, the first 80 are listed
+    const d = S.ddb.data, q = (search.querySelector('input').value || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+    const all = d ? d.demons.filter((x) => rbpPlannable(x) && words.every((w) => (x.name + ' ' + x.race).toLowerCase().includes(w))) : [];
+    all.sort((a, b) => (q && a.name.toLowerCase().startsWith(q) ? 0 : 1) - (q && b.name.toLowerCase().startsWith(q) ? 0 : 1) || a.name.localeCompare(b.name) || a.level - b.level);
+    const shown = all.slice(0, 80);
+    list.replaceChildren(...shown.map((x) => h('button', { type: 'button', class: 'char', 'aria-current': U.src === 'db' && x.id === U.demonId ? 'true' : null,
+      onclick: () => { rbpDemonsMenu.hidePopover(); U.src = 'db'; U.demonId = x.id; U.compKey = null; U.compSnap = null; rbpSave(); render(); } },
+      ddbImg(x.icon || (d && d.noIcon), 32, 'dm-icon rbp-dm-icon'), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: x.name }), h('span', { class: 'char-line', text: `Lv ${x.level} · ${x.race}${x.mt ? ' · has a Mitama form' : ''}` })))));
+    $('#rbp-demons-status').textContent = !d ? 'Loading the demons…' : !all.length ? 'No demon matches.' : all.length > shown.length ? `${shown.length} of ${all.length} shown: type more to narrow it.` : '';
+    simPlace(rbpDemonsMenu, rbpDemonsFor);
+  }
+  /** The import dropdown: it hangs under its button, right edges together. */
+  function rbpImportPlace() {
+    const btn = rbpImportFor;
+    if (!btn || !btn.isConnected || !rbpImportMenu.matches(':popover-open')) return;
+    const r = btn.getBoundingClientRect(), w = rbpImportMenu.offsetWidth, hgt = rbpImportMenu.offsetHeight;
+    rbpImportMenu.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + 'px';
+    rbpImportMenu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
+  }
+  function drawRbpImport(status, loading) {
+    const U = S.rbp, list = $('#rbp-import-list'), demons = U.comp || [];
+    $('#rbp-import-note').textContent = 'The demons as BABEL last read them. Importing plans that demon from where it stands: its rebirth ranks and Mitama slots. Your digitalize demon is not changed.';
+    const pick = (d) => { rbpImportMenu.hidePopover(); U.src = 'comp'; U.compKey = d.key; U.compSnap = rbpSnap(d); rbpSave(); render(); };
     const row = (d) => {
       const ranks = Array.isArray(d.reunion) ? d.reunion.filter((r) => r > 0) : [];
       const line = [`Lv ${d.level}`, d.race, d.mitama ? `${d.mitama} Mitama · rank ${n0(d.mitamaRank)}` : null, ranks.length ? `${ranks.length} rune${ranks.length === 1 ? '' : 's'} raised` : 'no rebirths'].filter(Boolean).join(' · ');
       const pic = h('span', { class: 'dm-icon' + (d.icon ? '' : ' dm-none dm-off'), text: d.icon ? null : String(d.name || '?').charAt(0) });
       if (d.icon) pic.append(h('img', { class: 'dm-icon', src: d.icon, alt: '' }));
-      return h('button', { type: 'button', class: 'char', 'aria-current': d.key === U.compKey ? 'true' : null, onclick: () => pick(d) },
+      return h('button', { type: 'button', class: 'char', 'aria-current': U.src === 'comp' && d.key === U.compKey ? 'true' : null, onclick: () => pick(d) },
         pic, h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: d.name }), h('span', { class: 'char-line', text: line })),
         d.inComp === false ? h('span', { class: 'tag tag-off', text: 'Not in the COMP' }) : d.loaded === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed it: open its status window in game, then load again', text: 'Not read' }) : d.summoned ? h('span', { class: 'tag', text: 'Summoned' }) : null);
     };
     list.replaceChildren(...demons.map(row));
-    const load = $('#rbp-demons-load');
+    const load = $('#rbp-import-load');
     load.disabled = !!loading;
     load.textContent = loading ? 'Reading the game…' : 'Load demons from the game';
-    $('#rbp-demons-status').textContent = status || (!demons.length && !loading ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
-    simPlace(rbpDemonsMenu, rbpDemonsFor);
+    $('#rbp-import-status').textContent = status || (!demons.length && !loading ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
+    rbpImportPlace();
   }
   async function loadRbpDemons() {
     const look = ++rbpDemonsLook;
-    drawRbpDemons(null, true);
+    drawRbpImport(null, true);
     try {
       const demons = await host.call('compDemons', {});
       if (look !== rbpDemonsLook) return;
       S.rbp.comp = Array.isArray(demons) ? demons : [];
       S.demons = S.rbp.comp;   // the Overview's picker sees the same read
       const live = S.rbp.comp.filter((d) => d.inGame).length;
-      drawRbpDemons(!host.native ? 'Browser preview: stand-in demons.' : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.' : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.' : `${live} demons in your COMP.`);
+      drawRbpImport(!host.native ? 'Browser preview: stand-in demons.' : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.' : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.' : `${live} demons in your COMP.`);
       if (S.page === 'rebirth') render();
-    } catch (e) { if (look === rbpDemonsLook) drawRbpDemons(String(e && e.message || e)); }
+    } catch (e) { if (look === rbpDemonsLook) drawRbpImport(String(e && e.message || e)); }
   }
   rbpDemonsMenu.addEventListener('toggle', (ev) => {
+    if (ev.newState !== 'open') return;
+    const inp = $('#rbp-demons-search input'); inp.value = ''; drawRbpDemons(); inp.focus();
+  });
+  rbpImportMenu.addEventListener('toggle', (ev) => {
     if (ev.newState !== 'open') { rbpDemonsLook++; return; }
-    drawRbpDemons();
-    if (S.rbp.src === 'db') { const inp = $('#rbp-demons-search input'); inp.value = ''; drawRbpDemons(); inp.focus(); return; }
-    const b = $('#rbp-demons-list [aria-current="true"]') || $('#rbp-demons-list button');
-    if (b && rbpDemonsFor && rbpDemonsFor.matches(':focus-visible')) b.focus();
+    drawRbpImport();
+    const b = $('#rbp-import-list [aria-current="true"]') || $('#rbp-import-list button');
+    if (b && rbpImportFor && rbpImportFor.matches(':focus-visible')) b.focus();
   });
   $('#rbp-demons-search input').addEventListener('input', () => drawRbpDemons());
   $('#rbp-demons-search input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { const b = $('#rbp-demons-list button'); if (b) b.click(); ev.preventDefault(); } else if (ev.key === 'ArrowDown') { const b = $('#rbp-demons-list button'); if (b) { b.focus(); ev.preventDefault(); } } });
   rbpDemonsMenu.addEventListener('keydown', (ev) => {
     if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
-    const rows = [...rbpDemonsMenu.querySelectorAll('.char, #rbp-demons-load')], i = rows.indexOf(document.activeElement);
+    const rows = [...rbpDemonsMenu.querySelectorAll('.char')], i = rows.indexOf(document.activeElement);
     const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
     if (next) { next.focus(); ev.preventDefault(); }
   });
-  $('#rbp-demons-load').addEventListener('click', loadRbpDemons);
-  $('#main').addEventListener('scroll', () => { if (rbpDemonsMenu.matches(':popover-open')) rbpDemonsMenu.hidePopover(); });
+  rbpImportMenu.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    const rows = [...rbpImportMenu.querySelectorAll('.char, #rbp-import-load')], i = rows.indexOf(document.activeElement);
+    const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
+    if (next) { next.focus(); ev.preventDefault(); }
+  });
+  $('#rbp-import-load').addEventListener('click', loadRbpDemons);
+  $('#main').addEventListener('scroll', () => { if (rbpDemonsMenu.matches(':popover-open')) rbpDemonsMenu.hidePopover(); if (rbpImportMenu.matches(':popover-open')) rbpImportMenu.hidePopover(); });
   /** The Build Planner's first page: "New build", then every saved build as a card. */
   function simHome(page) {
     const M = S.sim, builds = M.builds || [], n = simDraftCount();
@@ -6965,6 +6991,13 @@
     }
     loadDemonDb(); loadFusion(); loadDcm();   // the DCM list: which demons a DCM gives (ddbCanOwn)
     loadSkillDb();   // the Skills step: every skill a demon can get
+    if (!S.rbp.fxState) {   // what each passive, feature and part does (rbp-effects.json; the app's copy is made with the sealed data)
+      S.rbp.fxState = 'loading';
+      fetch('rbp-effects.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+        S.rbp.fx = d && d.skills ? d.skills : null; S.rbp.fxState = S.rbp.fx ? 'ready' : 'failed';
+        if (S.page === 'rebirth') render();
+      });
+    }
     if (S.rbp.compState === 'idle' && !S.rbp.comp) {   // the COMP demons as last seen (no look at the game: the Overview's picker does that)
       S.rbp.compState = 'loading';
       host.call('compDemons', { cached: true }).then((list) => { S.rbp.comp = Array.isArray(list) ? list : []; S.rbp.compState = 'ready'; if (S.page === 'rebirth') render(); })
@@ -6976,39 +7009,398 @@
     if (!S.rbp.plan) {
       let p = null;
       try { p = JSON.parse(store.get('rbp-plan') || 'null'); } catch (e) { p = null; }
+      S.rbp.plan = rbpPlanFrom(p);
+    }
+    return S.rbp.plan;
+  }
+  /** A plan made safe to use from anything kept or shared (a build, the unsaved plan, a pasted code): every field checked, the rest dropped. */
+  function rbpPlanFrom(p) {
+    if (!p || typeof p !== 'object') p = null;
+    {
       const ranks = (v) => (Array.isArray(v) && v.length === 12 ? v.map((x) => Math.max(0, Math.min(9, n0(x)))) : Array(12).fill(0));
-      S.rbp.plan = { level: p && p.levelSet && p.level ? Math.max(1, Math.min(99, n0(p.level))) : 93, levelSet: !!(p && p.levelSet), xpBonus: p ? n0(p.xpBonus) : 0, pre: ranks(p && p.pre), last: p ? n0(p.last) : 0,
+      const plan = { level: p && p.levelSet && p.level ? Math.max(1, Math.min(99, n0(p.level))) : 93, levelSet: !!(p && p.levelSet), xpBonus: p ? n0(p.xpBonus) : 0, pre: ranks(p && p.pre), last: p ? n0(p.last) : 0,
         fuse: !!(p && p.fuse), kind: p && p.kind >= 1 && p.kind <= 4 ? p.kind : 1, boost: !!(p && p.boost), post: ranks(p && p.post), postLast: p ? n0(p.postLast) : 0,
         slots: {}, view: p && p.view === 'boosts' ? 'boosts' : 'runes', picks: p && Array.isArray(p.picks) ? p.picks.map(n0).filter((v) => v >= 0 && v < 48) : [], kindAuto: !(p && p.kindAuto === false),
         boostPre: ranks(p && p.boostPre), boostPost: ranks(p && p.boostPost), itemKind: p && RBP_ITEM_KINDS.some(([k]) => k === p.itemKind) ? p.itemKind : 'rune',
         skills: p && p.skills && typeof p.skills === 'object' && Array.isArray(p.skills.slots) ? { key: String(p.skills.key || ''), slots: p.skills.slots.slice(0, 8).map(n0), touched: !!p.skills.touched } : null,
-        force: p && p.force && typeof p.force === 'object' && Array.isArray(p.force.slots) ? { key: String(p.force.key || ''), slots: p.force.slots.slice(0, 8).map((v) => Math.max(0, n0(v))), touched: !!p.force.touched } : null };   // the Demon Force bar (for which demon)   // ranks the player raised by hand in the boosts view, over what the boosts need; the skill bar (for which demon)
+        equip: p && p.equip && typeof p.equip === 'object' && Array.isArray(p.equip.slots) ? { key: String(p.equip.key || ''), slots: p.equip.slots.slice(0, 4).map(n0), touched: !!p.equip.touched } : null,
+        force: p && p.force && typeof p.force === 'object' && Array.isArray(p.force.slots) ? { key: String(p.force.key || ''), slots: p.force.slots.slice(0, 8).map((v) => Math.max(0, n0(v))), touched: !!p.force.touched } : null };   // ranks the player raised by hand in the boosts view, over what the boosts need; the skill bar, the equipment and the Demon Force bar (for which demon)
       // the slots per rune: counts per kind (an older plan's set + extras becomes counts)
-      if (p && p.slots && typeof p.slots === 'object') Object.entries(p.slots).forEach(([i, sl]) => { if (sl && Array.isArray(sl.counts)) S.rbp.plan.slots[i] = { counts: sl.counts.map((v) => Math.max(0, Math.min(8, n0(v)))) }; });
+      if (p && p.slots && typeof p.slots === 'object') Object.entries(p.slots).forEach(([i, sl]) => { if (/^(?:[0-9]|1[01])$/.test(i) && sl && Array.isArray(sl.counts)) plan.slots[i] = { counts: sl.counts.slice(0, 4).map((v) => Math.max(0, Math.min(8, n0(v)))) }; });
+      plan.last = Math.max(0, Math.min(11, plan.last)); plan.postLast = Math.max(0, Math.min(11, plan.postLast));
+      return plan;
     }
-    return S.rbp.plan;
   }
-  const rbpSave = () => store.set('rbp-plan', JSON.stringify(S.rbp.plan));
+  /**
+   * Keeps what is in the planner. The unsaved plan (and the demon it is for) goes to the page's storage; a saved build
+   * keeps every change in its own entry of "rbp-builds", as it is made.
+   */
+  function rbpSave() {
+    const U = S.rbp;
+    if (U.id) {
+      const b = rbpBuilds().find((x) => x.id === U.id);
+      if (b) { Object.assign(b, rbpBuildOf(), { saved_at: new Date().toISOString() }); rbpStoreBuilds(); U.saveState = 'saved'; rbpStatus(); }
+      return;
+    }
+    store.set('rbp-plan', JSON.stringify(rbpPlan()));
+    store.set('rbp-src', U.src);
+    store.set('rbp-demon', U.demonId === null || U.demonId === undefined ? '' : String(U.demonId));
+    store.set('rbp-comp', U.compKey || '');
+    store.set('rbp-snap', U.compSnap ? JSON.stringify(U.compSnap) : '');
+  }
   /** The chosen demon: its Demon Database entry, whether it is already Mitama-fused, and its state (level, ranks, Mitama). */
   function rbpDemon() {
     const U = S.rbp, d = S.ddb.data;
     if (!d) return null;
     if (U.src === 'comp') {
-      const c = (U.comp || []).find((q) => q.key === U.compKey);
+      const c = U.compSnap || (U.comp || []).find((q) => q.key === U.compKey);   // an imported demon is kept as it was when imported
       if (!c) return null;
-      const F = S.fus.eng && S.fus.eng.F;
-      let x = d.demons.find((q) => q.id === c.type), fused = false;
-      if (!x && F) {   // a Mitama-fused type: the Fusion Planner's data says which demon it is the form of
-        const f = F.demons.find((row) => row[8] === c.type);
-        if (f) { x = d.demons.find((q) => q.id === f[0]) || d.demons.find((q) => q.name === f[1] && q.race === (F.races[f[2]] || '') && q.level === f[4]); fused = !!x; }
-      }
-      if (!x) return { missing: c };
+      const r = rbpResolve(c);
+      if (!r) return { missing: c };
+      const { x, fused } = r;
       const ranks = Array.isArray(c.reunion) && c.reunion.length === 12 ? c.reunion.map((v) => Math.max(0, n0(v))) : Array(12).fill(0);
       return { x, comp: c, name: c.name, level: c.level, fused: fused || n0(c.mitamaType) > 0, kind: n0(c.mitamaType), mitamaRank: n0(c.mitamaRank), ranks,
         growth: n0(c.growthType) || (fused && x.mt ? x.mt.growth : x.growth), slots: Array.isArray(c.mitamaSlots) ? c.mitamaSlots.map(n0) : Array(96).fill(0), known: c.loaded !== false };
     }
     const x = d.demons.find((q) => q.id === U.demonId && rbpPlannable(q));   // a pick kept from before the list was narrowed may no longer be one
     return x ? { x, name: x.name, level: x.level, fused: false, kind: 0, mitamaRank: 0, ranks: Array(12).fill(0), growth: x.growth, slots: Array(96).fill(0), known: true } : null;
+  }
+  // ---------- Demon Planner builds ----------
+  // A demon build is a plan and the demon it is for: a Demon Database demon (`demonId`), or a COMP demon as it was
+  // imported (`comp`: its rebirth ranks, Mitama slots and skills as last read, kept with the build). The saved builds
+  // are in the page's storage ("rbp-builds"), as the unsaved plan is; the Build Planner's are files because they hang
+  // on a character, these hang on no one. The page has two views: the gallery ('home') and the planner ('edit').
+  function rbpBuilds() {
+    const U = S.rbp;
+    if (!U.builds) {
+      let list = [];
+      try { const v = JSON.parse(store.get('rbp-builds') || '[]'); if (Array.isArray(v)) list = v.filter((b) => b && typeof b === 'object' && typeof b.id === 'string' && b.plan && typeof b.plan === 'object'); } catch (e) { list = []; }
+      U.builds = list.map((b) => ({ ...b, name: String(b.name || 'Demon build').slice(0, 60) }));
+    }
+    return U.builds;
+  }
+  const rbpStoreBuilds = () => store.set('rbp-builds', JSON.stringify(rbpBuilds()));
+  const rbpNewId = () => 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const rbpClone = (v) => JSON.parse(JSON.stringify(v));
+  /** A COMP demon as a build keeps it: only what the planner reads of it. */
+  function rbpSnap(c) {
+    if (!c || typeof c !== 'object') return null;
+    const list = (v, len) => (Array.isArray(v) ? v.slice(0, len).map(n0) : null);
+    const icon = typeof c.icon === 'string' && c.icon.length < 400 && !c.icon.startsWith('data:') ? c.icon : null;
+    return { key: String(c.key || '').slice(0, 80), type: n0(c.type), name: String(c.name || '').slice(0, 60), level: Math.max(0, Math.min(99, n0(c.level))), race: String(c.race || '').slice(0, 40), mitama: String(c.mitama || '').slice(0, 20), icon,
+      growthType: n0(c.growthType), reunion: list(c.reunion, 12), mitamaType: n0(c.mitamaType), mitamaRank: n0(c.mitamaRank), mitamaSlots: list(c.mitamaSlots, 96),
+      skills: list(c.skills, 8), equipment: list(c.equipment, 4), loaded: c.loaded !== false };
+  }
+  /** What the planner holds now, as a build is written (the name and the plan, and the demon it is for). */
+  function rbpBuildOf() {
+    const U = S.rbp, live = U.src === 'comp' ? U.compSnap || (U.comp || []).find((q) => q.key === U.compKey) : null;
+    return { name: U.name, src: U.src, demonId: U.demonId === null || U.demonId === undefined ? null : U.demonId, comp: live ? rbpSnap(live) : null, plan: rbpClone(rbpPlan()) };
+  }
+  /** Puts a saved build in the planner (null: the unsaved plan, as it was kept). */
+  function rbpLoad(b) {
+    const U = S.rbp;
+    if (b) {
+      U.plan = rbpPlanFrom(b.plan); U.src = b.src === 'comp' ? 'comp' : 'db'; U.demonId = num(b.demonId);
+      U.compSnap = b.comp && typeof b.comp === 'object' ? b.comp : null; U.compKey = U.compSnap ? U.compSnap.key : null;
+      U.id = b.id; U.name = b.name; U.saveState = 'saved';
+    } else {
+      U.plan = null; U.src = store.get('rbp-src') === 'comp' ? 'comp' : 'db'; U.demonId = num(store.get('rbp-demon')); U.compKey = store.get('rbp-comp') || null;
+      try { const v = JSON.parse(store.get('rbp-snap') || 'null'); U.compSnap = v && typeof v === 'object' ? v : null; } catch (e) { U.compSnap = null; }
+      U.id = null; U.name = ''; U.saveState = '';
+    }
+    Object.assign(U, { naming: false, confirmDel: false });
+  }
+  const rbpStatus = () => { const el = S.rbp.statusEl; if (el) el.textContent = { saved: 'Saved', failed: 'Not saved' }[S.rbp.saveState] || ''; };
+  const rbpShow = () => { if (S.page !== 'rebirth') go('rebirth'); else { render(); $('#main').scrollTop = 0; } };
+  /** Opens a build in the planner (no id: the unsaved plan). */
+  function rbpOpen(id) {
+    const U = S.rbp, b = id ? rbpBuilds().find((x) => x.id === id) : null;
+    if (id && !b) { toast('err', 'That build can’t be opened', 'It is not among your saved demon builds.'); return; }
+    const same = U.view === 'edit' && U.id === (id || null);
+    if (S.page === 'rebirth' && !same) remember();   // (from another page, go() does it)
+    if (!same) rbpLoad(b);
+    U.view = 'edit';
+    rbpShow();
+  }
+  /** The page of builds. */
+  function rbpGoHome() {
+    const U = S.rbp;
+    if (S.page === 'rebirth' && U.view === 'edit') remember();
+    U.view = 'home';
+    rbpShow();
+  }
+  /** The saved builds under "Demon Planner" in the left bar; the one in the planner is marked instead of the entry itself. */
+  function drawRbpNav() {
+    const U = S.rbp, list = rbpBuilds(), open = U.navOpen && list.length > 0;
+    const editing = S.page === 'rebirth' && U.view === 'edit' && U.id ? U.id : null;
+    rbpNavToggle.hidden = !list.length;
+    rbpNavToggle.setAttribute('aria-expanded', String(open));
+    rbpNavToggle.dataset.tip = open ? 'Hide your saved demon builds' : `Show your ${list.length} saved demon build${list.length === 1 ? '' : 's'}`;
+    rbpNavBox.hidden = !open;
+    rbpNavBox.replaceChildren(...list.map((b) => h('button', { type: 'button', class: 'nav-subitem', 'aria-current': b.id === editing ? 'page' : null, 'data-tip': b.name, onclick: () => rbpOpen(b.id) }, b.name)));
+    const entry = nav.querySelector('.nav-item[data-page="rebirth"]');
+    if (entry && editing && open) entry.removeAttribute('aria-current');
+  }
+  const rbpNewName = (base) => {
+    const names = new Set(rbpBuilds().map((b) => b.name));
+    if (base) {
+      const fit = (ending) => String(base).slice(0, 60 - ending.length).trimEnd() + ending;
+      let n = fit(' copy'), i = 2;
+      while (names.has(n)) n = fit(` copy ${i++}`);
+      return n;
+    }
+    let i = names.size + 1; while (names.has(`Demon build ${i}`)) i++;
+    return `Demon build ${i}`;
+  };
+  /** The unsaved plan becomes a saved build with this name; "New build" then starts from nothing again. */
+  function rbpSaveDraft(name) {
+    const U = S.rbp;
+    U.name = name;
+    const id = rbpNewId();
+    rbpBuilds().push({ id, ...rbpBuildOf(), saved_at: new Date().toISOString() });
+    rbpStoreBuilds();
+    ['rbp-plan', 'rbp-src', 'rbp-demon', 'rbp-comp', 'rbp-snap'].forEach((k) => store.set(k, ''));
+    Object.assign(U, { id, saveState: 'saved', naming: false });
+    drawRbpNav();
+  }
+  /** A copy of a build (b: a saved one, or { name, ...rbpBuildOf() }); `open`: into the planner. */
+  function rbpDuplicate(b, open) {
+    const id = rbpNewId();
+    rbpBuilds().push({ id, name: rbpNewName(b.name), src: b.src, demonId: b.demonId, comp: b.comp ? rbpClone(b.comp) : null, plan: rbpClone(b.plan), saved_at: new Date().toISOString() });
+    rbpStoreBuilds(); drawRbpNav();
+    if (open) rbpOpen(id); else render();
+  }
+  function rbpDelete(id) {
+    const U = S.rbp;
+    U.builds = rbpBuilds().filter((b) => b.id !== id);
+    rbpStoreBuilds();
+    if (U.id === id) { U.view = 'home'; rbpLoad(null); }
+    drawRbpNav(); render();
+  }
+  // --- sharing: a text code ("BABELD1-…") that another player pastes into "Import build". It holds the plan and the demon
+  //     it is for (a Demon Database demon's id, or a COMP demon's ranks and Mitama slots); no build name. A pasted code
+  //     is a stranger's input: it is only ever read as data (JSON of numbers), every field is checked and cut to size
+  //     (rbpPlanFrom, rbpSnap), and a demon the Demon Database doesn't have is refused. Importing adds a new build. ---
+  const RBP_CODE = 'BABELD1-';
+  function rbpCode(b) {
+    const bytes = new TextEncoder().encode(JSON.stringify({ s: b.src, d: b.demonId, c: b.src === 'comp' ? b.comp : null, p: b.plan }));
+    let bin = ''; bytes.forEach((v) => { bin += String.fromCharCode(v); });
+    return RBP_CODE + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  /** The build a code holds ({ src, demonId, comp, plan }); throws a plain-words reason when it holds none. */
+  function rbpReadCode(text) {
+    const t = String(text || '').replace(/\s+/g, '');
+    if (!t.startsWith(RBP_CODE)) throw new Error(t.startsWith('BABEL1-') ? 'That is a Build Planner code. Paste it in the Build Planner’s “Import build”.' : 'That is not a demon build code: it starts with “BABELD1-”.');
+    if (t.length > 12000) throw new Error('That code is too long to be a demon build.');
+    let o;
+    try {
+      const bin = atob(t.slice(RBP_CODE.length).replace(/-/g, '+').replace(/_/g, '/'));
+      o = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+    } catch (e) { throw new Error('The code is damaged or cut short: copy it again, all of it.'); }
+    if (!o || typeof o !== 'object' || (o.s !== 'db' && o.s !== 'comp')) throw new Error('The code holds no demon build.');
+    const d = S.ddb.data;
+    if (!d) throw new Error('The demon list is still loading: try again in a moment.');
+    const b = { src: o.s, demonId: null, comp: null, plan: rbpPlanFrom(o.p) };
+    if (o.s === 'comp') {
+      b.comp = rbpSnap(o.c);
+      if (!b.comp || !rbpResolve(b.comp)) throw new Error('The demon in the code is not in the Demon Database, so it can’t be planned here.');
+    } else {
+      b.demonId = n0(o.d);
+      const x = d.demons.find((q) => q.id === b.demonId);
+      if (!x) throw new Error('The demon in the code is not in the Demon Database, so it can’t be planned here.');
+    }
+    return b;
+  }
+  /** What a build is, in a few words: its demon and what is planned. { x, name, level, tags } (x: the database entry, or null). */
+  function rbpSummary(b) {
+    const d = S.ddb.data;
+    if (!d) return null;
+    let x = null, name = '', level = 0, fused = false;
+    if (b.src === 'comp' && b.comp) { const r = rbpResolve(b.comp); if (r) x = r.x; name = b.comp.name || (x ? x.name : ''); level = n0(b.comp.level); fused = n0(b.comp.mitamaType) > 0 || !!(r && r.fused); }
+    else { x = d.demons.find((q) => q.id === n0(b.demonId)) || null; if (x) { name = x.name; level = x.level; } }
+    const plan = rbpPlanFrom(b.plan);
+    const runes = plan.pre.reduce((n, v, i) => n + (v > 0 || plan.post[i] > 0 ? 1 : 0), 0);
+    const tags = [];
+    if (plan.view === 'boosts') tags.push(plan.picks.length ? `${plan.picks.length} boost${plan.picks.length === 1 ? '' : 's'} picked` : 'Boosts view');
+    else if (runes) tags.push(`${runes} rune${runes === 1 ? '' : 's'} planned`);
+    if (b.src === 'comp' && n0(b.comp && b.comp.mitamaType) > 0) tags.push(`${RBP_KINDS[n0(b.comp.mitamaType) - 1] || ''} Mitama`.trim());
+    else if (plan.fuse) tags.push(`Fusing with ${RBP_KINDS[plan.kind - 1]}`);
+    if (b.src === 'comp') tags.push('From your COMP');
+    return { x, name: name || 'Unknown demon', level, tags };
+  }
+  const rbpCodeDlg = () => $('#sim-code');   // the Build Planner's share / import dialog, with this planner's words in it
+  /** "Share": the code of a build ({ src, demonId, comp, plan }), to copy. */
+  async function rbpShare(b, name) {
+    const dlg = rbpCodeDlg(), code = rbpCode(b);
+    ++simCodeSeq;
+    $('#sim-code-title').textContent = 'Share demon build';
+    const box = h('textarea', { class: 'input sim-code-box', readonly: true, rows: 4, spellcheck: 'false', 'aria-label': 'Build code' });
+    box.value = code;
+    box.addEventListener('focus', () => box.select());
+    const copy = h('button', { type: 'button', class: 'btn btn-primary', onclick: async () => {
+      if (await copyText(code)) flashLabel(copy, 'Copied');
+      else { box.focus(); box.select(); toast('info', 'Copy it by hand', 'The code is selected: press Ctrl+C.'); }
+    } }, 'Copy code');
+    simFill($('#sim-code-body'),
+      h('p', { class: 'field-help', text: `The code of ${name ? `“${name}”` : 'this build'}. Send it to another player: they paste it into “Import build” in their Demon Planner.` }),
+      box,
+      h('div', { class: 'field-row' }, copy, h('span', { class: 'field-help sim-code-count', text: `${code.length} characters` })),
+      h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'The code holds the plan and the demon it is for (for one of your COMP demons: its rebirth ranks and Mitama slots as last read). It does not hold your character’s name or the build’s name.' })));
+    if (!dlg.open) dlg.showModal();
+    copy.focus();
+  }
+  /** "Import build": paste a code, see what it holds, and save it as a new build. */
+  function rbpImportOpen() {
+    const dlg = rbpCodeDlg(), mine = ++simCodeSeq;
+    let build = null;
+    $('#sim-code-title').textContent = 'Import demon build';
+    const box = h('textarea', { class: 'input sim-code-box', rows: 4, spellcheck: 'false', autocomplete: 'off', maxlength: 12000, placeholder: 'BABELD1-…', 'aria-label': 'Build code' });
+    const status = h('p', { class: 'field-help sim-code-status', role: 'status' });
+    const preview = h('div', { class: 'sim-code-preview' });
+    const names = new Set(rbpBuilds().map((b) => b.name));
+    let fresh = 'Imported demon build', i = 2;
+    while (names.has(fresh)) fresh = `Imported demon build ${i++}`;
+    const nameIn = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: fresh, 'aria-label': 'Name of the build', spellcheck: 'false' });
+    const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', disabled: true, onclick: () => save() }, 'Save as build');
+    const foot = h('div', { class: 'sim-code-foot', hidden: true }, h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Name' }), nameIn), saveBtn);
+    const say = (text, bad) => { status.textContent = text || ''; status.classList.toggle('bad', !!bad); };
+    function read() {
+      const text = box.value.trim();
+      build = null; saveBtn.disabled = true; foot.hidden = true; simFill(preview);
+      if (!text) { say(''); return; }
+      try { build = rbpReadCode(text); } catch (e) { say(String((e && e.message) || e), true); return; }
+      say('');
+      const s = rbpSummary(build);
+      simFill(preview, h('div', { class: 'sim-code-list' },
+        h('div', { class: 'sim-code-row' }, s && s.x ? ddbImg(s.x.icon || (S.ddb.data && S.ddb.data.noIcon), 32, 'dm-icon rbp-dm-icon') : h('span'),
+          h('span', { class: 'sim-code-piece' }, h('b', { text: s ? s.name : '' }), h('span', { class: 'dgt-line', text: s && s.x ? `Lv ${s.level} · ${s.x.race}` : '' }))),
+        s && s.tags.length ? h('div', { class: 'sim-code-ranks' }, s.tags.map((t) => h('span', { class: 'tag', text: t }))) : h('p', { class: 'note', text: 'Nothing is planned in it yet.' })));
+      foot.hidden = false; saveBtn.disabled = false;
+    }
+    function save() {
+      if (!build || mine !== simCodeSeq) return;
+      const name = nameIn.value.replace(/\s+/g, ' ').trim() || fresh, id = rbpNewId();
+      rbpBuilds().push({ id, name, src: build.src, demonId: build.demonId, comp: build.comp, plan: build.plan, saved_at: new Date().toISOString() });
+      rbpStoreBuilds(); drawRbpNav();
+      dlg.close();
+      toast('ok', `Imported “${name}”`, 'It is a new build of yours. Nothing else was changed.', 4000);
+      rbpOpen(id);
+    }
+    let timer = null;
+    box.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(read, 200); });
+    nameIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') save(); });
+    simFill($('#sim-code-body'),
+      h('p', { class: 'field-help', text: 'Paste a demon build code another player shared with you. You see what it holds before anything is saved.' }),
+      box, status, preview, foot,
+      h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'A code is only numbers: a plan and the demon it is for, each checked against the game data. Importing adds a new build and changes nothing else.' })));
+    if (!dlg.open) dlg.showModal();
+    box.focus();
+  }
+  /** One saved build as a card in the gallery. */
+  function rbpCard(b) {
+    const s = rbpSummary(b);
+    const acts = h('span', { class: 'sim-build-acts' });
+    // (the path, not ev.target.closest: a button of the actions is replaced by the click itself, and then has no parent to find)
+    const el = h('div', { class: 'dg-tile sim-build rbp-build', onclick: (ev) => { if (!ev.composedPath().includes(acts)) rbpOpen(b.id); } });
+    const drawActs = (asking) => simFill(acts, asking
+      ? [h('span', { class: 'dgt-line', text: 'Delete it?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => rbpDelete(b.id) }, 'Delete'),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => drawActs(false) }, 'Keep')]
+      : [h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Share ${b.name}`, 'data-tip': 'Share: a code another player can import', onclick: () => rbpShare(b, b.name) }, icon('share')),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Duplicate ${b.name}`, 'data-tip': 'Duplicate', onclick: () => rbpDuplicate(b, false) }, icon('copy')),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Delete ${b.name}`, 'data-tip': 'Delete', onclick: () => drawActs(true) }, icon('trash'))]);
+    drawActs(false);
+    const pic = h('span', { class: 'rbp-build-pic' + (s && s.x ? '' : ' none') }, s && s.x ? ddbImg(b.comp && b.comp.icon ? b.comp.icon : s.x.icon || (S.ddb.data && S.ddb.data.noIcon), 56, 'rbp-build-img') : null);
+    simFill(el, pic, h('span', { class: 'sim-build-body' },
+      h('span', { class: 'sim-build-head' },
+        h('span', { class: 'dgt-id' }, h('button', { type: 'button', class: 'sim-build-name', 'data-tip': `Open ${b.name}`, text: b.name }),
+          h('span', { class: 'dgt-line', text: s ? (s.x ? `${s.name} · Lv ${s.level}` : `${s.name} is not in the Demon Database`) : 'Loading the demons…' })),
+        acts),
+      s && s.tags.length ? h('span', { class: 'dgt-tags' }, s.tags.map((t) => h('span', { class: 'tag', text: t }))) : null,
+      b.saved_at ? h('span', { class: 'dgt-line sim-build-saved', text: `Saved ${when(b.saved_at)}` }) : null));
+    return el;
+  }
+  /** The page of builds: "New build" (the unsaved plan, or a fresh one), "Import build", and every saved build. */
+  function rbpHome(page) {
+    const builds = rbpBuilds();
+    // the unsaved plan as it was kept: the demon it is for, if any, and whether anything is planned
+    let kept = null;
+    try { kept = { src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), comp: JSON.parse(store.get('rbp-snap') || 'null'), plan: JSON.parse(store.get('rbp-plan') || 'null') }; } catch (e) { kept = null; }
+    const ks = kept && S.ddb.state === 'ready' && (kept.src === 'comp' ? kept.comp : kept.demonId !== null) ? rbpSummary(kept) : null;
+    page.append(pageHead('Your demon builds. Open one to keep working on it, or start a new one. Nothing here touches the game or your demons.'));
+    page.append(h('div', { class: 'sim-builds rbp-builds' },
+      h('div', { class: 'dg-tile sim-build sim-new', onclick: (ev) => { if (!ev.target.closest('.sim-new-import')) rbpOpen(null); } },
+        h('button', { type: 'button', class: 'sim-new-main' },
+          h('span', { class: 'sim-new-plus', 'aria-hidden': 'true' }, icon('plus')),
+          h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: 'New build' }),
+            h('span', { class: 'dgt-line', text: ks && ks.x ? `Continue where you left off: ${ks.name}, not saved yet` : 'Pick any demon, or import one from your COMP' }))),
+        h('button', { type: 'button', class: 'btn btn-sm btn-ghost sim-new-import', 'data-tip': 'Paste a code another player shared with you', onclick: () => rbpImportOpen() },
+          h('span', { class: 'btn-icon', 'aria-hidden': 'true' }, icon('download')), 'Import build')),
+      builds.map(rbpCard)));
+    page.append(h('p', { class: 'note', text: builds.length
+      ? 'A saved build keeps every change you make to it. Each card says which demon it is for and what is planned.'
+      : 'No saved builds yet. Start a new one and press “Save build”: it then shows up here and under Demon Planner in the left bar.' }));
+    return page;
+  }
+  /** The planner's top line: back to the builds, the build's name, and what can be done with it. */
+  function rbpTitleBar() {
+    const U = S.rbp, bar = h('div', { class: 'sim-title' });
+    function draw() {
+      const back = h('button', { type: 'button', class: 'btn btn-ghost sim-back', 'data-tip': 'All your demon builds', onclick: rbpGoHome }, h('span', { class: 'chev' }, icon('chevron')), 'Builds');
+      if (!U.id && !U.naming) {
+        simFill(bar, back, h('b', { class: 'sim-name-text', text: 'New build' }), h('span', { class: 'card-sub', text: 'not saved' }),
+          h('button', { type: 'button', class: 'btn btn-primary', 'data-tip': 'Keep this build: it gets a name, a card and a line under Demon Planner', onclick: () => { U.naming = true; draw(); } }, 'Save build…'),
+          h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Share this build', 'data-tip': 'Share: a code another player can import', onclick: () => rbpShare(rbpBuildOf(), '') }, icon('share')));
+        return;
+      }
+      if (!U.id) {
+        const input = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: rbpNewName(), 'aria-label': 'Name of the build', spellcheck: 'false' });
+        const save = () => {
+          const name = input.value.replace(/\s+/g, ' ').trim();
+          if (!name) { input.focus(); return; }
+          rbpSaveDraft(name); draw();
+          toast('ok', `Saved “${U.name}”`, 'It keeps every change you make to it from now on.', 4000);
+        };
+        input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') save(); else if (ev.key === 'Escape') { ev.stopPropagation(); U.naming = false; draw(); } });
+        simFill(bar, back, input, h('button', { type: 'button', class: 'btn btn-primary', onclick: save }, 'Save'),
+          h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => { U.naming = false; draw(); } }, 'Cancel'));
+        input.focus(); input.select();
+        return;
+      }
+      const name = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: U.name, 'aria-label': 'Name of the build', 'data-tip': 'Click to rename', spellcheck: 'false' });
+      name.addEventListener('input', () => {
+        const v = name.value.replace(/\s+/g, ' ').trim();
+        if (!v) return;
+        U.name = v; rbpSave(); drawRbpNav();
+      });
+      name.addEventListener('change', () => { if (!name.value.trim()) name.value = U.name; });
+      name.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') name.blur(); });
+      U.statusEl = h('span', { class: 'card-sub', role: 'status', 'data-tip': 'A saved build keeps every change as you make it' });
+      simFill(bar, back, name, U.statusEl,
+        U.confirmDel
+          ? [h('span', { class: 'card-sub', text: 'Delete this build?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => rbpDelete(U.id) }, 'Delete'),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { U.confirmDel = false; draw(); } }, 'Keep')]
+          : [h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Share this build', 'data-tip': 'Share: a code another player can import', onclick: () => rbpShare(rbpBuildOf(), U.name) }, icon('share')),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Duplicate this build', 'data-tip': 'Duplicate: a copy to change freely', onclick: () => rbpDuplicate(rbpBuildOf(), true) }, icon('copy')),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Delete this build', 'data-tip': 'Delete this build', onclick: () => { U.confirmDel = true; draw(); } }, icon('trash'))]);
+      rbpStatus();
+    }
+    draw();
+    return bar;
+  }
+  /** A COMP demon's Demon Database entry, and whether its type is a Mitama-fused one; null when the database has none. */
+  function rbpResolve(c) {
+    const d = S.ddb.data, F = S.fus.eng && S.fus.eng.F;
+    if (!d) return null;
+    let x = d.demons.find((q) => q.id === c.type), fused = false;
+    if (!x && F) {   // a Mitama-fused type: the Fusion Planner's data says which demon it is the form of
+      const f = F.demons.find((row) => row[8] === c.type);
+      if (f) { x = d.demons.find((q) => q.id === f[0]) || d.demons.find((q) => q.name === f[1] && q.race === (F.races[f[2]] || '') && q.level === f[4]); fused = !!x; }
+    }
+    if (!x && c.type > 10000) {   // an event demon the Fusion Planner doesn't list (Santa Black Frost...): the server's Mitama type is its id + 10000
+      x = d.demons.find((q) => q.id === c.type - 10000 && q.mt);
+      fused = !!x;
+    }
+    return x ? { x, fused } : null;
   }
   /** Whether "Any demon" offers it: it has a Mitama form (the only demons the server Mitama-fuses) and the player can get it. */
   const rbpPlannable = (x) => !!x.mt && ddbCanOwn(x);
@@ -7060,7 +7452,22 @@
   /** Conversion points the ranks are worth when extracted (REUNION_RANK_POINTS, summed up to each rank). */
   function rbpConversion(P, ranks) { return ranks.reduce((s, r) => { let v = 0; for (let p = 0; p <= Math.min(r, 9); p++) v += P.rankPoints[p]; return s + v; }, 0); }
   /** Stats at a level: growth type, rebirth ranks, then the Mitama parts, as the server works them out (see the top of this section). */
-  function rbpStats(P, base, growthId, L, ranks, mit) {
+  /**
+   * The server's stat changes from skills (ActiveEntityState::AdjustStats): per stat, the percents of layer 1 (type 1),
+   * then the flat amounts (type 0), then the percents of layer 2 (type 2), each percent `x + trunc(x × sum / 100)` and
+   * -100% or less making it 0. `adj`: [CorrectTbl id, type, value, per level] (rbp-effects.json); only the ids in `only`.
+   */
+  function rbpAdjust(s, adj, L, only) {
+    const sums = new Map();
+    adj.forEach(([id, type, v, lv]) => {
+      const k = RBP_STAT_IDX[id];
+      if (k === undefined || !only(id) || type > 2 || (type > 0 && !v)) return;
+      const e = sums.get(k) || [0, 0, 0]; e[type === 0 ? 1 : type === 1 ? 0 : 2] += lv ? v * L : v; sums.set(k, e);
+    });
+    const pct = (x, p) => (p <= -100 ? 0 : x + Math.trunc(x * p * 0.01));
+    sums.forEach(([p1, n, p2], k) => { let x = s[k]; if (p1) x = pct(x, p1); x += Math.trunc(n); if (p2) x = pct(x, p2); s[k] = x; });
+  }
+  function rbpStats(P, base, growthId, L, ranks, mit, adj) {
     const s = base.slice(), g = P.growth[String(growthId)];
     if (g) {
       const boost = Math.floor((L + 3) / 4), stage = Math.floor((boost - 1) / 5);
@@ -7078,6 +7485,8 @@
       (K.ranks[Math.max(0, Math.min(12, mit.rank))] || []).forEach(([id, label, b]) => { const v = Math.round(L / 99 * Math.ceil(1.25 * b * b + b)); if (v && id <= 5) s[id] += v; else if (v) mode2.push([id, label, v]); });
       mit.slots.forEach((id) => { const sb = P.mitama.kinds.flatMap((k) => k.slots).find((q) => q[0] === id); if (!sb) return; const [, st, label, v] = sb; if (st <= 5) s[st] += v; else mode2.push([st, label, v]); });
     }
+    // the skills' changes to STR ... LUCK come before the stats that depend on them (RecalculateDemonStats: base mode first)
+    if (adj && adj.length) rbpAdjust(s, adj, L, (id) => id <= 5);
     const [str, mag_, vit, int_] = s, hp = s[6], mp = s[7];
     const out = s.slice();
     out[6] = hp + Math.ceil(hp * 0.03 * L) + Math.ceil(str * 0.3) + Math.ceil((hp * 0.01 + 0.5) * vit);
@@ -7095,6 +7504,8 @@
       setLines.push({ set, text: rbpBoostText(mit.boost ? set.exText : set.text) });
     });
     void addPart;
+    // then the rest (Max HP/MP, CLS-R, LNG-R, Spell, Support, P.Def, M.Def) on the worked-out stats, after the Mitama's
+    if (adj && adj.length) rbpAdjust(s2, adj, L, (id) => id > 5);
     return { stats: s2, mag, other, setLines };
   }
   const RBP_KINDS = ['Ara', 'Nigi', 'Kusi', 'Saki'];
@@ -7286,8 +7697,7 @@
   function rbpFormType(D, endFused) {
     if (D.comp && (D.fused || !endFused)) return D.comp.type;
     if (!endFused || D.fused) return D.x.id;
-    const F = S.fus.eng && S.fus.eng.F, f = F && F.demons.find((r) => r[0] === D.x.id);
-    return f ? f[8] : 0;
+    return rbpMtType(D);   // the equipment step's: the Fusion Planner's row, else the usual + 10000
   }
   /** How many slots a demon type opens (force.slots lists the types under 8; an unknown type: 8). */
   const rbpForceCount = (P, type) => { const n = type ? P.force.slots[String(type)] : undefined; return typeof n === 'number' ? n : P.force.max; };
@@ -7392,20 +7802,187 @@
     if (next) { next.focus(); ev.preventDefault(); }
   });
   $('#main').addEventListener('scroll', () => { if (rbpForceMenu.matches(':popover-open')) rbpForceMenu.hidePopover(); });
+
+  // ---- the Demon equipment step (user, 2026-11-27: under the skills) ----
+  // A demon wears up to 4 Epitaph Parts, one per feature (trait) slot: a part worn in a slot replaces that slot's
+  // feature with the part's own skill (comp_hack CharacterManager::GetTraitSkills). The server refuses a part on a
+  // feature marked fixed, and a part that shares an exclusion group with what the other three slots hold (their
+  // features, or the parts worn there): packets\game\DemonEquip.cpp. rebirth-planner.json `equipment` carries the
+  // tables. The step plans the demon it ends as: the Mitama form's features when the fusion is planned. The picks are
+  // kept with the plan (`plan.equip`: the demon they were made for and the 4 item ids); a COMP demon starts from the
+  // parts BABEL last read on it.
+  const RBP_EQ_SLOTS = 4;
+  let rbpEqItems = null, rbpEqFrom = null;
+  /** The equipment items by id: { id, skill, name, skillName, desc, groups, hay }. */
+  function rbpEqById(P) {
+    const E = P && P.equipment;
+    if (!E) return null;
+    if (rbpEqFrom !== E) {
+      rbpEqItems = new Map(E.items.map(([id, skill, name, skillName, desc]) => {
+        const rule = E.rules[String(skill)], groups = rule ? rule[1] : [];
+        const gnames = groups.map((g) => E.groups[String(g)]).filter(Boolean);
+        return [id, { id, skill, name, skillName, desc: desc || '', groups, gnames, hay: [name, skillName, ...gnames, desc || ''].join(' ').toLowerCase() }];
+      }));
+      rbpEqFrom = E;
+    }
+    return rbpEqItems;
+  }
+  /** The Mitama form's demon type, from the Fusion Planner's data (its row's column 8). */
+  function rbpMtType(D) { const F = S.fus.eng && S.fus.eng.F, f = F && F.demons.find((r) => r[0] === D.x.id); return f ? f[8] : D.x.mt ? D.x.id + 10000 : 0; }   // demons the Fusion Planner doesn't list (events) follow id + 10000
+  /** The 4 feature slots (skill ids, 0 = none) of the demon as it ends: the Mitama form's when it is or will be fused. */
+  function rbpTraitSlots(P, D, endFused) {
+    const type = endFused ? (D.fused && D.comp ? D.comp.type : rbpMtType(D)) : D.x.id;
+    const gap = P.equipment && type ? P.equipment.traitSlots[String(type)] : null;
+    if (gap) return gap.slice(0, RBP_EQ_SLOTS);
+    const list = ((endFused && D.x.mt ? D.x.mt.traits : D.x.traits) || []).slice(0, RBP_EQ_SLOTS);
+    while (list.length < RBP_EQ_SLOTS) list.push(0);
+    return list;
+  }
+  const rbpEqKey = (D, endFused) => `${rbpSkillKey(D)}${endFused ? ':end-mt' : ''}`;
+  /** The plan's 4 parts for this demon (what BABEL last read on a COMP demon until the player changes them). */
+  function rbpEquip(plan, D, endFused) {
+    const key = rbpEqKey(D, endFused);
+    if (!plan.equip || plan.equip.key !== key || !Array.isArray(plan.equip.slots)) {
+      const read = D.comp && Array.isArray(D.comp.equipment) ? D.comp.equipment.slice(0, RBP_EQ_SLOTS).map((v) => Math.max(0, n0(v))) : [];
+      while (read.length < RBP_EQ_SLOTS) read.push(0);
+      plan.equip = { key, slots: read, touched: false };
+    }
+    return plan.equip.slots;
+  }
+  /** A feature's name, text and picture (the Demon Database's; the game has no picture for most features). */
+  function rbpTrait(id) {
+    const d = S.ddb.data && S.ddb.data.skills[id];
+    return d ? { id, name: d.name, desc: d.desc || '', icon: d.icon } : { id, name: `Feature ${id}`, desc: '', icon: null };
+  }
+  /** What slot `i` would hold with part `item` there: the part's skill, else the slot's feature. */
+  const rbpSlotSkill = (byId, traits, equip, i) => (equip[i] && byId.get(equip[i]) ? byId.get(equip[i]).skill : traits[i]);
+  /**
+   * Whether part `item` can go in slot `at`, as the server checks it: the slot's feature is not fixed, and no other slot
+   * holds a skill sharing an exclusion group with the part. Returns null when it can, else why not ({ fixed } or
+   * { clash: the other slot's name, group }).
+   */
+  function rbpEqBlock(P, byId, traits, equip, at, item) {
+    const E = P.equipment, it = byId.get(item);
+    if (!it) return null;
+    const own = E.rules[String(traits[at])];
+    if (traits[at] && own && own[0]) return { fixed: true };
+    const mine = new Set(it.groups);
+    for (let i = 0; i < RBP_EQ_SLOTS; i++) {
+      if (i === at) continue;
+      const sk = rbpSlotSkill(byId, traits, equip, i), r = sk ? E.rules[String(sk)] : null;
+      const g = r ? r[1].find((x) => mine.has(x)) : 0;
+      if (g) return { clash: equip[i] && byId.get(equip[i]) ? byId.get(equip[i]).name : rbpTrait(traits[i]).name, group: E.groups[String(g)] || `group ${g}`, slot: i };
+    }
+    return null;
+  }
+  const rbpEqPic = (id, size) => { const name = rbpIcons()[`item${id}`]; return name && S.meta.skillIcons ? h('img', { class: 'rbp-eqimg', src: S.meta.skillIcons + name + '.png', alt: '', width: size, height: size, loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null; };
+  /** The game's text when it is in English (195 of the parts still have the client's Japanese one), else the group names. */
+  const rbpEqText = (it) => (/[぀-ヿ一-鿿]/.test(it.desc) ? it.gnames.join(', ') : it.desc.replace(/\s*\n\s*/g, ' ').trim());
+  /** Where a part comes from in the game: the Item Database's first lines (it loads with the first part planned). */
+  function rbpEqWhere(id) {
+    if (S.gdb.state !== 'ready') return S.gdb.state === 'failed' ? '' : 'Looking up where it comes from…';
+    const it = S.gdb.data.items.find((x) => x.id === id && !x.keyItem);
+    // the ways as the Item Database words them ("Chest: Suginami Tunnels (5%)"), the same place once, then its quests
+    const ways = it ? [...new Set([...it.get.filter((g) => !g.d).map((g) => `${g.k ? `${g.k}: ` : ''}${g.t}${g.s ? ` · ${g.s}` : ''}`), ...it.quests.map((q) => `Quest: ${q}`)])] : [];
+    if (!ways.length) return 'The game data does not say where it comes from';
+    return ways.length > 2 ? `${ways.slice(0, 2).join('; ')}; or ${ways.length - 2} more ways (Item Database)` : ways.join('; or ');
+  }
+  /** The Demon equipment step: the 4 feature slots, what each holds now and the part planned there. */
+  function rbpEquipCard(P, plan, D, endFused, step) {
+    const card = h('div', { class: 'card rbp-equip' });
+    const byId = rbpEqById(P);
+    const formName = endFused && D.x.mt && D.x.mt.name ? D.x.mt.name : D.name;
+    card.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: step }), h('span', { class: 'card-title', text: 'Demon equipment' })),
+      plan.equip && plan.equip.touched ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': D.comp ? 'Back to the parts BABEL last read on the demon' : 'Back to no parts', onclick: () => { plan.equip = null; rbpSave(); render(); } }, D.comp ? 'Back to what it wears' : 'Clear') : null));
+    if (!byId) { card.append(h('p', { class: 'note', text: 'The planner data has no demon equipment tables: rebuild rebirth-planner.json.' })); return card; }
+    const traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
+    if (equip.some(Boolean) && S.gdb.state === 'idle') loadGearDb();
+    card.append(h('p', { class: 'note rbp-how', text: `A demon wears up to ${RBP_EQ_SLOTS} Epitaph Parts, one per feature slot: a part replaces that slot’s feature with its own. Parts with a similar effect can’t be worn together (the game’s rule), so a part that clashes with another slot is greyed out in the list.${endFused && !D.fused ? ` These are the features of ${formName}, the form it ends as after the Mitama fusion.` : ''}` }));
+    const rows = traits.map((tr, i) => {
+      const it = equip[i] ? byId.get(equip[i]) : null, T = tr ? rbpTrait(tr) : null;
+      const block = it ? rbpEqBlock(P, byId, traits, equip, i, it.id) : null;
+      const slot = h('button', { type: 'button', class: 'rbp-skillslot rbp-eqslot' + (it ? ' swapped' : ' empty') + (block ? ' bad' : ''), popovertarget: 'rbp-equip-menu', 'aria-haspopup': 'menu',
+        'aria-label': it ? `Slot ${i + 1}: ${it.name}` : `Slot ${i + 1}: ${T ? T.name : 'no feature'}`, 'data-tip': it ? `${it.name}\n${rbpEqText(it)}` : 'Click to pick a part for this slot',
+        onclick: (ev) => { rbpEqFor = ev.currentTarget; rbpEqSlot = i; } }, it ? (rbpEqPic(it.id, 40) || h('span', { class: 'rbp-skillpic rbp-skillnone', text: '?' })) : h('span', { class: 'rbp-skillpic rbp-skillnone', text: '+' }));
+      const feat = T ? h('span', { class: 'rbp-eqfeat' + (it ? ' covered' : ''), 'data-tip': T.desc || null, tabindex: T.desc ? 0 : null }, T.name) : h('span', { class: 'rbp-eqfeat none', text: 'no feature' });
+      const text = it
+        ? h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }),
+          T ? h('small', { class: 'rbp-skillfrom' }, 'in place of ', feat) : h('small', { class: 'rbp-skillfrom', text: 'in a slot with no feature' }), block ? h('small', { class: 'rbp-eqbad', text: block.fixed ? 'This feature can’t be covered' : `Can’t be worn with ${block.clash} (${block.group})` }) : null,
+          h('small', { class: 'rbp-skillfrom got', text: rbpEqWhere(it.id) }))
+        // the feature as it is: its name and the game's description of it (user, 2026-11-27: not just "its own feature")
+        : h('span', { class: 'rbp-skilltext' }, T ? h('b', { text: T.name }) : h('span', { class: 'src-count', text: 'No feature in this slot' }),
+          T ? h('span', { class: 'src-count rbp-eqdesc', text: T.desc ? T.desc.replace(/\s*\n\s*/g, ' ').trim() : 'its own feature (the game data has no description)' }) : h('small', { class: 'rbp-skillfrom', text: 'a part here adds its skill' }));
+      return h('li', { class: 'rbp-skillrow rbp-eqrow' + (it ? ' swapped' : '') }, slot, text);   // no slot number (user, 2026-11-27): the square leads the row
+    });
+    card.append(h('ul', { class: 'gdb-list rbp-skilllist rbp-eqlist' }, rows));
+    return card;
+  }
+  // the part picker: a popover beside the slot clicked, with a search over every part
+  const rbpEqMenu = $('#rbp-equip-menu');
+  let rbpEqFor = null, rbpEqSlot = 0;
+  function drawRbpEquip() {
+    const list = $('#rbp-equip-list'), q = ($('#rbp-equip-search input').value || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+    const P = S.rbp.P, plan = rbpPlan(), D = rbpDemon(), byId = rbpEqById(P);
+    if (!D || D.missing || !byId) { list.replaceChildren(); return; }
+    const endFused = rbpEndFused(P, plan, D), traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
+    const pick = (id) => { equip[rbpEqSlot] = id; plan.equip.touched = true; rbpSave(); rbpEqMenu.hidePopover(); render(); };
+    const all = [...byId.values()].filter((it) => words.every((w) => it.hay.includes(w)));
+    const rows = all.map((it) => ({ it, block: rbpEqBlock(P, byId, traits, equip, rbpEqSlot, it.id) }));
+    const rank = (it) => (q && it.name.toLowerCase().replace(/^epitaph parts\s*/, '').replace(/^[[【]/, '').startsWith(q) ? 0 : 1);
+    rows.sort((a, b) => (a.block ? 1 : 0) - (b.block ? 1 : 0) || rank(a.it) - rank(b.it) || a.it.name.localeCompare(b.it.name));
+    const shown = rows.slice(0, 80);
+    const tr = traits[rbpEqSlot], T = tr ? rbpTrait(tr) : null;
+    const items = [];
+    if (equip[rbpEqSlot]) items.push(h('button', { type: 'button', class: 'char', onclick: () => pick(0) }, h('span', { class: 'dm-icon dm-none dm-off', text: '–' }),
+      h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: T ? `Keep the feature ${T.name}` : 'Take the part off' }))));
+    items.push(h('div', { class: 'list-head', text: T ? `Slot ${rbpEqSlot + 1}: in place of ${T.name}` : `Slot ${rbpEqSlot + 1}: no feature` }));
+    shown.forEach(({ it, block }) => items.push(h('button', { type: 'button', class: 'char' + (block ? ' rbp-eqoff' : ''), 'aria-disabled': block ? 'true' : null, 'aria-current': equip[rbpEqSlot] === it.id ? 'true' : null,
+      'data-tip': block ? (block.fixed ? 'This slot’s feature can’t be covered' : `Can’t be worn with ${block.clash} in slot ${block.slot + 1}: both are ${block.group}`) : it.desc || null,
+      onclick: () => { if (!block) pick(it.id); } },
+      h('span', { class: 'dm-icon rbp-dm-icon' }, rbpEqPic(it.id, 32)), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: it.name }), h('span', { class: 'char-line', text: rbpEqText(it) || it.skillName })),
+      block ? h('span', { class: 'tag tag-off', text: block.fixed ? 'fixed feature' : `clashes · slot ${block.slot + 1}` }) : equip.includes(it.id) ? h('span', { class: 'tag', text: 'worn' }) : null)));
+    list.replaceChildren(...items);
+    const free = rows.filter((r) => !r.block).length;
+    $('#rbp-equip-note').textContent = !all.length ? 'No part matches.' : `${free} of ${all.length} can go here${rows.length > shown.length ? `; ${shown.length} shown: type more to narrow it` : ''}.`;
+    simPlace(rbpEqMenu, rbpEqFor);
+  }
+  rbpEqMenu.addEventListener('toggle', (ev) => {
+    if (ev.newState !== 'open') return;
+    const inp = $('#rbp-equip-search input'); inp.value = ''; drawRbpEquip(); inp.focus();
+  });
+  $('#rbp-equip-search input').addEventListener('input', () => drawRbpEquip());
+  $('#rbp-equip-search input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { const b = $('#rbp-equip-list .char:not([aria-disabled])'); if (b) b.click(); ev.preventDefault(); } else if (ev.key === 'ArrowDown') { const b = $('#rbp-equip-list .char'); if (b) { b.focus(); ev.preventDefault(); } } });
+  rbpEqMenu.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    const rows = [...rbpEqMenu.querySelectorAll('.char')], i = rows.indexOf(document.activeElement);
+    const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
+    if (next) { next.focus(); ev.preventDefault(); }
+  });
+  $('#main').addEventListener('scroll', () => { if (rbpEqMenu.matches(':popover-open')) rbpEqMenu.hidePopover(); });
+  /** Whether the demon ends Mitama-fused: it is now, or the plan fuses it and the ranks before reach the 48 points. */
+  function rbpEndFused(P, plan, D) {
+    if (D.fused) return true;
+    if (plan.view === 'boosts') return !!D.x.mt;   // "Pick boosts first" always plans the fusion
+    if (!plan.fuse || !D.x.mt) return false;
+    const onRune = P.runeOf.has(D.growth) ? P.runeOf.get(D.growth) : -1, defaultRune = P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1;
+    const pre = rbpSteps(P, D.ranks, onRune, D.level, plan.pre, plan.last, 1);
+    return rbpPoints(pre.ranks, defaultRune) >= 48;
+  }
   function pageRebirth() {
     const U = S.rbp, page = h('div', { class: 'page page-rbp' });
     loadRebirth();
+    if (U.view === 'home') return rbpHome(page);
+    page.append(h('div', { class: 'page-head sim-head' }, rbpTitleBar()));
     page.append(pageHead('Plan a demon’s rebirths and its Mitama: set the rank of each rune, fuse it with a Mitama, fill its slots, and see what it costs and what the demon becomes.',
       h('div', { class: 'rbp-headright' },
         h('div', { class: 'seg', role: 'group', 'aria-label': 'How to plan' },
           [['runes', 'Plan the runes'], ['boosts', 'Pick boosts first']].map(([id, label]) =>
             h('button', { type: 'button', 'aria-pressed': String((rbpPlan().view || 'runes') === id), 'data-tip': id === 'runes' ? 'Set each rune’s rank, the fusion and the slots yourself' : 'Pick the Mitama set boosts you want; the ranks, Mitamas and costs follow from them (an experiment)',
               onclick: () => { rbpPlan().view = id; rbpSave(); render(); } }, label))),
-        h('div', { class: 'seg', role: 'group', 'aria-label': 'Start from' },
-          [['db', 'Any demon'], ['comp', 'My COMP']].map(([id, label]) =>
-            h('button', { type: 'button', 'aria-pressed': String(U.src === id), 'data-tip': id === 'db' ? 'A fresh demon from the Demon Database: no ranks, no Mitama' : 'One of your COMP demons as last read from the game, with its rebirth ranks and Mitama slots',
-              onclick: () => { U.src = id; store.set('rbp-src', id); render(); } }, label))),
-        h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Back to no targets, no fusion, no Mitamas', onclick: () => { U.plan = null; store.set('rbp-plan', ''); render(); } }, 'Reset the plan'))));
+        h('button', { type: 'button', class: 'btn btn-sm sim-import', popovertarget: 'rbp-import', 'aria-haspopup': 'menu',
+          'data-tip': 'Plan one of your COMP demons as last read from the game, with its rebirth ranks and Mitama slots. Nothing of the demon is changed',
+          onclick: (ev) => { rbpImportFor = ev.currentTarget; } }, 'Import demon', h('span', { class: 'chev down' }, icon('chevron'))),
+        h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Back to no targets, no fusion, no Mitamas', onclick: () => { U.plan = rbpPlanFrom(null); rbpSave(); render(); } }, 'Reset the plan'))));
     if (U.state !== 'ready' || S.ddb.state !== 'ready' || S.fus.state === 'loading' || S.fus.state === 'idle' || S.dcm.state === 'loading' || S.dcm.state === 'idle') {
       page.append(h('p', { class: 'note', text: U.state === 'failed' ? 'The planner data could not be loaded (rebirth-planner.json is missing beside the page).' : S.ddb.state === 'failed' ? 'The demon list could not be loaded (demon-db.json is missing beside the page).' : 'Loading the rebirth tables…' }));
       return page;
@@ -7414,7 +7991,7 @@
     const D = rbpDemon();
     page.append(rbpDemonCard(P, plan, d, D));
     if (!D || D.missing) {
-      page.append(h('p', { class: 'note', text: D && D.missing ? `${D.missing.name} isn’t in the Demon Database, so it can’t be planned here.` : U.src === 'comp' ? 'Pick one of your demons above.' : 'Pick a demon above to start planning.' }));
+      page.append(h('p', { class: 'note', text: D && D.missing ? `${D.missing.name} isn’t in the Demon Database, so it can’t be planned here.` : U.src === 'comp' ? 'Import one of your demons at the top right, or pick any demon above.' : 'Pick a demon above, or import one of your COMP demons at the top right, to start planning.' }));
       return page;
     }
     // ---- the phases: rebirths before the Mitama fusion (none for a demon already fused), the fusion, rebirths after it, the slots ----
@@ -7427,7 +8004,8 @@
     }
     const main = h('div', { class: 'rbp-main' }), side = h('div', { class: 'rbp-side' });
     let pre = null, points, mitamaRank, fused = D.fused, kind = D.kind, postCur, postOn, postLevel, step = 1;
-    main.append(rbpSkillsCard(P, plan, D, step++));   // the skills first (user, 2026-11-27)
+    main.append(rbpSkillsCard(P, plan, D, step++));   // the skills first (user, 2026-11-27), then the equipment of the demon it ends as
+    main.append(rbpEquipCard(P, plan, D, rbpEndFused(P, plan, D), step++));
     if (!D.fused) {
       pre = rbpSteps(P, D.ranks, onRune, D.level, plan.pre, plan.last, xpMult);
       points = rbpPoints(pre.ranks, defaultRune);
@@ -7518,13 +8096,14 @@
   function rbpBoostsView(P, plan, D, ctx) {
     const R = rbpDerive(P, plan, D, ctx);
     const main = h('div', { class: 'rbp-main' }), side = h('div', { class: 'rbp-side' });
-    main.append(rbpSkillsCard(P, plan, D, 1));   // the skills first (user, 2026-11-27)
+    main.append(rbpSkillsCard(P, plan, D, 1));   // the skills first (user, 2026-11-27), then the equipment
+    main.append(rbpEquipCard(P, plan, D, D.fused || !!D.x.mt, 2));   // this view always plans the Mitama fusion
     // ---- the picker ----
     const card = h('div', { class: 'card rbp-boosts' });
     const q = (S.rbp.boostQ || '').trim().toLowerCase();
     const search = h('input', { class: 'input', type: 'search', placeholder: 'Search a boost (fire, null, LB, regen…)', value: S.rbp.boostQ || '', 'aria-label': 'Search a boost', spellcheck: 'false',
       oninput: (ev) => { S.rbp.boostQ = ev.target.value; const words = ev.target.value.trim().toLowerCase().split(/\s+/).filter(Boolean); rows.querySelectorAll('.rbp-set').forEach((c) => { const hit = words.length && words.every((w) => c.dataset.hay.includes(w)); c.classList.toggle('hit', !!hit); c.classList.toggle('miss', !!words.length && !hit); }); } });
-    card.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '2' }), h('span', { class: 'card-title', text: 'The boosts you want' })),
+    card.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '3' }), h('span', { class: 'card-title', text: 'The boosts you want' })),
       plan.picks.length ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { plan.picks = []; rbpSave(); render(); } }, 'Clear') : null));
     // the search, and at the end of its row the Iron Man tick (the expertise skill that makes every set stronger)
     card.append(h('div', { class: 'rbp-searchrow' }, h('div', { class: 'search' }, icon('search'), search),
@@ -7563,7 +8142,7 @@
     main.append(card);
     // ---- what it takes ----
     const take = h('div', { class: 'card rbp-take' });
-    take.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '3' }), h('span', { class: 'card-title', text: 'What it takes' })),
+    take.append(h('div', { class: 'card-head' }, h('span', { class: 'rbp-title' }, h('i', { class: 'rbp-step', text: '4' }), h('span', { class: 'card-title', text: 'What it takes' })),
       plan.picks.length && !R.warnings.length ? h('button', { type: 'button', class: 'btn btn-sm btn-primary', 'data-tip': 'Copy these ranks, the fusion and the Mitamas into the rune planner to fine-tune them',
         onclick: () => { if (R.preRanks) { plan.pre = R.preRanks.slice(); plan.last = R.preLast; } plan.fuse = true; plan.kind = R.kind; plan.post = R.postRanks.slice(); plan.postLast = R.postLast; plan.slots = {}; R.counts.forEach((c, i) => { plan.slots[i] = { counts: c.slice() }; }); plan.view = 'runes'; rbpSave(); render(); } }, 'Open in the rune planner') : null));
     if (!plan.picks.length) { take.append(h('p', { class: 'note', text: 'Tick the boosts you want above. The ranks, the Mitamas and the costs follow.' })); main.append(take); }
@@ -7596,7 +8175,7 @@
       }
       main.append(take);
     }
-    main.append(rbpForceCard(P, plan, D, D.fused || !!D.x.mt, 4));   // after what it takes (the fusion this view always plans)
+    main.append(rbpForceCard(P, plan, D, D.fused || !!D.x.mt, 5));   // after what it takes (the fusion this view always plans)
     main.append(rbpSummaryCard(P, plan, D, R.pre, R.post, R.fused, R.M));
     side.append(rbpResultCard(P, plan, D, R.pre, R.post, R.fused, R.kind, R.mitamaRank, R.M));
     return h('div', { class: 'rbp-cols' }, main, side);
@@ -7627,8 +8206,8 @@
     const src = D && D.comp && D.comp.icon ? D.comp.icon : x && x.icon ? x.icon : null;
     if (src) { const img = h('img', { src, alt: '' }); img.onerror = () => img.remove(); pic.append(img); }
     if (x && D.fused) mitamaMark(pic, true);
-    const label = U.src === 'comp' && U.compState !== 'ready' ? 'Looking for your demons…' : D && !D.missing ? D.name : D && D.missing ? D.missing.name : U.src === 'comp' ? 'Pick one of your demons' : 'Pick a demon';
-    const name = h('button', { type: 'button', class: 'name-btn', popovertarget: 'rbp-demons', 'aria-haspopup': 'menu', 'data-tip': U.src === 'comp' ? 'Pick one of your COMP demons' : 'Pick any demon from the Demon Database',
+    const label = U.src === 'comp' && U.compState !== 'ready' ? 'Looking for your demons…' : D && !D.missing ? D.name : D && D.missing ? D.missing.name : 'Pick a demon';
+    const name = h('button', { type: 'button', class: 'name-btn', popovertarget: 'rbp-demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick any demon from the Demon Database (or import one of your COMP demons at the top right)',
       onclick: (ev) => { rbpDemonsFor = ev.currentTarget; } }, label, h('span', { class: 'chev down' }, icon('chevron')));
     const id = h('div', { class: 'demon-id' }, h('h3', { class: 'demon-name' }, name));
     if (x) {
@@ -7641,8 +8220,9 @@
             ...P.mitama.kinds.map((K) => h('button', { type: 'button', class: 'rbp-kindchip', style: `--k:var(--mt-${K.type})`, 'aria-pressed': String(!(plan.view === 'boosts' && plan.kindAuto) && plan.kind === K.type),
               'data-tip': `${K.demonName}: the Mitama rank bonus raises ${(K.ranks[12] || []).map(([, l]) => l).join(', ')}`, onclick: () => { plan.kind = K.type; plan.kindAuto = false; rbpSave(); render(); } }, rbpKindIcon(K.type - 1), K.name)),
             plan.view === 'boosts' ? h('button', { type: 'button', class: 'rbp-kindchip rbp-kindauto', 'aria-pressed': String(!!plan.kindAuto), 'data-tip': 'The kind the picked boosts use most', onclick: () => { plan.kindAuto = true; rbpSave(); render(); } }, 'Auto') : null),
-        D.comp && D.known === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed this demon: its ranks and slots were not read. Open its status window in game and read the demons again.', text: 'Ranks not read' }) : h('span', { hidden: true }));
-    } else id.append(h('span', { class: 'tag tag-off', text: U.src === 'comp' ? 'Your COMP' : 'Demon Database' }));
+        D.comp && D.known === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed this demon: its ranks and slots were not read. Open its status window in game and read the demons again.', text: 'Ranks not read' }) : h('span', { hidden: true }),
+        D.comp ? h('span', { class: 'tag tag-off', 'data-tip': 'Imported from your COMP: its rebirth ranks and Mitama slots are the ones last read from the game', text: 'From your COMP' }) : null);
+    } else id.append(h('span', { class: 'tag tag-off', text: 'Demon Database' }));
     const inputs = h('div', { class: 'rbp-inputs' },
       h('label', { class: 'rbp-field', 'data-tip': 'The level the stats on the right are shown at' }, 'Stats at level', rbpNum(plan.level, 1, 99, (v) => { plan.level = v; plan.levelSet = true; rbpSave(); render(); })),
       h('label', { class: 'rbp-field', 'data-tip': 'Your XP bonus from gear and incense when you use the apples at Vivian: the apples’ XP goes up by it' }, 'XP bonus', rbpNum(plan.xpBonus, -90, 500, (v) => { plan.xpBonus = v; rbpSave(); render(); }), '%'));
@@ -7765,7 +8345,7 @@
     if (!D.x.mt) { card.append(h('p', { class: 'note', text: `${D.name} has no Mitama form: the game can’t fuse it with a Mitama.` })); return card; }
     if (points < 48) {
       card.append(h('div', { class: 'rbp-gate' },
-        h('p', { class: 'note', text: `The fusion needs 48 rank points; the rebirths above reach ${points}. Raise the ranks in step 1, or take the shortest way:` }),
+        h('p', { class: 'note', text: `The fusion needs 48 rank points; the rebirths above reach ${points}. Raise the ranks in step ${step - 1}, or take the shortest way:` }),
         h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every rune to rank 4 (48 rank points, Mitama rank 0), and the fusion planned', onclick: () => { for (let i = 0; i < 12; i++) plan.pre[i] = Math.max(D.ranks[i], 4); plan.fuse = true; rbpSave(); render(); } }, 'Every rune to rank 4, then fuse')));
       return card;
     }
@@ -7930,17 +8510,16 @@
     const I = rbpIcons();
     const raisedText = (ranks, from) => { const r = P.runes.map((R, i) => (ranks[i] > from[i] ? `${R.name} ${from[i] ? `${from[i]} → ` : ''}${ranks[i]}` : null)).filter(Boolean); return r.length ? `${r.length} ${r.length === 1 ? 'rune' : 'runes'} raised: ${r.join(', ')}` : 'no rune raised'; };
     const lines = [];   // [step, title, what, rebirths, apples, macca]
-    if (pre && pre.steps.length) lines.push([2, D.fused ? 'Rebirths' : 'Rebirths before the fusion', `${raisedText(pre.ranks, D.ranks)}; the demon ends on ${P.runes[pre.on] ? P.runes[pre.on].name : '—'}${pre.growth ? ` (${pre.growth.name})` : ''}. Each rebirth takes the demon to level 1; the apples bring it back to the next rank’s level at Vivian.`, pre.total.rebirths, pre.total.apples, pre.total.macca]);
-    if (fused && !D.fused) { const K = P.mitama.kinds[plan.kind - 1]; const pts = pre ? rbpPoints(pre.ranks, P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1) : 48; lines.push([3, 'Mitama fusion', `${D.name} fused with ${K ? K.demonName : 'a Mitama'} at the Cathedral: it becomes ${D.x.mt && D.x.mt.name ? D.x.mt.name : 'its Mitama form'} at Mitama rank ${Math.min(12, Math.floor((pts - 48) / 4))} (${pts} rank points). 50,000 macca, or 2,500 Kreuz for a sure success.`, 0, 0, 50000]); }
-    if (post && post.steps.length) lines.push([D.fused ? 3 : 5, D.fused ? 'Rebirths' : 'Rebirths after the fusion', `${raisedText(post.ranks, D.fused ? D.ranks : Array(12).fill(0))}; the demon ends on ${P.runes[post.on] ? P.runes[post.on].name : '—'}${post.growth ? ` (${post.growth.name})` : ''}. A Mitama-fused demon gets 60% less XP, so 2.5 × the apples.`, post.total.rebirths, post.total.apples, post.total.macca]);
-    if (M && M.pgs.some(Boolean)) lines.push([D.fused ? 3 : 5, 'Mitama slots', `${fmt(M.pgs.reduce((a, b) => a + b, 0))} Mitamas placed (${M.pgs.map((n, k) => (n ? `${n} ${RBP_KINDS[k]}` : null)).filter(Boolean).join(', ')}) for ${M.activeSets.length} ${M.activeSets.length === 1 ? 'set' : 'sets'}; each one costs (slots already filled on that rune + 1) × 50,000 macca.`, 0, 0, M.macca]);
+    if (pre && pre.steps.length) lines.push([3, D.fused ? 'Rebirths' : 'Rebirths before the fusion', `${raisedText(pre.ranks, D.ranks)}; the demon ends on ${P.runes[pre.on] ? P.runes[pre.on].name : '—'}${pre.growth ? ` (${pre.growth.name})` : ''}. Each rebirth takes the demon to level 1; the apples bring it back to the next rank’s level at Vivian.`, pre.total.rebirths, pre.total.apples, pre.total.macca]);
+    if (fused && !D.fused) { const K = P.mitama.kinds[plan.kind - 1]; const pts = pre ? rbpPoints(pre.ranks, P.runeOf.has(D.x.growth) ? P.runeOf.get(D.x.growth) : -1) : 48; lines.push([4, 'Mitama fusion', `${D.name} fused with ${K ? K.demonName : 'a Mitama'} at the Cathedral: it becomes ${D.x.mt && D.x.mt.name ? D.x.mt.name : 'its Mitama form'} at Mitama rank ${Math.min(12, Math.floor((pts - 48) / 4))} (${pts} rank points). 50,000 macca, or 2,500 Kreuz for a sure success.`, 0, 0, 50000]); }
+    if (post && post.steps.length) lines.push([D.fused ? 4 : 6, D.fused ? 'Rebirths' : 'Rebirths after the fusion', `${raisedText(post.ranks, D.fused ? D.ranks : Array(12).fill(0))}; the demon ends on ${P.runes[post.on] ? P.runes[post.on].name : '—'}${post.growth ? ` (${post.growth.name})` : ''}. A Mitama-fused demon gets 60% less XP, so 2.5 × the apples.`, post.total.rebirths, post.total.apples, post.total.macca]);
+    if (M && M.pgs.some(Boolean)) lines.push([D.fused ? 4 : 6, 'Mitama slots', `${fmt(M.pgs.reduce((a, b) => a + b, 0))} Mitamas placed (${M.pgs.map((n, k) => (n ? `${n} ${RBP_KINDS[k]}` : null)).filter(Boolean).join(', ')}) for ${M.activeSets.length} ${M.activeSets.length === 1 ? 'set' : 'sets'}; each one costs (slots already filled on that rune + 1) × 50,000 macca.`, 0, 0, M.macca]);
     const rebirths = lines.reduce((s, l) => s + l[3], 0), apples = lines.reduce((s, l) => s + l[4], 0), macca = lines.reduce((s, l) => s + l[5], 0), mitamas = M ? M.pgs.reduce((a, b) => a + b, 0) : 0;
     card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'What it all costs' }), h('span', { class: 'src-count', text: lines.length ? 'everything above, added up' : '' })));
-    // Demon Force items alone are a plan too: the card then lists only them (no rebirth, apple or macca totals)
-    const forceRead = rbpForceRead(D), byForceId = rbpForceById(P);
-    const forceOnly = !lines.length && !!(byForceId && plan.force && plan.force.slots.some((id, i) => id && id !== forceRead[i] && byForceId.has(id)));
-    if (!lines.length && !forceOnly) { card.append(h('p', { class: 'note', text: 'Nothing planned yet: set a rune’s target above.' })); return card; }
-    if (lines.length) card.append(h('div', { class: 'rbp-sum rbp-sum-big' },
+    const forceRead = rbpForceRead(D), byForceId = rbpForceById(P);   // the Demon Force items to get (below)
+    // no rebirth planned: the note, then still the skills and the demon equipment to get (under the totals' place)
+    if (!lines.length) card.append(h('p', { class: 'note', text: 'No rebirths planned yet: set a rune’s target above.' }));
+    else card.append(h('div', { class: 'rbp-sum rbp-sum-big' },
       rbpSumTile(rbpOrbs([0, 1, 11].map((i) => I[`rune${i}`]), 'rbp-orbs-runes'), rebirths, rebirths === 1 ? 'rebirth' : 'rebirths', { tip: 'Every rebirth of the plan, both phases' }),
       rbpSumTile(rbpCostIcon(I.apple), apples, 'apples', { tip: P.apple.name + 's at Vivian, 10,000 XP each plus your XP bonus' }),
       rbpSumTile(rbpCostIcon(I.macca, 'rbp-macca'), macca, 'macca', { tip: 'Rebirths, the fusion and the placed Mitamas together' }),
@@ -8035,6 +8614,16 @@
         gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'The skills on the bar that the demon does not learn itself: what each costs at an NPC (hover a picture for the item and how many), or who learns it for a fusion. The Soul Points of every priced skill are added up', tabindex: 0, text: `Skills to get · ${got.length}${sp ? ` · ${fmt(sp)} Soul Points` : ''}` }), h('ul', { class: 'gdb-list rbp-skilllist rbp-skillcosts' }, lines)));
       }
     }
+    // the demon equipment planned that the demon does not wear yet: each part's picture and where it comes from
+    {
+      const byId = rbpEqById(P), endFused = rbpEndFused(P, plan, D);
+      const worn = D.comp && Array.isArray(D.comp.equipment) ? D.comp.equipment.map(n0) : [];
+      const parts = byId ? rbpEquip(plan, D, endFused).filter((id) => id && byId.has(id) && !worn.includes(id)).map((id) => byId.get(id)) : [];
+      if (parts.length) gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'The Epitaph Parts planned in the equipment step that the demon does not wear yet, and where each comes from in the game (the Item Database has every way)', tabindex: 0, text: `Demon equipment to get · ${parts.length}` }),
+        h('ul', { class: 'gdb-list rbp-skilllist rbp-skillcosts' }, parts.map((it) => h('li', { class: 'rbp-skillcost' },
+          h('div', { class: 'rbp-skillrow' }, h('span', { class: 'skill-ico' }, rbpEqPic(it.id, 24)), h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }))),
+          h('div', { class: 'rbp-ways' }, h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-where', text: rbpEqWhere(it.id) }))))))));
+    }
     // the Demon Force items to use: every slot the plan fills with an effect the demon doesn't have there yet, as item
     // tiles (one per item, with how many), where each comes from in the tip
     if (byForceId && plan.force) {
@@ -8059,19 +8648,78 @@
     const res = post || pre;
     const growth = res && res.growth ? res.growth.growth : D.growth;
     const mit = fused ? { kind, rank: mitamaRank, slots: D.fused ? D.slots.filter(Boolean) : [], sets: M ? M.activeSets : [], boost: plan.boost } : null;
-    const r = rbpStats(P, form.stats, growth, L, ranks, mit);
+    const owned = rbpOwnedSkills(P, plan, D, fused), FX = S.rbp.fx || {};
+    const r = rbpStats(P, form.stats, growth, L, ranks, mit, owned.flatMap((o) => (FX[o.id] ? FX[o.id].adj : [])));
     const gname = P.growthNames[String(growth)] || `growth ${growth}`;
     card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: `Stats at level ${L}` }), h('span', { class: 'src-count', text: `${fused ? 'Mitama form · ' : ''}${gname}` })));
     const max = Math.max(1, ...d.statNames.map((n, i) => Math.max(plain[i], r.stats[i])));
     const rows = d.statNames.map((n, i) => { const a = plain[i], b = r.stats[i], delta = b - a; return h('tr', null, h('td', { text: n }), h('td', { class: 'num', text: fmt(a) }), h('td', { class: 'num rbp-planned', text: fmt(b) }), h('td', { class: 'num ' + (delta > 0 ? 'rbp-up' : delta < 0 ? 'rbp-down' : ''), text: delta ? fmt(delta, '', true) : '' })); });
     void max;
-    card.append(h('table', { class: 'tbl rbp-stats' }, h('thead', null, h('tr', null, h('th', { text: 'Stat' }), h('th', { class: 'num', 'data-tip': 'A fresh demon of this level on its own growth: no rebirth, no Mitama', text: 'Plain' }), h('th', { class: 'num', text: 'Planned' }), h('th', { class: 'num', text: 'Change' }))), h('tbody', null, rows)));
+    card.append(h('table', { class: 'tbl rbp-stats' }, h('thead', null, h('tr', null, h('th', { text: 'Stat' }), h('th', { class: 'num', 'data-tip': 'A fresh demon of this level on its own growth: no rebirth, no Mitama, and none of its skills, features or equipment counted (Planned counts them)', text: 'Plain' }), h('th', { class: 'num', text: 'Planned' }), h('th', { class: 'num', text: 'Change' }))), h('tbody', null, rows)));
     const lines = [];
     if (r.mag) lines.push(`Summon magnetite −${r.mag}%`);
     if (lines.length) card.append(h('p', { class: 'note', text: lines.join(' · ') }));
     if (r.setLines.length) card.append(h('ul', { class: 'rbp-setlines' }, r.setLines.map(({ set, text }) => h('li', null, h('b', { text: P.runes[set.rune].name }), ` ${text}`))));
-    card.append(h('p', { class: 'note', text: 'No Demon Force or familiarity; the random bonus of each planned Mitama is not added.' }));
+    card.append(rbpBoostList(owned, L));
+    card.append(h('p', { class: 'note', text: 'No Demon Force or familiarity; the random bonus of each planned Mitama is not added. Switch skills are left out (whether they are on is up to you).' }));
     return card;
+  }
+  /**
+   * What the planned demon holds that does something by itself: the passives on its skill bar, its features (the
+   * Mitama form's when it ends fused) and the parts worn in their place (a part's skill stands in for the feature,
+   * CharacterManager::GetTraitSkills). [{ id, kind: 'skill' | 'feature' | 'part', name }]
+   */
+  function rbpOwnedSkills(P, plan, D, endFused) {
+    const out = [];
+    rbpSkills(plan, D).forEach((id) => { if (id) out.push({ id, kind: 'skill', name: rbpSkill(id).name }); });
+    const byId = rbpEqById(P);
+    if (byId) {
+      const traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
+      traits.forEach((tr, i) => {
+        const it = equip[i] ? byId.get(equip[i]) : null;
+        if (it) out.push({ id: it.skill, kind: 'part', name: it.name });
+        else if (tr) out.push({ id: tr, kind: 'feature', name: rbpTrait(tr).name });
+      });
+    }
+    return out;
+  }
+  // who a boost reaches (TokuseiManager on a partner demon: PARTNER and SELF stay on the demon, SUMMONER goes to you)
+  const RBP_FX_GROUPS = [['demon', 'On the demon'], ['you', 'For you (its summoner)'], ['party', 'For the party']];
+  const rbpFxGroup = (target) => (target === 'SUMMONER' ? 'you' : target === 'PARTY' ? 'party' : 'demon');
+  /**
+   * Every boost of the demon's skills, features and parts that the stats table does not show (attack and affinity
+   * boosts, costs, cooldown, incantation, actions, resistances...), added up per kind of effect, grouped by who it
+   * reaches; one that needs something (a time, a skill kind) says what. The tip names where each part comes from.
+   */
+  function rbpBoostList(owned, L) {
+    const box = h('div', { class: 'rbp-fx' });
+    if (S.rbp.fxState !== 'ready') { box.append(h('p', { class: 'note', text: S.rbp.fxState === 'failed' ? 'The skills’ effects could not be loaded (rbp-effects.json is missing beside the page).' : 'Loading the skills’ effects…' })); return box; }
+    const FX = S.rbp.fx, by = new Map();
+    owned.forEach((o) => {
+      const S2 = FX[o.id];
+      if (!S2) return;
+      S2.fx.forEach(([label, value, pct, cond, note, target, lv, table]) => {
+        if (table) return;   // in the table above
+        const g = rbpFxGroup(target), n = (note || '').replace(/\s*;?\s*LvL × [\d.,]+/, '').replace(/^;\s*/, '').trim();
+        const key = [g, label, pct, cond === 'always' ? '' : n, value === null ? 'x' : ''].join('|');
+        const e = by.get(key) || { g, label, pct, cond, note: cond === 'always' ? '' : n, value: value === null ? null : 0, from: [] };
+        if (value !== null && e.value !== null) e.value += lv ? value * L : value;
+        e.from.push(`${o.name} (${o.kind === 'part' ? 'demon equipment' : o.kind}${value !== null ? `: ${fmt(lv ? value * L : value, pct ? '%' : '', true)}` : ''})`);
+        by.set(key, e);
+      });
+    });
+    const all = [...by.values()].filter((e) => e.value !== 0 || e.value === null);
+    box.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: 'Boosts' }), h('span', { class: 'src-count', text: all.length ? 'skills, features and equipment' : '' })));
+    if (!all.length) { box.append(h('p', { class: 'note', text: 'None beyond the stats above: the demon’s passives, features and parts change nothing else.' })); return box; }
+    RBP_FX_GROUPS.forEach(([g, title]) => {
+      const list = all.filter((e) => e.g === g).sort((a, b) => (a.cond === 'always' ? 0 : 1) - (b.cond === 'always' ? 0 : 1) || a.label.localeCompare(b.label));
+      if (!list.length) return;
+      box.append(h('div', { class: 'rbp-fxgroup' }, h('span', { class: 'q-key', text: title }),
+        h('ul', { class: 'rbp-fxlist' }, list.map((e) => h('li', { class: e.cond === 'always' ? '' : 'cond', tabindex: 0, 'data-tip': `From ${e.from.join(', ')}${e.note ? `\n${e.note}` : ''}${e.cond === 'unparsed' ? '\nThe game data gives no number for it' : ''}` },
+          h('span', { class: 'rbp-fxlabel', text: e.label }), e.value !== null ? h('b', { class: 'num', text: fmt(e.value, e.pct ? '%' : '', true) }) : null,
+          e.note ? h('small', { class: 'rbp-fxnote', text: e.note }) : null)))));
+    });
+    return box;
   }
 
   const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, guides: pageGuides, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };

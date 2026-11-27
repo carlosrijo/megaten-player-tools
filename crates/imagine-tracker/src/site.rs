@@ -92,6 +92,12 @@ impl Site {
                 return Some(Served { body: Cow::Borrowed(b), mime: mime_of("gear-db.json") });
             }
         }
+        // the Rebirth Planner's skill effects made with the sealed data (the repo's file is made without it)
+        if rel.len() == 1 && rel[0] == "rbp-effects.json" {
+            if let Some(b) = imagine::build::rebirth_planner::effects_bytes() {
+                return Some(Served { body: Cow::Borrowed(b), mime: mime_of("rbp-effects.json") });
+            }
+        }
         if let Some(dev) = &self.dev_ui {
             if let Some(s) = read_file(dev, &rel) {
                 return Some(s);

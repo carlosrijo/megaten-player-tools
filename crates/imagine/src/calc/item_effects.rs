@@ -39,6 +39,34 @@ pub const NEEDS_STATS_NOTE: &str = ": depends on your ";
 static ACTION_NAMES: [&str; 12] = ["Attack", "Spin", "Rush", "Shot", "Rapid", "Guard", "Counter", "Dodge", "Talk", "Intimidate", "Taunt", "Support"];
 
 /// An affinity number (skill affinity, and the element an AFFINITY_CAP_MAX raises) as the game names it; `None` if unknown.
+/// A demon family by its number (libcomp devildata.xml MiDCategoryData family, the names the Demon Database shows).
+pub fn demon_family_name(id: i32) -> Option<&'static str> {
+    const FAMILIES: [&str; 14] = ["", "Human", "God", "Aerial", "Guardian", "Demoniac", "Dragon", "Magica", "Bird", "Beast", "Evil Spirit", "Foul", "Elemental", "Machine"];
+    FAMILIES.get(usize::try_from(id).ok()?).copied().filter(|n| !n.is_empty())
+}
+
+/// The demons that carry a title (reference\devil-titles.tsv, from DevilData basic.title), for a DEMON_TITLE condition.
+pub fn demon_title_names(id: i32) -> Option<Vec<String>> {
+    static TITLES: std::sync::OnceLock<std::collections::HashMap<i32, Vec<String>>> = std::sync::OnceLock::new();
+    TITLES
+        .get_or_init(|| {
+            let mut m = std::collections::HashMap::new();
+            if let Ok(Some(lines)) = crate::data::game_data::reference_lines("devil-titles.tsv") {
+                for l in lines.iter().filter(|l| !l.is_empty() && !l.starts_with('#')) {
+                    if let Some((k, v)) = l.split_once('\t') {
+                        if let Some(k) = crate::fmt::parse_i32(k.trim()) {
+                            m.insert(k, v.trim().split(';').filter(|s| !s.is_empty()).map(str::to_string).collect());
+                        }
+                    }
+                }
+            }
+            m
+        })
+        .get(&id)
+        .cloned()
+        .filter(|v: &Vec<String>| !v.is_empty())
+}
+
 pub fn affinity_name(id: i32) -> Option<String> {
     stat_labels::element_by_number(id)
 }
@@ -692,6 +720,19 @@ impl ItemEffects {
                         v => format!("alignment {v}"),
                     }
                 ),
+                // the target demon's family (SkillManager.cpp: DEMON_FAMILY = MiDCategoryData family, libcomp devildata.xml;
+                // checked on Epitaph Parts [Demoniac-Slayer Fruit], whose game text says "the Magica family" for family 7)
+                Some("DEMON_FAMILY") if demon_family_name(s.1).is_some() => format!("vs {}-family demons", demon_family_name(s.1).unwrap_or_default()),
+                // the target demon's title (DEMON_TITLE: DevilData basic.title), named by the demons that carry it
+                Some("DEMON_TITLE") if demon_title_names(s.1).is_some() => {
+                    let names = demon_title_names(s.1).unwrap_or_default();
+                    if names.len() > 4 { format!("vs {}, {}, {} and {} more", names[0], names[1], names[2], names.len() - 3) } else { format!("vs {}", or_list(&names)) }
+                }
+                Some("DEMON_TITLE") => "vs certain demons (no demon in the game data has that title)".to_string(),
+                // SkillManager.cpp SKILL_CLASS: 1 magic (spell and support), 2 physical (close and long range), 3 the rest
+                Some("SKILL_CLASS") if (1..=3).contains(&s.1) => ["Magic skills only", "Physical skills only", "Skills that are neither magic nor physical"][(s.1 - 1) as usize].to_string(),
+                // ENEMY_GENDER: MiNPCBasicData gender MALE 0, FEMALE 1, NONE 2
+                Some("ENEMY_GENDER") if (0..=2).contains(&s.1) => ["vs male enemies", "vs female enemies", "vs enemies without a gender"][s.1 as usize].to_string(),
                 Some("AFFINITY") if affinity_name(s.1).is_some() => format!("{} skills only", affinity_name(s.1).unwrap_or_default()),
                 t => stat_labels::sealed_skill_condition(t.unwrap_or(""), s.1).unwrap_or_else(|| format!("skill: {} {}", title(t.unwrap_or("")), s.1)),
             }));

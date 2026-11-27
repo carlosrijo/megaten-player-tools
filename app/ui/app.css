@@ -1900,7 +1900,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 :root:not([data-theme="dark"]) .rbp-capbar i { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 75%, black), inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -3px 0 rgba(0, 0, 0, .28); }
 .rbp-namebtn { font: 600 15px/1.3 var(--font-display); margin: 0; padding: 6px 8px 6px 10px; border: 1px solid var(--border-strong); background: var(--surface); }
 .rbp-namebtn:hover { background: var(--surface-2); }
-#rbp-demons .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
+#rbp-demons .dm-icon img, #rbp-import .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
 /* the demon band as the Overview's: the inputs sit at the right of the band */
 .rbp-demon.demon-card { align-items: center; }
 .rbp-demon .rbp-inputs { align-self: center; }
@@ -1998,10 +1998,10 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 /* the runestone list scrolls past about eight rows, so the sticky cost card stays short */
 .rbp-needlist { max-height: 212px; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
 /* the same thin scrollbar as the Overview's demon picker (#demons .char-list) on the runestone list and the planner's own picker */
-.rbp-needlist::-webkit-scrollbar, #rbp-demons .char-list::-webkit-scrollbar { width: 8px; }
-.rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
+.rbp-needlist::-webkit-scrollbar, #rbp-demons .char-list::-webkit-scrollbar, #rbp-import .char-list::-webkit-scrollbar { width: 8px; }
+.rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb, #rbp-import .char-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
 .rbp-needlist { padding-right: 0; }
-#rbp-demons .menu-note:empty { display: none; }   /* no note under the Any-demon list */
+#rbp-demons .menu-note:empty, #rbp-import .menu-note:empty { display: none; }   /* no note under the Any-demon list */
 
 /* Dungeon Guides (Tools): per dungeon its outcomes, each with numbered steps (the Quest Guide's step list and lines) */
 .guide-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
@@ -2165,7 +2165,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-skilllist { gap: 4px; }
 .rbp-skills .rbp-skilllist, .rbp-force .rbp-skilllist { margin-left: 8px; }   /* the list under a bar, set in a little (user, 2026-11-27) */
 .rbp-skillrow { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-.rbp-skillrow.empty { color: var(--text-3); margin: 0; max-width: none; gap: 8px; }   /* not the first-run page's .empty (centred, 8vh down) */
+.rbp-skillrow.empty { color: var(--text-3); margin: 0; max-width: none; gap: 8px; }   /* not the page-wide .empty (an empty state, 8vh down) */
 .rbp-slotno-text { width: 14px; text-align: right; color: var(--text-3); font-variant-numeric: tabular-nums; flex: none; }
 .rbp-skilltext { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
 .rbp-skilltext .src-count { margin: 0; }
@@ -2207,3 +2207,66 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-gather { gap: 16px; }
 .rbp-gather-group > .q-key { display: block; font-size: 14px; font-weight: 600; color: var(--text); padding: 10px 0 2px; border-top: 1px solid var(--border); }
 .rbp-gather-sub > .q-key { font-size: 12px; font-weight: 600; color: var(--text-2); padding-top: 2px; }
+/* the Demon equipment step: a row per feature slot, its square (the part's picture, or + on an empty one) as the skill bar's */
+.rbp-eqlist { gap: 6px; }
+.rbp-eqrow { align-items: flex-start; }   /* the text starts level with the top of its square (user, 2026-11-27) */
+.rbp-eqslot { flex: none; }
+.rbp-eqslot.bad { border-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.rbp-eqimg { display: block; width: 40px; height: 40px; border-radius: 6px; }
+.rbp-eqfeat.covered { text-decoration: line-through; text-decoration-color: var(--text-3); }
+.rbp-eqfeat.none { color: var(--text-3); }
+.rbp-eqbad { color: var(--bad); flex-basis: 100%; }
+.rbp-eqrow .rbp-skillfrom.got { flex-basis: 100%; }
+.rbp-skillcost .skill-ico img { display: block; width: 24px; height: 24px; border-radius: 4px; }
+#rbp-equip-menu .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
+#rbp-equip-menu .char.rbp-eqoff { opacity: .5; cursor: not-allowed; }
+#rbp-equip-menu .menu-note:empty { display: none; }
+.rbp-eqrow .rbp-skilltext, .rbp-skillcost .rbp-skilltext { flex: 1 1 auto; }
+.rbp-eqrow .src-count, .rbp-skillcost .src-count { white-space: normal; }   /* a part's or feature's description wraps inside the card (.src-count is nowrap) */
+.rbp-eqdesc { flex-basis: 100%; }   /* a feature's description on its own line under its name, as a long part description falls (user, 2026-11-27) */
+/* the stats card's Boosts: every effect of the skills, features and parts that isn't one of the 14 stats, per who it reaches */
+.rbp-fx { display: grid; gap: 8px; border-top: 1px solid var(--border); padding-top: 10px; }
+.rbp-fxgroup { display: grid; gap: 4px; }
+.rbp-fxgroup > .q-key { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.rbp-fxlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rbp-fxlist li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; font-size: 12px; padding: 2px 4px; border-radius: 4px; }
+.rbp-fxlist li:hover { background: var(--hover); }
+.rbp-fxlabel { flex: 1 1 auto; min-width: 0; }
+.rbp-fxlist b { font-variant-numeric: tabular-nums; color: var(--rb); }
+.rbp-fxlist li.cond .rbp-fxlabel { color: var(--text-2); }
+.rbp-fxnote { flex-basis: 100%; color: var(--text-3); }
+
+/* Dungeon Guides (Tools): per dungeon its outcomes, each with numbered steps (the Quest Guide's step list and lines) */
+.guide-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.guide-tag-hidden { color: var(--aff); border-color: currentColor; }   /* the one tag to spot first: a boss you only get by doing something */
+.guide-detail { gap: 14px; }
+.guide-prep { display: grid; gap: 4px; padding: 8px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); }
+.guide-out { display: grid; gap: 4px; }
+.guide-res { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.guide-res-text { font-weight: 600; }
+.guide-res .src-count { margin-left: 0; }
+.guide-steps > li { padding-top: 8px; padding-bottom: 8px; gap: 3px; }
+.guide-steps > li::before { top: 8px; }
+.guide-do { max-width: 80ch; }
+.guide-steps .q-line, .guide-prep .q-line, .guide-fails { grid-template-columns: 92px minmax(0, 1fr); }
+.guide-steps .q-line > span:last-child, .guide-prep .q-line > span:last-child { color: var(--text-2); max-width: 80ch; }
+.guide-fails > span:last-child { color: var(--warn-ink); max-width: 80ch; }
+.guide-linear { margin-top: 4px; }
+.guide-linear summary { cursor: pointer; font-weight: 600; }
+.guide-linear summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.guide-linear .note { margin: 6px 0 0; max-width: 110ch; }
+/* one row per outcome (a way the dungeon can go): closed rows stack as a list, an open one shows its steps under it */
+.guide-outs { display: grid; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.guide-outs > .guide-out { padding: 8px 10px; }
+.guide-outs > .guide-out + .guide-out { border-top: 1px solid var(--border); }
+.guide-out-btn { display: flex; width: 100%; box-sizing: border-box; }
+.guide-out-btn:hover .guide-res-text { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.guide-out.open > .q-steps { margin-left: 22px; }
+.guide-out.open > .guide-fails { margin-left: 22px; }
+/* the Demon Planner's builds: the gallery's cards (the Build Planner's, with the demon's picture where the pieces are) */
+.rbp-build-pic { width: 56px; height: 56px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; overflow: hidden; align-self: start; }
+.rbp-build-pic.none { opacity: .5; }
+.rbp-build-img { display: block; width: 56px; height: 56px; }
+.rbp-build-img img { width: 56px; height: 56px; display: block; }
+.sim-build.rbp-build:not(.sim-new) { min-height: 110px; }
+.rbp-builds .sim-new { min-height: 110px; }

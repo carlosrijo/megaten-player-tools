@@ -1,0 +1,95 @@
+#id	desc (the client's name for the group)
+1	Experience UP
+11	Max HP UP
+12	Max MP UP
+13	Regeneration UP
+21	Strength UP
+22	Magic UP
+23	Vitality UP
+24	Intelligence UP
+25	Speed UP
+26	Luck UP
+31	Close-Range UP
+32	Long-Range UP
+33	Spell UP
+34	Support UP
+41	Physical Defense UP
+42	Magical Defense UP
+51	Critical Rate UP
+52	Critical Defense UP
+61	Limit-Break Chance UP
+62	Limit-Break Power UP
+63	TA Chance UP
+64	TA Power UP
+65	Pursuit Chance UP
+66	Pursuit Power UP
+67	Limit-Break Cap UP
+68	Final Crit Rate UP
+71	Status Change Rate UP
+72	Status Change Resistance UP
+81	Clench
+82	Movement Speed UP
+101	Summoner Boost
+102	Party Boost
+103	Cooperation
+104	Race Resistance
+105	LNC Boost
+106	Dungeon Specific Boost
+201	All Skill Stack UP
+202	Gender Specific Boost
+203	Damage taken CUT
+204	All skills HP cost CUT
+205	All skills MP cost CUT
+206	All skills Incantation time CUT
+207	All skills Cooldown time CUT
+301	Close-Range based Damage
+302	Long-Range based Damage
+303	Magic based Damage
+304	Magic based Incantation and Cooldown CUT
+401	Attack Action Boost
+402	Rush Action Boost
+403	Spin Action Boost
+404	Shot Action Boost
+405	Rapid Action Boost
+406	Counter Action Boost
+407	Dodge Action Boost
+408	Guard Action Boost
+501	Slash Affinity
+502	Charge Affinity
+503	Blunt Affinity
+504	Handgun Affinity
+505	Penetrate Affinity
+506	Spread Affinity
+507	Fire Affinity
+508	Ice Affinity
+509	Electric Affinity
+510	Force Affinity
+511	Almighty Affinity
+512	Expel Affinity
+513	Death Affinity
+514	Mystic Affinity
+515	Nerve Affinity
+516	Mind Affinity
+517	Suicide Affinity
+518	Curative Affinity
+519	Support Stack UP
+520	全物理ブースト
+521	全魔法ブースト
+522	ＥＸ相性ブースト
+550	Affinity Cap UP
+601	Crafting Assistance
+602	Nimble
+603	Super Armor
+604	Specific Skill Boost
+605	Affinity Skill Boost
+606	Flexible
+607	Death Theater
+608	Death Theater PC
+609	ゲーム内時間ブースト
+610	特定月齢ブースト
+611	魔斥障無効
+612	Lord of Purgatory
+613	Lord of Purgatory PC
+614	Dodge Stack UP
+615	Smirk
+616	Proc UP
