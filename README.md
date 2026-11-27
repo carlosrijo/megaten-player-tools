@@ -144,7 +144,9 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
 
   Then **Key stats and affinities**, one row: on the left one line per key stat (a bar only where the stat has a cap,
   showing how close you are; it changes colour past the cap). Click a line to see what gear, expertise and the
-  digitalize demon each add, and to jump to every source on Bonuses. On the right, one radar chart per element with
+  digitalize demon each add, and to jump to every source on Bonuses. An Experience group shows how much extra EXP
+  and expertise points you earn (gear and clan skills), and how much extra EXP your summoned partner earns (the
+  Demonology Sympathy skill for its race, if you have one). On the right, one radar chart per element with
   your affinity boost, the cap it stops at (100%, or more for an element a passive raises: Ice Limit Mastery Lv1 makes
   Ice 150%) and your resistance; the buttons under it show all three or just one (its numbers then appear on the
   spokes, and the scale fits what is shown). With all three, the outer ring fits your boosts and resistances, and a

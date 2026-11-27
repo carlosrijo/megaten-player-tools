@@ -385,14 +385,40 @@
   // The Overview's stat sheet: one line per key stat, in two columns of named groups.
   const SHEET = [
     [['Offence', [['crit', 'Critical'], ['final_crit', 'Final correction'], ['lb_chance', 'Limit break chance'], ['lb_power', 'Limit break power'], ['lb_cap', 'Limit break cap'],
-      ['ta_chance', 'Technical chance'], ['ta_power', 'Technical power'], ['pursuit_chance', 'Pursuit chance'], ['pursuit_power', 'Pursuit power']]]],
+      ['ta_chance', 'Technical chance'], ['ta_power', 'Technical power'], ['pursuit_chance', 'Pursuit chance'], ['pursuit_power', 'Pursuit power']]],
+      ['Experience', [['xp_earned', 'EXP earned'], ['xp_partner', 'Partner EXP earned'], ['xp_expertise', 'Expertise earned'], ['soul_earned', 'Soul points earned'], ['digi_points', 'Digitalize points earned'], ['bethel_gain', 'Bethel gain']]]],
     [['Damage dealt', [['dmg_close', 'Close-range'], ['dmg_long', 'Long-range'], ['dmg_spell', 'Spell'], ['dmg_support', 'Support']]],
       ['Damage taken', [['taken_close', 'Close-range'], ['taken_long', 'Long-range'], ['taken_spell', 'Spell'], ['taken_support', 'Support']]],
-      ['Speed', [['cooldown', 'Cooldown'], ['move_speed', 'Movement']]]],
+      ['Speed', [['cooldown', 'Cooldown'], ['incantation', 'Incantation'], ['move_speed', 'Movement']]]],
   ];
   /** The Bonuses row behind a key stat (same name, same unit; the cap is called "Limit break cap" there). */
   const BONUS_NAME = { lb_cap: 'Limit break cap' };
-  const bonusRowOf = (k, label, unit) => (S.data.bonuses || []).find((r) => r.group === 'Combat' && r.bonus === (BONUS_NAME[k] || label) && (r.unit || '') === (unit || ''));
+  /** Sheet lines that are not combat stats: their Bonuses row is in the "Other" group (same name as the game's, so not the line's label). */
+  // (key, the Bonuses row's name, unit, its group, and for the two that no character here has yet: the wordings it may come in)
+  const OTHER_STATS = [['xp_earned', 'EXP Earned', '%', 'Other'], ['xp_partner', 'EXP Earned (only with certain partners)', '%', 'Only in some fights'], ['xp_expertise', 'Expertise Earned', '%', 'Other'],
+    ['soul_earned', 'Soul Points Earned', '%', 'Other', /^soul points?( earned| gain(ed)?)?$/i], ['digi_points', 'Digitalize Points', '%', 'Other', /^digitali[sz](e|ation) points?( earned| gain(ed)?)?$/i],
+    ['bethel_gain', 'Bethel Gain', '%', 'Other', /^bethel( earned| gain(ed)?)?$/i],
+    ['incantation', 'Incantation', '%', 'Other']];   // the cast time: its Bonuses row has the same parts as cooldown's (gear, expertise, demon, summoned, VIT/INT and SPD)
+  const bonusRowOf = (k, label, unit) => {
+    const o = OTHER_STATS.find((x) => x[0] === k);
+    return (S.data.bonuses || []).find((r) => r.group === (o ? o[3] : 'Combat') && (o && o[4] ? o[4].test(String(r.bonus).trim()) : r.bonus === (BONUS_NAME[k] || label)) && (o && o[4] ? true : (r.unit || '') === (unit || '')));
+  };
+  /**
+   * Partner EXP earned: the Demonology "<Race> Sympathy" skills each give +N% XP to your summoned demon when it is of that
+   * race (their tooltips say so). The Bonuses page keeps them under "Only in some fights"; here the ones that match the demon
+   * summoned now (the summoned card's) are added up. Nobody is out while digitalized.
+   */
+  function partnerXp(row) {
+    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+    const sym = (row && Array.isArray(row.parts) ? row.parts : []).map((p) => ({ p, race: (/^(.+?) Sympathy\b/.exec(String(p.source || '')) || [])[1] })).filter((x) => x.race);
+    const mine = d && d.race ? sym.filter((x) => x.race.toLowerCase() === String(d.race).toLowerCase()) : [];
+    return { demon: d || null, races: sym.map((x) => x.race), parts: mine.map((x) => x.p), value: round2(mine.reduce((a, x) => a + n0(x.p.value), 0)) };
+  }
+  /** What the expertise column of a sheet line is made of, named as its parts are ("Clan bonuses": the clan's skills; EXP Earned gets it from there, not from expertise ranks). */
+  const expShareName = (row) => {
+    const kinds = [...new Set(((row && row.parts) || []).filter((p) => p.kind === 'expertise' || p.kind === 'clan').map((p) => KIND[p.kind]))];
+    return kinds.length ? kinds.join(' + ') : 'Expertise';
+  };
   /** "Alilat (summoned)": the summoned demon's name as its bonus parts carry it (empty when it gives nothing). */
   const summonedName = () => { for (const r of (S.data.bonuses || [])) { const p = (r.parts || []).find((x) => x.kind === 'summoned'); if (p) return String(p.source); } return ''; };
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
@@ -411,7 +437,7 @@
   // Stats that give nothing past a ceiling (from the user, 2026-11-23). The ceiling applies to the whole value
   // (gear + expertise, in the shown mode). To add one: its key from COMBAT above and its ceiling.
   // A negative one is a floor: cooldown stops at 5% of the skill's own (the server's lowest COOLDOWN_TIME).
-  const CAPS = { final_crit: 100, lb_chance: 100, ta_chance: 100, pursuit_chance: 100, pursuit_power: 100, cooldown: -95 };
+  const CAPS = { final_crit: 100, lb_chance: 100, ta_chance: 100, pursuit_chance: 100, pursuit_power: 100, cooldown: -95, incantation: -100 };
   const INCANTATION_CAP = -100;   // incantation (cast) time stops at 0
   /** How far a total is past its cap (0 = at it, negative = not there yet); a negative cap is a floor. */
   const pastCap = (total, cap) => round2(cap < 0 ? cap - total : total - cap);
@@ -530,6 +556,16 @@
       const statsRow = bonusRowOf(k, label, unit) || {}, stats = n0(statsRow.stats), statsDigi = n0(statsRow.stats_digi);
       by[k] = { stat: k, label, unit, gear, gearDigi, exp, demon, summoned, stats, statsDigi };
     });
+    // XP lines: no snapshot column, they come from the Bonuses rows (gear, expertise / clan, demon as that page works them out)
+    OTHER_STATS.forEach(([k, label, unit]) => {
+      const row = bonusRowOf(k, label, unit);
+      // always a line, 0% when the character has nothing for it (no Bonuses row then): the sheet reads the same for everyone
+      if (!row) { by[k] = { stat: k, label, unit, gear: 0, gearDigi: 0, exp: 0, demon: 0, summoned: 0, stats: 0, statsDigi: 0 }; return; }
+      if (k === 'xp_partner') { by[k] = { stat: k, label, unit, gear: 0, gearDigi: 0, exp: 0, demon: 0, summoned: 0, stats: 0, statsDigi: 0 }; return; }   // worked out in stat(): it follows the summoned demon
+      const gear = n0(row.gear);
+      by[k] = { stat: k, label, unit, gear, gearDigi: row.gear_digi === null || row.gear_digi === undefined ? gear : n0(row.gear_digi),
+        exp: n0(row.expertise), demon: n0(row.demon), summoned: n0(row.summoned), stats: n0(row.stats), statsDigi: n0(row.stats_digi) };
+    });
     // Which bonuses each item / set contributes to: from the per-source parts of the all-bonuses list.
     const setKey = (text) => { const m = /\((?:\d+\/\d+, )?(fusion set|set) (\d+)\)\s*$/.exec(String(text || '')); return m ? `${m[1]}:${m[2]}` : null; };
     // Sets made of the same pieces (the game gives some gear two set bonuses, e.g. sets 2021 and 2022) are one row:
@@ -582,8 +618,9 @@
   }
   /** One combat stat in the current mode. */
   function stat(k) {
-    const r = S.v.by[k];
+    let r = S.v.by[k];
     if (!r) return null;
+    if (k === 'xp_partner') r = { ...r, exp: digi() ? 0 : partnerXp(bonusRowOf(k, r.label, r.unit)).value };
     const gear = digi() ? r.gearDigi : r.gear;
     const demonNow = digi() ? r.demon : 0, summonedNow = digi() ? 0 : r.summoned, statsNow = digi() ? r.statsDigi : r.stats;
     return { ...r, gearNow: gear, demonNow, summonedNow, statsNow, total: round2(gear + r.exp + demonNow + summonedNow + statsNow), extra: round2(r.gearDigi - r.gear) };
@@ -1093,12 +1130,48 @@
    * the spokes, and the scale fits what is shown).
    */
   const AFF_SERIES = [['boost', 'Boost'], ['cap', 'Cap'], ['res', 'Resistance']];
+  /**
+   * The radar's numbers as a table under it, in the stat sheet's style (a heading, one line per element with a rule
+   * between): Boost, Cap (100% plus what raises it) and Resistance. Same elements and order as the radar's spokes; the
+   * line's tooltip gives each number's split into gear, expertise and (digitalized) the demon.
+   */
+  function affinityTable(aff) {
+    const DG = S.data.digitalize;
+    const split = (e) => { const parts = [['gear', e.gear], ['expertise', e.exp], ...(digi() && DG ? [[DG.demon, e.demon]] : [])].filter(([, v]) => v); return parts.length ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : ''; };
+    const cell = (text, cls) => h('span', { class: 'aff-td' + (cls ? ' ' + cls : ''), text });
+    const head = h('div', { class: 'aff-tr aff-th' }, h('span', { class: 'list-head', text: 'Affinity' }), h('span', { class: 'list-head', text: 'Boost' }), h('span', { class: 'list-head', text: 'Cap' }), h('span', { class: 'list-head', text: 'Resist' }));
+    // Weapon-based is not an element: a skill whose base affinity is Weapon-Based (the basic attack, Cleave, Dragon Sweep...) takes
+    // your weapon's element and adds this boost to that element's own. Its Bonuses row is in the "Other" group, so it is not a spoke.
+    const wb = weaponBoost();
+    const wbRow = !wb ? null : h('div', { class: 'aff-tr aff-wb', tabindex: 0,
+      'data-tip': `Weapon-based boost ${fmt(wb.total, '%')}${split(wb)}. Added to the boost of the element your weapon gives, for weapon-based skills only (basic attack, Cleave, Dragon Sweep...).`
+        + ' In the server code it is capped on its own at 100% (plus any cap raise, and none raises this one), apart from the element’s cap. Not checked on NewMoon’s server.' },
+      h('span', { class: 'aff-name', text: 'Weapon-based' }), cell(fmt(wb.total, '%')), cell('100%', 'zero'), cell('–', 'zero'));
+    const rows = aff.boost.map((e, i) => {
+      const cp = aff.cap[i], rs = aff.resistance[i];
+      return h('div', { class: 'aff-tr', tabindex: 0,
+        'data-tip': `${e.name}: boost ${fmt(e.total, '%')}${split(e)} · cap ${fmt(cp.total)}%${cp.raise ? ` (100% + ${fmt(cp.raise)}%)` : ''} · resistance ${fmt(rs.total, '%')}${split(rs)}` },
+        h('span', { class: 'aff-name', text: e.name }),
+        cell(e.total ? fmt(e.total, '%') : '–', e.total ? '' : 'zero'),
+        cell(`${fmt(cp.total)}%`, cp.raise ? 'raised' : 'zero'),
+        cell(rs.total ? fmt(rs.total, '%') : '–', rs.total < 0 ? 'bad' : rs.total ? '' : 'zero'));
+    });
+    return h('div', { class: 'aff-table', role: 'table', 'aria-label': 'Affinity by element' }, head, rows, wbRow);
+  }
+  /** The "Weapon based Affinity" bonus (BOOST_WEAPON) in the shown mode, split like the radar's series; null when you have none. */
+  function weaponBoost() {
+    const r = (S.data.bonuses || []).find((x) => x.group === 'Other' && /^weapon.based affinity$/i.test(String(x.bonus).trim()));
+    if (!r) return null;
+    const e = { name: 'Weapon-based', gear: round2(n0(digi() && r.gear_digi !== null && r.gear_digi !== undefined ? r.gear_digi : r.gear)), exp: n0(r.expertise), demon: digi() ? n0(r.demon) : 0 };
+    e.total = round2(e.gear + e.exp + e.demon);
+    return e.total ? e : null;
+  }
   function affinityCard() {
     const DG = S.data.digitalize, aff = affinity(), n = aff.boost.length;
     // (no heading of its own: it shares the row's, "Key stats and affinities", with the stat sheet beside it)
     const card = h('section', { class: 'card', 'aria-label': 'Affinity' });
-    if (n < 3) {   // a radar needs three spokes
-      card.append(h('p', { class: 'note', text: n ? aff.boost.concat(aff.resistance).filter((e) => e.total).map((e) => `${e.name} ${fmt(e.total, '%')}`).join(' · ') : 'No affinity boosts or resistances yet.' }));
+    if (n < 3) {   // a radar needs three spokes: the table alone (or a line when there is nothing)
+      card.append(n || weaponBoost() ? affinityTable(aff) : h('p', { class: 'note', text: 'No affinity boosts or resistances yet.' }));
       return card;
     }
     const focus = AFF_SERIES.some(([k]) => k === S.over.aff) ? S.over.aff : null;
@@ -1171,11 +1244,11 @@
     const pick = (k, label, mark) => h('button', { type: 'button', 'aria-pressed': String(focus === k), onclick: () => { S.over.aff = k; store.set('aff', k || ''); render(); } },
       mark ? h('i', { class: 'aff-key aff-key-' + k }) : null, label);
     card.append(h('div', { class: 'chart radar' }, svg),
-      h('div', { class: 'seg aff-pick', role: 'group', 'aria-label': 'Show' }, pick(null, 'All'), AFF_SERIES.map(([k, label]) => pick(k, label, true))));
-    // a line about the series shown on its own; nothing under "All" (the user asked for that hint to go)
+      h('div', { class: 'seg aff-pick', role: 'group', 'aria-label': 'Show' }, pick(null, 'All'), AFF_SERIES.map(([k, label]) => pick(k, label, true))));    // a line about the series shown on its own; nothing under "All" (the user asked for that hint to go)
     if (focus) card.append(h('p', { class: 'note', text: focus === 'cap' ? 'Boosts stop at 100%' + (raised.length ? `, except where something of yours raises the cap: ${raised.map((c) => `${c.name} ${fmt(c.total)}%`).join(', ')}.` : '. Nothing of yours raises it for any element.')
       : focus === 'res' ? 'How much of each element you resist. Inside the 0 ring is a weakness.'
       : 'What you add to the damage you deal with each element.' }));
+    card.append(affinityTable(aff));   // the same numbers as lines, under the radar
     return card;
   }
 
@@ -1278,15 +1351,21 @@
       const cap = CAPS[k] === undefined ? null : CAPS[k];
       const over = cap !== null && pastCap(r.total, cap) > 0 ? pastCap(r.total, cap) : 0;
       const plain = (v) => fmt(v, r.unit).replace(/^\+/, '');
-      const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', 'Expertise', r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : []),
+      const bonusRow0 = bonusRowOf(k, r.label, r.unit);
+      const px = k === 'xp_partner' ? partnerXp(bonusRow0) : null;
+      // the partner line: which demon it follows and why it may be nothing (the Sympathy skills each cover one race)
+      const pxNote = !px ? null : digi() ? 'Nobody is out while digitalized, so this is 0 here.'
+        : !px.demon ? 'No demon is summoned (or none was read yet), so this is 0. Summon one and take a snapshot, or load your demons from the game.'
+        : px.value ? `${px.demon.name} is ${px.demon.race}: the Sympathy skill for that race adds this to its XP.`
+        : `${px.demon.name} is ${px.demon.race}, and no Sympathy skill you have covers that race (${px.races.length ? 'they cover ' + px.races.join(', ') : 'you have no Sympathy skill yet'}).`;
+      const srcs = [['sw-gear', 'Gear', r.gearNow], ['sw-exp', px ? 'Demonology Sympathy' : expShareName(bonusRow0), r.exp], ...(digi() && DG ? [['sw-demon', DG.demon, r.demonNow]] : []),
         ...(!digi() ? [['sw-demon', summonedName(), r.summonedNow]] : []), ['sw-base', 'Your stats', r.statsNow]].filter(([, , v]) => v);
       const open = S.over.open === k;
-      const bonusRow0 = bonusRowOf(k, r.label, r.unit);
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
       // (full and soft red when past it, with an "Over cap" tag beside the name; by how much is in the tooltip and under the opened line)
       const meter = cap === null ? h('span') : h('span', { class: 'cap-bar' + (over ? ' over' : '') }, h('i', { style: `width:${Math.max(0, Math.min(100, (r.total / cap) * 100))}%` }));
       const row = h('button', { type: 'button', class: 'sheet-row', 'aria-expanded': String(open),
-        'data-tip': (srcs.length ? srcs.map(([, name, v]) => `${name} ${f(v)}`).join(' · ') : 'Nothing adds to this yet')
+        'data-tip': (srcs.length ? srcs.map(([, name, v]) => `${name} ${f(v)}`).join(' · ') : pxNote || 'Nothing adds to this yet')
           + (cap === null ? '' : `. Caps at ${fmt(cap, r.unit)}` + (over ? `: ${plain(over)} over, which adds nothing.` : '.')),
         onclick: () => { S.over.open = open ? null : k; render(); } },
         h('span', { class: 'chev' }, icon('chevron')),
@@ -1302,7 +1381,8 @@
           cls === 'sw-gear' && r.extra ? (digi() ? `${f(r.extra)} of it only while digitalized` : `${f(r.extra)} more while digitalized`)
             : cls === 'sw-exp' ? toggleShareText(bonusRow0, 'it')
             : name === 'Your stats' ? statsNote(bonusRow0) : null))
-          : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
+          : px ? null : h('p', { class: 'note', text: 'Nothing adds to this yet.' }),
+        pxNote ? h('p', { class: 'note', text: pxNote }) : null,
         toggleShare(bonusRow0) ? h('p', { class: 'note', text: togglesNote() }) : null,
         cap === null ? null : h('p', { class: 'note', text: `Caps at ${fmt(cap, r.unit)}: ` + (over ? `the ${plain(over)} above it adds nothing, so those points could go elsewhere.`
           : pastCap(r.total, cap) >= 0 ? 'reached, more adds nothing.' : `${plain(Math.abs(pastCap(r.total, cap)))} to go.`) }),
