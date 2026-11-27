@@ -17,6 +17,10 @@
 //!   devil-equipment-items.tsv, devil-equipment.tsv, devil-equipment-groups.tsv   demon equipment: item -> skill, which
 //!                           features it can't cover and what can't be worn together (DevilEquipmentItemData,
 //!                           DevilEquipmentData, CDevilEquipmentExclusiveData)
+//!   devil-boost-items.tsv, devil-boost-extra.tsv, devil-force-slots.tsv   Demon Force: the items that put an effect in a
+//!                           stack slot, each effect's tokusei, and how many slots each demon type opens
+//!                           (DevilBoostItemData + DevilBoostData, DevilBoostExtraData, DevilData growth.forceStack)
+//!   tokusei-client-text.tsv the client's text of each tokusei (what a Demon Force effect does)
 //!
 //! The rules the page follows are the server's (comp_hack CharacterManager::ReunionDemon, AdjustDemonBaseStats,
 //! MitamaDemon, AdjustMitamaStats, GetMitamaBonuses, packets\game\MitamaReunion.cpp) and the public server data's
@@ -232,6 +236,7 @@ pub fn planner_json(data: &GameData) -> Result<Value> {
         "mitama": { "kinds": kinds, "sets": sets, "boostSkill": boost_skill, "boostName": boost_name, "spirit": spirit },
         "stats": stats_used.iter().map(|(id, n)| (id.to_string(), json!(n))).collect::<IndexMap<String, Value>>(),
         "equipment": equipment,
+        "force": force_json(data, &item_name)?,
     }))
 }
 
@@ -385,6 +390,56 @@ pub fn effects_bytes() -> Option<&'static [u8]> {
             Some(json::serialize(&v, Escape::Relaxed, false).into_bytes())
         })
         .as_deref()
+}
+
+/// Demon Force: the force stack, the 8 slots whose effects a demon carries (comp_hack demon.xml ForceStack[8]). Using
+/// a Demon Force item on the summoned demon can put the item's effect in a slot the player picks, over what is there
+/// (packets\game\DemonForce.cpp: the item's DevilBoostData `extraID`); an empty slot past the demon type's
+/// `forceStack` count can't be filled. None of the 378 such boosts has a level, rune rank, alignment or familiarity
+/// rule, and the server refuses no repeat. The other way into a slot is the random effect the benefit gauge offers
+/// (DevilBoostLotData), which can't be planned.
+///   items: [item id, stack id, the item's name, [the client's text of each of the effect's tokusei]]
+///   slots: demon type -> its slot count, for the types that open fewer than `max`
+///   random: stack id -> the client's text, for the effects no item places (a COMP demon may hold one)
+fn force_json(data: &GameData, item_name: &dyn Fn(i32) -> Result<String>) -> Result<Value> {
+    const MAX: i32 = 8;
+    let extra = rows("devil-boost-extra.tsv")?;
+    let tokusei: IndexMap<i32, Vec<i32>> = extra.iter().map(|r| (int(&r[0]), r.get(3).map_or("", String::as_str).split(',').map(int).filter(|&x| x > 0).collect())).collect();
+    let texts_of = |stack: i32| -> Result<Vec<String>> {
+        let mut out = Vec::new();
+        for &tid in tokusei.get(&stack).map_or(&[][..], Vec::as_slice) {
+            if let Some(t) = data.tokusei_text(tid)? {
+                out.push(t.split_whitespace().collect::<Vec<_>>().join(" "));
+            }
+        }
+        Ok(out)
+    };
+    let mut items: Vec<Value> = Vec::new();
+    let mut placed: std::collections::HashSet<i32> = std::collections::HashSet::new();
+    for r in rows("devil-boost-items.tsv")? {
+        let (item, stack) = (int(&r[0]), int(r.get(2).map_or("", String::as_str)));
+        placed.insert(stack);
+        items.push(json!([item, stack, item_name(item)?, texts_of(stack)?]));
+    }
+    // the effects no item places (the benefit gauge's random ones): their text, for a COMP demon that holds one
+    let mut random: IndexMap<String, Value> = IndexMap::new();
+    for r in &extra {
+        let stack = int(&r[0]);
+        if !placed.contains(&stack) {
+            let t = texts_of(stack)?;
+            if !t.is_empty() {
+                random.insert(stack.to_string(), json!(t));
+            }
+        }
+    }
+    let mut slots: IndexMap<String, Value> = IndexMap::new();
+    for r in rows("devil-force-slots.tsv")? {
+        let n = int(r.get(1).map_or("", String::as_str));
+        if n < MAX {
+            slots.insert(r[0].trim().to_string(), json!(n));
+        }
+    }
+    Ok(json!({ "max": MAX, "items": items, "slots": slots, "random": random }))
 }
 
 /// Writes app\ui\rebirth-planner.json.
