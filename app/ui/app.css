@@ -395,7 +395,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .radar text.aff-value.over { fill: var(--text-2); font-weight: 500; }   /* a cap past the rim, under All */
 .radar .aff-over { fill: var(--text-2); }
 /* The radar's numbers as lines under it, in the stat sheet's style: Affinity | Boost | Cap | Resist */
-.aff-table { display: grid; margin-top: 12px; }   /* more air over the table than the card's 12px (24 in all) */
+.aff-table { display: grid; margin-top: 27px; }   /* more air over the table than the card's 12px (39 in all) */
 .aff-tr { display: grid; grid-template-columns: minmax(0, 1fr) 64px 64px 64px; gap: 8px; align-items: center; min-height: 28px; border-top: 1px solid var(--border); }
 .aff-tr:not(.aff-th):hover { background: var(--hover); }
 .aff-tr:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
