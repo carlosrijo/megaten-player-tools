@@ -930,6 +930,7 @@ impl Simulator {
             o.insert("id".into(), json!(w.id));
             o.insert("name".into(), json!(self.item_name(w.id)?));
             o.insert("icon".into(), json!(self.icon(w.id)?));
+            Self::insert_spirit_fuse(&mut o, data, w.id)?;
             o.insert("basic".into(), if basic_of(w) == w.id { Value::Null } else { json!(self.item_name(basic_of(w))?) });
             o.insert("special".into(), if special_of(w) == w.id { Value::Null } else { json!(self.item_name(special_of(w))?) });
             o.insert("tarot".into(), if w.tarot > 0 { json!(self.crystal_name(w.tarot, true)?) } else { Value::Null });
@@ -940,6 +941,11 @@ impl Simulator {
             o.insert("special_icon".into(), if special_of(w) == w.id { Value::Null } else { json!(self.icon(special_of(w))?) });
             o.insert("tarot_icon".into(), json!(self.crystal_icon(w.tarot, true)?));
             o.insert("soul_icon".into(), json!(self.crystal_icon(w.soul, false)?));
+            // the crystals' own items (the page's "Where to get it" finds them in the Item Database by id)
+            for (key, id, tarot) in [("tarot_item", w.tarot, true), ("soul_item", w.soul, false)] {
+                let item = if id > 0 { data.enchant_sides()?.get(&(id, tarot)).map(|s| s.crystal_item).filter(|&i| i > 0) } else { None };
+                o.insert(key.into(), json!(item));
+            }
             let max = Self::fuse_at_max(&fx, w)?;
             let now = fx.fuse_bonus(w)?;
             let limit = !max.is_empty() && now.len() == max.len() && now.iter().all(|f| f.2);
@@ -954,6 +960,21 @@ impl Simulator {
                 lines.insert(src.into(), rows_value(self.lines(mine.iter().copied().filter(|e| e.source == src))?));
             }
             o.insert("lines".into(), Value::Object(lines));
+            // each mod slot on its own (the page's Mods line): the game's name for the mod and what it gives
+            let equip_type = client_reader::equip_type_of_slot(wide(k));
+            let weapon = equip_type == 13;
+            let mut each: Vec<Value> = Vec::with_capacity(5);
+            for &m in w.mods.iter().take(5) {
+                if m == 0 || m == 255 {
+                    each.push(Value::Null);
+                    continue;
+                }
+                let t = data.mod_tokusei(weapon, data.item_sub_category(w.id)?, equip_type, m)?;
+                let fxs = if t == 0 { Vec::new() } else { fx.tokusei(t, "mod", &name)? };
+                let label = if weapon { data.weapon_mods()?.get(&m).map(|x| x.name.clone()) } else { None };
+                each.push(json!({ "id": m, "name": label, "lines": rows_value(self.lines(&fxs)?) }));
+            }
+            o.insert("mods".into(), Value::Array(each));
             slots.push(o);
         }
 
@@ -1271,6 +1292,63 @@ impl Simulator {
     /// What can go in a slot (0..14, ClientReader.SlotNames), with what each choice gives: every item of that kind (its
     /// basic features, its characteristics, its appearance bonus and the sets it belongs to), and the crystals that
     /// kind of piece takes as tarot and as soul fusion (with the fusion sets they belong to).
+    /// What the page needs for the soul infusion rules of a piece (a worn one, or one in the picker): `si` false when
+    /// the server refuses it in a soul infusion (Bullets, or the item's "no fusion" flag), `sub` its sub-category and
+    /// `gender` its gender restriction (2 = anyone), which the piece and both donors must agree on (comp_hack
+    /// `EquipmentSpiritFuse`: same equip type and sub-category; armor of at most one sex). Nothing when the item list
+    /// has no flags for it (an older items-game.tsv): the page then lets everything through, as before.
+    /// Also `mod_slots`: the piece's own number of mod slots (the game can add more, up to 5).
+    fn insert_spirit_fuse(o: &mut Row, data: &GameData, id: i32) -> Result<()> {
+        if let Some((ok, gender)) = data.item_spirit_fuse(id)? {
+            o.insert("si".into(), json!(ok));
+            o.insert("gender".into(), json!(gender));
+            o.insert("sub".into(), json!(data.item_sub_category(id)?));
+        }
+        if let Some(n) = data.item_mod_slots(id)? {
+            o.insert("mod_slots".into(), json!(n));
+        }
+        Ok(())
+    }
+
+    /// The weapon mods each mod slot (0-4) can end up with, as the server lets you build them (comp_hack
+    /// `EquipmentMod`): a mod item puts its effect in the slots ModificationData names; an effect of a kind already in the
+    /// slot must be exactly one level up, any other must be level 1; a great success also gives the next level. So a
+    /// level is reachable in a slot when the level below it is, and a mod item for it or for the level below goes there.
+    /// In kind order, then level.
+    fn weapon_mod_reach(data: &GameData) -> Result<Vec<Vec<crate::data::game_data::WeaponMod>>> {
+        let all = data.weapon_mods()?;
+        let mut kinds: IndexMap<i32, Vec<&crate::data::game_data::WeaponMod>> = IndexMap::new();
+        for m in all.values() {
+            kinds.entry(m.kind).or_default().push(m);
+        }
+        kinds.sort_keys();
+        for v in kinds.values_mut() {
+            v.sort_by_key(|m| m.level);
+        }
+        let mut res = Vec::with_capacity(5);
+        for k in 0..5 {
+            let mut list = Vec::new();
+            for levels in kinds.values() {
+                let direct: HashSet<i32> = levels.iter().filter(|m| m.slots.contains(&k)).map(|m| m.level).collect();
+                let mut prev: Option<i32> = None; // the last level reached in this slot
+                for m in levels {
+                    let ok = if m.level == 1 {
+                        direct.contains(&1)
+                    } else {
+                        prev == Some(m.level - 1) && (direct.contains(&m.level) || direct.contains(&(m.level - 1)))
+                    };
+                    if !ok {
+                        break;
+                    }
+                    prev = Some(m.level);
+                    list.push((*m).clone());
+                }
+            }
+            res.push(list);
+        }
+        Ok(res)
+    }
+
     pub fn catalog(&self, slot: i32, args: Option<&Value>) -> Result<String> {
         let mut st = lock(&self.state);
         let b = self.load(&mut st, args)?;
@@ -1297,6 +1375,7 @@ impl Simulator {
             if let Some(sex) = self.sex_of(id)? {
                 o.insert("sex".into(), json!(sex));
             }
+            Self::insert_spirit_fuse(&mut o, data, id)?;
             if equip_type == 13 {
                 if let Some(wt) = data.item_weapon_type(id)? {
                     o.insert("tag".into(), if wt == "CLOSE_RANGE" { json!("Close range") } else if wt == "LONG_RANGE" { json!("Long range") } else { Value::Null });
@@ -1361,14 +1440,29 @@ impl Simulator {
                     csets.push(obj(json!({ "with": with, "lines": rows_value(self.lines(&fxs)?) })));
                 }
                 res.push(obj(json!({
-                    "id": kid, "name": self.crystal_name(kid, tarot)?, "lines": rows_value(self.lines(&fx.enchant(kid, tarot, "")?)?), "sets": rows_value(csets),
+                    // `item`: the crystal's own item (the page finds its picture by it)
+                    "id": kid, "item": side.crystal_item, "name": self.crystal_name(kid, tarot)?, "lines": rows_value(self.lines(&fx.enchant(kid, tarot, "")?)?), "sets": rows_value(csets),
                 })));
             }
             res.sort_by(|a, b| ic_cmp(a.get("name").and_then(Value::as_str).unwrap_or(""), b.get("name").and_then(Value::as_str).unwrap_or("")));
             Ok(res)
         };
 
-        let text = to_json(&Value::Object(obj(json!({ "slot": slot, "items": rows_value(items), "tarot": rows_value(crystals(true)?), "soul": rows_value(crystals(false)?) }))));
+        // Weapon mods, per mod slot (0-4): what the game lets you end up with there (`weapon_mod_reach`)
+        let mut mods: Vec<Value> = Vec::new();
+        if equip_type == 13 {
+            for reach in Self::weapon_mod_reach(data)? {
+                let mut list: Vec<Row> = Vec::new();
+                for m in reach {
+                    let t = if m.tokusei != 0 { m.tokusei } else { data.mod_tokusei(true, 0, equip_type, m.id)? };
+                    let fxs = if t == 0 { Vec::new() } else { fx.tokusei(t, "mod", "")? };
+                    list.push(obj(json!({ "id": m.id, "name": m.name, "level": m.level, "kind": m.kind, "lines": rows_value(self.lines(&fxs)?) })));
+                }
+                mods.push(rows_value(list));
+            }
+        }
+
+        let text = to_json(&Value::Object(obj(json!({ "slot": slot, "items": rows_value(items), "tarot": rows_value(crystals(true)?), "soul": rows_value(crystals(false)?), "mods": mods }))));
         lock(&b.catalog).insert(slot, text.clone());
         Ok(text)
     }

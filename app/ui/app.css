@@ -1122,7 +1122,6 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .chg-dot.gone { --dot: var(--bad); }
 /* Expertise page planner: the Build Planner's expertise editor beside what the plan changes */
 .xp-out .list-head { padding-left: 0; margin-top: 4px; }
-.sim-out.xp-out { position: static; max-height: none; overflow: visible; margin-right: 0; }   /* no scroll of its own: it grows with the page */
 .xp-unlocks { display: grid; gap: 8px; }
 .xp-unlock { display: grid; gap: 2px; padding-left: 10px; border-left: 2px solid var(--good); }
 .xp-unlock.bad { border-left-color: var(--bad); }
@@ -1135,14 +1134,11 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .xp-unlock.bad .unl-skill img { filter: grayscale(1); opacity: .45; }   /* every "better / worse" in the Build Planner in the same two colours */
 .sim-layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 18px; align-items: start; }
 .sim-edit { display: grid; gap: 12px; min-width: 0; }
-/* The result scrolls by itself when it is taller than the window. Its scrollbar gets a fixed 10px that hangs out into
-   the page's margin, so the cards keep the column's full width and line up with the buttons above them. */
-.sim-out { display: grid; gap: 12px; position: sticky; top: 16px; max-height: calc(100vh - 96px); overflow-y: auto; scrollbar-gutter: stable; margin-right: -10px; }
-.sim-out::-webkit-scrollbar { width: 10px; }
-.sim-out::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 5px; background: var(--border-strong); background-clip: content-box; }
+/* The result has no scroll of its own (the user's choice): it grows with the page, which scrolls as a whole. */
+.sim-out { display: grid; gap: 12px; }
 @media (max-width: 1040px) {
   .sim-layout { grid-template-columns: minmax(0, 1fr); }
-  .sim-out { position: static; max-height: none; order: -1; margin-right: 0; }
+  .sim-out { order: -1; }
 }
 /* the builds: "New build" and one card per saved build, as compact as the digitalize demons' cards (.dg-tile) */
 .sim-builds { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; align-items: stretch; }   /* every card in a row as tall as the tallest, "New build" too */
@@ -1216,32 +1212,86 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .sim-edit-body { display: grid; min-width: 0; }
 .sim-count { margin-left: 6px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-size: 10px; font-weight: 600; display: inline-grid; place-items: center; }
 
-/* the 15 slots: one line each, the open one shows its parts */
-.sim-slots { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; display: grid; gap: 1px; }
-.sim-slot { border-radius: 8px; }
-.sim-slot.open { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border); margin: 4px 0; }
-.sim-slot-head { all: unset; box-sizing: border-box; width: 100%; display: grid; grid-template-columns: 32px minmax(0, 1fr) 14px; gap: 10px; align-items: center; min-height: 44px; padding: 5px 10px 5px 8px; border-radius: 8px; cursor: pointer; }
-.sim-slot-head:hover { background: var(--hover); }
-.sim-slot-head:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-.sim-slot-head .chev { margin: 0; }
-.sim-slot-head[aria-expanded="true"] .chev, .sim-exp-name[aria-expanded="true"] .chev { transform: rotate(90deg); }
-.sim-slot-text { display: grid; min-width: 0; gap: 1px; }
-.sim-slot-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.sim-slot-top .slot-name { flex: none; width: 62px; }
+/* the 15 worn pieces: one box each, always open. First line the piece, then the tarot and the soul a line each,
+   then Slot 1, Slot 2, Slot 3 side by side, then the mods in one line */
+.sim-slots { display: grid; gap: 10px; container-type: inline-size; }
+/* the gear at a glance: 15 tiles in the game's equipment window order, 5 by 3 */
+.sim-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.sim-grid-tile { all: unset; box-sizing: border-box; display: grid; gap: 4px; align-content: start; min-width: 0; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+.sim-grid-tile:hover { border-color: var(--text-3); }
+.sim-grid-tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.sim-grid-tile.changed { border-color: color-mix(in srgb, var(--focus) 50%, var(--border)); }
+.sim-grid-tile.sim-grid-empty .sim-grid-name { color: var(--text-3); font-weight: 400; }
+.sim-grid-slot { color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.sim-grid-main { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sim-grid-name { font-size: 12px; font-weight: 600; line-height: 1.25; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.sim-grid-marks { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+.sim-grid-donors { display: grid; gap: 1px; min-width: 0; }
+.sim-grid-donor { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 11px; color: var(--text-3); }
+.sim-grid-donor.infused { color: var(--text); }
+.sim-grid-n { flex: none; width: 12px; font-size: 9px; font-weight: 700; text-align: center; line-height: 12px; border-radius: 3px; background: var(--surface-2); color: var(--text-2); }
+.sim-grid-donor.infused .sim-grid-n { background: var(--accent); color: var(--accent-ink); }
+.sim-grid-donor-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-grid-crystal { width: 16px; height: 16px; image-rendering: pixelated; }
+.sim-grid-mark { font-size: 9px; font-weight: 700; letter-spacing: .04em; padding: 0 4px; line-height: 14px; border-radius: 4px; color: var(--text-2); background: var(--surface-2); }
+.sim-grid-mark.limit { color: var(--fuse); }
+/* "Where to get it" under the picked piece: one block per item it is made of */
+.sim-where { display: grid; gap: 12px; }
+.sim-where-item { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); min-width: 0; }
+.sim-where-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.sim-where-parts { display: flex; gap: 4px; }
+.sim-where-open { margin-left: auto; }
+.sim-where-item > .btn { justify-self: start; }
+.sim-where-notes { display: grid; gap: 2px; }
+/* the tile whose piece is shown below for editing */
+.sim-grid-tile.on, .sim-grid-tile.on:hover { border-color: var(--accent); background: var(--selected); box-shadow: inset 0 0 0 1px var(--accent); }
+.sim-exp-name[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.sim-slot { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px 12px; display: grid; gap: 10px; min-width: 0; }
+.sim-slot.changed { border-color: color-mix(in srgb, var(--focus) 50%, var(--border)); }
+.sim-slot-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.sim-slot-head .slot-name { flex: none; width: 62px; }
 .sim-slot-item { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sim-slot-sub { color: var(--text-3); font-size: 12px; padding-left: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-slot-acts { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; }
+.sim-slot-head .sim-hist { flex-basis: 100%; padding-left: 42px; }
+.sim-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sim-crystals { display: grid; gap: 8px; }
+.sim-crystal { grid-template-columns: 90px minmax(0, 280px); align-items: start; gap: 8px 16px; }
+.sim-crystal-pick { display: grid; gap: 6px; min-width: 0; }
+.sim-mods { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.sim-crystal .sim-lines, .sim-mods > .sim-lines { display: flex; flex-wrap: wrap; gap: 2px 16px; }
+/* a weapon's five mod slots side by side, each with its dropdown */
+.sim-mod-slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.sim-mod { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.sim-mod.changed .sim-col-key > span::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--focus); vertical-align: middle; }
+.sim-mod .sim-col-key.sim-mod-key { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.sim-mod-added { font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 0 4px; line-height: 14px; border-radius: 4px; color: var(--text-2); background: var(--surface-2); }
+.sim-crystal > .sim-lines, .sim-crystal > .sim-none { grid-column: 1 / -1; padding-top: 0; }
+.sim-cols-none { margin: 0; padding-left: 42px; }
+.sim-col { display: grid; gap: 6px; align-content: start; min-width: 0; padding: 8px; border-radius: 8px; background: var(--surface-2); }
+.sim-col.off { opacity: .7; }
+.sim-col-key { display: grid; gap: 1px; font-size: 12px; font-weight: 600; }
+.sim-col-key small { color: var(--text-2); font-weight: 400; font-size: 11px; }
+.sim-col.changed .sim-col-key > span::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--focus); vertical-align: middle; }
+.sim-col .sim-part-pick { flex-wrap: wrap; }
+.sim-col .sim-pickbtn { flex: 1 1 100%; }
+.sim-col .sim-none { margin: 0; }
+/* Slot 2's title line: the title on the left, the LIMIT switch on the right; the fusion bonus it adds, in the fusion colour */
+.sim-col-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
+.sim-limit-box { display: flex; align-items: center; gap: 4px; flex: none; }
+.sim-limit-box .sim-limit { min-height: 0; gap: 6px; font-size: 11px; letter-spacing: .05em; color: var(--fuse); }
+.sim-fuse-add { color: var(--fuse); font-weight: 600; }
+/* a slot of a piece the game won't soul infuse: the piece itself, no dropdown */
+.sim-pick-fixed, .sim-pick-fixed:hover { cursor: default; background: transparent; border-color: var(--border); color: var(--text-2); justify-content: flex-start; }
+.sim-pick-icon { width: 20px; height: 20px; flex: none; image-rendering: pixelated; margin-left: -4px; }
+.sim-pick-text { flex: 1 1 auto; }
+@container (max-width: 560px) { .sim-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .sim-cols, .sim-crystal { grid-template-columns: minmax(0, 1fr); } .sim-mod-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 .sim-noicon { box-sizing: border-box; border-radius: 6px; border: 1px dashed var(--border-strong); }
 .sim-tag-changed, .sim-tag-use { border-color: transparent; background: var(--selected); color: var(--text); }
 .sim-tag-limit { border-color: var(--fuse); color: var(--fuse); font-size: 10px; font-weight: 700; letter-spacing: .05em; }
-.sim-slot-body { display: grid; padding: 0 12px 12px 50px; }
-.sim-part { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); }
-.sim-part-key { display: grid; align-content: start; gap: 1px; padding-top: 7px; font-size: 12px; font-weight: 600; }
-.sim-part-key small { color: var(--text-2); font-weight: 400; font-size: 12px; }
-.sim-part.changed .sim-part-key > span::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--focus); vertical-align: middle; }
-.sim-part-val { display: grid; gap: 6px; min-width: 0; align-content: start; }
 .sim-part-pick { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.sim-pickbtn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; flex: 0 1 400px; min-width: 0; height: 32px; padding: 0 8px 0 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; }
-.sim-pickbtn > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sim-pickbtn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 1 400px; min-width: 0; height: 32px; padding: 0 8px 0 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; }
+.sim-pickbtn > .sim-pick-text, .sim-pickbtn > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sim-pickbtn:hover { border-color: var(--text-3); }
 .sim-pickbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .sim-pickbtn .chev { margin: 0; transform: rotate(90deg); }
@@ -1255,12 +1305,10 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .sim-set.off { opacity: .7; }
 .sim-limit { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-height: 32px; cursor: pointer; }
 .sim-limit small { color: var(--text-2); font-size: 12px; }
-.sim-slot-foot { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
 .sim-undo { color: var(--text-2); }
 /* what was picked before for a part: a chip to use it again, with an x to take it off the list */
 .sim-hist { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .sim-hist-label { color: var(--text-3); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
-.sim-slot-foot + .sim-hist { padding-top: 8px; }
 .sim-hchip { display: inline-flex; align-items: stretch; height: 24px; max-width: 100%; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); overflow: hidden; }
 .sim-hchip.on { background: var(--selected); border-color: transparent; }
 .sim-hchip-use { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; min-width: 0; padding: 0 4px 0 10px; font-size: 12px; cursor: pointer; }
@@ -1349,6 +1397,10 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .sim-options { height: min(50vh, 440px); overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 4px; display: grid; gap: 1px; align-content: start; }
 .sim-opt { display: grid; gap: 2px; padding: 7px 10px; border-radius: 7px; cursor: pointer; }
 .sim-opt[aria-selected="true"] { background: var(--selected); }
+/* a row with the item's or crystal's picture on the left */
+.sim-opt.with-pic { grid-template-columns: 32px minmax(0, 1fr); gap: 2px 10px; align-items: start; }
+.sim-opt-body { display: grid; gap: 2px; min-width: 0; }
+.sim-opt-pic { margin-top: 1px; }
 .sim-opt-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .sim-opt-lines { color: var(--text-2); font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
 .sim-opt-lines .is-inactive, .sim-opt-lines .is-situational, .sim-opt-lines .is-unknown { color: var(--text-3); }

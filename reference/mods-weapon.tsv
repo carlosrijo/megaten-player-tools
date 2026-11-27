@@ -1,0 +1,395 @@
+#effect id	type	level (sequenceID)	tokusei	name (CModifiedEffectData)	desc	mod slots a mod item puts it in (ModificationData, 0-4)
+1	1	1	360175	CLS-R 1	Weapon Close-range +1	0,1,2
+2	1	2	360176	CLS-R 2	Weapon Close-range +2	0,1,2
+3	1	3	360177	CLS-R 3	Weapon Close-range +3	0,1,2
+4	1	4	360178	CLS-R 4	Weapon Close-range +4	0,1,2
+5	1	5	360180	CLS-R 5	Weapon Close-range +6	0,1,2
+6	1	6	360182	CLS-R 6	Weapon Close-range +8	0,1,2
+7	1	7	360184	CLS-R 7	Weapon Close-range +10	0,1,2
+8	1	8	360186	CLS-R 8	Weapon Close-range +12	0,1,2
+9	1	9	360189	CLS-R 9	Close-range +15	0,1,2
+10	1	10	360194	CLS-R 10	Close-range +20	0,1,2
+11	2	1	360195	LNG-R 1	Long-range +1	0,1,2
+12	2	2	360196	LNG-R 2	Long-range +2	0,1,2
+13	2	3	360197	LNG-R 3	Long-range+3	0,1,2
+14	2	4	360198	LNG-R 4	Long-range +4	0,1,2
+15	2	5	360200	LNG-R 5	Long-range +6	0,1,2
+16	2	6	360202	LNG-R 6	Long-range +6	0,1,2
+17	2	7	360204	LNG-R 7	Long-range +10	0,1,2
+18	2	8	360206	LNG-R 8	Long-range +12	0,1,2
+19	2	9	360209	LNG-R 9	Long-range +15	0,1,2
+20	2	10	360214	LNG-R 10	Long-range +20	0,1,2
+21	3	1	360215	Spell 1	Spell +1	0,1,2
+22	3	2	360216	Spell 2	Spell +2	0,1,2
+23	3	3	360217	Spell 3	Spell +3	0,1,2
+24	3	4	360218	Spell 4	Spell +4	0,1,2
+25	3	5	360220	Spell 5	Spell +6	0,1,2
+26	3	6	360222	Spell 6	Spell +8	0,1,2
+27	3	7	360224	Spell 7	Spell +10	0,1,2
+28	3	8	360226	Spell 8	Spell +12	0,1,2
+29	3	9	360229	Spell 9	Spell +15	0,1,2
+30	3	10	360234	Spell 10	Spell +20	0,1,2
+31	4	1	360235	Support 1	Support +1	0,1,2
+32	4	2	360236	Support 2	Support +2	0,1,2
+33	4	3	360237	Support 3	Support +3	0,1,2
+34	4	4	360238	Support 4	Support +4	0,1,2
+35	4	5	360240	Support 5	Support +5	0,1,2
+36	4	6	360242	Support 6	Support +6	0,1,2
+37	4	7	360244	Support 7	Support +10	0,1,2
+38	4	8	360246	Support 8	Support +12	0,1,2
+39	4	9	360249	Support 9	Support +15	0,1,2
+40	4	10	360254	Support 10	Support +20	0,1,2
+41	5	1	360264	Crit 1	Crit +10	1,3,4
+42	5	2	360269	Crit 2	Crit +15	1,3,4
+43	5	3	363197	Crit 3	Crit +25	1,3,4
+44	5	4	362945	Crit 4	Crit +40	1,3,4
+45	5	5	363412	Crit 5	Crit +60	1,3,4
+46	6	1	360275	Summon SPD 1	Summoning Time Increases	
+47	6	2	360276	Summon SPD 2	Summoning Time Increases	
+48	6	3	360277	Summon SPD 3	Summoning Time Increases	
+49	6	4	360278	Summon SPD 4	Summoning Time Increases	
+50	6	5	360279	Summon SPD 5	Summoning Time Increases	
+51	7	1	360295	Phys Def 1	Physical Defense +1	
+52	7	2	360296	Phys Def 2	Physical Defense +2	
+53	7	3	360297	Phys Def 3	Physical Defense +3	
+54	7	4	360298	Phys Def 4	Physical Defense +4	
+55	7	5	360299	Phys Def 5	Physical Defense +5	
+56	7	6	360300	Phys Def 6	Physical Defense +6	
+57	7	7	360301	Phys Def 7	Physical Defense +7	
+58	7	8	360302	Phys Def 8	Physical Defense +8	
+59	7	9	360303	Phys Def 9	Physical Defense +9	
+60	7	10	360304	Phys Def 10	Physical Defense +10	
+61	8	1	360315	Magic Def 1	Magic Defense +1	
+62	8	2	360316	Magic Def 2	Magic Defense +2	
+63	8	3	360317	Magic Def 3	Magic Defense +3	
+64	8	4	360318	Magic Def 4	Magic Defense +4	
+65	8	5	360319	Magic Def 5	Magic Defense +5	
+66	8	6	360320	Magic Def 6	Magic Defense +6	
+67	8	7	360321	Magic Def 7	Magic Defense +7	
+68	8	8	360322	Magic Def 8	Magic Defense +8	
+69	8	9	360323	Magic Def 9	Magic Defense +9	
+70	8	10	360324	Magic Def 10	Magic Defense +10	
+71	9	1	360335	Crit Def 1	Critical Defense +15	
+72	9	2	360336	Crit Def 2	Critical Defense +30	
+73	9	3	360337	Crit Def 3	Critical Defense +50	
+74	9	4	360338	Crit Def 4	Critical Defense +75	
+75	9	5	360339	Crit Def 5	Critical Defense +100	
+76	10	1	0	Repair Cost 1	Repair Cost -10%	1,3
+77	10	2	0	Repair Cost 2	Repair Cost -20%	1,3
+78	10	3	0	Repair Cost 3	Repair Cost -30%	1,3
+79	10	4	0	Repair Cost 4	Repair Cost -40%	1,3
+80	10	5	0	Repair Cost 5	Repair Cost -50%	1,3
+81	11	1	360405	Slash Res 1	Slash Resistance +1	
+82	11	2	360407	Slash Res 2	Slash Resistance +3	
+83	11	3	360409	Slash Res 3	Slash Resistance +5	
+84	11	4	360411	Slash Res 4	Slash Resistance +7	
+85	11	5	360414	Slash Res 5	Slash Resistance +10	
+86	12	1	360505	Thrust Res 1	Thrust Resistance +1	
+87	12	2	360507	Thrust Res 2	Thrust Resistance +3	
+88	12	3	360509	Thrust Res 3	Thrust Resistance +5	
+89	12	4	360511	Thrust Res 4	Thrust Resistance +7	
+90	12	5	360514	Thrust Res 5	Thrust Resistance +10	
+91	13	1	360455	Blunt Res 1	Blunt Resistance +1	
+92	13	2	360457	Blunt Res 2	Blunt Resistance +3	
+93	13	3	360459	Blunt Res 3	Blunt Resistance +5	
+94	13	4	360461	Blunt Res 4	Blunt Resistance +7	
+95	13	5	360464	Blunt Res 5	Blunt Resistance +10	
+96	14	1	360555	Handgun Res 1	Handgun Resistance +1	
+97	14	2	360557	Handgun Res 2	Handgun Resistance +3	
+98	14	3	360559	Handgun Res 3	Handgun Resistance +5	
+99	14	4	360561	Handgun Res 4	Handgun Resistance +7	
+100	14	5	360564	LNG-R Res 5	Long-range Resistance +10	
+101	15	1	360605	Penetrate Res 1	Penetrate Resistance +1	
+102	15	2	360607	Penetrate Res 2	Penetrate Resistance +3	
+103	15	3	360609	Penetrate Res 3	Penetrate Resistance +5	
+104	15	4	360611	Penetrate Res 4	Penetrate Resistance +7	
+105	15	5	360614	Penetrate Res 5	Penetrate Resistance +10	
+106	16	1	360655	Spread Res 1	Spread Resistance +1	
+107	16	2	360657	Spread Res 2	Spread Resistance +3	
+108	16	3	360659	Spread Res 3	Spread Resistance +5	
+109	16	4	360661	Spread Res 4	Spread Resistance +7	
+110	16	5	360664	Spread Res 5	Spread Resistance +10	
+111	17	1	360705	Fire Res 1	Fire Resistance +1	
+112	17	2	360707	Fire Res 2	Fire Resistance +3	
+113	17	3	360709	Fire Res 3	Fire Resistance +5	
+114	17	4	360711	Fire Res 4	Fire Resistance +7	
+115	17	5	360714	Fire Res 5	Fire Resistance +10	
+116	18	1	360755	Ice Res 1	Ice Resistance +1	
+117	18	2	360757	Ice Res 2	Ice Resistance +3	
+118	18	3	360077	Ice Res 3	Ice Resistance +5	
+119	18	4	360761	Ice Res 4	Ice Resistance +7	
+120	18	5	360764	Ice Res 5	Ice Resistance +10	
+121	19	1	360805	ELC Res 1	Electric Resistance +1	
+122	19	2	360807	ELC Res 2	Electric Resistance +3	
+123	19	3	360069	ELC Res 3	Electric Resistance +5	
+124	19	4	360811	ELC Res 4	Electric Resistance +7	
+125	19	5	360814	ELC Res 5	Electric Resistance +10	
+126	20	1	360905	ALM Res 1	Almighty Resistance +1	
+127	20	2	360907	ALM Res 2	Almighty Resistance +3	
+128	20	3	360909	ALM Res 3	Almighty Resistance +5	
+129	20	4	360911	ALM Res 4	Almighty Resistance +7	
+130	20	5	360914	ALM Res 5	Almighty Resistance +10	
+131	21	1	360855	FRC Res 1	Force Resistance +1	
+132	21	2	360857	FRC Res 2	Force Resistance +3	
+133	21	3	360072	FRC Res 3	Force Resistance +5	
+134	21	4	360861	FRC Res 4	Force Resistance +7	
+135	21	5	360864	FRC Res 5	Force Resistance +10	
+136	22	1	360955	XPL Res 1	Expel Resistance +1	
+137	22	2	360957	XPL Res 2	Expel Resistance +3	
+138	22	3	360959	XPL Res 3	Expel Resistance +5	
+139	22	4	360961	XPL Res 4	Expel Resistance +7	
+140	22	5	360964	XPL Res 5	Expel Resistance +10	
+141	23	1	361005	DTH Res 1	Death Resistance +1	
+142	23	2	361007	DTH Res 2	Death Resistance +3	
+143	23	3	361009	DTH Res 3	Death Resistance +5	
+144	23	4	361011	DTH Res 4	Death Resistance +7	
+145	23	5	361014	DTH Res 5	Death Resistance +10	
+146	24	1	361055	Anti-RGN Ef 1	+1 Regeneration Resistance	
+147	24	2	361057	Anti-RGN Ef 2	+3 Regeneration Resistance	
+148	24	3	361059	Anti-RGN Ef 3	+5 Regeneration Resistance	
+149	24	4	361061	Anti-RGN Ef 4	+7 Regeneration Resistance	
+150	24	5	361064	Anti-RGN Ef 5	+10 Regeneration Resistance	
+151	25	1	361509	Slash 1	Slash Damage +5%	1,3,4
+152	25	2	361514	Slash 2	Slash Damage +10%	1,3,4
+153	25	3	361524	Slash 3	Slash Damage +20%	1,3,4
+154	25	4	361534	Slash 4	Slash Damage +30%	1,4
+155	25	5	361539	Slash 5	Slash Damage +35%	1
+156	26	1	361609	Thrust 1	Thrust Damage +5%	1,3,4
+157	26	2	361614	Thrust 2	Thrust Damage +10%	1,3,4
+158	26	3	361624	Thrust 3	Thrust Damage +20%	1,3,4
+159	26	4	361634	Thrust 4	Thrust Damage +30%	1,4
+160	26	5	361639	Thrust 5	Thrust Damage +35%	1
+161	27	1	361559	Blunt 1	Blunt Damage +5%	1,3,4
+162	27	2	361564	Blunt 2	Blunt Damage +10%	1,3,4
+163	27	3	361574	Blunt 3	Blunt Damage +20%	1,3,4
+164	27	4	361584	Blunt 4	Blunt Damage +30%	1,4
+165	27	5	361589	Blunt 5	Blunt Damage +35%	1
+166	28	1	361659	Handgun 1	Handgun Damage +5%	1,3,4
+167	28	2	361664	Handgun 2	Handgun Damage +10%	1,3,4
+168	28	3	361674	Handgun 3	Handgun Damage +20%	1,3,4
+169	28	4	361684	Handgun 4	Handgun Damage +30%	1,4
+170	28	5	361689	Handgun 5	Handgun Damage +35%	1
+171	29	1	361709	Penetrate 1	Penetrate Damage +5%	1,3,4
+172	29	2	361714	Penetrate 2	Penetrate Damage +10%	1,3,4
+173	29	3	361724	Penetrate 3	Penetrate Damage +20%	1,3,4
+174	29	4	361734	Penetrate 4	Penetrate Damage +30%	1,4
+175	29	5	361739	Penetrate 5	Penetrate Damage +35%	1
+176	30	1	361759	Spread 1	Spread Damage +5%	1,3,4
+177	30	2	361764	Spread 2	Spread Damage +10%	1,3,4
+178	30	3	361774	Spread 3	Spread Damage +20%	1,3,4
+179	30	4	361784	Spread 4	Spread Damage +30%	1,4
+180	30	5	361789	Spread 5	Spread Damage +35%	1
+181	31	1	361809	Fire 1	Fire Damage +5%	2,3,4
+182	31	2	361814	Fire 2	Fire Damage +10%	2,3,4
+183	31	3	361824	Fire 3	Fire Damage +20%	2,3,4
+184	31	4	361834	Fire 4	Fire Damage +30%	2,4
+185	31	5	361839	Fire 5	Fire Damage +35%	
+186	32	1	361859	Ice 1	Ice Damage +5%	2,3,4
+187	32	2	361864	Ice 2	Ice Damage +10%	2,3,4
+188	32	3	361874	Ice 3	Ice Damage +20%	2,3,4
+189	32	4	361884	Ice 4	Ice Damage +30%	2,4
+190	32	5	361889	Ice 5	Ice Damage +35%	
+191	33	1	361909	Electric 1	Electric Damage +5%	2,3,4
+192	33	2	361914	Electric 2	Electric Damage +10%	2,3,4
+193	33	3	361924	Electric 3	Electric Damage +20%	2,3,4
+194	33	4	361934	Electric 4	Electric Damage +30%	2,4
+195	33	5	361939	Electric 5	Electric Damage +35%	
+196	34	1	362009	Almighty 1	Almighty Damage +5%	2,4
+197	34	2	362014	Almighty 2	Almighty Damage +10%	2,4
+198	34	3	362024	Almighty 3	Almighty Damage +20%	2,4
+199	34	4	362034	Almighty 4	Almighty Damage +30%	2,4
+200	34	5	362039	Almighty 5	Almighty Damage +35%	2
+201	35	1	361959	Force 1	Force Damage +5%	2,3,4
+202	35	2	361964	Force 2	Force Damage +10%	2,3,4
+203	35	3	361974	Force 3	Force Damage +20%	2,3,4
+204	35	4	361984	Force 4	Force Damage +30%	2,4
+205	35	5	361989	Force 5	Force Damage +35%	
+206	36	1	362059	Expel 1	Expel Damage +5%	2,3,4
+207	36	2	362064	Expel 2	Expel Damage +10%	2,3,4
+208	36	3	362074	Expel 3	Expel Damage +20%	2,3,4
+209	36	4	362084	Expel 4	Expel Damage +30%	2,4
+210	36	5	362089	Expel 5	Expel Damage +35%	
+211	37	1	362109	Death 1	Death Damage +5%	2,3,4
+212	37	2	362114	Death 2	Death Damage +10%	2,3,4
+213	37	3	362124	Death 3	Death Damage +20%	2,3,4
+214	37	4	362134	Death 4	Death Damage +30%	2,4
+215	37	5	362139	Death 5	Death-based Skill Power Up 35%	
+216	38	1	362164	Curative 1	Curative +10%	1,3
+217	38	2	362174	Curative 2	Curative +20%	1,3
+218	38	3	362184	Curative 3	Curative +30%	1,3
+219	38	4	362194	Curative 4	Curative +40%	1
+220	38	5	363413	Curative 5	Curative +60%	1
+221	39	1	362259	Mystic 1	Mystic Damage +5%	2,3,4
+222	39	2	362264	Mystic 2	Mystic Damage +10%	2,3,4
+223	39	3	362274	Mystic 3	Mystic Damage +20%	2,3,4
+224	39	4	362284	Mystic 4	Mystic Damage +30%	2,4
+225	39	5	362289	Mystic 5	Mystic Damage +35%	
+226	40	1	362359	Nerve 1	Nerve Damage +5%	2,3,4
+227	40	2	362364	Nerve 2	Nerve Damage +10%	2,3,4
+228	40	3	362374	Nerve 3	Nerve Damage +20%	2,3,4
+229	40	4	362384	Nerve 4	Nerve Damage +30%	2,4
+230	40	5	362389	Nerve 5	Nerve Damage +35%	
+231	41	1	362309	Mind 1	Mind Damage +5%	2,3,4
+232	41	2	362314	Mind 2	Mind Damage +10%	2,3,4
+233	41	3	362324	Mind 3	Mind Damage +20%	2,3,4
+234	41	4	362334	Mind 4	Mind Damage +30%	2,4
+235	41	5	362339	Mind 5	Mind Damage +35%	
+236	42	1	140000	Demon ClS-R 1	Demon Close-Range +1	0,1,2
+237	42	2	140001	Demon ClS-R 2	Demon Close-Range +2	0,1,2
+238	42	3	140002	Demon CLS-R 3	Demon Close-Range +3	0,1,2
+239	42	4	140003	Demon CLS-R 4	Demon Close-Range +4	0,1,2
+240	42	5	140005	Demon CLS-R 5	Demon Close-Range +6	0,1,2
+241	42	6	140007	Demon CLS-R 6	Demon Close-Range +8	0,1,2
+242	42	7	140009	Demon CLS-R 7	Demon Close-Range +10	0,1,2
+243	42	8	140015	Demon CLS-R 8	Demon Close-Range +12	0,1,2
+244	42	9	140010	Demon CLS-R 9	Demon Close-Range +15	0,1,2
+245	42	10	140011	Demon CLS-R 10	Demon Close-Range +20	0,1,2
+246	43	1	140100	Demon LNG-R 1	Demon Long-Range +1	0,1,2
+247	43	2	140101	Demon LNG-R 2	Demon Long-Range +2	0,1,2
+248	43	3	140102	Demon LNG-R 3	Demon Long-Range +3	0,1,2
+249	43	4	140103	Demon LNG-R 4	Demon Long-Range +4	0,1,2
+250	43	5	140105	Demon LNG-R 5	Demon Long-Range +6	0,1,2
+251	43	6	140107	Demon LNG-R 6	Demon Long-Range +8	0,1,2
+252	43	7	140109	Demon LNG-R 7	Demon Long-Range +10	0,1,2
+253	43	8	140115	Demon LNG-R 8	Demon Long-Range +12	0,1,2
+254	43	9	140110	Demon LNG-R 9	Demon Long-Range +15	0,1,2
+255	0	0	0	Not in Use		
+256	43	10	140111	Demon LNG-R 10	Demon Long-Range +20	0,1,2
+257	44	1	140200	Demon Spell 1	Demon Spell +1	0,1,2
+258	44	2	140201	Demon Spell 2	Demon Spell +2	0,1,2
+259	44	3	140202	Demon Spell 3	Demon Spell +3	0,1,2
+260	44	4	140203	Demon Spell 4	Demon Spell +4	0,1,2
+261	44	5	140205	Demon Spell 5	Demon Spell +6	0,1,2
+262	44	6	140207	Demon Spell 6	Demon Spell +8	0,1,2
+263	44	7	140209	Demon Spell 7	Demon Spell +10	0,1,2
+264	44	8	140215	Demon Spell 8	Demon Spell +12	0,1,2
+265	44	9	140210	Demon Spell 9	Demon Spell +15	0,1,2
+266	44	10	140211	Demon Spell 10	Demon Spell +20	0,1,2
+267	45	1	140300	Demon Support 1	Demon Support +1	0,1,2
+268	45	2	140301	Demon Support 2	Demon Support +2	0,1,2
+269	45	3	140302	Demon Support 3	Demon Support +3	0,1,2
+270	45	4	140303	Demon Support 4	Demon Support +4	0,1,2
+271	45	5	140305	Demon Support 5	Demon Support +6	0,1,2
+272	45	6	140307	Demon Support 6	Demon Support +8	0,1,2
+273	45	7	140309	Demon Support 7	Demon Support +10	0,1,2
+274	45	8	140315	Demon Support 8	Demon Support +12	0,1,2
+275	45	9	140310	Demon Support 9	Demon Support +15	0,1,2
+276	45	10	140311	Demon Support 10	Demon Support +20	0,1,2
+277	46	1	30000	Attack Power 1	Attack damage +5%	3,4
+278	46	2	30001	Attack Power 2	Attack damage +10%	3,4
+279	46	3	30002	Attack Power 3	Attack damage +20%	3,4
+280	46	4	30025	Attack Power 4	Attack damage +30%	4
+281	46	5	30085	Attack Power 5	Attack damage +50%	4
+282	47	1	1110000	Demon Attack Power 1	Demon Attack damage +5%	3,4
+283	47	2	1110001	Demon Attack Power 2	Demon Attack damage +10%	3,4
+284	47	3	1110003	Demon Attack Power 3	Demon Attack damage +20%	3,4
+285	47	4	1110033	Demon Attack Power  4	Demon Attack damage +30%	4
+286	47	5	1110034	Demon Attack Power 5	Demon Attack damage +50%	4
+287	48	1	30009	Rush Power 1	Rush damage +5%	3,4
+288	48	2	30010	Rush Power 2	Rush damage +10%	3,4
+289	48	3	30011	Rush Power 3	Rush damage +20%	3,4
+290	48	4	30027	Rush Power 4	Rush damage +30%	4
+291	48	5	30086	Rush Power 5	Rush damage +50%	4
+292	49	1	1110005	Demon Rush Power 1	Demon Rush damage +5%	3,4
+293	49	2	1110006	Demon Rush Power 2	Demon Rush damage +10%	3,4
+294	49	3	1110008	Demon Rush Power 3	Demon Rush damage +20%	3,4
+295	49	4	1110035	Demon Rush Power 4	Demon Rush damage +30%	4
+296	49	5	1110036	Demon Rush Power 5	Demon Rush damage +50%	4
+297	50	1	30012	Spin Power 1	Spin damage +5%	3,4
+298	50	2	30013	Spin Power 2	Spin damage +10%	3,4
+299	50	3	30014	Spin Power 3	Spin damage +20%	3,4
+300	50	4	30028	Spin Power 4	Spin damage +30%	4
+301	50	5	30087	Spin Power 5	Spin damage +50%	4
+302	51	1	1110010	Demon Spin Power 1	Demon Spin damage +5%	3,4
+303	51	2	1110011	Demon Spin Power 2	Demon Spin damage +10%	3,4
+304	51	3	1110013	Demon Spin Power 3	Demon Spin damage +20%	3,4
+305	51	4	1110037	Demon Spin Power 4	Demon Spin damage +30%	4
+306	51	5	1110038	Demon Spin Power 5	Demon Spin damage +50%	4
+307	52	1	30003	Shot Power 1	Shot damage +5%（※Includes Destruction Magic）	3,4
+308	52	2	30004	Shot Power 2	Shot damage +10%（※Includes Destruction Magic）	3,4
+309	52	3	30005	Shot Power 3	Shot damage +20%（※Includes Destruction Magic）	3,4
+310	52	4	30029	Shot Power 4	Shot damage +30%（※Includes Destruction Magic）	4
+311	52	5	30088	Shot Power 5	Shot damage +50%（※Includes Destruction Magic）	4
+312	53	1	1110015	Demon Shot Boost 1	Demon Shot damage +5%（※Includes Destruction Magic）	3,4
+313	53	2	1110016	Demon Shot Boost 2	Demon Shot damage +10%（※Includes Destruction Magic）	3,4
+314	53	3	1110018	Demon Shot Boost 3	Demon Shot Power +20%（※Includes Destruction Magic）	3,4
+315	53	4	1110039	Demon Shot Boost 4	Demon Shot Power +30%（※Includes Destruction Magic）	4
+316	53	5	1110040	Demon Shot Boost 5	Demon Shot Power +50%（※Includes Destruction Magic）	4
+317	54	1	30006	Rapid Power 1	Rapid damage +5%	3,4
+318	54	2	30007	Rapid Power 2	Rapid damage +10%	3,4
+319	54	3	30008	Rapid Power 3	Rapid damage +20%	3,4
+320	54	4	30026	Rapid Power 4	Rapid damage +30%	4
+321	54	5	30089	Rapid Power 5	Rapid damage +50%	4
+322	55	1	1110020	Demon Rapid Power 1	Demon Rapid damage +5%	3,4
+323	55	2	1110021	Demon Rapid Power 2	Demon Rapid damage +10%	3,4
+324	55	3	1110023	Demon Rapid Power 3	Demon Rapid damage +20%	3,4
+325	55	4	1110041	Demon Rapid Power 4	Demon Rapid damage +30%	4
+326	55	5	1110042	Demon Rapid Power 5	Demon Rapid damage +50%	4
+327	56	1	30055	Counter Power 1	Counter damage +30%	3,4
+328	56	2	30092	Counter Power 2	Counter damage +60%	3,4
+329	56	3	30141	Counter Power 3	Counter damage +120%	3,4
+330	56	4	30142	Counter Power 4	Counter damage +180%	4
+331	56	5	30084	Counter Power 5	Counter damage +300%	4
+332	57	1	1110043	Demon Counter Power 1	Demon Counter damage +30%	3,4
+333	57	2	1110044	Demon Counter Power 2	Demon Counter damage +60%	3,4
+334	57	3	1110045	Demon Counter Power 3	Demon Counter damage +120%	3,4
+335	57	4	1110046	Demon Counter Power 4	Demon Counter damage +180%	4
+336	57	5	1110047	Demon Counter Power 5	Demon Counter damage +300%	4
+337	58	1	141345	Demon Slash Boost 1	Demon Slash damage +5%	0,1
+338	58	2	141346	Demon Slash Boost 2	Demon Slash damage +10%	0,1
+339	58	3	141347	Demon Slash Boost 3	Demon Slash damage +15%	0,1
+340	58	4	141348	Demon Slash Boost 4	Demon Slash damage +20%	0,1
+341	59	1	141349	Demon Thrust Boost 1	Demon Thrust damage +5%	0,1
+342	59	2	141350	Demon Thrust Boost 2	Demon Thrust damage +10%	0,1
+343	59	3	141351	Demon Thrust Boost 3	Demon Thrust damage +15%	0,1
+344	59	4	141352	Demon Thrust Boost 4	Demon Thrust damage +20%	0,1
+345	60	1	141353	Demon Blunt Boost 1	Demon Blunt damage +5%	0,1
+346	60	2	141354	Demon Blunt Boost 2	Demon Blunt damage +10%	0,1
+347	60	3	141355	Demon Blunt Boost 3	Demon Blunt damage +15%	0,1
+348	60	4	141356	Demon Blunt Boost 4	Demon Blunt damage +20%	0,1
+349	61	1	141357	Demon Handgun Boost 1	Demon Shot damage +5%	0,1
+350	61	2	141358	Demon Handgun Boost 2	Demon Handgun damage +10%	0,1
+351	61	3	141359	Demon Handgun Boost 3	Demon Handgun damage +15%	0,1
+352	61	4	141360	Demon Handgun Boost 4	Demon Handgun damage +20%	0,1
+353	62	1	141361	Demon Penetrate Boost 1	Demon Penetrate damage +5%	0,1
+354	62	2	141362	Demon Penetrate Boost 2	Demon Penetrate damage +10%	0,1
+355	62	3	141363	Demon Penetrate Boost 3	Demon Penetrate damage +15%	0,1
+356	62	4	141364	Demon Penetrate Boost 4	Demon Penetrate damage +20%	0,1
+357	63	1	141365	Demon Spread Boost 1	Demon Spread damage +5%	0,1
+358	63	2	141366	Demon Spread Boost 2	Demon Spread damage +10%	0,1
+359	63	3	141367	Demon Spread Boost 3	Demon Spread damage +15%	0,1
+360	63	4	141368	Demon Spread Boost 4	Demon Spread damage +20%	0,1
+361	64	1	141369	Demon Fire Boost 1	Demon Fire damage +5%	0,1
+362	64	2	141370	Demon Fire Boost 2	Demon Fire damage +10%	0,1
+363	64	3	141371	Demon Fire Boost 3	Demon Fire damage +15%	0,1
+364	64	4	141372	Demon Fire Boost 4	Demon Fire damage +20%	0,1
+365	65	1	141373	Demon Ice Boost 1	Demon Ice damage +5%	0,1
+366	65	2	141374	Demon Ice Boost 2	Demon Ice damage +10%	0,1
+367	65	3	141375	Demon Ice Boost 3	Demon Ice damage +15%	0,1
+368	65	4	141376	Demon Ice Boost 4	Demon Ice damage +20%	0,1
+369	66	1	141377	Demon Electric Boost 1	Demon Electric damage +5%	0,1
+370	66	2	141378	Demon Electric Boost 2	Demon Electric damage +10%	0,1
+371	66	3	141379	Demon Electric Boost 3	Demon Electric damage +15%	0,1
+372	66	4	141380	Demon Electric Boost 4	Demon Electric damage +20%	0,1
+373	67	1	141381	Demon Force Boost 1	Demon Force damage +5%	0,1
+374	67	2	141382	Demon Force Boost 2	Demon Force damage +10%	0,1
+375	67	3	141383	Demon Force Boost 3	Demon Force damage +15%	0,1
+376	67	4	141384	Demon Force Boost 4	Demon Force damage +20%	0,1
+377	68	1	141385	Demon Mystic Boost 1	Demon Mystic damage +5%	0,1
+378	68	2	141386	Demon Mystic Boost 2	Demon Mystic damage +10%	0,1
+379	68	3	141387	Demon Mystic Boost 3	Demon Mystic damage +15%	0,1
+380	68	4	141388	Demon Mystic Boost 4	Demon Mystic damage +20%	0,1
+381	69	1	141389	Demon Nerve Boost 1	Demon Nerve damage +5%	0,1
+382	69	2	141390	Demon Nerve Boost 2	Demon Nerve damage +10%	0,1
+383	69	3	141391	Demon Nerve Boost 3	Demon Nerve damage +15%	0,1
+384	69	4	141392	Demon Nerve Boost 4	Demon Nerve damage +20%	0,1
+385	70	1	141393	Demon Mind Boost 1	Demon Mind damage +5%	0,1
+386	70	2	141394	Demon Mind Boost 2	Demon Mind damage +10%	0,1
+387	70	3	141395	Demon Mind Boost 3	Demon Mind damage +15%	0,1
+388	70	4	141396	Demon Mind Boost 4	Demon Mind damage +20%	0,1
+389	71	1	362044	Almighty: God's Majesty	Almighty Damage +40%	4
+400	1	1	360175	テスト改造1	テスト　武器の近接攻撃力＋１	
+60000	1	1	360176	テスト改造	テスト　武器の近接攻撃力＋２	1
+60001	1	1	360177	テスト改造	テスト　武器の近接攻撃力＋３	1
+60002	1	1	360178	テスト改造	テスト　武器の近接攻撃力＋４	1
+65535	1	1	360179	テスト改造	テスト　武器の近接攻撃力＋５	1

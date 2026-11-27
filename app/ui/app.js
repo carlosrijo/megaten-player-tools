@@ -3497,14 +3497,17 @@
   const gdbKindLabel = (k) => (GDB_KINDS.find((x) => x[0] === k) || [k, k])[1];
   // the source filter: how a "Where to get it" line's kind is grouped, and the choices offered (smtwiki.ru splits its item
   // tables by where things come from: shops, drops, events; the same idea, from the traced sources)
-  const GDB_SRC_OF = { Buy: 'Shop', Exchange: 'Exchange', 'Enemy drop': 'Drop', Chest: 'Chest', Plasma: 'Chest', Open: 'Box', 'Random box': 'Box', 'Event or NPC': 'Event', 'Demon present': 'Present', 'Drop table': 'Table', 'Destiny box': 'Table', 'Demon quest': 'Table' };
-  const GDB_SRC = [['Shop', 'Bought in a shop'], ['Exchange', 'NPC exchange'], ['Drop', 'Enemy drop'], ['Chest', 'Chest or plasma'], ['Box', 'Ticket or random box'], ['Event', 'Event or NPC'], ['Quest', 'Quest reward'], ['Present', 'Demon present'], ['Table', 'Drop table only'], ['Notes', 'Community notes only'], ['None', 'No known source']];
+  const GDB_SRC_OF = { Buy: 'Shop', Exchange: 'Exchange', 'Enemy drop': 'Drop', Chest: 'Chest', Plasma: 'Chest', Open: 'Box', 'Random box': 'Box', 'Event or NPC': 'Event', 'Event reward': 'Event', Crystallize: 'Crystallize', Craft: 'Craft', 'Demon present': 'Present', 'Drop table': 'Table', 'Destiny box': 'Table', 'Demon quest': 'Table' };
+  const GDB_SRC = [['Shop', 'Bought in a shop'], ['Exchange', 'NPC exchange'], ['Drop', 'Enemy drop'], ['Chest', 'Chest or plasma'], ['Box', 'Ticket or random box'], ['Event', 'Event or NPC'], ['Crystallize', 'Crystallized from a demon'], ['Craft', 'Crafted'], ['Quest', 'Quest reward'], ['Present', 'Demon present'], ['Table', 'Drop table only'], ['Notes', 'Community notes only'], ['None', 'No known source']];
   // the columns, each sortable by a click on its header (D.sort, D.dir)
   const GDB_COLS = [['name', 'Item'], ['type', 'Type'], ['gives', 'Gives'], ['where', 'Where to get it']];
+  /** Loads gear-db.json once; the promise gives the data (null when it can't be read). Other pages use it too (the
+   *  Character Planner's pictures and "Where to get it"). */
   function loadGearDb() {
-    if (S.gdb.state !== 'idle') return;
+    if (S.gdb.wait) return S.gdb.wait;
+    if (S.gdb.state !== 'idle') return (S.gdb.wait = Promise.resolve(S.gdb.data || null));
     S.gdb.state = 'loading';
-    fetch('gear-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+    return (S.gdb.wait = fetch('gear-db.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
       S.gdb.data = d; S.gdb.state = d ? 'ready' : 'failed';
       if (d) {
         d.items.forEach((it, i) => {
@@ -3540,7 +3543,34 @@
         d.items.forEach((it) => { if (it.class) (d.classes[it.kind] = d.classes[it.kind] || new Set()).add(it.class); });
       }
       if (S.page === 'geardb' || S.page === 'rebirth') render();   // the Rebirth Planner's equipment and Demon Force steps say where each part and item comes from
+      return d;
+    }));
+  }
+  /** Where to get an item in the game, as the Item Database shows it: the list lines (shops, drops, exchanges, quests,
+   *  the ticket or box it comes in and where that comes from) and the community notes. */
+  function gdbWhere(it) {
+    // g.d: how deep the line sits under the one before it ("Open X", then where X comes from)
+    const getLine = (g, extra) => h('li', { style: (g.d || 0) + (extra || 0) ? `padding-left:${22 * ((g.d || 0) + (extra || 0))}px` : null },
+      g.k ? h('span', { class: 'gdb-kind', text: g.k }) : null, g.k ? h('b', { text: g.t }) : h('span', { class: 'src-count', style: 'margin-left:0', text: g.t }),
+      g.s ? h('span', { class: 'src-count', text: g.s }) : null, g.v ? h('span', { class: 'gdb-rate', text: g.v }) : null);
+    const where = [];
+    it.get.forEach((g) => where.push(getLine(g)));
+    // a fusion plugin: the Fusion Planner's ways to get it (a quest, an exchange); several are alternatives
+    if (it.how.length > 1) where.push(h('li', { class: 'any-one', text: `Any one of these ${it.how.length} ways gives it:` }));
+    it.how.forEach((w) => where.push(h('li', null, questLine(w))));
+    // quests that hand it over as a reward (the Quest Database's data), each with a link to the quest
+    it.quests.forEach((t) => where.push(h('li', { class: 'gdb-quest' }, h('span', { class: 'gdb-kind', text: 'Quest' }), questLine(`Quest “${t}”`))));
+    if (it.questsMore) where.push(h('li', { class: 'gdb-with', text: `and ${fmt(it.questsMore)} more quests` }));
+    const tickets = new Map();
+    it.sources.forEach((s) => { if (s.ticket && !tickets.has(s.ticket)) tickets.set(s.ticket, s.ticketGet || []); });
+    tickets.forEach((lines, ticket) => {
+      where.push(h('li', null, h('span', { class: 'gdb-kind', text: 'Comes in' }), h('b', { text: ticket }),
+        lines.length ? null : h('span', { class: 'src-count', text: 'the game data does not say where this ticket comes from' })));
+      lines.forEach((g) => where.push(getLine(g, 1)));
     });
+    // What players wrote down about it (the place is the name of the sheet's page, usually the dungeon).
+    const notes = [...new Set(it.sources.map((s) => [s.tab, s.how].filter(Boolean).join(' · ')))];
+    return { where, notes };
   }
   function gearDbDetail(it) {
     const box = h('div', { class: 'q-detail' });
@@ -3572,28 +3602,8 @@
       it.mods ? block('Modification Slot', [`${it.mods} slot${it.mods === 1 ? '' : 's'}`]) : null].filter(Boolean).forEach((b) => box.append(b));
     if (gear && !it.all.length && !it.sheetOnly) box.append(h('p', { class: 'note', text: 'This piece gives no stats or effects in the game data.' }));
     // Where to get it, in the game: what the game data says about the piece itself, then about the ticket it comes in.
-    // g.d: how deep the line sits under the one before it ("Open X", then where X comes from)
-    const getLine = (g, extra) => h('li', { style: (g.d || 0) + (extra || 0) ? `padding-left:${22 * ((g.d || 0) + (extra || 0))}px` : null },
-      g.k ? h('span', { class: 'gdb-kind', text: g.k }) : null, g.k ? h('b', { text: g.t }) : h('span', { class: 'src-count', style: 'margin-left:0', text: g.t }),
-      g.s ? h('span', { class: 'src-count', text: g.s }) : null, g.v ? h('span', { class: 'gdb-rate', text: g.v }) : null);
-    const where = [];
-    it.get.forEach((g) => where.push(getLine(g)));
-    // a fusion plugin: the Fusion Planner's ways to get it (a quest, an exchange); several are alternatives
-    if (it.how.length > 1) where.push(h('li', { class: 'any-one', text: `Any one of these ${it.how.length} ways gives it:` }));
-    it.how.forEach((w) => where.push(h('li', null, questLine(w))));
-    // quests that hand it over as a reward (the Quest Database's data), each with a link to the quest
-    it.quests.forEach((t) => where.push(h('li', { class: 'gdb-quest' }, h('span', { class: 'gdb-kind', text: 'Quest' }), questLine(`Quest “${t}”`))));
-    if (it.questsMore) where.push(h('li', { class: 'gdb-with', text: `and ${fmt(it.questsMore)} more quests` }));
-    const tickets = new Map();
-    it.sources.forEach((s) => { if (s.ticket && !tickets.has(s.ticket)) tickets.set(s.ticket, s.ticketGet || []); });
-    tickets.forEach((lines, ticket) => {
-      where.push(h('li', null, h('span', { class: 'gdb-kind', text: 'Comes in' }), h('b', { text: ticket }),
-        lines.length ? null : h('span', { class: 'src-count', text: 'the game data does not say where this ticket comes from' })));
-      lines.forEach((g) => where.push(getLine(g, 1)));
-    });
+    const { where, notes } = gdbWhere(it);
     if (where.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Where to get it' }), h('ul', { class: 'gdb-list gdb-get' }, where)));
-    // What players wrote down about it (the place is the name of the sheet's page, usually the dungeon).
-    const notes = [...new Set(it.sources.map((s) => [s.tab, s.how].filter(Boolean).join(' · ')))];
     if (notes.length) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Community notes' }), h('ul', { class: 'gdb-list' }, notes.map((n) => h('li', { text: n })))));
     if (!where.length && !notes.length) box.append(h('p', { class: 'note', text: gear ? 'Neither the game data nor the community notes say where this piece comes from.' : 'The game data does not say where this item comes from.' }));
     if (it.id) box.append(h('p', { class: 'note', text: it.keyItem ? `Key item ${it.id}` : `Item ${it.id}` }));
@@ -4525,6 +4535,11 @@
     tarot: ['Tarot fusion', 'The crystal fused in as a tarot.'],
     soul: ['Soul fusion', 'The crystal fused in as a soul.'],
   };
+  // the five mod slots of a piece, parts "mod0" ... "mod4" (spec.mods[i]; 0 = none, 255 = an open slot with nothing in it)
+  for (let i = 0; i < 5; i++) SIM_PARTS['mod' + i] = [`Mod slot ${i + 1}`, 'The mod in this slot. Only what the game lets you end up with in this slot is listed: a new kind of mod starts at level 1, and each level needs the one below it.'];
+  const simModIdx = (part) => { const m = /^mod(\d)$/.exec(part); return m ? Number(m[1]) : -1; };
+  /** What one part of a piece holds now (an item, a crystal, a mod effect). */
+  const simPartVal = (s, part) => { const i = simModIdx(part); return !s ? undefined : i >= 0 ? ((s.mods || [])[i] || 0) : s[part]; };
   const simClone = (v) => JSON.parse(JSON.stringify(v));
   /** Puts these (and only these) inside el: nothing for null or false, lists are unpacked. */
   const simFill = (el, ...kids) => { el.replaceChildren(...kids.flat(3).filter((x) => x !== null && x !== undefined && x !== false)); return el; };
@@ -5339,6 +5354,8 @@
       build.slots[k] = id ? { id, basic: id, special: id, tarot: s ? s.tarot : 0, soul: s ? s.soul : 0, fuse: s ? s.fuse : [0, 0, 0], mods: s ? s.mods : [0, 0, 0, 0, 0] } : null;
       return;
     }
+    const i = simModIdx(part);
+    if (i >= 0) { const mods = [...(s.mods || [0, 0, 0, 0, 0])]; while (mods.length < 5) mods.push(0); mods[i] = id; s.mods = mods; return; }
     s[part] = id;
   }
 
@@ -5348,6 +5365,12 @@
   $('#sim-pick-close').addEventListener('click', () => simDlg.close());
   simDlg.addEventListener('click', (ev) => { if (ev.target === simDlg) simDlg.close(); });   // a click on the dimmed page around it
   simDlg.addEventListener('close', () => { if (simPickDone) simPickDone(); simPickDone = null; });
+
+  // The picker's pictures: the Item Database's (gear-db.json "icon", files in gear-db-icons\ made from the player's own
+  // game), by item id, loaded once. A crystal's is its own item's (catalog "item"); mods have none.
+  let simPics = null;
+  const simPicMap = () => simPics || (simPics = loadGearDb()
+    .then((d) => new Map(((d && d.items) || []).filter((it) => it.id && it.icon && !it.keyItem).map((it) => [it.id, it.icon]))));
 
   async function simPick(k, part, after) {
     const M = S.sim, slotName = M.init.meta.slots[k];
@@ -5365,20 +5388,44 @@
       try { cat = M.catalog[k] = await host.call('simCatalog', { ...simNow(), slot: k }); }
       catch (e) { if (alive) list.replaceChildren(h('p', { class: 'note', style: 'padding:12px', text: String((e && e.message) || e) })); return; }
     }
+    const pics = await simPicMap();
     if (!alive) return;
 
     const spec = M.build.slots[k], was = M.init.build.slots[k];
-    const crystal = part === 'tarot' || part === 'soul';
-    const inUse = part === 'whole' ? (spec && spec.basic === spec.id && spec.special === spec.id ? spec.id : -1) : spec ? spec[part] : -1;
-    const asRead = was ? (part === 'whole' ? -1 : was[part]) : -1;
+    const crystal = part === 'tarot' || part === 'soul', modIdx = simModIdx(part);
+    const inUse = part === 'whole' ? (spec && spec.basic === spec.id && spec.special === spec.id ? spec.id : -1) : spec ? simPartVal(spec, part) : -1;
+    const asRead = was ? (part === 'whole' ? -1 : simPartVal(was, part)) : -1;
     const linesOf = (it) => (part === 'basic' ? it.basic : part === 'special' ? it.special : part === 'id' ? it.look : [...it.basic, ...it.special, ...it.look]);
-    let opts = crystal
-      ? cat[part].map((c) => ({ id: c.id, name: c.name, lines: c.lines, sets: c.sets }))
-      : cat.items.map((it) => ({ id: it.id, name: it.name, tag: it.tag, sex: it.sex, lines: linesOf(it), sets: part === 'id' || part === 'whole' ? it.sets : [], own: (part === 'basic' || part === 'special') && spec && it.id === spec.id }));
-    // a piece made for the other sex can't be worn: it is left out where the piece itself is picked (as a donor of features it is fine)
+    let opts = modIdx >= 0
+      ? ((cat.mods || [])[modIdx] || []).map((m) => ({ id: m.id, name: m.name, lines: m.lines, sets: [] }))
+      : crystal
+      ? cat[part].map((c) => ({ id: c.id, name: c.name, pic: pics.get(c.item), lines: c.lines, sets: c.sets }))
+      : cat.items.map((it) => ({ id: it.id, name: it.name, pic: pics.get(it.id), tag: it.tag, sex: it.sex, lines: linesOf(it), sets: part === 'id' || part === 'whole' ? it.sets : [], own: (part === 'basic' || part === 'special') && spec && it.id === spec.id }));
+    // a piece made for the other sex can't be worn: it is left out where the piece itself is picked
     const mySex = M.init.meta.sex, worn = part === 'id' || part === 'whole';
     if (mySex && worn) opts = opts.filter((o) => !o.sex || o.sex === mySex || o.id === (spec && spec.id));
+    // Soul infusion as the server allows it (comp_hack EquipmentSpiritFuse; the flags come from the simulator's
+    // `insert_spirit_fuse`): picking one of Slot 1, 2, 3 keeps the other two, and unless all three end up the same piece
+    // they must all be pieces that can be soul infused (not Bullets, no "no fusion" flag), of one sub-category, and for
+    // armor of at most one sex. Items without the flags (an older item list) are let through, as before.
+    if (spec && (part === 'id' || part === 'basic' || part === 'special')) {
+      const info = new Map(cat.items.map((it) => [it.id, it]));
+      const armor = slotName !== 'Weapon';
+      const fits = (c) => {
+        const ids = ['id', 'basic', 'special'].map((p) => (p === part ? c : spec[p]));
+        if (ids.every((x) => x === ids[0])) return true;
+        const its = [...new Set(ids)].map((x) => info.get(x));
+        if (its.some((x) => !x || x.si === undefined)) return true;
+        if (its.some((x) => !x.si)) return false;
+        if (new Set(its.map((x) => x.sub)).size > 1) return false;
+        return !armor || new Set(its.map((x) => x.gender).filter((g) => g !== 2)).size <= 1;
+      };
+      const before = opts.length;
+      opts = opts.filter((o) => o.id === inUse || fits(o.id));
+      if (opts.length < before) $('#sim-pick-sub').textContent = `${SIM_PARTS[part][1]} Only pieces the game lets you soul infuse with the other slots are listed.`;
+    }
     if (crystal) opts.unshift({ id: 0, name: part === 'tarot' ? 'No tarot' : 'No soul fusion', lines: [], sets: [], first: true });
+    if (modIdx >= 0) opts.unshift({ id: 0, name: 'No mod', lines: [], sets: [], first: true });
     if (part === 'whole') opts.unshift({ id: 0, name: 'Nothing: leave this slot empty', lines: [], sets: [], first: true });
     opts.forEach((o) => {
       o.gives = o.lines.length + o.sets.length > 0;
@@ -5386,6 +5433,7 @@
       o.rank = o.id === inUse ? 0 : o.first ? 1 : o.own ? 2 : o.id === asRead ? 3 : 4;
     });
     opts.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+    const withPics = opts.some((o) => o.pic);   // a picture column only where there are pictures (none for mods)
 
     const st = { q: '', kind: 'all', empty: false, shown: 60, active: 0, rows: [] };
     const kinds = [...new Set(opts.map((o) => o.tag).filter(Boolean))];
@@ -5463,8 +5511,9 @@
       }
       sortNote.textContent = !st.byAmount ? '' : stat ? `Most ${stat} first` : 'Most of the searched effect first';
       st.active = Math.min(st.active, Math.max(0, st.rows.length - 1));
-      const row = (o, i) => h('div', { class: 'sim-opt', role: 'option', 'aria-selected': String(i === st.active), 'data-i': i, onclick: () => choose(o), onpointermove: () => setActive(i) },
-        h('div', { class: 'sim-opt-head' }, h('b', { text: o.name }),
+      const row = (o, i) => h('div', { class: 'sim-opt' + (withPics ? ' with-pic' : ''), role: 'option', 'aria-selected': String(i === st.active), 'data-i': i, onclick: () => choose(o), onpointermove: () => setActive(i) },
+        withPics ? (o.pic ? h('img', { class: 'slot-icon sim-opt-pic', src: o.pic, alt: '', loading: 'lazy' }) : h('span', { class: 'slot-icon sim-opt-pic sim-noicon' })) : null,
+        h('div', { class: 'sim-opt-body' }, h('div', { class: 'sim-opt-head' }, h('b', { text: o.name }),
           o.tag ? h('span', { class: 'tag', text: o.tag }) : null,
           o.sex ? h('span', { class: 'tag', text: `${o.sex} only` }) : null,
           o.id === inUse ? h('span', { class: 'tag sim-tag-use', text: 'In use' }) : null,
@@ -5473,13 +5522,13 @@
         o.lines.length ? h('div', { class: 'sim-opt-lines' }, o.lines.map((l, j) => [j ? ' · ' : null,
           h('span', { class: [l.c ? 'is-' + l.c : '', st.hit && st.hit(l.t) ? 'sim-hit' : ''].join(' ').trim() || null, text: simLineText(l) })])) : null,
         o.sets.map((s) => h('div', { class: 'sim-opt-lines sim-opt-set' }, h('span', { class: 'q-key', text: `${crystal ? 'Fusion set' : 'Set'} with ${s.with.join(', ')}: ` }), s.lines.map((l) => simLineText(l)).join(' · ') || 'nothing the game data has numbers for')),
-        o.gives || o.first ? null : h('div', { class: 'sim-opt-lines zero', text: 'Gives nothing here' }));
+        o.gives || o.first ? null : h('div', { class: 'sim-opt-lines zero', text: 'Gives nothing here' })));
       list.replaceChildren(...st.rows.slice(0, st.shown).map(row));
       if (!st.rows.length) list.append(h('p', { class: 'empty-row', text: words.length ? `Nothing matches “${st.q.trim()}”.` : 'Nothing fits here.' }));
       if (st.rows.length > st.shown) list.append(h('button', { type: 'button', class: 'btn btn-sm sim-more', onclick: () => { st.shown += 120; draw(); } }, `Show more (${st.rows.length - st.shown} left)`));
       showPreview(st.rows[st.active]);
     };
-    const input = h('input', { class: 'input', type: 'search', spellcheck: 'false', 'aria-label': 'Search', placeholder: crystal ? 'Search a crystal or an effect (e.g. rapid)' : 'Search a name or an effect (e.g. limit break)',
+    const input = h('input', { class: 'input', type: 'search', spellcheck: 'false', 'aria-label': 'Search', placeholder: crystal ? 'Search a crystal or an effect (e.g. rapid)' : modIdx >= 0 ? 'Search a mod or an effect (e.g. lng-r)' : 'Search a name or an effect (e.g. limit break)',
       oninput: () => { st.q = input.value; st.shown = 60; st.active = 0; draw(); list.scrollTop = 0; } });
     input.addEventListener('keydown', (ev) => {
       if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
@@ -5777,32 +5826,24 @@
     }
 
     // --- gear ---
+    // One box per worn piece, always open (no folding). Its first line is the piece: picture, slot, name and what can be
+    // done with the whole piece. Under it the tarot and soul crystals side by side (where the slot takes them), then the
+    // three soul infusion slots of the game's fusion window side by side (Slot 1 appearance and set bonuses, Slot 2
+    // basic features, Slot 3 characteristics, which bullets don't have), then the mods.
     function slotCard(k) {
       const spec = M.build.slots[k], was = M.init.build.slots[k], res = M.cur.slots[k] || {}, slotName = meta.slots[k];
       const fresh = spec && res.id === spec.id;   // the result on screen is of this build (a moment after a change it is not yet)
-      const changed = !simSame(spec, was), open = M.open === k;
+      const changed = !simSame(spec, was);
       const name = spec ? (fresh ? res.name : '…') : 'Empty';
-      const bits = !spec || !fresh ? [] : [res.basic ? `features of ${res.basic}` : '', res.special ? `characteristics of ${res.special}` : '', res.tarot ? `tarot ${res.tarot}` : '', res.soul ? `soul ${res.soul}` : ''].filter(Boolean);
-      const card = h('div', { class: 'sim-slot' + (open ? ' open' : '') + (changed ? ' changed' : '') });
-      card.append(h('button', { type: 'button', class: 'sim-slot-head', 'aria-expanded': String(open), 'data-fk': 'slot' + k, onclick: () => { M.open = open ? null : k; drawEditor(); } },
-        spec && fresh && res.icon ? h('img', { class: 'slot-icon', src: res.icon, alt: '' }) : h('span', { class: 'slot-icon sim-noicon' }),
-        h('span', { class: 'sim-slot-text' },
-          h('span', { class: 'sim-slot-top' }, h('span', { class: 'slot-name', text: slotName }), h('b', { class: 'sim-slot-item', text: name }),
-            fresh && res.limit ? h('span', { class: 'tag sim-tag-limit', 'data-tip': 'Fusion bonus at MAX', text: 'LIMIT' }) : null,
-            changed && !blank ? h('span', { class: 'tag sim-tag-changed', text: 'Changed' }) : null),
-          bits.length ? h('span', { class: 'sim-slot-sub', text: bits.join(' · ') }) : null),
-        h('span', { class: 'chev' }, icon('chevron'))));
-      if (!open) return card;
-
-      const body = h('div', { class: 'sim-slot-body' });
-      card.append(body);
+      const after = () => { drawEditor(); drawHead(); };
+      const card = h('section', { class: 'sim-slot' + (changed ? ' changed' : '') + (spec ? '' : ' sim-slot-empty'), 'data-slot': k, 'aria-label': `${slotName}: ${name}` });
       // The chips of one part: what was picked for it before. A click uses that one again (Undo still goes back to
       // what you wear); the x takes the chip off the list. The one in use is marked.
       const hist = simHist();
       const histChips = (part) => {
         const list = hist[`${k}:${part}`] || [];
         if (!list.length) return null;
-        const cur = !spec ? -1 : part === 'whole' ? (spec.basic === spec.id && spec.special === spec.id ? spec.id : -1) : spec[part];
+        const cur = !spec ? -1 : part === 'whole' ? (spec.basic === spec.id && spec.special === spec.id ? spec.id : -1) : simPartVal(spec, part);
         return h('div', { class: 'sim-hist', role: 'group', 'aria-label': 'Picked before' }, h('span', { class: 'sim-hist-label', text: 'Picked before' }),
           list.map((x) => h('span', { class: 'sim-hchip' + (x.id === cur ? ' on' : '') },
             h('button', { type: 'button', class: 'sim-hchip-use', 'aria-pressed': String(x.id === cur), 'data-fk': `h${k}${part}${x.id}`, 'data-tip': x.id === cur ? `${x.name}: in use` : `Use ${x.name}`,
@@ -5810,51 +5851,129 @@
             h('button', { type: 'button', class: 'sim-hchip-x', 'aria-label': `Remove ${x.name} from this list`, 'data-tip': 'Remove from this list',
               onclick: () => { simHistDrop(k, part, x.id); drawEditor(); } }, icon('x')))));
       };
-      const pickBtn = (part, text, fk) => h('button', { type: 'button', class: 'sim-pickbtn', 'data-fk': fk || `p${k}${part}`, onclick: () => simPick(k, part, () => { drawEditor(); drawHead(); }) },
-        h('span', { text }), h('span', { class: 'chev' }, icon('chevron')));
+      // the dropdown of one part: the picture and name of what is in it now
+      const pickBtn = (part, text, pic) => h('button', { type: 'button', class: 'sim-pickbtn', 'data-fk': `p${k}${part}`, 'data-tip': `${text}. ${SIM_PARTS[part][1]}`, 'aria-label': `${slotName}, ${SIM_PARTS[part][0]}: ${text}`,
+        onclick: () => simPick(k, part, after) },
+        pic ? h('img', { class: 'sim-pick-icon', src: pic, alt: '' }) : null, h('span', { class: 'sim-pick-text', text }), h('span', { class: 'chev' }, icon('chevron')));
+
+      // first line: the piece
+      const acts = !spec
+        ? [h('button', { type: 'button', class: 'btn btn-sm btn-primary', 'data-fk': `w${k}`, onclick: () => simPick(k, 'whole', after) }, 'Put a piece here…'),
+          was ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { M.build.slots[k] = simClone(was); change(); } }, 'Put it back') : null]
+        : [h('button', { type: 'button', class: 'btn btn-sm', 'data-fk': `w${k}`, 'data-tip': SIM_PARTS.whole[1], onclick: () => simPick(k, 'whole', after) }, 'Replace piece…'),
+          h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'data-tip': 'Wear nothing in this slot', onclick: () => { M.build.slots[k] = null; change(); } }, 'Take off'),
+          changed && was ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'data-tip': 'Back to the piece as you wear it', onclick: () => { M.build.slots[k] = simClone(was); change(); } }, 'Undo') : null];
+      card.append(h('div', { class: 'sim-slot-head' },
+        spec && fresh && res.icon ? h('img', { class: 'slot-icon', src: res.icon, alt: '' }) : h('span', { class: 'slot-icon sim-noicon' }),
+        h('span', { class: 'slot-name', text: slotName }), h('b', { class: 'sim-slot-item', text: name }),
+        fresh && res.limit ? h('span', { class: 'tag sim-tag-limit', 'data-tip': 'Fusion bonus at MAX', text: 'LIMIT' }) : null,
+        fresh && res.si === false ? h('span', { class: 'tag tag-off', tabindex: 0, 'data-tip': 'The game won’t soul infuse this piece: Slot 1, 2 and 3 stay its own', text: 'No soul infusion' }) : null,
+        changed && !blank ? h('span', { class: 'tag sim-tag-changed', text: 'Changed' }) : null,
+        h('span', { class: 'sim-slot-acts' }, acts), histChips('whole')));
+
+      // second line: the parts, one column each
       if (!spec) {
-        body.append(h('p', { class: 'note', text: was ? 'Taken off in this build.' : 'Nothing is worn here.' }),
-          h('div', { class: 'sim-slot-foot' }, h('button', { type: 'button', class: 'btn btn-sm btn-primary', 'data-fk': `w${k}`, onclick: () => simPick(k, 'whole', () => { drawEditor(); drawHead(); }) }, 'Put a piece here…'),
-            was ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { M.build.slots[k] = simClone(was); change(); } }, 'Put it back') : null),
-          histChips('whole'));
+        card.append(h('div', { class: 'sim-cols-none note', text: was ? 'Taken off in this build.' : 'Nothing is worn here.' }));
         return card;
       }
       const L = fresh ? res.lines : {};
-      const undo = (part) => (was && spec[part] !== was[part]
-        ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', 'data-tip': 'Back to what you wear', onclick: () => { spec[part] = was[part]; change(); } }, 'Undo') : null);
-      const partRow = (part, value, lines, none, extra) => h('div', { class: 'sim-part' + (was && spec[part] !== was[part] ? ' changed' : '') },
-        h('div', { class: 'sim-part-key' }, h('span', { text: SIM_PARTS[part][0].split(' · ')[0] }), SIM_PARTS[part][0].includes(' · ') ? h('small', { text: SIM_PARTS[part][0].split(' · ')[1] }) : null),
-        h('div', { class: 'sim-part-val' }, h('div', { class: 'sim-part-pick' }, pickBtn(part, value), undo(part)), histChips(part), fresh ? simLines(lines, none) : null, extra || null));
-      // the sets this piece is in (by name, as the set list has them)
+      const moved = (part) => !!was && !simSame(simPartVal(spec, part), simPartVal(was, part));
+      const undo = (part) => (moved(part)
+        ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', 'data-tip': 'Back to what you wear',
+          onclick: () => { if (simModIdx(part) >= 0) simApply(M.build, k, part, simPartVal(was, part)); else spec[part] = simClone(was[part]); change(); } }, 'Undo') : null);
+      const col = (title, sub, isMoved, ...kids) => h('div', { class: 'sim-col' + (isMoved ? ' changed' : '') },
+        h('div', { class: 'sim-col-key' }, h('span', { text: title }), sub ? h('small', { text: sub }) : null), ...kids);
+      // A piece the game won't soul infuse (Bullets, or the item's "no fusion" flag: `si` false) keeps its three slots
+      // as they are: they show the piece without a dropdown (another piece is "Replace piece…").
+      const noSI = fresh && res.si === false;
+      const fixed = (text, pic) => h('div', { class: 'sim-pickbtn sim-pick-fixed', 'data-tip': `${text}. This piece can’t be soul infused, so this slot stays its own.` },
+        pic ? h('img', { class: 'sim-pick-icon', src: pic, alt: '' }) : null, h('span', { class: 'sim-pick-text', text }));
+      const slotPick = (key, value, pic) => (noSI && key !== 'tarot' && key !== 'soul'
+        ? [h('div', { class: 'sim-part-pick' }, fixed(value, pic))]
+        : [h('div', { class: 'sim-part-pick' }, pickBtn(key, value, pic), undo(key)), histChips(key)]);
+      const part = (key, value, pic, lines, none) => [...slotPick(key, value, pic), fresh ? simLines(lines, none) : null];
+      const own = res.icon || null;
+
+      // Slot 1: the piece it counts as, so its appearance bonus and the sets it is in (by name, as the set list has them)
       const mySets = fresh ? M.cur.sets.filter((s) => s.kind === 'set' && s.name.split(', ').includes(simPlain(res.name))) : [];
       const setBox = mySets.length ? h('div', { class: 'sim-sets' }, mySets.map((s) => h('div', { class: 'sim-set' + (s.active ? '' : ' off') },
         h('span', { class: 'q-key', text: `Set ${s.worn} worn${s.active ? '' : ' (not complete)'}: ${s.name}` }), simLines(s.lines)))) : null;
-      body.append(
-        partRow('id', fresh ? res.name : '…', L.appearance, mySets.length ? null : 'No appearance bonus and no set.', setBox),
-        partRow('basic', fresh ? (res.basic || `${res.name} (its own)`) : '…', (L.item || []).filter((l) => l.n !== 'fusion great success'), 'No basic features.'),
-        partRow('special', fresh ? (res.special || `${res.name} (its own)`) : '…', L.characteristic, 'No characteristics.'));
-      if (meta.tarot[k]) body.append(partRow('tarot', fresh ? (res.tarot || 'None') : '…', L.tarot, spec.tarot ? 'Nothing the game data has numbers for.' : null));
-      if (meta.soul[k]) body.append(partRow('soul', fresh ? (res.soul || 'None') : '…', L.soul, spec.soul ? 'Nothing the game data has numbers for.' : null));
-      // Fusion bonus: LIMIT is every bonus of this kind of piece at the top of its table ("MAX" in the game)
+      const slot1 = col('Slot 1', 'Appearance · set bonus', moved('id'), part('id', fresh ? res.name : '…', own, L.appearance, mySets.length ? null : 'No appearance bonus and no set.'), setBox);
+
+      // Slot 2: basic features. The fusion bonus switch sits in its title line, on the right (LIMIT is every bonus of
+      // this kind of piece at the top of its table, "MAX" in the game), and the bonus it gives is added to the basic
+      // feature of the same stat, in brackets in the fusion colour: "Long-Range +82 (+45)".
+      let limitBox = null;
       if (fresh && res.fuse_max && res.fuse_max.length) {
         const max = res.fuse_max.map((f) => `${f.stat} +${f.bonus}`).join(' · ');
         const now = (res.fuse || []).map((f) => `${f.stat} +${f.bonus}`).join(' · ');
         const sw = h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: res.limit ? true : null, 'data-fk': `f${k}`, 'aria-label': 'LIMIT: fusion bonus at MAX',
           onchange: () => { spec.fuse = sw.checked ? [50, 50, 50] : [0, 0, 0]; change(); } });
-        body.append(h('div', { class: 'sim-part' + (was && !simSame(spec.fuse, was.fuse) ? ' changed' : '') },
-          h('div', { class: 'sim-part-key' }, h('span', { text: 'Fusion bonus' }), h('small', { text: 'LIMIT' })),
-          h('div', { class: 'sim-part-val' }, h('label', { class: 'sim-limit' }, sw, h('span', null, h('b', { text: res.limit ? 'LIMIT (MAX)' : 'Not at MAX' }),
-            h('small', { text: res.limit ? ` ${max}` : now ? ` now ${now}; LIMIT gives ${max}` : ` LIMIT gives ${max}` })),
-            was && !simSame(spec.fuse, was.fuse) ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-undo', onclick: (ev) => { ev.preventDefault(); spec.fuse = simClone(was.fuse); change(); } }, 'Undo') : null))));
+        limitBox = h('div', { class: 'sim-limit-box' },
+          h('label', { class: 'sim-limit', 'data-tip': res.limit ? `Fusion bonus at MAX: ${max}` : now ? `Fusion bonus now ${now}. LIMIT gives ${max}` : `LIMIT: the fusion bonus at MAX gives ${max}` },
+            h('b', { text: 'LIMIT' }), sw),
+          undo('fuse'));
       }
-      if (fresh && L.mod && L.mod.length) body.append(h('div', { class: 'sim-part' },
-        h('div', { class: 'sim-part-key' }, h('span', { text: 'Mods' }), h('small', { text: 'kept as they are' })), h('div', { class: 'sim-part-val' }, simLines(L.mod))));
-      body.append(h('div', { class: 'sim-slot-foot' },
-        h('button', { type: 'button', class: 'btn btn-sm', 'data-fk': `w${k}`, 'data-tip': SIM_PARTS.whole[1], onclick: () => simPick(k, 'whole', () => { drawEditor(); drawHead(); }) }, 'Replace the whole piece…'),
-        h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { M.build.slots[k] = null; change(); } }, 'Take it off'),
-        changed ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { M.build.slots[k] = simClone(was); change(); } }, 'Undo this slot') : null));
-      const whole = histChips('whole');
-      if (whole) body.append(whole);
+      const itemLines = L.item || [], isFuse = (l) => l.n === 'fusion great success';
+      const flat = (t) => /^(.*?)\s*([+−-])\s?(\d+(?:\.\d+)?)$/.exec(t);   // "Long-Range +82" -> name, sign, number (no %)
+      const fuseBy = new Map();
+      itemLines.filter(isFuse).forEach((l) => { const m = flat(l.t); if (m) fuseBy.set(m[1], (fuseBy.get(m[1]) || 0) + (m[2] === '+' ? 1 : -1) * Number(m[3])); });
+      const fuseTag = (v) => h('span', { class: 'sim-fuse-add', 'data-tip': 'Fusion bonus', text: ` (${v < 0 ? '−' : '+'}${fmt(Math.abs(v))})` });
+      const basicLines = itemLines.filter((l) => !isFuse(l));
+      let basicBox;
+      if (!fresh) basicBox = null;
+      else if (!basicLines.length && !fuseBy.size) basicBox = h('p', { class: 'sim-none', text: 'No basic features.' });
+      else {
+        const left = new Map(fuseBy);
+        basicBox = h('ul', { class: 'sim-lines' }, basicLines.map((l) => {
+          const li = simLine(l), m = !l.c && flat(l.t);
+          if (m && left.has(m[1])) { li.insertBefore(fuseTag(left.get(m[1])), li.childNodes[1] || null); left.delete(m[1]); }
+          return li;
+        }), [...left].map(([name, v]) => h('li', { class: 'sim-line' }, name, fuseTag(v))));   // a bonus to a stat the piece has no basic feature for
+      }
+      const slot2 = h('div', { class: 'sim-col' + (moved('basic') || moved('fuse') ? ' changed' : '') },
+        h('div', { class: 'sim-col-top' }, h('div', { class: 'sim-col-key' }, h('span', { text: 'Slot 2' }), h('small', { text: 'Basic features' })), limitBox),
+        slotPick('basic', fresh ? (res.basic || res.name) : '…', fresh ? (res.basic_icon || own) : null), basicBox);
+
+      // Slot 3: characteristics (bullets have no third slot)
+      const slot3 = slotName === 'Bullets'
+        ? h('div', { class: 'sim-col off' }, h('div', { class: 'sim-col-key' }, h('span', { text: 'Slot 3' }), h('small', { text: 'Characteristics' })), h('p', { class: 'sim-none', text: 'Bullets have no Slot 3.' }))
+        : col('Slot 3', 'Characteristics', moved('special'), part('special', fresh ? (res.special || res.name) : '…', fresh ? (res.special_icon || own) : null, L.characteristic, 'No characteristics.'));
+
+      // above the slots: the tarot, then the soul, a line each, where the slot takes one (no line when it takes none):
+      // its name and its dropdown, and under them what it gives
+      const crystal = (key, label) => {
+        const [pick, chips, lines] = part(key, fresh ? (res[key] || 'None') : '…', fresh && spec[key] ? res[key + '_icon'] : null, L[key], spec[key] ? 'Nothing the game data has numbers for.' : null);
+        return h('div', { class: 'sim-col sim-crystal' + (moved(key) ? ' changed' : '') },
+          h('div', { class: 'sim-col-key' }, h('span', { text: label }), h('small', { text: 'Crystal' })),
+          h('div', { class: 'sim-crystal-pick' }, pick, chips), lines);
+      };
+      const crystals = [meta.tarot[k] ? crystal('tarot', 'Tarot') : null, meta.soul[k] ? crystal('soul', 'Soul') : null].filter(Boolean);
+
+      // Under the slots: the mods. Only weapons have mod slots in NewMoon's item data: a weapon gets five columns, one per
+      // mod slot, each with its dropdown (the mods the game lets you reach in that slot: simulator `weapon_mod_reach`)
+      // and what the mod gives. Slots past the weapon's own count (`mod_slots`) are ones the game adds ("Added slot").
+      // Another piece shows its mods only if it has any (as read), without dropdowns.
+      let mods = null;
+      if (slotName === 'Weapon') {
+        const ownSlots = fresh && typeof res.mod_slots === 'number' ? res.mod_slots : null, each = (fresh && res.mods) || [];
+        mods = h('div', { class: 'sim-col sim-mods' }, h('div', { class: 'sim-col-key' }, h('span', { text: 'Mods' }), h('small', { text: ownSlots === null ? 'five mod slots' : `${ownSlots} of its own; the game can add more, up to 5` })),
+          h('div', { class: 'sim-mod-slots' }, [0, 1, 2, 3, 4].map((i) => {
+            const key = 'mod' + i, v = simPartVal(spec, key), m = each[i];
+            const name = !fresh ? '…' : v && v !== 255 ? (m && m.name) || 'A mod the game data has no name for' : 'No mod';
+            return h('div', { class: 'sim-mod' + (moved(key) ? ' changed' : '') },
+              // "Added" sits on the title's line, so every slot's dropdown stays level with the others
+              h('div', { class: 'sim-col-key sim-mod-key' }, h('span', { text: `Slot ${i + 1}` }), ownSlots !== null && i >= ownSlots ? h('small', { class: 'sim-mod-added', 'data-tip': 'The weapon doesn’t come with this slot: the game adds it (a mod slot expansion)', tabindex: 0, text: 'Added' }) : null),
+              h('div', { class: 'sim-part-pick' }, pickBtn(key, name, null), undo(key)), histChips(key),
+              fresh && m ? simLines(m.lines, 'Nothing the game data has numbers for.') : null);
+          })));
+      } else if (fresh && L.mod && L.mod.length) {
+        mods = h('div', { class: 'sim-col sim-mods' }, h('div', { class: 'sim-col-key' }, h('span', { text: 'Mods' }), h('small', { text: 'kept as they are' })), simLines(L.mod));
+      }
+
+      // (DOM append writes a null as the text "null": only the lines there are)
+      card.append(...[crystals.length ? h('div', { class: 'sim-crystals' }, crystals) : null,
+        h('div', { class: 'sim-cols' }, slot1, slot2, slot3), mods].filter(Boolean));
       return card;
     }
 
@@ -5870,13 +5989,99 @@
       return ed.box;
     }
 
+    // The whole gear at a glance, and the way to pick the piece to edit: 15 small tiles in the game's equipment window order (its three rows of
+    // five, which is also the slots' own order: Weapon, Bullets, Ring, Earring, Talisman / Head, Face, Top, Neck, Back /
+    // Arms, COMP, Bottom, Feet, Extra). A tile shows the slot, the piece's picture and name (Slot 1), the pieces Slot 2
+    // and Slot 3 come from (in the accent colour when soul infused from another piece), and marks for what is on it: the
+    // tarot and soul crystals' pictures, LIMIT, the number of mods. Only the picked piece's box shows under the grid
+    // (`M.gearSel`, the Weapon at first); a click on a tile shows that piece's box instead. Bullets are the exception
+    // (the user's): there is nothing to edit on them but the bullet itself, so their tile opens the picker for another
+    // bullet straight away and the box below stays as it is.
+    const BULLETS = meta.slots.indexOf('Bullets');
+    const gearSel = () => (Number.isInteger(M.gearSel) && M.gearSel >= 0 && M.gearSel < 15 && M.gearSel !== BULLETS ? M.gearSel : 0);
+    function slotGrid() {
+      const sel = gearSel();
+      const tile = (k) => {
+        const spec = M.build.slots[k], was = M.init.build.slots[k], res = M.cur.slots[k] || {}, slotName = meta.slots[k];
+        const fresh = spec && res.id === spec.id, changed = !simSame(spec, was);
+        const name = spec ? (fresh ? res.name : '…') : 'Empty';
+        // Slot 2 and Slot 3: the piece each comes from (the piece itself unless soul infused; Bullets have no Slot 3)
+        const donor = (n, from, icon, what) => h('span', { class: 'sim-grid-donor' + (from ? ' infused' : ''), 'data-tip': `Slot ${n}, ${what}: ${from || `${res.name} (its own)`}` },
+          h('span', { class: 'sim-grid-n', text: String(n) }),
+          (from ? icon : res.icon) ? h('img', { class: 'sim-grid-crystal', src: from ? icon : res.icon, alt: '' }) : null,
+          h('span', { class: 'sim-grid-donor-name', text: from || res.name }));
+        const donors = !fresh ? [] : [donor(2, res.basic, res.basic_icon, 'basic features'), slotName === 'Bullets' ? null : donor(3, res.special, res.special_icon, 'characteristics')];
+        const modCount = spec ? (spec.mods || []).filter((m) => m && m !== 255).length : 0;
+        const marks = !fresh ? [] : [
+          spec.tarot && res.tarot_icon ? h('img', { class: 'sim-grid-crystal', src: res.tarot_icon, alt: '', 'data-tip': `Tarot: ${res.tarot}` }) : null,
+          spec.soul && res.soul_icon ? h('img', { class: 'sim-grid-crystal', src: res.soul_icon, alt: '', 'data-tip': `Soul: ${res.soul}` }) : null,
+          res.limit ? h('span', { class: 'sim-grid-mark limit', 'data-tip': 'Fusion bonus at MAX', text: 'LIMIT' }) : null,
+          modCount ? h('span', { class: 'sim-grid-mark', 'data-tip': ((res.mods || []).filter(Boolean).map((m) => m.name).filter(Boolean).join(' · ')) || `${modCount} mods`, text: `${modCount} mod${modCount === 1 ? '' : 's'}` }) : null,
+        ].filter(Boolean);
+        return h('button', { type: 'button', class: 'sim-grid-tile' + (k === sel ? ' on' : '') + (spec ? '' : ' sim-grid-empty') + (changed && !blank ? ' changed' : ''), 'data-fk': 'g' + k,
+          'aria-pressed': String(k === sel), 'aria-label': `${slotName}: ${name}. ${k === BULLETS ? 'Pick another bullet' : 'Edit it below'}`, 'data-tip': k === BULLETS ? 'Pick another bullet' : null,
+          onclick: () => { if (k === BULLETS) simPick(k, 'whole', () => { drawEditor(); drawHead(); }); else if (k !== gearSel()) { M.gearSel = k; drawEditor(); } } },
+          h('span', { class: 'sim-grid-slot', text: slotName }),
+          h('span', { class: 'sim-grid-main' },
+            spec && fresh && res.icon ? h('img', { class: 'slot-icon', src: res.icon, alt: '' }) : h('span', { class: 'slot-icon sim-noicon' }),
+            h('span', { class: 'sim-grid-name', text: name })),
+          donors.length ? h('span', { class: 'sim-grid-donors' }, donors) : null,
+          marks.length ? h('span', { class: 'sim-grid-marks' }, marks) : null);
+      };
+      return h('div', { class: 'sim-grid', role: 'group', 'aria-label': 'Your gear at a glance' }, M.build.slots.map((_, k) => tile(k)));
+    }
+
+    // Where to get it: under the picked piece's box, how to get, in the game, each thing the piece is made of: the piece
+    // in Slot 1, the pieces Slot 2 and Slot 3 come from, the tarot and soul crystals. The lines are the Item Database's
+    // (`gdbWhere` on gear-db.json); an item used in several parts is listed once, with every part it is in. Mods are not
+    // covered (the game data the app has doesn't say which item gives which mod).
+    const WHERE_SHOWN = 6;   // lines per item before "Show all"
+    function whereCard(k) {
+      const spec = M.build.slots[k], res = M.cur.slots[k] || {};
+      if (!spec || res.id !== spec.id) return null;
+      const box = h('section', { class: 'card sim-where' });
+      const want = new Map();   // item id -> the parts it is in
+      const add = (id, part) => { if (id > 0) { if (!want.has(id)) want.set(id, []); want.get(id).push(part); } };
+      add(spec.id, 'Slot 1'); add(spec.basic, 'Slot 2');
+      if (meta.slots[k] !== 'Bullets') add(spec.special, 'Slot 3');
+      add(spec.tarot ? res.tarot_item : 0, 'Tarot'); add(spec.soul ? res.soul_item : 0, 'Soul');
+      const head = h('div', { class: 'card-head' }, h('h2', { class: 'section-title', text: 'Where to get it' }),
+        h('span', { class: 'card-sub', text: `In the game, for ${res.name}: its slots and crystals` }));
+      const fill = (d) => {
+        const byId = d ? (S.gdb.byId || (S.gdb.byId = new Map(d.items.filter((it) => it.id && !it.keyItem).map((it) => [it.id, it])))) : null;
+        if (!byId) { simFill(box, head, h('p', { class: 'note', text: 'The Item Database’s data can’t be read, so where things come from can’t be shown.' })); return; }
+        M.whereOpen = M.whereOpen || new Set();
+        const items = [...want].map(([id, parts]) => {
+          const it = byId.get(id);
+          const label = h('span', { class: 'sim-where-parts' }, parts.map((p) => h('span', { class: 'tag', text: p })));
+          if (!it) return h('div', { class: 'sim-where-item' }, h('div', { class: 'sim-where-head' }, h('span', { class: 'slot-icon sim-noicon' }), h('b', { text: 'An item the Item Database doesn’t list' }), label));
+          const { where, notes } = gdbWhere(it);
+          const all = M.whereOpen.has(id), more = where.length - WHERE_SHOWN;
+          return h('div', { class: 'sim-where-item' },
+            h('div', { class: 'sim-where-head' }, it.icon ? h('img', { class: 'slot-icon', src: it.icon, alt: '' }) : h('span', { class: 'slot-icon sim-noicon' }),
+              h('b', { text: it.name }), label,
+              h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-where-open', 'data-tip': 'Open this item in the Item Database',
+                onclick: () => { Object.assign(S.gdb, { q: it.name, kind: 'all', cls: 'all', known: false, gender: '', align: '', src: [], range: '', aff: [], maxLv: '', open: new Set([it.key]), pg: 0 }); go('geardb'); } }, 'Item Database')),
+            where.length ? h('ul', { class: 'gdb-list gdb-get' }, all ? where : where.slice(0, WHERE_SHOWN)) : null,
+            more > 0 ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'aria-expanded': String(all),
+              onclick: () => { if (all) M.whereOpen.delete(id); else M.whereOpen.add(id); fill(d); } }, all ? 'Show fewer' : `Show all ${where.length} ways`) : null,
+            notes.length ? h('div', { class: 'sim-where-notes' }, h('span', { class: 'q-key', text: 'Community notes' }), h('ul', { class: 'gdb-list' }, notes.map((n) => h('li', { text: n })))) : null,
+            !where.length && !notes.length ? h('p', { class: 'note', text: 'Neither the game data nor the community notes say where this comes from.' }) : null);
+        });
+        simFill(box, head, items);
+      };
+      if (S.gdb.state === 'ready') fill(S.gdb.data);
+      else { simFill(box, head, h('p', { class: 'note', text: 'Reading the Item Database…' })); loadGearDb().then(fill); }
+      return box;
+    }
+
     function drawEditor() {
       const keep = document.activeElement && editor.contains(document.activeElement) ? document.activeElement.dataset.fk : null;
       const c = simChanges();
       const tab = (id, label, n) => h('button', { type: 'button', 'aria-pressed': String(M.tab === id), onclick: () => { M.tab = id; drawEditor(); } }, label, n ? h('span', { class: 'sim-count', text: n }) : null);
       expLive = null;
       simFill(tabsBox, tab('gear', 'Gear', c.slots.length), tab('expertise', 'Expertise', c.ranks.length));
-      simFill(bodyBox, M.tab === 'gear' ? h('div', { class: 'sim-slots' }, M.build.slots.map((_, k) => slotCard(k))) : expertiseTab());
+      simFill(bodyBox, M.tab === 'gear' ? h('div', { class: 'sim-slots' }, slotGrid(), slotCard(gearSel()), whereCard(gearSel())) : expertiseTab());
       if (keep) { const el = editor.querySelector(`[data-fk="${keep}"]`); if (el) el.focus({ preventScroll: true }); }
     }
 

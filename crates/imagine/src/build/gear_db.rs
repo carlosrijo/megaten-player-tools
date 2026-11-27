@@ -107,6 +107,10 @@ static RE_DIGITS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\d+").expect("
 static RE_JP_NAME: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"JP name:[^;]*;?").expect("jp name"));
 static RE_NOTE_SPLIT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[;]|\s/\s").expect("note split"));
 static RE_SEASON: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d{4})\d{2}_(.+)$").expect("season"));
+/// "Hand over Abyss Seed to Yagiya in Suginami Tunnels", "Hand over A + 20 × B to ...": what a fusion plugin is traded
+/// for (the items are split on " + " and their counts dropped by the caller)
+static RE_HAND_OVER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^Hand over (.+?) to ").expect("hand over"));
+static RE_COUNT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d[\d,]* × ").expect("count"));
 
 /// `Regex.Replace(s, @"\s+", " ").Trim()`
 fn squash(s: &str) -> String {
@@ -214,6 +218,14 @@ fn distinct(a: Vec<Value>) -> Vec<Value> {
 struct Sources {
     /// random box number -> the items that open it
     openers: IndexMap<i32, Vec<i32>>,
+    /// (zone, spawn location group) -> the items whose use summons it there (skill function 322); zone 0: a global
+    /// partial group or location group, summoned wherever the item is used (function 324: the Demon Eggs)
+    summoners: HashMap<(i32, i32), Vec<i32>>,
+    /// a demon -> its special fusions (the Fusion Planner's fusion-data.json beside the output): the demons fused, and
+    /// the plugin it needs with the ways to get it. "Crystallize <demon>" shows them: crystallizing needs the demon.
+    special_fusions: HashMap<i32, Vec<SpecialFusion>>,
+    /// item name -> id, to follow "Hand over <item> to ..." in a plugin's ways to get it
+    item_by_name: HashMap<String, i32>,
     names: IndexMap<i32, String>,
     /// item id -> its raw in-game sources
     raw: HashMap<i32, Value>,
@@ -298,6 +310,11 @@ fn line(depth: i32, k: &str, t: &str, s: &str, v: &str) -> Obj {
     o
 }
 
+struct SpecialFusion {
+    demons: Vec<String>,
+    plugin: Option<(String, Vec<String>)>,
+}
+
 /// The raw in-game sources of one item (tools\dcmexport --ids: drops, chests, shops, events, boxes from the server's
 /// files) as lines a player can act on: { k: kind, t: who or where, s: detail, v: rate or price }. Best first.
 fn get_lines(sources: &Sources, raw: &Value, depth: i32, visited: &mut HashSet<i32>) -> Vec<Obj> {
@@ -364,7 +381,45 @@ fn get_lines(sources: &Sources, raw: &Value, depth: i32, visited: &mut HashSet<i
         };
         res.push(Line { rank: if !people.is_empty() { 1 } else { 6 }, sort: 0.5, obj: ln("Exchange", &who, &if !cost.is_empty() { format!("for {cost}") } else { String::new() }, ""), kids: None });
     }
-    for (_, g) in group_by(&src_all, kind_is("drop"), |x| format!("{}|{}|{}", str_of(x, "enemy"), str_of(x, "rate"), str_of(x, "season"))) {
+    // the items that summon the enemy of a drop (dcmexport "sg" / "slg": its spawn group and location groups; "global":
+    // in the global partial), empty for an enemy that spawns by itself
+    let summoned_by = |x: &Obj| -> Vec<i32> {
+        let ids = |k: &str| -> Vec<i32> { x.get(k).and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_i64).map(|v| v as i32).collect()).unwrap_or_default() };
+        let mut res: Vec<i32> = Vec::new();
+        if x.get("global").and_then(Value::as_bool) == Some(true) {
+            for g in ids("slg").into_iter().chain(ids("sg")) {
+                res.extend(sources.summoners.get(&(0, g)).map(Vec::as_slice).unwrap_or(&[]));
+            }
+        } else if dbl(x, "zoneId") as i32 != 0 {
+            // (a drop written in a zone partial has zone 0: that is not the global partial, so it matches nothing)
+            let zone = dbl(x, "zoneId") as i32;
+            for g in ids("slg") {
+                res.extend(sources.summoners.get(&(zone, g)).map(Vec::as_slice).unwrap_or(&[]));
+            }
+        }
+        res.sort_unstable();
+        res.dedup();
+        res
+    };
+    let summoned: Vec<&Obj> = src_all.iter().copied().filter(|x| str_of(x, "kind") == "drop" && !summoned_by(x).is_empty()).collect();
+    for x in &summoned {
+        let by = summoned_by(x);
+        let names: Vec<String> = by.iter().take(2).map(|i| sources.names.get(i).cloned().unwrap_or_else(|| "an item".to_string())).collect();
+        let global = x.get("global").and_then(Value::as_bool) == Some(true);
+        let z = str_of(x, "zone");
+        let s = format!("summoned with {}{}", names.join(" or "), if global { " (used in a field or dungeon)".to_string() } else if !z.is_empty() { format!(" in {z}") } else { String::new() });
+        let mut below: Vec<Obj> = Vec::new();
+        for &it in by.iter().take(2) {
+            if depth < 3 && visited.insert(it) {
+                if let Some(r) = sources.raw.get(&it) {
+                    below.extend(get_lines(sources, r, depth + 1, visited));
+                }
+            }
+        }
+        res.push(Line { rank: 2, sort: -dbl(x, "rate"), obj: ln("Enemy drop", &format!("{}{}", str_of(x, "enemy"), season(x)), &s, &pct(dbl(x, "rate"))), kids: if below.is_empty() { None } else { Some(below) } });
+    }
+    let plain: Vec<&Obj> = src_all.iter().copied().filter(|x| !summoned.iter().any(|y| std::ptr::eq(*y, *x))).collect();
+    for (_, g) in group_by(&plain, kind_is("drop"), |x| format!("{}|{}|{}", str_of(x, "enemy"), str_of(x, "rate"), str_of(x, "season"))) {
         let z = zones(&g);
         res.push(Line {
             rank: 2,
@@ -399,6 +454,75 @@ fn get_lines(sources: &Sources, raw: &Value, depth: i32, visited: &mut HashSet<i
             String::new()
         };
         res.push(Line { rank: 4, sort: 0.0, obj: ln("Event or NPC", &t, &s, ""), kids: None });
+    }
+    // crystallizing a demon (gear_db's own, from EnchantData): the demon it is made from
+    for x in src_all.iter().filter(|x| str_of(x, "kind") == "crystallize") {
+        // the demon itself: its special fusions, each with the plugin it needs and the plugin's ways to get it; a way
+        // that hands over an item ("Hand over Abyss Seed to Yagiya ...") has where that item comes from under it
+        let demon = str_of(x, "demon");
+        let mut below: Vec<Obj> = Vec::new();
+        if depth < 2 {
+            // a plugin's ways once per crystal: a later fusion that needs the same plugin points back to them
+            let mut shown: HashSet<String> = HashSet::new();
+            for sp in sources.special_fusions.get(&(dbl(x, "demonId") as i32)).map(Vec::as_slice).unwrap_or(&[]) {
+                let first = sp.plugin.as_ref().is_none_or(|(n, _)| shown.insert(n.clone()));
+                let needs = sp.plugin.as_ref().map_or("no plugin needed".to_string(), |(n, _)| format!("needs {n}{}", if first { "" } else { " (ways above)" }));
+                below.push(line(depth + 1, "Special fusion", &sp.demons.join(" + "), &needs, ""));
+                if let Some((_, how)) = sp.plugin.as_ref().filter(|_| first) {
+                    for w in how {
+                        below.push(line(depth + 2, "Plugin", w, "", ""));
+                        let handed: Vec<i32> = RE_HAND_OVER
+                            .captures(w)
+                            .map(|c| c[1].split(" + ").filter_map(|x| sources.item_by_name.get(RE_COUNT.replace(x.trim(), "").trim()).copied()).collect())
+                            .unwrap_or_default();
+                        for it in handed {
+                            if depth + 3 <= 3 && visited.insert(it) {
+                                if let Some(r) = sources.raw.get(&it) {
+                                    // several items: say which one each block is about
+                                    let lines = get_lines(sources, r, depth + 3, visited);
+                                    if !lines.is_empty() && w.contains(" + ") {
+                                        below.push(line(depth + 3, "For", sources.names.get(&it).map_or("", String::as_str), "", ""));
+                                    }
+                                    below.extend(lines);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        res.push(Line { rank: 2, sort: 0.0, obj: ln("Crystallize", &demon, "crystallize this demon", ""), kids: if below.is_empty() { None } else { Some(below) } });
+    }
+    // synthesis (gear_db's own, from SynthesisData): the materials and the crafting skill
+    for x in src_all.iter().filter(|x| str_of(x, "kind") == "craft") {
+        let (skill, recipe) = (str_of(x, "skill"), str_of(x, "recipe"));
+        let n = dbl(x, "count");
+        let s = [
+            if !skill.is_empty() { format!("with {skill}") } else { String::new() },
+            if !recipe.is_empty() { format!("recipe “{recipe}”") } else { String::new() },
+            if n > 1.0 { format!("makes {}", fmt::n0(n)) } else { String::new() },
+        ]
+            .into_iter()
+            .filter(|x| !x.is_empty())
+            .collect::<Vec<_>>()
+            .join(" · ");
+        let mats = str_of(x, "materials");
+        res.push(Line { rank: 2, sort: 0.0, obj: ln("Craft", if !mats.is_empty() { &mats } else { "Materials the data does not list" }, &s, ""), kids: None });
+    }
+    // items an event gives by script (dcmexport kind "reward": a dungeon's reward roll, a mailed item, one of a few in
+    // the loot), with their chance; one line per place, way and chance
+    for (_, g) in group_by(&src_all, kind_is("reward"), |x| format!("{}|{}|{}|{}", str_of(x, "zone"), str_of(x, "season"), str_of(x, "how"), str_of(x, "rate"))) {
+        let z = str_of(g[0], "zone");
+        let t = format!("{}{}", if !z.is_empty() { z.as_str() } else { no_place }, season(g[0]));
+        let who = distinct_field(&g, "npc");
+        let how = str_of(g[0], "how");
+        let s = [how, if !who.is_empty() { format!("from {}", who.iter().take(3).cloned().collect::<Vec<_>>().join(", ")) } else { String::new() }]
+            .into_iter()
+            .filter(|x| !x.is_empty())
+            .collect::<Vec<_>>()
+            .join(" · ");
+        let rate = dbl(g[0], "rate");
+        res.push(Line { rank: 4, sort: -rate, obj: ln("Event reward", &t, &s, &pct(rate)), kids: None });
     }
     for x in src_all.iter().filter(|x| str_of(x, "kind") == "box") {
         // the item that opens this box, and where that item comes from in turn
@@ -521,6 +645,60 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
             }
         }
     }
+    // Two ways the game makes items that no drop, shop or event lists (comp_hack DemonCrystallize, Synthesize):
+    // crystallizing a demon gives the crystal EnchantData names for it (devilCrystal demonID -> itemID), and synthesis
+    // crafts SynthesisData's item from its materials with a crafting skill. They join dcmexport's raw sources as kinds
+    // "crystallize" and "craft" (get_lines words them). A table missing from the decoded folder is skipped.
+    {
+        let mut add = |item: i32, src: Value| {
+            if item <= 0 {
+                return;
+            }
+            let e = sources.raw.entry(item).or_insert_with(|| json!([]));
+            if let Some(a) = e.as_array_mut() {
+                a.push(src);
+            }
+        };
+        if let Ok(xml) = json::read_all_text(&dec.join("EnchantData.xml")) {
+            let mut demon_name: HashMap<i32, String> = HashMap::new();
+            for line in crate::data::game_data::reference_lines("devils-game.tsv")?.unwrap_or_default() {
+                let p: Vec<&str> = line.split('\t').collect();
+                if p.len() > 1 && !line.starts_with('#') {
+                    demon_name.insert(int(Some(p[0])), p[1].trim().to_string());
+                }
+            }
+            let doc = parse_xml(&xml)?;
+            for e in records(&doc) {
+                let dc = obj(Some(e), "devilCrystal");
+                let (demon, item) = (int(m(dc, "demonID").as_deref()), int(m(dc, "itemID").as_deref()));
+                if demon > 0 {
+                    let who = demon_name.get(&demon).cloned().unwrap_or_else(|| "a demon the data does not name".to_string());
+                    add(item, json!({ "kind": "crystallize", "demonId": demon, "demon": who }));
+                }
+            }
+        }
+        if let Ok(xml) = json::read_all_text(&dec.join("SynthesisData.xml")) {
+            let skills = data.skill_names()?;
+            let doc = parse_xml(&xml)?;
+            for r in records(&doc) {
+                let item = int(m(Some(r), "itemID").as_deref());
+                let mats: Vec<String> = member(r, "materials")
+                    .map(|ms| {
+                        ms.descendants()
+                            .filter(|n| n.is_element() && n.tag_name().name() == "object")
+                            .filter_map(|o| {
+                                let (id, n) = (int(m(Some(o), "itemID").as_deref()), int(m(Some(o), "amount").as_deref()));
+                                (id > 0 && n > 0).then(|| format!("{n} × {}", name.get(&id).cloned().unwrap_or_else(|| "an item the client does not name".to_string())))
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                // baseSkillID is the crafting skill ("Blacksmith"), skillID the recipe learned for this item ("Willow")
+                let skill_of = |k: &str| skills.get(&int(m(Some(r), k).as_deref())).cloned().flatten().unwrap_or_default();
+                add(item, json!({ "kind": "craft", "materials": mats.join(", "), "skill": skill_of("baseSkillID"), "recipe": skill_of("skillID"), "count": int(m(Some(r), "count").as_deref()) }));
+            }
+        }
+    }
     // the crystal item of each enchant side: a tarot or soul crystal's item id -> (enchant id, is tarot)
     let mut enchant_of_item: HashMap<i32, Vec<(i32, bool)>> = HashMap::new();
     for (&(eid, is_tarot), side) in data.enchant_sides()?.iter() {
@@ -564,13 +742,26 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
     // A random box (the server's drop sets with a GiftBoxID) is opened by using an item: the item's use-skill has
     // function 320 and the box number as its first special parameter (SkillData). Data tickets work this way too.
     let mut box_of_skill: HashMap<i32, i32> = HashMap::new();
+    // An item can also summon enemies (comp_hack SkillManager): function 322 spawns a zone's spawn location group
+    // (special params: zone, location group; Kymopoleia's Hair Accessory -> Hecatonchires in Shinjuku), 324 a group of
+    // the global partial next to the player (param: group or location group; the Demon Eggs). skill -> (zone, group).
+    let mut summon_of_skill: HashMap<i32, (i32, i32)> = HashMap::new();
     let skill_file = dec.join("SkillData.xml");
     if skill_file.is_file() {
         let xml = json::read_all_text(&skill_file)?;
         let doc = parse_xml(&xml)?;
         let first_member = first_member_desc;
         for sk in records(&doc) {
-            if first_member(sk, "functionID").map(|n| xml_value(n).trim().to_string()).as_deref() != Some("320") {
+            let func = first_member(sk, "functionID").map(|n| xml_value(n).trim().to_string()).unwrap_or_default();
+            if func == "322" || func == "324" {
+                let ps: Vec<i32> = first_member(sk, "specialParams").map(|sp| xml_children(sp, "element").map(|e| int(Some(&xml_value(e)))).collect()).unwrap_or_default();
+                let at = if func == "322" { (ps.first().copied().unwrap_or(0), ps.get(1).copied().unwrap_or(0)) } else { (0, ps.first().copied().unwrap_or(0)) };
+                if at.1 != 0 {
+                    summon_of_skill.insert(int(m(obj(Some(sk), "common"), "id").as_deref()), at);
+                }
+                continue;
+            }
+            if func != "320" {
                 continue;
             }
             let bx = first_member(sk, "specialParams")
@@ -582,6 +773,42 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
         }
     }
     sources.names = name.clone();
+    for (&id, n) in &name {
+        sources.item_by_name.entry(n.clone()).or_insert(id);
+    }
+    // special fusions from the Fusion Planner's data (made by fusionexport from the client's tables)
+    let fusion_file = std::path::absolute(out_file)?.parent().map(Path::to_path_buf).unwrap_or_default().join("fusion-data.json");
+    if fusion_file.is_file() {
+        let root = json::load(&fusion_file)?;
+        let demon_name: HashMap<i64, String> = json::arr(root.at("demons"))
+            .filter_map(|d| Some((d.get(0)?.as_i64()?, d.get(1)?.as_str()?.to_string())))
+            .collect();
+        for sp in json::arr(root.at("specials")) {
+            let result = json::int(sp.at("result"));
+            // each source: [id, variant] or "id variant" (variant 1: a variant of that demon does too)
+            let demons: Vec<String> = json::arr(sp.at("src"))
+                .map(|s| {
+                    let (id, variant) = match s {
+                        Value::Array(a) => (a.first().and_then(Value::as_i64).unwrap_or(0), a.get(1).and_then(Value::as_i64).unwrap_or(0)),
+                        Value::String(t) => {
+                            let mut p = t.split_whitespace();
+                            (p.next().and_then(|x| x.parse().ok()).unwrap_or(0), p.next().and_then(|x| x.parse().ok()).unwrap_or(0))
+                        }
+                        _ => (0, 0),
+                    };
+                    format!("{}{}", demon_name.get(&id).cloned().unwrap_or_else(|| "a demon the data does not name".to_string()), if variant != 0 { " (or a variant)" } else { "" })
+                })
+                .collect();
+            let pid = json::int(sp.at("plugin"));
+            let plugin = (pid > 0).then(|| {
+                let p = root.at("plugins").and_then(|ps| ps.get(pid.to_string()));
+                let name = p.and_then(|p| json::str(p.at("name"))).unwrap_or_else(|| "a fusion plugin".to_string());
+                let how = p.and_then(|p| json::str(p.at("how"))).map(|h| h.split(" · ").map(str::to_string).filter(|s| !s.is_empty()).collect()).unwrap_or_default();
+                (name, how)
+            });
+            sources.special_fusions.entry(result).or_default().push(SpecialFusion { demons, plugin });
+        }
+    }
 
     let mut items: Vec<Obj> = Vec::new();
     let mut by_id: IndexMap<i32, usize> = IndexMap::new();
@@ -608,6 +835,11 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
                 if let Some(&opens) = box_of_skill.get(&use_skill) {
                     if name.contains_key(&id) {
                         sources.openers.entry(opens).or_default().push(id);
+                    }
+                }
+                if let Some(&at) = summon_of_skill.get(&use_skill) {
+                    if name.contains_key(&id) {
+                        sources.summoners.entry(at).or_default().push(id);
                     }
                 }
             }
