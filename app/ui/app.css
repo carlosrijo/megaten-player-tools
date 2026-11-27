@@ -266,11 +266,12 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .notice b { font-weight: 600; }
 
 /* ---------- overview: the stat sheet ---------- */
-/* One heading over one row ("Key stats and affinities"): the stat sheet and, beside it, the affinity radar. Both boxes
-   start and end on the same lines. Sheet: one line per key stat: name, a bar only where the stat has a cap (how close
+/* One heading over one row ("Key stats and affinities"): the stat sheet with What changed under it and, beside them,
+   the affinity radar with its table. Each side is as tall as what it holds. Sheet: one line per key stat: name, a bar only where the stat has a cap (how close
    to it), the total. A click opens where the total comes from, under the line. */
 .stat-label { color: var(--text-2); font-size: 12px; }
-.over-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: stretch; }
+.over-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+.over-left { display: grid; gap: 18px; align-content: start; min-width: 0; }   /* the sheet, then What changed, spaced as the page's sections are */
 /* Overview: the one-line bands under your stats (expertise, the demon's own card, gear). Expertise and gear share this
    shape: title | what it holds, wrapping in a narrow window | View more. */
 .band { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px 14px; padding: 10px 14px; }
