@@ -3755,7 +3755,7 @@
       S.dun.data = d; S.dun.state = d ? 'ready' : 'failed';
       if (d) {
         const sk = (id) => (d.skills[id] ? d.skills[id][0] : '');
-        Object.values(d.mobs).forEach((m) => { m.hay = [m.name, m.race || '', ...m.skills.map(sk), ...m.enemySkills.map(sk), ...m.traits.map(sk)].join(' ').toLowerCase(); });
+        Object.values(d.mobs).forEach((m) => { m.hay = [m.name, m.ja || '', m.race || '', ...m.skills.map(sk), ...m.enemySkills.map(sk), ...m.traits.map(sk)].join(' ').toLowerCase(); });
         // a drop points at d.items[id] = [name, the game's description, picture]
         const item = (g) => { const [name, desc, icon] = d.items[g.i] || ['', '', null]; return Object.assign(g, { item: name, desc, icon }); };
         (d.everywhere || []).forEach(item);   // the game-wide drops every enemy that inherits drops can give
@@ -3799,10 +3799,10 @@
     const skills = (label, ids, kind, tip) => {
       const list = ids.filter((id) => D.skills[id]).sort((a, b) => !D.skills[a][2] - !D.skills[b][2]);
       return list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label, 'data-tip': tip || null }),
-        h('div', { class: 'dun-skill-row' }, list.map((id) => { const [n, d, icon] = D.skills[id];
+        h('div', { class: 'dun-skill-row' }, list.map((id) => { const [n, d, icon, ja] = D.skills[id];   // ja: the game's Japanese when n is BABEL's translation
           const el = icon ? h('span', { class: 'dun-skill', tabindex: 0, role: 'img', 'aria-label': n }, skillPic(icon))
-            : h('span', { class: 'tag dun-skill-name', tabindex: 0, text: n });
-          return withTip(el, () => h('div', null, tipHead(icon ? skillPic(icon) : null, n, kind), ...tipLines(d))); }))) : null;
+            : h('span', { class: 'tag dun-skill-name' + (ja ? ' tl-name' : ''), tabindex: 0, text: n });
+          return withTip(el, () => h('div', null, tipHead(icon ? skillPic(icon) : null, n, kind), ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(ja, 'skill') }) : null, ...tipLines(d))); }))) : null;
     };
     [skills('Skills', m.skills, 'Skill'), skills('Enemy-only skills', m.enemySkills, 'Enemy-only skill', 'Skills only this enemy version uses'),
       skills('Traits', m.traits, 'Trait', 'Its innate passive features')].forEach((b) => b && box.append(b));
@@ -3824,7 +3824,7 @@
       body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
         h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
           h('span', { class: 'chev' }, icon('chevron')), dunIcon(e.mob),
-          h('span', null, e.mob.name, e.boss ? h('span', { class: 'tag tag-boss', style: 'margin-left:8px', text: 'Boss' }) : null,
+          h('span', null, tlName(e.mob.name, e.mob.ja, 'demon'), e.boss ? h('span', { class: 'tag tag-boss', style: 'margin-left:8px', text: 'Boss' }) : null,
             h('span', { class: 'src-count', text: [e.mob.race, e.where].filter(Boolean).join(' · ') })))),
         h('td', { class: 'num', text: e.mob.level }),
         h('td', { class: 'num', text: fmt(e.mob.hp) }),
@@ -4300,8 +4300,13 @@
   /** A skill's picture; an empty box says why there is none. */
   /** A skill's name. `ja` (skill-db.json, demon-db.json): the game names it only in Japanese and the name is BABEL's
    *  translation (referenceskill-names-en.tsv), so it is greyed out with the game's own name in its tooltip. */
-  const SKL_TL_TIP = (s) => `BABEL's translation: the game has no English name for this skill. In game it is called ${s.ja}`;
-  const sklName = (s, tag = 'span') => (s && s.ja ? h(tag, { class: 'tl-name', 'data-tip': SKL_TL_TIP(s), text: s.name }) : h(tag, { text: s ? s.name : '' }));
+  /** A name BABEL translated (or repaired) because the game has it only in Japanese or garbled: greyed out, with the game's
+   *  own name in its tooltip. `ja` is that name (skills, demons, growth types: skill-names-en.tsv, demon-names-en.tsv,
+   *  growth-names-en.tsv); without it the name is the game's and shows as it is. */
+  const TL_TIP = (ja, what) => `BABEL's translation: the game has no English name for this ${what}. In game it is called ${ja}`;
+  const tlName = (name, ja, what, tag = 'span') => (ja ? h(tag, { class: 'tl-name', 'data-tip': TL_TIP(ja, what), text: name }) : h(tag, { text: name }));
+  const SKL_TL_TIP = (s) => TL_TIP(s.ja, 'skill');
+  const sklName = (s, tag = 'span') => tlName(s ? s.name : '', s && s.ja, 'skill', tag);
   const sklIcon = (x) => { const box = ddbImg(x.icon, 24, 'skill-ico'); if (!x.icon && SKL_NO_ICON[x.noIcon]) box.setAttribute('data-tip', SKL_NO_ICON[x.noIcon]); return box; };
   function loadSkillDb() {
     loadDemonDb();   // who learns each skill
@@ -8574,9 +8579,9 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       onclick: (ev) => { rbpDemonsFor = ev.currentTarget; } }, label, h('span', { class: 'chev down' }, icon('chevron')));
     const id = h('div', { class: 'demon-id' }, h('h3', { class: 'demon-name' }, name));
     if (x) {
-      const gname = P.growthNames[String(D.growth)] || '';
+      const gname = P.growthNames[String(D.growth)] || '', gja = (P.growthNamesJa || {})[String(D.growth)];
       id.append(h('span', { class: 'tag', text: `Lv ${D.level}` }), h('span', { class: 'tag', text: x.race }),
-        h('span', { class: 'tag', 'data-tip': 'G-Type: the growth type the demon is on', text: gname || '—' }),
+        h('span', { class: 'tag' + (gja ? ' tl-name' : ''), 'data-tip': 'G-Type: the growth type the demon is on' + (gja ? '. ' + TL_TIP(gja, 'growth type') : ''), text: gname || '—' }),
         D.fused ? (D.kind ? h('span', { class: 'tag rbp-kindtag', style: `--k:var(--mt-${D.kind})`, 'data-tip': 'M-Type: the Mitama it was fused with, and its Mitama rank', text: `${RBP_KINDS[D.kind - 1]} Mitama · rank ${D.mitamaRank}` })
           : h('span', { class: 'tag tag-warn', 'data-tip': 'It is Mitama-fused, but the game only listed it: which Mitama and its rank were not read, so their bonus is not counted. Open its status window in game and import it again.' }, icon('alert'), 'Mitama not read'))
           // not fused yet: the Mitama to fuse it with is picked here (the kind fixes which stats its Mitama rank bonus raises)
@@ -9014,8 +9019,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     const mit = fused ? { kind, rank: mitamaRank, slots: D.fused ? D.slots.filter(Boolean) : [], sets: M ? M.activeSets : [], boost: plan.boost } : null;
     const owned = rbpOwnedSkills(P, plan, D, fused), FX = S.rbp.fx || {};
     const r = rbpStats(P, form.stats, growth, L, ranks, mit, owned.flatMap((o) => (FX[o.id] ? FX[o.id].adj : [])));
-    const gname = P.growthNames[String(growth)] || `growth ${growth}`;
-    card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: `Stats at level ${L}` }), h('span', { class: 'src-count', text: `${fused ? 'Mitama form · ' : ''}${gname}` })));
+    const gname = P.growthNames[String(growth)] || `growth ${growth}`, gja = (P.growthNamesJa || {})[String(growth)];
+    card.append(h('div', { class: 'card-head' }, h('span', { class: 'card-title', text: `Stats at level ${L}` }), h('span', { class: 'src-count' }, fused ? 'Mitama form · ' : '', tlName(gname, gja, 'growth type'))));
     const max = Math.max(1, ...d.statNames.map((n, i) => Math.max(plain[i], r.stats[i])));
     const rows = d.statNames.map((n, i) => { const a = plain[i], b = r.stats[i], delta = b - a; return h('tr', null, h('td', { text: n }), h('td', { class: 'num', text: fmt(a) }), h('td', { class: 'num rbp-planned', text: fmt(b) }), h('td', { class: 'num ' + (delta > 0 ? 'rbp-up' : delta < 0 ? 'rbp-down' : ''), text: delta ? fmt(delta, '', true) : '' })); });
     void max;

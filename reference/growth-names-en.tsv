@@ -1,0 +1,68 @@
+#growth type id	the game's name (Japanese, as referencedevil-growth.tsv has it)	BABEL's English (shown greyed out)
+0	全能	All-Round
+1	全能後期成長	All-Round Late Growth
+2	近接後期成長	Cls-R Late Growth
+3	射撃後期成長	Lng-R Late Growth
+4	魔法後期成長	Spell Late Growth
+5	補助後期成長	Support Late Growth
+6	体力後期成長	VIT Late Growth
+7	イサ	Isa
+12	射撃1Lv	Lng-R 1 Lv
+13	射撃2Lv	Lng-R 2 Lv
+14	射撃3Lv	Lng-R 3 Lv
+15	射撃4Lv	Lng-R 4 Lv
+16	魔法1Lv	Spell 1 Lv
+17	魔法2Lv	Spell 2 Lv
+18	魔法3Lv	Spell 3 Lv
+19	魔法4Lv	Spell 4 Lv
+20	補助1Lv	Support 1 Lv
+21	補助2Lv	Support 2 Lv
+22	補助3Lv	Support 3 Lv
+23	補助4Lv	Support 4 Lv
+24	体力1Lv	VIT 1 Lv
+25	体力2Lv	VIT 2 Lv
+26	体力3Lv	VIT 3 Lv
+27	体力4Lv	VIT 4 Lv
+28	運1Lv	LUCK 1 Lv
+29	運2Lv	LUCK 2 Lv
+30	運3Lv	LUCK 3 Lv
+31	運4Lv	LUCK 4 Lv
+32	近射1Lv	Cls-R/Lng-R 1 Lv
+33	近射2Lv	Cls-R/Lng-R 2 Lv
+34	近射3Lv	Cls-R/Lng-R 3 Lv
+35	近射4Lv	Cls-R/Lng-R 4 Lv
+36	近魔1Lv	Cls-R/Spell 1 Lv
+37	近魔2Lv	Cls-R/Spell 2 Lv
+38	近魔3Lv	Cls-R/Spell 3 Lv
+39	近魔4Lv	Cls-R/Spell 4 Lv
+40	射魔1Lv	Lng-R/Spell 1 Lv
+41	射魔2Lv	Lng-R/Spell 2 Lv
+42	射魔3Lv	Lng-R/Spell 3 Lv
+43	射魔4Lv	Lng-R/Spell 4 Lv
+44	近接特化Lv1	Cls-R Specialized Lv1
+45	近接特化Lv2	Cls-R Specialized Lv2
+46	近接特化Lv3	Cls-R Specialized Lv3
+47	近接特化Lv4	Cls-R Specialized Lv4
+48	射撃特化Lv1	Lng-R Specialized Lv1
+49	射撃特化Lv2	Lng-R Specialized Lv2
+50	射撃特化Lv3	Lng-R Specialized Lv3
+51	射撃特化Lv4	Lng-R Specialized Lv4
+52	魔法特化Lv1	Spell Specialized Lv1
+53	魔法特化Lv2	Spell Specialized Lv2
+54	魔法特化Lv3	Spell Specialized Lv3
+55	魔法特化Lv4	Spell Specialized Lv4
+56	補助特化Lv1	Support Specialized Lv1
+57	補助特化Lv2	Support Specialized Lv2
+58	補助特化Lv3	Support Specialized Lv3
+59	補助特化Lv4	Support Specialized Lv4
+227	輝くTiwaz	Shining Tiwaz
+228	輝くFehu	Shining Fehu
+229	輝くEihwaz	Shining Eihwaz
+230	輝くぺオース	Shining Peorth
+231	輝くUruz	Shining Uruz
+232	輝くHagalaz	Shining Hagalaz
+233	輝くLaguz	Shining Laguz
+234	輝くAnsuz	Shining Ansuz
+235	輝くNauthiz	Shining Nauthiz
+236	ベルカナ	Berkana
+255	ウィン	Wunjo

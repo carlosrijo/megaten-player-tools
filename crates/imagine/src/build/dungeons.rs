@@ -282,6 +282,9 @@ struct Entry {
 }
 
 pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, client_dir: Option<&Path>) -> Result<()> {
+    // BABEL's English for the demon names the game has only in Japanese or garbled (reference\demon-names-en.tsv)
+    let demon_en = crate::data::game_data::name_translations("demon-names-en.tsv")?;
+
     // ---- client: zone names and kinds ----
     let mut zones: HashMap<i32, (String, Option<String>)> = HashMap::new();
     {
@@ -712,15 +715,20 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
         Ok(rel)
     };
     // each skill once (name, description), the enemies point at it by id: most enemies share their skills
-    let mut skill_table: BTreeMap<i32, [Option<String>; 3]> = BTreeMap::new();
-    let skills_of = |ids: &[i32], skill_table: &mut BTreeMap<i32, [Option<String>; 3]>, skill_icons: &mut HashMap<String, Option<String>>| -> Result<Vec<i32>> {
+    let mut skill_table: BTreeMap<i32, Vec<Option<String>>> = BTreeMap::new();
+    let skills_of = |ids: &[i32], skill_table: &mut BTreeMap<i32, Vec<Option<String>>>, skill_icons: &mut HashMap<String, Option<String>>| -> Result<Vec<i32>> {
         let mut seen = HashSet::new();
         let mut res = Vec::new();
         for &id in ids.iter().filter(|id| seen.insert(**id)) {
             if !skill_table.contains_key(&id) {
                 let n = data.skill_names()?.get(&id).cloned().flatten();
                 let Some(n) = n.filter(|n| !n.trim().is_empty()) else { continue };
-                skill_table.insert(id, [Some(n.trim().to_string()), Some(data.skill_text(id)?.unwrap_or_default()), skill_icon_of(id, skill_icons)?]);
+                let mut row = vec![Some(n.trim().to_string()), Some(data.skill_text(id)?.unwrap_or_default()), skill_icon_of(id, skill_icons)?];
+                // a 4th entry: the game's Japanese when the name is BABEL's translation (skill-names-en.tsv; the page greys it out)
+                if let Some(ja) = data.skill_name_ja(id)? {
+                    row.push(Some(ja));
+                }
+                skill_table.insert(id, row);
             }
             res.push(id);
         }
@@ -761,7 +769,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
     } else {
         console::error_line("CItemData.xml is not in the decoded folder: drops have no pictures or descriptions.");
     }
-    let mut item_table: BTreeMap<i32, [Option<String>; 3]> = BTreeMap::new();
+    let mut item_table: BTreeMap<i32, Vec<Option<String>>> = BTreeMap::new();
     let mut item_pics = 0;
     let mut item_picture = |icon: i32, skill_icons: &mut HashMap<String, Option<String>>| -> Result<Option<String>> {
         let Some(client) = client_dir else { return Ok(None) };
@@ -790,18 +798,18 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
             _ => item_name.get(&id).cloned(),
         }
     };
-    let mut item_ref = |id: i32, item_table: &mut BTreeMap<i32, [Option<String>; 3]>, skill_icons: &mut HashMap<String, Option<String>>| -> Result<i32> {
+    let mut item_ref = |id: i32, item_table: &mut BTreeMap<i32, Vec<Option<String>>>, skill_icons: &mut HashMap<String, Option<String>>| -> Result<i32> {
         if !item_table.contains_key(&id) {
             let (desc, icon) = item_info.get(&id).map(|i| (i.desc.clone(), i.icon)).unwrap_or((String::new(), 0));
             let pic = if icon > 0 { item_picture(icon, skill_icons)? } else { None };
-            item_table.insert(id, [item_name_of(id, &item_info), Some(desc), pic]);
+            item_table.insert(id, vec![item_name_of(id, &item_info), Some(desc), pic]);
         }
         Ok(id)
     };
     let drop_lines = |list: Vec<Drop>,
-                      item_table: &mut BTreeMap<i32, [Option<String>; 3]>,
+                      item_table: &mut BTreeMap<i32, Vec<Option<String>>>,
                       skill_icons: &mut HashMap<String, Option<String>>,
-                      item_ref: &mut dyn FnMut(i32, &mut BTreeMap<i32, [Option<String>; 3]>, &mut HashMap<String, Option<String>>) -> Result<i32>|
+                      item_ref: &mut dyn FnMut(i32, &mut BTreeMap<i32, Vec<Option<String>>>, &mut HashMap<String, Option<String>>) -> Result<i32>|
      -> Result<Vec<Value>> {
         let filtered: Vec<Drop> = list.into_iter().filter(|x| item_name_of(x.0, &item_info).is_some() && x.1 > 0.0).collect();
         // GroupBy item (first appearance), the highest rate of each (the first of equals)
@@ -887,9 +895,14 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
                             aff.push(json!({ "el": nm, "res": st[res] }));
                         }
                     }
-                    mob_meta.insert(key.clone(), (d.name.clone(), level));
+                    // Izar ﾎｱ (a garbled α), 非凡なマッハ: BABEL's English (demon-names-en.tsv), the game's name kept as `ja`
+                    let en = crate::data::game_data::translated_name(&demon_en, d.id, &d.name);
+                    mob_meta.insert(key.clone(), (en.clone().unwrap_or_else(|| d.name.clone()), level));
                     let mut o = Map::new();
-                    o.insert("name".into(), json!(d.name));
+                    o.insert("name".into(), json!(en.as_deref().unwrap_or(&d.name)));
+                    if en.is_some() {
+                        o.insert("ja".into(), json!(d.name));
+                    }
                     if let Some(r) = race_text(d.race.as_deref()) {
                         o.insert("race".into(), json!(r));
                     }
@@ -1059,7 +1072,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
     // the game-wide drops (partial 0)
     let everywhere = drop_lines(everywhere_list, &mut item_table, &mut skill_icons, &mut item_ref)?;
 
-    let table_json = |t: &BTreeMap<i32, [Option<String>; 3]>| -> Value {
+    let table_json = |t: &BTreeMap<i32, Vec<Option<String>>>| -> Value {
         Value::Object(t.iter().map(|(k, v)| (k.to_string(), Value::Array(v.iter().map(|x| json!(x)).collect()))).collect())
     };
     let mut result = Map::new();

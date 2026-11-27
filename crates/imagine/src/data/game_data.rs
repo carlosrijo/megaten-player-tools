@@ -120,6 +120,31 @@ pub fn reference_file_on_disk(name: &str) -> Option<PathBuf> {
     g.is_file().then_some(g)
 }
 
+/// BABEL's English for names the game has only in Japanese (or garbled, like "Izar ﾎｱ" for Izar α): a reference\<file>
+/// of "id <tab> the game's name <tab> English" lines (demon-names-en.tsv, growth-names-en.tsv). id -> (the game's name,
+/// English). Use a line through [`translated_name`], which takes it only while the game still has that exact name, so a
+/// game update that renames or translates it wins. Pages show such a name greyed out, with the game's own in its tooltip.
+pub fn name_translations(file: &str) -> Result<HashMap<i32, (String, String)>> {
+    let mut res = HashMap::new();
+    for line in reference_lines(file)?.unwrap_or_default() {
+        let r: Vec<&str> = line.split('\t').collect();
+        if line.starts_with('#') || r.len() < 3 {
+            continue;
+        }
+        if let Some(id) = crate::fmt::parse_i32(r[0]) {
+            if !r[2].trim().is_empty() {
+                res.insert(id, (r[1].trim().to_string(), r[2].trim().to_string()));
+            }
+        }
+    }
+    Ok(res)
+}
+
+/// The English for the game's `name` of `id` when `map` ([`name_translations`]) has one for exactly that name.
+pub fn translated_name(map: &HashMap<i32, (String, String)>, id: i32, name: &str) -> Option<String> {
+    map.get(&id).filter(|(game, _)| game == name.trim()).map(|(_, en)| en.clone())
+}
+
 /// The lines of a reference file; `None` when it is missing.
 pub fn reference_lines(name: &str) -> Result<Option<Vec<String>>> {
     match reference_file(name) {
@@ -1212,9 +1237,12 @@ impl GameData {
                     }
                 }
             }
-            // BABEL's English where the client's name is Japanese (reference\skill-names-en.tsv); the pages show it greyed out
+            // BABEL's English where the client's name is Japanese (reference\skill-names-en.tsv); the pages show it greyed out.
+            // It wins over the website's name too (bundled skills.json: "Glowing Eye" for 光る眼, and from 5139 on names shifted
+            // onto other skills), so every page shows the same English; only the client's own (the expertise ranks') wins over it.
+            let rank_names = &self.rank_data()?.client_skill_names;
             for (id, (_, en)) in self.skill_translations()? {
-                if !res.get(id).cloned().flatten().is_some_and(|n| is_english_game_name(&n)) {
+                if !rank_names.contains_key(id) {
                     res.insert(*id, Some(en.clone()));
                 }
             }
