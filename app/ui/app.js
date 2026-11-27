@@ -5128,7 +5128,13 @@
     // the editor's own top line: the tabs on the left, the reset on the right; under it the gear list or the expertise
     const tabsBox = h('div', { class: 'seg sim-tabs', role: 'group', 'aria-label': 'What to change' }), resetBox = h('div', { class: 'toolbar' }), bodyBox = h('div', { class: 'sim-edit-body' });
     editor.append(h('div', { class: 'sim-edit-top' }, tabsBox, resetBox), bodyBox);
-    page.append(h('div', { class: 'page-head sim-head' }, headLeft, headRight), simFill(bandBox, demonBand()), h('div', { class: 'sim-layout' }, editor, out));
+    page.append(h('div', { class: 'page-head sim-head' }, headLeft, headRight), simFill(bandBox, demonBand()));
+    // Some clients don't let BABEL read the worn pieces' own records: the build starts from the items alone.
+    if (meta.gear_partial) page.append(h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null,
+      h('b', { text: 'Your worn gear is missing some details. ' }),
+      'BABEL couldn’t read the mods, the stats taken from another item and the fusion bonuses on your worn pieces, so they show without them. ',
+      'Your totals still match the game; only changing those parts of a worn piece isn’t exact. Sending this through Send feedback with the diagnostics files helps fix it.')));
+    page.append(h('div', { class: 'sim-layout' }, editor, out));
 
     // The build's name and what can be done with it. Drawn only when that changes (never by a result coming in), so
     // a name being typed is left alone.

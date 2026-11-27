@@ -129,6 +129,10 @@ struct Base {
     /// No character: nothing worn, no expertise, every reading 0 (see `load_blank`).
     blank: bool,
     items: Items,
+    /// The snapshot had no item records (some clients): the pieces are the worn items alone, with the tarot and soul
+    /// read some other way when there were any, and no mods, source items or fusion bonuses. What those add is in the
+    /// reading and stays in `resid`, so the totals still equal the game's; only changes to those parts aren't exact.
+    gear_partial: bool,
     texts: Vec<String>,
     level: i32,
     stat_level: i32,
@@ -163,6 +167,7 @@ impl Base {
         Base {
             blank: false,
             items: Vec::new(),
+            gear_partial: false,
             texts: Vec::new(),
             level: 0,
             stat_level: 0,
@@ -238,6 +243,26 @@ pub struct Simulator {
     blank_sets: Option<BlankSets>,
     icons: Option<Store>,
     state: Mutex<State>,
+}
+
+/// The worn pieces of a snapshot without item records (`recs` in slot order, 15 of them): each worn item as itself,
+/// with the tarot / soul the snapshot saved (0 = none or not read), no mods, source items or fusion bonuses.
+fn pieces_without_records(recs: &[crate::data::store::SlotTip]) -> Vec<Option<WornItem>> {
+    recs.iter()
+        .map(|r| {
+            (r.id > 0).then(|| WornItem {
+                id: r.id,
+                tarot: r.tarot.unwrap_or(0),
+                soul: r.soul.unwrap_or(0),
+                basic: 0,
+                special: 0,
+                mods: vec![0; 5],
+                fuse: vec![0; 3],
+                durability: -1,
+                max_durability: -1,
+            })
+        })
+        .collect()
 }
 
 fn basic_of(w: &WornItem) -> i32 {
@@ -401,11 +426,16 @@ impl Simulator {
         }
         let mut recs = store.load_tooltips()?;
         recs.sort_by_key(|r| r.index);
-        let items = Store::unpack_details(&recs);
         let sets = if store.set_table_path().exists() { store.load_set_table()? } else { None };
-        let (items, sets) = match (items, sets) {
-            (Some(i), Some(s)) if !s.is_empty() => (i, s),
-            _ => return Err(user_error("The Build Planner needs each worn piece as the game holds it, which the saved snapshot doesn't have. Take a new snapshot with the game running.")),
+        let Some(sets) = sets.filter(|s| !s.is_empty()) else {
+            return Err(user_error("The Build Planner needs the game's equipment sets, which the saved snapshot doesn't have. Take a new snapshot with the game running."));
+        };
+        if recs.len() != 15 {
+            return Err(user_error("The saved worn gear is incomplete. Take a new snapshot with the game running."));
+        }
+        let (items, gear_partial) = match Store::unpack_details(&recs) {
+            Some(i) => (i, false),
+            None => (pieces_without_records(&recs), true),
         };
 
         let last = json::load(store.last_stats_path())?;
@@ -415,6 +445,7 @@ impl Simulator {
         }
         let mut b = Base::empty();
         b.items = items.into_iter().map(|w| w.map(Arc::new)).collect();
+        b.gear_partial = gear_partial;
         b.texts = recs.iter().map(|r| r.text.clone()).collect();
         b.stat_level = json::int(last.at("level"));
         b.taken_at = json::str(last.at("taken_at"));
@@ -1042,6 +1073,8 @@ impl Simulator {
             "meta": {
                 "level": b.level, "alignment": b.alignment, "stats_at": b.taken_at, "demon": b.demon.as_ref().and_then(|d| d.demon.as_ref()).map(|d| d.name.clone()),
                 "blank": b.blank, // no character behind the build: the numbers are what the build gives by itself
+                // the worn pieces' own records weren't read: no mods, source items or fusion bonuses on them
+                "gear_partial": b.gear_partial,
                 // the saved digitalize demon, as the demon list names it
                 "demon_key": b.saved_demon_key(),
                 "slots": SLOT_NAMES, "hp_known": b.cal.is_some(),
@@ -1609,6 +1642,23 @@ pub fn delete_build(path: &std::path::Path, id: Option<&str>, owner: Option<&str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pieces_without_records_are_the_items_themselves() {
+        use crate::data::store::SlotTip;
+        let tip = |index: i32, id: i32, ench: Option<(i32, i32)>| SlotTip { index, id, text: String::new(), tarot: ench.map(|e| e.0), soul: ench.map(|e| e.1), detail: None };
+        let mut recs: Vec<SlotTip> = (0..15).map(|k| tip(k, 0, None)).collect();
+        recs[0] = tip(0, 2625, Some((64, 3105)));
+        recs[2] = tip(2, 22160, None);
+        let p = pieces_without_records(&recs);
+        assert_eq!(p.len(), 15);
+        let w = p[0].as_ref().unwrap();
+        assert_eq!((w.id, w.tarot, w.soul, w.basic, w.special), (2625, 64, 3105, 0, 0));
+        assert_eq!((w.mods.clone(), w.fuse.clone()), (vec![0; 5], vec![0; 3]));
+        assert_eq!(basic_of(w), 2625); // its own stats
+        assert_eq!(p[2].as_ref().map(|w| (w.tarot, w.soul)), Some((0, 0))); // enchants not read: none
+        assert!(p[1].is_none());
+    }
 
     #[test]
     fn the_simulator_is_shareable_between_threads() {
