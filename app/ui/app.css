@@ -393,6 +393,19 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .radar text.aff-value.bad { fill: var(--bad); }
 .radar text.aff-value.over { fill: var(--text-2); font-weight: 500; }   /* a cap past the rim, under All */
 .radar .aff-over { fill: var(--text-2); }
+/* The radar's numbers as lines under it, in the stat sheet's style: Affinity | Boost | Cap | Resist */
+.aff-table { display: grid; margin-top: 4px; }
+.aff-tr { display: grid; grid-template-columns: minmax(0, 1fr) 64px 64px 64px; gap: 8px; align-items: center; min-height: 28px; border-top: 1px solid var(--border); }
+.aff-tr:not(.aff-th):hover { background: var(--hover); }
+.aff-tr:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
+.aff-th { border-top: 0; min-height: 0; }
+.aff-th .list-head { margin: 0; padding: 0 0 5px; text-align: right; }
+.aff-th .list-head:first-child { text-align: left; }
+.aff-table .aff-name { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aff-td { font: 600 13px/1.2 var(--font-display); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.aff-td.zero { color: var(--text-3); font-weight: 400; }
+.aff-td.bad { color: var(--bad); }
+.aff-td.raised { color: var(--text); }
 .aff-pick { justify-self: center; }
 .aff-pick button { gap: 6px; }
 .aff-key { display: inline-block; width: 9px; height: 9px; background: var(--aff); border-radius: 50%; }
