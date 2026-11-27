@@ -151,7 +151,7 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
   Ice 150%) and your resistance; the buttons under it show all three or just one (its numbers then appear on the
   spokes, and the scale fits what is shown). With all three, the outer ring fits your boosts and resistances, and a
   cap that runs past it stops at the rim with its real value beside it.
-  At the bottom, across the page, **What changed**: the 5 biggest changes since an earlier snapshot ("Show all" lists
+  Under the key stats, **What changed**: the 5 biggest changes since an earlier snapshot ("Show all" lists
   the rest). The snapshot picker says how many changes each one has. The bin beside it deletes the picked snapshot
   (its row in your spreadsheet, which is copied first to `<name>.backup-before-delete-<time>.csv`); the latest
   snapshot is not in the picker and can't be deleted.

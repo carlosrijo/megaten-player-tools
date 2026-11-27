@@ -1395,12 +1395,12 @@
     const sheet = h('section', { class: 'card sheet', 'aria-label': 'Key stats' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' },
       col.map(([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow)))))));
 
-    // One row under one heading: the stat sheet and, beside it, affinity. Both boxes start and end on the same lines
-    // (affinity used to carry its own heading, which pushed its box below the sheet's: the user's "misalignment").
-    // Both follow the shown mode, so the heading says which. Then what changed, across the page.
+    // One row under one heading: on the left the stat sheet with What changed (its own heading and snapshot picker)
+    // under it, on the right affinity, whose radar and table are about as tall as those two together. Affinity carries
+    // no heading of its own (one used to push its box below the sheet's: the user's "misalignment"). The sheet and
+    // affinity follow the shown mode, so the heading says which.
     page.append(sect('Key stats and affinities', digi() && DG ? `While digitalized with ${DG.demon}` : 'Not digitalized', null,
-      h('div', { class: 'over-grid' }, sheet, affinityCard())));
-    page.append(changesCard());
+      h('div', { class: 'over-grid' }, h('div', { class: 'over-left' }, sheet, changesCard()), affinityCard())));
 
     page.append(h('p', { class: 'note', text: 'Not included anywhere: buffs, clan and title bonuses, and your partner demon\u2019s own stats. The game only works those out on the server. Pick your digitalize demon above to add what it gives.' }));
     return page;
