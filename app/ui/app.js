@@ -1140,6 +1140,13 @@
     const split = (e) => { const parts = [['gear', e.gear], ['expertise', e.exp], ...(digi() && DG ? [[DG.demon, e.demon]] : [])].filter(([, v]) => v); return parts.length ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : ''; };
     const cell = (text, cls) => h('span', { class: 'aff-td' + (cls ? ' ' + cls : ''), text });
     const head = h('div', { class: 'aff-tr aff-th' }, h('span', { class: 'list-head', text: 'Affinity' }), h('span', { class: 'list-head', text: 'Boost' }), h('span', { class: 'list-head', text: 'Cap' }), h('span', { class: 'list-head', text: 'Resist' }));
+    // Weapon-based is not an element: a skill whose base affinity is Weapon-Based (the basic attack, Cleave, Dragon Sweep...) takes
+    // your weapon's element and adds this boost to that element's own. Its Bonuses row is in the "Other" group, so it is not a spoke.
+    const wb = weaponBoost();
+    const wbRow = !wb ? null : h('div', { class: 'aff-tr aff-wb', tabindex: 0,
+      'data-tip': `Weapon-based boost ${fmt(wb.total, '%')}${split(wb)}. Added to the boost of the element your weapon gives, for weapon-based skills only (basic attack, Cleave, Dragon Sweep...).`
+        + ' In the server code it is capped on its own at 100% (plus any cap raise, and none raises this one), apart from the element’s cap. Not checked on NewMoon’s server.' },
+      h('span', { class: 'aff-name', text: 'Weapon-based' }), cell(fmt(wb.total, '%')), cell('100%', 'zero'), cell('–', 'zero'));
     const rows = aff.boost.map((e, i) => {
       const cp = aff.cap[i], rs = aff.resistance[i];
       return h('div', { class: 'aff-tr', tabindex: 0,
@@ -1149,14 +1156,22 @@
         cell(`${fmt(cp.total)}%`, cp.raise ? 'raised' : 'zero'),
         cell(rs.total ? fmt(rs.total, '%') : '–', rs.total < 0 ? 'bad' : rs.total ? '' : 'zero'));
     });
-    return h('div', { class: 'aff-table', role: 'table', 'aria-label': 'Affinity by element' }, head, rows);
+    return h('div', { class: 'aff-table', role: 'table', 'aria-label': 'Affinity by element' }, head, rows, wbRow);
+  }
+  /** The "Weapon based Affinity" bonus (BOOST_WEAPON) in the shown mode, split like the radar's series; null when you have none. */
+  function weaponBoost() {
+    const r = (S.data.bonuses || []).find((x) => x.group === 'Other' && /^weapon.based affinity$/i.test(String(x.bonus).trim()));
+    if (!r) return null;
+    const e = { name: 'Weapon-based', gear: round2(n0(digi() && r.gear_digi !== null && r.gear_digi !== undefined ? r.gear_digi : r.gear)), exp: n0(r.expertise), demon: digi() ? n0(r.demon) : 0 };
+    e.total = round2(e.gear + e.exp + e.demon);
+    return e.total ? e : null;
   }
   function affinityCard() {
     const DG = S.data.digitalize, aff = affinity(), n = aff.boost.length;
     // (no heading of its own: it shares the row's, "Key stats and affinities", with the stat sheet beside it)
     const card = h('section', { class: 'card', 'aria-label': 'Affinity' });
     if (n < 3) {   // a radar needs three spokes: the table alone (or a line when there is nothing)
-      card.append(n ? affinityTable(aff) : h('p', { class: 'note', text: 'No affinity boosts or resistances yet.' }));
+      card.append(n || weaponBoost() ? affinityTable(aff) : h('p', { class: 'note', text: 'No affinity boosts or resistances yet.' }));
       return card;
     }
     const focus = AFF_SERIES.some(([k]) => k === S.over.aff) ? S.over.aff : null;

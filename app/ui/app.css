@@ -403,6 +403,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .aff-th .list-head:first-child { text-align: left; }
 .aff-table .aff-name { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aff-td { font: 600 13px/1.2 var(--font-display); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.aff-wb { border-top-style: dashed; }   /* not an element: the line under the elements */
 .aff-td.zero { color: var(--text-3); font-weight: 400; }
 .aff-td.bad { color: var(--bad); }
 .aff-td.raised { color: var(--text); }
