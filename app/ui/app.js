@@ -387,9 +387,11 @@
   const SHEET = [
     [['Offence', [['crit', 'Critical'], ['final_crit', 'Final correction'], ['lb_chance', 'Limit break chance'], ['lb_power', 'Limit break power'], ['lb_cap', 'Limit break cap'],
       ['ta_chance', 'Technical chance'], ['ta_power', 'Technical power'], ['pursuit_chance', 'Pursuit chance'], ['pursuit_power', 'Pursuit power']]],
-      ['Experience', [['xp_earned', 'EXP earned'], ['xp_partner', 'Partner EXP earned'], ['xp_expertise', 'Expertise earned'], ['soul_earned', 'Soul points earned'], ['digi_points', 'Digitalize points earned'], ['bethel_gain', 'Bethel gain']]]],
+      ['Experience', [['xp_earned', 'EXP earned'], ['xp_partner', 'Partner EXP earned'], ['xp_expertise', 'Expertise earned'], ['soul_earned', 'Soul points earned'], ['digi_points', 'Digitalize points earned'], ['bethel_gain', 'Bethel gain']]],
+      ['Skill costs', [['hp_cost', 'HP cost'], ['mp_cost', 'MP cost']]]],
     [['Damage dealt', [['dmg_close', 'Close-range'], ['dmg_long', 'Long-range'], ['dmg_spell', 'Spell'], ['dmg_support', 'Support']]],
       ['Damage taken', [['taken_close', 'Close-range'], ['taken_long', 'Long-range'], ['taken_spell', 'Spell'], ['taken_support', 'Support']]],
+      ['Action boosts', [['boost_spin', 'Spin'], ['boost_attack', 'Attack'], ['boost_rush', 'Rush'], ['boost_rapid', 'Rapid'], ['boost_shot', 'Shot']]],
       ['Speed', [['cooldown', 'Cooldown'], ['incantation', 'Incantation'], ['move_speed', 'Movement']]]],
   ];
   /** The Bonuses row behind a key stat (same name, same unit; the cap is called "Limit break cap" there). */
@@ -399,10 +401,13 @@
   const OTHER_STATS = [['xp_earned', 'EXP Earned', '%', 'Other'], ['xp_partner', 'EXP Earned (only with certain partners)', '%', 'Only in some fights'], ['xp_expertise', 'Expertise Earned', '%', 'Other'],
     ['soul_earned', 'Soul Points Earned', '%', 'Other', /^soul points?( earned| gain(ed)?)?$/i], ['digi_points', 'Digitalize Points', '%', 'Other', /^digitali[sz](e|ation) points?( earned| gain(ed)?)?$/i],
     ['bethel_gain', 'Bethel Gain', '%', 'Other', /^bethel( earned| gain(ed)?)?$/i],
-    ['incantation', 'Incantation', '%', 'Other']];   // the cast time: its Bonuses row has the same parts as cooldown's (gear, expertise, demon, summoned, VIT/INT and SPD)
-  const bonusRowOf = (k, label, unit) => {
+    ['incantation', 'Incantation', '%', 'Other'],
+    // what every skill costs you to use: negative when something makes skills cheaper (the wording in the data varies a little)
+    ['hp_cost', 'HP cost of all skills', '%', 'Other', /^(hp cost of all skills|all skills hp cost)$/i],
+    ['mp_cost', 'All skills MP cost', '%', 'Other', /^(all skills mp cost|mp cost of all skills)$/i]];   // the cast time: its Bonuses row has the same parts as cooldown's (gear, expertise, demon, summoned, VIT/INT and SPD)
+  const bonusRowOf = (k, label, unit, list) => {   // list: another set of bonus rows (the Character Planner's), else the character's
     const o = OTHER_STATS.find((x) => x[0] === k);
-    return (S.data.bonuses || []).find((r) => r.group === (o ? o[3] : 'Combat') && (o && o[4] ? o[4].test(String(r.bonus).trim()) : r.bonus === (BONUS_NAME[k] || label)) && (o && o[4] ? true : (r.unit || '') === (unit || '')));
+    return (list || S.data.bonuses || []).find((r) => r.group === (o ? o[3] : 'Combat') && (o && o[4] ? o[4].test(String(r.bonus).trim()) : r.bonus === (BONUS_NAME[k] || label)) && (o && o[4] ? true : (r.unit || '') === (unit || '')));
   };
   /**
    * Partner EXP earned: the Demonology "<Race> Sympathy" skills each give +N% XP to your summoned demon when it is of that
@@ -433,7 +438,7 @@
   ];
   const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon', stats: 'Your stats' };
   const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon'];
-  const lowIsGood = (name) => /taken|cooldown|cast time|incantation/i.test(name);
+  const lowIsGood = (name) => /taken|cooldown|cast time|incantation|cost/i.test(name);
 
   // Stats that give nothing past a ceiling (from the user, 2026-11-23). The ceiling applies to the whole value
   // (gear + expertise, in the shown mode). To add one: its key from COMBAT above and its ceiling.
@@ -5843,9 +5848,9 @@
       };
 
       const keyRow = ([k, label]) => {
-        const cdef = COMBAT.find((x) => x[0] === k), unit = cdef[2];
+        const cdef = COMBAT.find((x) => x[0] === k) || OTHER_STATS.find((x) => x[0] === k), unit = cdef[2];   // a combat stat, or one of the Other group (EXP, costs...)
 
-        const to = simRowVal(simCombatRow(cur, k), D), from = simRowVal(simCombatRow(base, k), Db), d = round2(to - from);
+        const to = simRowVal(bonusRowOf(k, cdef[1], unit, cur.bonuses), D), from = simRowVal(bonusRowOf(k, cdef[1], unit, base.bonuses), Db), d = round2(to - from);
         const x = { d, unit, good: lowIsGood(cdef[1]) ? d < 0 : d > 0 };
         return h('div', { class: 'sim-key' + (d ? ' changed' : ''), 'data-tip': d ? `${cdef[1]}: ${fmt(from, unit)} → ${fmt(to, unit)}` : null },
           h('span', { class: 'sheet-label', text: label }), capTag(to, CAPS[k] === undefined ? null : CAPS[k], unit),
