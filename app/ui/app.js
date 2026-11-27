@@ -425,7 +425,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Rebirth Planner', 'rune'], ['sim', 'Build Planner', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['dcm', 'DCM Locator', 'search'], ['rank', 'Demon Ranking', 'podium'],['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Rebirth Planner', 'rune'], ['sim', 'Build Planner', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -745,11 +745,41 @@
   const simNavBox = h('div', { class: 'nav-sub', hidden: true });
   const simNavToggle = h('button', { type: 'button', class: 'nav-fold', hidden: true, 'aria-label': 'Show or hide your saved builds',
     onclick: () => { S.sim.navOpen = !S.sim.navOpen; store.set('sim-nav', S.sim.navOpen ? '1' : '0'); drawSimNav(); } }, icon('chevron'));
-  TOOLS.forEach(([id, label, ic]) => {
+  // Related tools sit together under one fold-away entry ("Databases", "Planners"), open every time the app starts; the
+  // entry folds them away for this session only (nothing is saved, so they are open again next launch). Inside a group
+  // the repeated word is left off each name ("Skill Database" -> "Skills", "Fusion Planner" -> "Fusion"); the page's own
+  // title keeps the full name. Tools in no group stay loose, below the groups.
+  const NAV_GROUPS = [
+    { id: 'dbs', title: 'Databases', ids: ['skills', 'ddb', 'geardb', 'quests', 'keys', 'dungeons'],
+      short: (l) => (l.endsWith(' Database') ? l.slice(0, -' Database'.length) + 's' : l) },
+    { id: 'planners', title: 'Planners', ids: ['fusion', 'dplan', 'rebirth', 'sim'], short: (l) => l.replace(/ Planner$/, '') },
+  ];
+  S.navOpen = {};
+  const groupOf = (id) => NAV_GROUPS.find((g) => g.ids.includes(id));
+  NAV_GROUPS.forEach((g) => {
+    S.navOpen[g.id] = true;
+    g.box = h('div', { class: 'nav-dbs', id: `nav-${g.id}` });
+    g.head = h('button', { type: 'button', class: 'nav-item nav-dbhead', 'aria-expanded': 'true', 'aria-controls': `nav-${g.id}`, 'data-tip': `Show or hide the ${g.title.toLowerCase()}`,
+      onclick: () => { S.navOpen[g.id] = !S.navOpen[g.id]; drawGroupNav(); } },
+      h('span', { class: 'nav-dbchev' }, icon('chevron')), h('span', { class: 'nav-label', text: g.title }), h('span', { class: 'nav-key', text: String(g.ids.length) }));
+  });
+  function drawGroupNav() {
+    NAV_GROUPS.forEach((g) => {
+      g.box.hidden = !S.navOpen[g.id];
+      g.head.setAttribute('aria-expanded', S.navOpen[g.id] ? 'true' : 'false');
+      // folded away while you are on one of them: the entry says so, since the page's own button is out of sight
+      g.head.classList.toggle('has-current', !S.navOpen[g.id] && g.ids.includes(S.page));
+    });
+  }
+  const looseTools = [];
+  TOOLS.forEach(([id, fullLabel, ic]) => {
+    const g = groupOf(id), label = g ? g.short(fullLabel) : fullLabel;
     const btn = h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => (id === 'sim' ? simGoHome() : go(id)) },
       icon(ic), h('span', { class: 'nav-label', text: label }));
-    if (id === 'sim') nav.append(h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox); else nav.append(btn);
+    const entry = id === 'sim' ? [h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox] : [btn];
+    if (g) g.box.append(...entry); else looseTools.push(...entry);
   });
+  nav.append(...NAV_GROUPS.flatMap((g) => [g.head, g.box]), ...looseTools);
   function go(page) {
     if (S.page === page) return;
     remember();
@@ -850,6 +880,7 @@
     $('#page-title').textContent = (PAGES.concat(TOOLS).find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
     document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.page === S.page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     drawSimNav();
+    drawGroupNav();
     drawNavButtons();
     const foot = $('#side-foot');
     foot.replaceChildren();
