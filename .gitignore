@@ -14,7 +14,7 @@ data/characters/*/cache/models/
 app/ui/demon-db-icons/
 # skill pictures for the Skill Database: the game's own art, made locally by imagine-reader skilldb
 app/ui/skill-db-icons/
-# item pictures for the Gear Database: the game's own art, made locally by imagine-reader geardb --client
+# item pictures for the Item Database: the game's own art, made locally by imagine-reader geardb --client
 app/ui/gear-db-icons/
 # your own data (stats, gear, characters, pictures, paths on this PC): kept on disk, never committed
 /data/

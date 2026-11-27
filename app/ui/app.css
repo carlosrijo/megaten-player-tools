@@ -1051,7 +1051,21 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .gdb-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
 .gdb-list .src-count { margin-left: 8px; }
 .gdb-gives { color: var(--text-2); font-size: 12px; }
-.gdb-more { display: flex; align-items: center; gap: 12px; }
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0; }
+.pager:empty { display: none; }
+.pager > .note { margin-right: 8px; }
+.pager-num { min-width: 32px; padding: 0 8px; font-variant-numeric: tabular-nums; }
+.pager-num[aria-current="page"] { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
+.pager-gap { color: var(--text-2); padding: 0 2px; }
+.pager-per { margin-right: 8px; }
+.gdb-filters { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.gdb-fgroup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.gdb-flabel { min-width: 72px; font-size: 12px; color: var(--text-2); }
+.gdb-fbtn[aria-expanded="true"] { background: var(--surface-2); }
+.page-dcm .tbl th .th-btn { align-items: center; text-align: left; }
+.gdb-lv { width: 64px; height: 28px; padding: 0 6px; font-size: 12px; }
+.gdb-sub-chips { margin-top: -4px; }
+.gdb-sub-chips .chip-btn { height: 24px; font-size: 11.5px; }
 .gdb-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); cursor: pointer; }
 .page-dcm .search { max-width: 380px; }.page-dcm .tbl tr.detail-row > td { white-space: normal; }
 .gdb-list li { overflow-wrap: anywhere; }
@@ -1442,8 +1456,6 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .skl-demon { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border-radius: 4px; }
 .skl-demon:hover b { color: var(--demon); }
 .skl-demon:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.skl-more { margin: 8px 0; }
-.skl-more:empty { display: none; }
 .dun-mobs td.dun-aff-cell { white-space: normal; min-width: 120px; }
 .dun-mobs .dun-aff-cell .chips { gap: 4px; }
 .dun-skill-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }

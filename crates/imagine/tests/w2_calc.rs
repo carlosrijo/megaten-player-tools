@@ -375,12 +375,15 @@ fn gear_database_matches_the_csharp_file() {
     // in those lines. Since 2026-11-25 this is made without the sealed data (as the repo's
     // gear-db.json is): +76,222 bytes from the wording of comp_hack's own effects, only in effect lines: statuses by name
     // ("Inflicts Bind"), named skill conditions ("Fire skills only"), partner, time, moon and status conditions in words
-    // ("at full moon", "from 18:00 game time"), enemy race/demon/HP conditions, named aspects.
+    // ("at full moon", "from 18:00 game time"), enemy race/demon/HP conditions, named aspects. Since 2026-11-27 (the Item
+    // Database) every item the client names is in the file, not only gear: each carries "kind" and "class", gear also
+    // "level" when it needs one, the other items their description, stack size and price, crystals their tarot and soul
+    // lines, key items come from CKeyItemData: 3,827,363 -> 6,564,470 bytes, and the "note" names descriptions.
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (3827363, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (6564470, GEARDB_FNV));
 }
 
-/// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods") after its
-/// `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 18407798558130659198;
+/// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods", plus every non-gear item
+/// and the key items since the Item Database) after its `{"generatedAt":"yyyy-mm-dd"` start.
+const GEARDB_FNV: u64 = 5409972581598316500;
