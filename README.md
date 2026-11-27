@@ -237,12 +237,17 @@ for them), or, for someone who appears as a demon (Uriel, Surt), that demon's De
 the people the quests name have one.
 When a step's person can only be reached a certain way, it says what comes first: who takes you there (Act 3: Curse of
 the Gods: talk to DB Saito in TMG Building, "Go to the Heliport"), and what makes the person appear (walk to the spot,
-answer, defeat DB Kisugi; then he is there to talk to). Where a step can be done in more than one way (for example a
+answer, defeat DB Kisugi; then he is there to talk to), also for a step that ends at a spot (the elevator attendant who
+takes you down to the Docks floor). A step that waits for several things done in any order lists them, quest objects
+too (Act 6: The Mysterious Girl: the sword blade in each of four dungeons, each after that dungeon's last fight, then
+Celu Tower), and people the game shows only during a step whom the quest does not need are listed as optional (Act 6:
+"???" in Shibuya, who leaves once you have talked to her). Seasonal and tie-in event quests (Christmas Devil, May You
+Never Die, ...) have their steps too, marked with the event they belong to. Where a step can be done in more than one way (for example a
 Law or a Chaos answer) every way is shown with what it changes. Search by quest, person, place or item; the chips
 filter by kind of quest.
 
 The quest names, objective text and counts are the game's own. The steps come from the public server's event files
-(468 quests have them; the rest show the game's objective text only), so IMAGINE may have changed them. Valuables
+(658 quests have them; the other 22 show the game's objective text only), so IMAGINE may have changed them. Valuables
 (key items) are shown with the name in the game data, which is Japanese.
 
 ### Tools: Quest Tracker

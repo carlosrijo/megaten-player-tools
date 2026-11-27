@@ -46,7 +46,7 @@
     return h('div', { class: 'p-do' }, verb, who ? [' ', who] : null, at(x), here(x) ? [' ', h('span', { class: 'tag q-here-tag', text: 'here' })] : null);
   }
   function lead(b, first) {
-    return [place(b, `${first ? 'First' : 'Then'}, ${b.kind === 'npc' ? 'talk to' : b.kind === 'spot' ? 'walk to' : 'examine'}`), picks(b),
+    return [place(b, `${first ? 'First' : 'Then'}, ${b.kind === 'npc' && b.who ? 'talk to' : b.do ? b.do.toLowerCase() : b.kind === 'spot' ? 'walk to' : 'examine'}`), picks(b),
       b.fights && b.fights.length ? h('div', { class: 'p-note', text: `You fight ${b.fights.join(', ')}.` }) : null,
       b.result ? h('div', { class: 'p-note', text: b.result }) : null];
   }
@@ -70,8 +70,15 @@
     if (w.talks) {
       // a multi-talk step: the talks not done yet (their hidden flag not held)
       const left = w.talks.filter((t) => !(t.flag && progress.flags && progress.flags.includes(t.flag)));
-      out.push(h('div', { class: 'p-note', text: `${w.do} (${w.talks.length - left.length} of ${w.talks.length} done):` }));
-      left.forEach((t) => out.push(place(t, 'Talk to'), picks(t)));
+      // only talks with a hidden flag can be known done; the quest's own counter never reaches the client
+      const known = w.talks.filter((t) => t.flag).length;
+      out.push(h('div', { class: 'p-note', text: known ? `${w.do} (${w.talks.length - left.length} of ${known} done):` : `${w.do}:` }));
+      if (w.talks.some((t) => !t.flag && !t.last)) out.push(h('div', { class: 'p-note', text: 'The game doesn\'t say which of these you have done.' }));
+      // a person, or a quest object or spot (Act 6's blade lights, then Celu Tower); the object's lead-ins are left out
+      // here: the panel is a reminder, the Quest Tracker has the whole step
+      left.forEach((t) => out.push(place(t, t.who ? (t.last ? 'Last, talk to' : 'Talk to') : (t.last ? `Last, ${(t.do || '').toLowerCase()}` : t.do)), picks(t),
+        t.times ? h('div', { class: 'p-note', text: `${t.times} times in all.` }) : null));
+      (s.optional || []).forEach((x) => out.push(place(x, 'Optional: talk to')));
       return out;
     }
     // what comes first (getting there, the person appearing): inside the step's zone, only what happens there
@@ -80,6 +87,10 @@
     const verb = w.who ? (before.length ? 'Then, talk to' : 'Talk to') : w.do;
     out.push(place(w.who ? w : { ...w, who: null }, w.who ? verb : `${before.length ? 'Then, ' : ''}${w.do}`), picks(w));
     if (w.fights && w.fights.length) out.push(h('div', { class: 'p-note', text: `You fight ${w.fights.join(', ')}.` }));
+    if (w.times) out.push(h('div', { class: 'p-note', text: `Do this ${w.times}.` }));
+    // several ways picked at random from the same talk: say so once
+    if (ways.filter((x) => x.random && !x.finishes).length > 1) out.push(h('div', { class: 'p-note', text: 'The game picks what is asked at random.' }));
+    if (w.finishes) out.push(h('div', { class: 'p-note', text: 'This finishes the quest.' }));
     return out;
   }
 
@@ -91,7 +102,7 @@
   const opened = () => load('babel-panel-open', {});
   let showHidden = false;
   const stepOf = (q, a) => q.steps.find((s) => s.phase === a.step);
-  const hereNow = (q, a) => (stepOf(q, a)?.ways || []).some((w) => here(w) || (w.before || []).some(here) || (w.talks || []).some(here));
+  const hereNow = (q, a) => (stepOf(q, a)?.ways || []).some((w) => here(w) || (w.before || []).some(here) || (w.talks || []).some((t) => here(t) || (t.before || []).some(here)));
 
   function draw() {
     const body = $('body');
@@ -157,7 +168,10 @@
   // the browser preview has no app: the same sample the Quest Tracker's stand-in uses (?quests=none: no game)
   if (!wv) {
     const Q = new URLSearchParams(location.search);
-    progress = Q.get('quests') === 'none' ? null : { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }],
-      completed: [1, 2, 3, 4, 5, 901], flags: [82, 84], zone: Number(Q.get('zone')) || 50101 };
+    // ?quests=extra: also Act 6 (one blade), Act.8's four residents and Let's Trade!, as in the Tracker's stand-in
+    const extra = Q.get('quests') === 'extra'
+      ? [{ id: 907, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 909, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 7, step: 0, counters: [0, 0, 0, 0, 0] }] : [];
+    progress = Q.get('quests') === 'none' ? null : { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }, ...extra],
+      completed: [1, 2, 3, 4, 5, 901], flags: extra.length ? [82, 84, 124] : [82, 84], zone: Number(Q.get('zone')) || 50101 };
   }
 })();
