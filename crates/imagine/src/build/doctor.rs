@@ -773,6 +773,7 @@ fn check_client(p: &ClientProcess) -> (Vec<Check>, Option<(String, i32)>) {
             let worn = g.ids.iter().filter(|&&i| i > 0).count();
             let records = g.details.as_ref().map(|d| d.iter().filter(|x| x.is_some()).count()).unwrap_or(0);
             let grids = format!("{} gear-grid candidate{}", r.1, if r.1 == 1 { "" } else { "s" });
+            let why = g.details_missing.unwrap_or("no reason");
             if g.details.is_some() {
                 ck(sec, "Gear", Status::Pass, format!("Found: {worn} of 15 slots worn, each item's own record read ({records}); {grids} ({})", took(ms)), "")
             } else if r.1 > 0 {
@@ -780,7 +781,7 @@ fn check_client(p: &ClientProcess) -> (Vec<Check>, Option<(String, i32)>) {
                     sec,
                     "Gear",
                     Status::Pass,
-                    format!("Found: {worn} of 15 slots worn; the items' own records were not read, so tarot and soul come from the gear grid ({grids}) ({})", took(ms)),
+                    format!("Found: {worn} of 15 slots worn; the items' own records were not read ({why}), so tarot and soul come from the gear grid ({grids}) ({})", took(ms)),
                     "",
                 )
             } else {
@@ -788,8 +789,8 @@ fn check_client(p: &ClientProcess) -> (Vec<Check>, Option<(String, i32)>) {
                     sec,
                     "Gear",
                     Status::Warn,
-                    format!("Found: {worn} of 15 slots worn, but neither the items' own records nor a gear grid ({}).", took(ms)),
-                    "Tarot and soul can't be read, so snapshots fall back to saved tooltips. Open the Information window in game and take the snapshot with it open.",
+                    format!("Found: {worn} of 15 slots worn, but neither the items' own records ({why}) nor a gear grid ({}).", took(ms)),
+                    "Tarot, soul and mods of the worn gear can't be read, so snapshots take them from the item tooltips and the Build Planner starts without them. Please send this through Send feedback with the diagnostics files attached.",
                 )
             }
         }),

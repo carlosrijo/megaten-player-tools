@@ -43,6 +43,8 @@ pub struct GearGrid {
     pub matched: i32,
     pub newest_ms: i64,
     pub details: Option<Vec<Option<WornItem>>>,
+    /// Why `details` is None when the worn items were found (which check failed), for the log and the self-check.
+    pub details_missing: Option<&'static str>,
 }
 
 /// C# `record SetRecord(int Id, int[] Pieces, int[] Tokusei)`: one equipment set (pieces) and the effects it gives.

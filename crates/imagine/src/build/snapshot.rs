@@ -142,7 +142,11 @@ impl Snapshot {
         let mut win = log::timed("snapshot: Information window", || client_reader::read_info_window(&mem, name, |id| known_items.contains_key(&id)), |w| if w.is_some() { "open".into() } else { "not open".into() });
         // A closed window's block can linger; only trust it if its items match the live gear grid.
         let grid = log::timed("snapshot: worn gear", || client_reader::live_gear(&mem), |g| match g {
-            Some(g) => format!("found, {} of 15 slots worn, item records {}", g.ids.iter().filter(|&&i| i > 0).count(), if g.details.is_some() { "read" } else { "not read" }),
+            Some(g) => format!(
+                "found, {} of 15 slots worn, item records {}",
+                g.ids.iter().filter(|&&i| i > 0).count(),
+                if g.details.is_some() { "read".to_string() } else { format!("not read ({})", g.details_missing.unwrap_or("no reason")) }
+            ),
             None => "not found".into(),
         });
         let live: Option<Vec<i32>> = grid.as_ref().map(|g| g.ids.clone());

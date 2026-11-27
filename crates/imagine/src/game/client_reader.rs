@@ -609,7 +609,7 @@ pub fn read_gear_grids(mem: &GameMemory) -> Vec<GearGrid> {
             if matched < 12 {
                 continue;
             }
-            res.push(GearGrid { address: r.base + pp, ids, tarot, soul, matched, newest_ms: newest, details: None });
+            res.push(GearGrid { address: r.base + pp, ids, tarot, soul, matched, newest_ms: newest, details: None, details_missing: None });
             if res.len() >= 16 {
                 return res;
             }
@@ -626,17 +626,22 @@ pub fn read_gear_grids(mem: &GameMemory) -> Vec<GearGrid> {
 pub fn live_gear(mem: &GameMemory) -> Option<GearGrid> {
     let equips = own_equipment_objects(mem);
     let worn = read_worn_items_in(mem, &equips);
+    let mut why: Option<&'static str> = None;
     if let Some(w) = &worn {
-        if let Some(details) = read_worn_details(mem, &equips, w) {
-            return Some(GearGrid {
-                address: 0,
-                ids: w.clone(),
-                tarot: details.iter().map(|d| d.as_ref().map_or(0, |d| d.tarot)).collect(),
-                soul: details.iter().map(|d| d.as_ref().map_or(0, |d| d.soul)).collect(),
-                matched: w.iter().filter(|&&i| i > 0).count() as i32,
-                newest_ms: 0,
-                details: Some(details),
-            });
+        match read_worn_details(mem, &equips, w) {
+            Ok(details) => {
+                return Some(GearGrid {
+                    address: 0,
+                    ids: w.clone(),
+                    tarot: details.iter().map(|d| d.as_ref().map_or(0, |d| d.tarot)).collect(),
+                    soul: details.iter().map(|d| d.as_ref().map_or(0, |d| d.soul)).collect(),
+                    matched: w.iter().filter(|&&i| i > 0).count() as i32,
+                    newest_ms: 0,
+                    details: Some(details),
+                    details_missing: None,
+                });
+            }
+            Err(e) => why = Some(e),
         }
     }
     let grids = read_gear_grids(mem);
@@ -650,7 +655,7 @@ pub fn live_gear(mem: &GameMemory) -> Option<GearGrid> {
         }
         best.cloned()
     };
-    match worn {
+    let g = match worn {
         None => newest_first(&|g| g.matched == 15),
         Some(w) => newest_first(&|g| g.ids == w).or_else(|| {
             Some(GearGrid {
@@ -661,9 +666,11 @@ pub fn live_gear(mem: &GameMemory) -> Option<GearGrid> {
                 matched: w.iter().filter(|&&i| i > 0).count() as i32,
                 newest_ms: 0,
                 details: None,
+                details_missing: None,
             })
         }),
-    }
+    };
+    g.map(|g| GearGrid { details_missing: why.or(Some("worn-item map not found")), ..g })
 }
 
 // ---------- Worn items of the logged-in character: always present, empty slots included ----------
@@ -924,50 +931,29 @@ fn walk_equip_map(mem: &GameMemory, head: i64, size: i32) -> Option<Vec<i32>> {
 // tooltips (Spiral Ring License = Christmas Citrine Ring+5's stats; Levi Blaster fuse 50/50/50 = +45 LNG-R/Spell/Support).
 /// The full record of each worn item, in SLOT_NAMES order (None for empty slots), or None when any worn slot can't
 /// be read unambiguously.
-fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Option<Vec<Option<WornItem>>> {
-    if own.len() != 1 {
-        return None;
+/// Err says which check failed (for the log and the self-check; nothing from memory in it).
+///
+/// The object id is compared in full (64 bits: the node's +24 int64 against the record's +4 low / +8 high word). It
+/// was first required to fit in 32 bits with +8 = 0, which held on the clients checked but is not a rule of the game.
+/// When the client holds more than one equipment object for the own character, each is tried and they must agree.
+fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Result<Vec<Option<WornItem>>, &'static str> {
+    if own.is_empty() {
+        return Err("no own equipment object");
     }
-    let e = mem.read(*own.first()?, 68)?;
-    let head = u32_at(&e, 60) as i64;
-    let size = i32_at(&e, 64);
-    if head < 0x10000 || !(0..=15).contains(&size) {
-        return None;
+    let mut obj_of: Option<std::collections::HashMap<(i32, u64), usize>> = None;
+    let mut why = "";
+    for &equip in own {
+        match worn_object_ids(mem, equip, worn) {
+            Ok(m) => {
+                if obj_of.as_ref().is_some_and(|o| *o != m) {
+                    return Err("two equipment objects disagree");
+                }
+                obj_of = Some(m);
+            }
+            Err(e) => why = e,
+        }
     }
-    let hb = mem.read(head, 34)?;
-    if hb[33] != 1 {
-        return None; // not a map head
-    }
-    let mut obj_of: std::collections::HashMap<(i32, u32), usize> = std::collections::HashMap::new(); // (item id, object id) -> slot
-    let mut seen: IndexSet<i64> = IndexSet::new();
-    let mut stack: Vec<i64> = vec![u32_at(&hb, 4) as i64];
-    while let Some(n) = stack.pop() {
-        if n == 0 || n == head || !seen.insert(n) {
-            continue;
-        }
-        let nb = mem.read(n, 34)?;
-        // a real node: not the head, red or black, an object id that fits the item record's 32-bit field
-        if seen.len() > 16 || nb[33] != 0 || nb[32] > 1 || u32_at(&nb, 28) != 0 {
-            return None;
-        }
-        let key = i32_at(&nb, 16);
-        let obj = u32_at(&nb, 24);
-        if key < 0 || key > 14 {
-            return None;
-        }
-        let slot = SLOT_OF_EQUIP_TYPE[key as usize];
-        if (obj == 0) != (worn[slot] <= 0) {
-            return None; // object 0 = slot emptied
-        }
-        if obj != 0 {
-            obj_of.insert((worn[slot], obj), slot);
-        }
-        stack.push(u32_at(&nb, 0) as i64);
-        stack.push(u32_at(&nb, 8) as i64);
-    }
-    if seen.len() as i32 != size || obj_of.len() != worn.iter().filter(|&&i| i > 0).count() {
-        return None;
-    }
+    let Some(obj_of) = obj_of else { return Err(why) };
     let src = |v: i32| if v <= 0 { 0 } else { v };
     let mut res: Vec<Option<WornItem>> = vec![None; 15];
     // Every record wanted starts with a worn item's id (+0 is the key's item id), so a vectorised range check on the
@@ -983,14 +969,15 @@ fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Opt
             if pp + 56 > buf.len() {
                 break;
             }
-            if !ids.contains(&i32_at(buf, pp)) || i32_at(buf, pp + 8) != 0 {
+            if !ids.contains(&i32_at(buf, pp)) {
                 continue;
             }
             let flags = u32_at(buf, pp + 12);
             if flags != 0x0000_0001 && flags != 0x0101_0001 {
                 continue;
             }
-            let Some(&k) = obj_of.get(&(i32_at(buf, pp), u32_at(buf, pp + 4))) else { continue };
+            let obj = u32_at(buf, pp + 4) as u64 | (u32_at(buf, pp + 8) as u64) << 32;
+            let Some(&k) = obj_of.get(&(i32_at(buf, pp), obj)) else { continue };
             let mut w = WornItem {
                 id: worn[k],
                 tarot: ench(i16_at(buf, pp + 26)),
@@ -1005,7 +992,7 @@ fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Opt
             if let Some(old) = &res[k] {
                 // Copies must agree on everything but durability (only one copy has it): otherwise don't guess.
                 if old.tarot != w.tarot || old.soul != w.soul || old.basic != w.basic || old.special != w.special || old.mods != w.mods || old.fuse != w.fuse {
-                    return None;
+                    return Err("two copies of an item record disagree");
                 }
                 if w.durability < 0 {
                     w.durability = old.durability;
@@ -1016,10 +1003,58 @@ fn read_worn_details(mem: &GameMemory, own: &IndexSet<i64>, worn: &[i32]) -> Opt
     }
     for k in 0..15 {
         if worn[k] > 0 && res[k].is_none() {
-            return None;
+            return Err("an item record not found");
         }
     }
-    Some(res)
+    Ok(res)
+}
+
+/// The worn-items object-id map of one equipment object (equipment +60 / +64, see above): (item id, object id) -> slot.
+fn worn_object_ids(mem: &GameMemory, equip: i64, worn: &[i32]) -> Result<std::collections::HashMap<(i32, u64), usize>, &'static str> {
+    let e = mem.read(equip, 68).ok_or("equipment object unreadable")?;
+    if u32_at(&e, 0) != EQUIPMENT_VTABLE {
+        return Err("equipment object unreadable");
+    }
+    let head = u32_at(&e, 60) as i64;
+    let size = i32_at(&e, 64);
+    if head < 0x10000 || !(0..=15).contains(&size) {
+        return Err("object-id map not found");
+    }
+    let hb = mem.read(head, 34).ok_or("object-id map not found")?;
+    if hb[33] != 1 {
+        return Err("object-id map not found"); // not a map head
+    }
+    let mut obj_of = std::collections::HashMap::new();
+    let mut seen: IndexSet<i64> = IndexSet::new();
+    let mut stack: Vec<i64> = vec![u32_at(&hb, 4) as i64];
+    while let Some(n) = stack.pop() {
+        if n == 0 || n == head || !seen.insert(n) {
+            continue;
+        }
+        let nb = mem.read(n, 34).ok_or("object-id map node unreadable")?;
+        // a real node: not the head, red or black
+        if seen.len() > 16 || nb[33] != 0 || nb[32] > 1 {
+            return Err("object-id map node not as expected");
+        }
+        let key = i32_at(&nb, 16);
+        let obj = u32_at(&nb, 24) as u64 | (u32_at(&nb, 28) as u64) << 32;
+        if !(0..=14).contains(&key) {
+            return Err("object-id map node not as expected");
+        }
+        let slot = SLOT_OF_EQUIP_TYPE[key as usize];
+        if (obj == 0) != (worn[slot] <= 0) {
+            return Err("object-id map differs from the worn items"); // object 0 = slot emptied
+        }
+        if obj != 0 {
+            obj_of.insert((worn[slot], obj), slot);
+        }
+        stack.push(u32_at(&nb, 0) as i64);
+        stack.push(u32_at(&nb, 8) as i64);
+    }
+    if seen.len() as i32 != size || obj_of.len() != worn.iter().filter(|&&i| i > 0).count() {
+        return Err("object-id map differs from the worn items");
+    }
+    Ok(obj_of)
 }
 
 // ---------- Expertise tree: always present ----------
