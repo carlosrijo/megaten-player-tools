@@ -1677,3 +1677,12 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .assistant canvas.summon-in { animation: summon-in .5s ease-out; }
 @keyframes summon-out { to { opacity: 0; filter: brightness(3); } }
 @keyframes summon-in { from { opacity: 0; filter: brightness(3.5); } 60% { opacity: 1; } to { opacity: 1; filter: none; } }
+/* Key Items (Tools): the English name, "translated" when it is ours, the game's Japanese name greyed under it */
+.key-en { font-weight: 600; }
+.key-tr { margin-left: 6px; font-size: 11px; color: var(--text-3); border-bottom: 1px dotted var(--text-3); }
+.key-jp { display: block; color: var(--text-3); font-size: 12px; font-weight: 400; margin-top: 1px; }
+.key-tbl td.key-does { color: var(--text-2); max-width: 520px; }
+.key-tbl .tag-nm { margin-left: 4px; }
+.key-have { color: var(--aff); border-color: currentColor; }   /* Tokyo Night purple: not one of the data series' colours */
+.key-have .icon { width: 12px; height: 12px; margin-right: 3px; vertical-align: -2px; }
+.key-detail .q-needs > span:last-child { white-space: pre-line; }

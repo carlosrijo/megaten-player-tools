@@ -218,6 +218,19 @@ To record what players confirmed on IMAGINE, add notes to `app\ui\dcm-notes.json
 (`"notes": { "<item id>": ["Sold by X in Y for Z"] }`; the item id is shown at the bottom of an opened row).
 They appear first, marked "IMAGINE note".
 
+### Tools: Key Items
+
+Under **Tools** in the left bar. Lists the game's key items (the 282 it shows; its hidden progress flags are left out):
+which ones your character has, what each one does and how to get it. The game names most key items only in Japanese:
+each shows its English name, from the game's own English text where there is one, else a translation marked
+"translated", with the Japanese name greyed under it. Chips filter by kind (modes and access such as WILDCAT and
+BEARCAT, licenses, COMP and system, shops and people, expertise cap, story, quest items, records, Electronic Corridor
+programs, seasonal) and by **You have** / **Missing**. Click one for how to get it, what it does in full and the quests
+involved, each with a link to it in the Quest Database. Which ones you have is read from the game every few seconds while
+the page is open (logged in as the character shown), and the last reading is kept, so the page still says it with the
+game closed. How to get them and what they do come from the game files and the public server's event files, so NewMoon
+may have changed some; NewMoon's own key items are marked NewMoon and described from the game's own text.
+
 ### Tools: Quest Database
 
 Under **Tools** in the left bar, next to the other databases. Lists every quest (680; 665 without the inactive ones)

@@ -40,6 +40,7 @@
     share: '<path d="M12 15V4M8 7.5l4-4 4 4"/><path d="M5 12.5v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/>',
     download: '<path d="M12 4v11M8 11.5l4 4 4-4"/><path d="M5 15v3.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V15"/>',
     flag: '<path d="M5.5 21V4"/><path d="M5.5 4.5h11.5l-2.2 4.2 2.2 4.3H5.5"/>',
+    key: '<circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8L20 3M16.5 6.5l2.5 2.5M14 9l2 2"/>',
     // shown / hidden (the quest panel); panel.js has the same two
     eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
     'eye-off': '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>',
@@ -275,11 +276,12 @@
         if (cmd === 'questProgress') {
           if (Q.get('quests') === 'none') return null;
           // ?quests=extra: also Act 6 with one blade (valuable 124), Act.8 at its four residents (a counter step the client
-          // cannot tick) and Let's Trade! at its random request
+          // cannot tick) and Let's Trade! at its random request. The flags also hold a few key items for the Key Items page
+          // (Old World Stone, Proof of Deposit, WILDCAT, both compendiums).
           const extra = Q.get('quests') === 'extra'
             ? [{ id: 907, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 909, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 7, step: 0, counters: [0, 0, 0, 0, 0] }] : [];
           return { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }, ...extra],
-            completed: Q.get('completed') === 'none' ? null : [1, 2, 3, 4, 5, 901], flags: extra.length ? [82, 84, 124] : [82, 84], zone: Number(Q.get('zone')) || 50101 };
+            completed: Q.get('completed') === 'none' ? null : [1, 2, 3, 4, 5, 901], flags: [...(extra.length ? [82, 84, 124] : [82, 84]), 4, 132, 222, 250, 251], zone: Number(Q.get('zone')) || 50101 };
         }
         if (cmd === 'summonedDemon') {
           if (Q.get('summon')) return { type: Number(Q.get('summon')) || 0, name: Q.get('summonName') || 'A demon' };
@@ -391,7 +393,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Database', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'],['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Database', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -465,6 +467,7 @@
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
     dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle', live: null, liveRaw: null, typeTouched: false },
+    keys: { q: '', cat: 'all', held: 'all', open: new Set(), pg: 0, data: null, state: 'idle', busy: false },
     gdb: { q: '', kind: 'all', cls: 'all', known: true, gender: '', align: '', src: [], range: '', aff: [], maxLv: '', sort: 'name', dir: 1, fopen: false, open: new Set(), pg: 0, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
@@ -3079,6 +3082,139 @@
     questLiveTick();
     return page;
   }
+  // ---------- Tools: Key Items ----------
+  // The game's key items (valuables) a player can see, from key-items.json beside this file (made from the game's
+  // valuables table, its English text and the public server's event files: reference\key-items.tsv). Which ones the
+  // character holds comes from the game (page command questProgress, its `flags`), read every few seconds while this page
+  // is open, and kept per character (babel-keys-held-<name>) so the page still says it with the game closed.
+  const KEY_CATS = [['all', 'All'], ['modes', 'Modes and access'], ['licenses', 'Licenses'], ['comp', 'COMP and system'], ['shops', 'Shops and people'],
+    ['expertise', 'Expertise cap'], ['story', 'Story'], ['quest', 'Quest items'], ['records', 'Records'], ['corridor', 'Electronic Corridor'], ['seasonal', 'Seasonal'], ['other', 'Use not known']];
+  const KEY_HELD = [['all', 'All'], ['have', 'You have'], ['missing', 'Missing']];
+  function loadKeys() {
+    const D = S.keys;
+    if (D.state !== 'idle') return;
+    D.state = 'loading';
+    fetch('key-items.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      D.data = d; D.state = d ? 'ready' : 'failed';
+      if (d) d.items.forEach((k) => { k.hay = [k.en, k.jp, k.get, k.unlocks, ...(k.quests || [])].join(' ').toLowerCase(); });
+      if (S.page === 'keys') render();
+    });
+  }
+  const keysHeldKey = (name) => 'keys-held-' + name;
+  /** What the character holds: { ids: Set, at: ISO time, live: read just now } or null when never read. */
+  function keysHeld() {
+    const name = simActive();
+    if (!name) return null;
+    const D = S.keys;
+    if (D.live && D.live.name === name) return D.live;
+    try {
+      const v = JSON.parse(store.get(keysHeldKey(name)) || 'null');
+      return v && Array.isArray(v.ids) ? { name, ids: new Set(v.ids), at: v.at, live: false } : null;
+    } catch (e) { return null; }
+  }
+  function keysTick() {
+    const D = S.keys, name = simActive();
+    if (D.busy || S.page !== 'keys' || document.hidden || !name) return;
+    D.busy = true;
+    Promise.resolve(host.call('questProgress')).catch(() => null).then((r) => {
+      D.busy = false;
+      if (!r || !Array.isArray(r.flags) || simActive() !== name) {
+        if (D.live && D.live.name === name) { D.live = null; if (S.page === 'keys') render(); }   // the game closed: fall back to the saved list
+        return;
+      }
+      const ids = [...r.flags].sort((a, b) => a - b), raw = ids.join(',');
+      const changed = !D.live || D.live.name !== name || D.live.raw !== raw;
+      const at = new Date().toISOString();
+      D.live = { name, ids: new Set(ids), at, live: true, raw };
+      store.set(keysHeldKey(name), JSON.stringify({ at, ids }));
+      if (changed && S.page === 'keys') render();
+    });
+  }
+  setInterval(keysTick, 5000);
+  /** The first sentence of a text (the table shows it; the open row has all of it), with "…" when there is more. */
+  function keyFirst(t) {
+    const m = /^(.+?[.!?])(\s+\S[\s\S]*)?$/.exec(t.trim());
+    return m && m[2] ? m[1] + ' …' : t;
+  }
+  function keyDetail(k) {
+    const box = h('div', { class: 'q-detail key-detail' });
+    const line = (key, kids) => h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: key }), h('span', null, kids));
+    box.append(line('How to get it', k.get || 'Not known.'));
+    box.append(line('What it does', k.unlocks || 'Not known.'));
+    if (k.quests && k.quests.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Quests' }),
+      h('ul', { class: 'gdb-list' }, k.quests.map((t) => h('li', null, questLine(`Quest “${t}”`))))));
+    const notes = [];
+    if (k.newmoon) notes.push('NewMoon’s own: the public server files don’t have it, so this comes from the game’s own description.');
+    if (k.seasonal) notes.push('Only from a seasonal event, which may not be running.');
+    if (!k.sure) notes.push('Worked out from the game files, not checked in game.');
+    if (k.enSrc === 'translated') notes.push('The game names it only in Japanese; the English name is a translation.');
+    if (notes.length) box.append(h('p', { class: 'note', text: notes.join(' ') }));
+    return box;
+  }
+  function pageKeys() {
+    const D = S.keys, page = h('div', { class: 'page page-dcm' });
+    loadKeys(); keysTick();
+    page.append(pageHead('The game’s key items: which ones you have, what each one opens and how to get the ones you’re missing. Click one to open it.'));
+    if (D.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The key item list could not be loaded (key-items.json is missing beside the page).' : 'Loading the key items…' }));
+      return page;
+    }
+    const held = keysHeld(), items = D.data.items;
+    const has = (k) => !!held && held.ids.has(k.id);
+    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null,
+      !simActive() ? 'Pick a character at the top left to see which key items it has.'
+        : !held ? `Start IMAGINE and log in as ${simActive()} to see which key items you have; the page reads them from the game while it is open.`
+          : held.live ? `Read from the game just now: ${simActive()} has ${fmt(items.filter(has).length)} of these ${fmt(items.length)} key items.`
+            : `As last read from the game (${new Date(held.at).toLocaleString()}): ${simActive()} had ${fmt(items.filter(has).length)} of these ${fmt(items.length)} key items. Log in to read them again.`,
+      ' How to get them and what they do come from the game files and the public server’s event files, so NewMoon may have changed some.')));
+    const inCat = (k, c) => c === 'all' || k.cat === c;
+    const inHeld = (k, c) => c === 'all' || !held || (c === 'have' ? has(k) : !has(k));
+    const catChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by kind of key item' });
+    const heldChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by whether you have it' });
+    const body = h('tbody'), pager = h('nav', { class: 'pager', 'aria-label': 'Pages' }), wrap = h('div', { class: 'tbl-wrap' });
+    const drawChips = () => {
+      catChips.replaceChildren(...KEY_CATS.filter(([id]) => id === 'all' || items.some((k) => k.cat === id)).map(([id, label]) =>
+        h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.cat === id), onclick: () => { D.cat = id; D.pg = 0; drawChips(); draw(); } },
+          label, h('span', { class: 'count', text: fmt(items.filter((k) => inCat(k, id) && inHeld(k, D.held)).length) }))));
+      heldChips.replaceChildren(...(held ? KEY_HELD : []).map(([id, label]) =>
+        h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.held === id), onclick: () => { D.held = id; D.pg = 0; drawChips(); draw(); } },
+          label, h('span', { class: 'count', text: fmt(items.filter((k) => inCat(k, D.cat) && inHeld(k, id)).length) }))));
+    };
+    const draw = () => {
+      body.replaceChildren();
+      const q = D.q.trim().toLowerCase();
+      const all = items.filter((k) => inCat(k, D.cat) && inHeld(k, D.held) && (!q || k.hay.includes(q)));
+      const pg = pageOf(D, all);
+      pg.rows.forEach((k) => {
+        const open = D.open.has(k.id);
+        const toggle = () => { if (D.open.has(k.id)) D.open.delete(k.id); else D.open.add(k.id); draw(); };
+        const state = !held ? h('span', { class: 'zero', text: '—' })
+          : has(k) ? h('span', { class: 'tag key-have' }, icon('check'), 'Have') : h('span', { class: 'tag tag-off', text: 'Missing' });
+        body.append(h('tr', { class: 'row-click' + (open ? ' open' : '') + (held && !has(k) ? ' key-missing' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
+          h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
+            h('span', { class: 'chev' }, icon('chevron')),
+            h('span', null, h('span', { class: 'key-en', text: k.en }),
+              k.enSrc === 'translated' ? h('span', { class: 'key-tr', tabindex: 0, 'data-tip': 'The game names it only in Japanese; this is a translation', text: 'translated' }) : null,
+              k.jp && k.jp.normalize('NFKC') !== k.en.normalize('NFKC') ? h('span', { class: 'key-jp', lang: 'ja', text: k.jp }) : null))),
+          h('td', { class: 'key-does' }, k.unlocks && k.unlocks !== 'Not known.' ? keyFirst(k.unlocks) : h('span', { class: 'zero', text: 'Not known' })),
+          h('td', null, h('span', { class: 'tag', text: (KEY_CATS.find(([id]) => id === k.cat) || [, k.cat])[1] }),
+            k.newmoon ? h('span', { class: 'tag tag-nm', text: 'NewMoon' }) : null),
+          h('td', null, state)));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, keyDetail(k))));
+      });
+      if (!all.length) body.append(h('tr', null, h('td', { colspan: 4, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No key item in this group.' })));
+      drawPager(pager, D, all.length, pg, draw, () => wrap, 'key items');
+    };
+    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a key item, quest, person or place', (v) => { D.q = v; D.pg = 0; drawChips(); draw(); }), heldChips));
+    page.append(h('div', { class: 'toolbar' }, catChips));
+    wrap.append(h('table', { class: 'tbl key-tbl' },
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Key item' }), h('th', { scope: 'col', text: 'What it does' }), h('th', { scope: 'col', text: 'Kind' }), h('th', { scope: 'col', text: 'You' }))), body));
+    page.append(wrap, pager);
+    page.append(h('p', { class: 'note', text: `${fmt(items.length)} key items the game shows (its hidden progress flags are left out). English names come from the game’s own English text where it has one; the rest are translations, marked. Data made on ${D.data.generatedAt}.` }));
+    drawChips(); draw();
+    return page;
+  }
+
   // ---------- Pages for the long lists (Item Database, Skill Database) ----------
   // Pages of S.perPage rows (one saved choice for every list, babel-rows-per-page): 17,000 table rows at once is too
   // slow, and a page number can be come back to. pageOf keeps st.pg in range and gives this page's rows; drawPager fills
@@ -6476,7 +6612,7 @@
     return box;
   }
 
-  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, dplan: pageDigiPlan, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
+  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, fusion: pageFusion, dplan: pageDigiPlan, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
