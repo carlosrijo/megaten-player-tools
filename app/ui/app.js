@@ -274,8 +274,12 @@
         }
         if (cmd === 'questProgress') {
           if (Q.get('quests') === 'none') return null;
-          return { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }],
-            completed: Q.get('completed') === 'none' ? null : [1, 2, 3, 4, 5, 901], flags: [82, 84], zone: Number(Q.get('zone')) || 50101 };
+          // ?quests=extra: also Act 6 with one blade (valuable 124), Act.8 at its four residents (a counter step the client
+          // cannot tick) and Let's Trade! at its random request
+          const extra = Q.get('quests') === 'extra'
+            ? [{ id: 907, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 909, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 7, step: 0, counters: [0, 0, 0, 0, 0] }] : [];
+          return { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }, ...extra],
+            completed: Q.get('completed') === 'none' ? null : [1, 2, 3, 4, 5, 901], flags: extra.length ? [82, 84, 124] : [82, 84], zone: Number(Q.get('zone')) || 50101 };
         }
         if (cmd === 'summonedDemon') {
           if (Q.get('summon')) return { type: Number(Q.get('summon')) || 0, name: Q.get('summonName') || 'A demon' };
@@ -2657,8 +2661,11 @@
     fetch('quest-guide.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
       S.quest.data = d; S.quest.state = d ? 'ready' : 'failed';
       if (d) d.quests.forEach((q) => {
-        const words = [q.title, q.client, q.zone];
-        q.steps.forEach((s) => { words.push(s.objective || '', ...(s.goals || [])); (s.ways || []).forEach((w) => words.push(w.do, w.who || '', w.where || '', ...(w.talks || []).flatMap((t) => [t.who, t.where]), ...(w.get || []), ...(w.lose || []), ...(w.needs || []))); });
+        const words = [q.title, q.client, q.zone, ...(q.seasonal || [])];
+        q.steps.forEach((s) => {
+          words.push(s.objective || '', ...(s.goals || []), ...(s.optional || []).flatMap((x) => [x.who, x.where]));
+          (s.ways || []).forEach((w) => words.push(w.do, w.who || '', w.where || '', ...(w.talks || []).flatMap((t) => [t.who || '', t.where || '']), ...(w.get || []), ...(w.lose || []), ...(w.needs || [])));
+        });
         q.hay = words.join(' ').toLowerCase();
       });
       if (S.page === 'quests' || S.page === 'tracker') render();
@@ -2763,16 +2770,23 @@
       h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: lead ? 'Then' : 'Choose' }), branch(start)));
   }
   /** One instruction: what to do and where as a sentence, then what to choose, what you need, and what changes hands. */
+  /** What has to happen first (getting there, the person or object appearing): "first …", "then …" lines. */
+  function questBefore(list) {
+    const at = questAt;
+    return (list || []).map((b, i) => h('li', null,
+      h('div', { class: 'q-do' }, h('span', { class: 'q-or', text: i ? 'then' : 'first' }), h('span', null,
+        b.kind === 'npc' && b.who ? ['Talk to ', questWho(b), at(b), '.'] : [h('b', { text: b.do || (b.kind === 'spot' ? 'Walk to the spot' : 'Examine the quest object') }), at(b), '.'], hereTag(b))),
+      b.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: b.asks })) : null,
+      questAnswers(b), questRow('You fight', b.fights), b.result ? h('div', { class: 'q-hint', text: b.result }) : null));
+  }
+  /** A talk of a multi-talk step: a person, or a quest object or spot the client gives no name. */
+  const questTalkWho = (t) => (t.who ? questWho(t) : h('b', { text: t.do || 'Use the quest object' }));
   function questWay(ws, alt) {
     const w = ws[0];
     const at = questAt;
     let sentence;
     // what has to happen first (getting there, the person appearing): "First ... Then ..." before the step's own talk
-    const before = (w.before || []).map((b, i) => h('li', null,
-      h('div', { class: 'q-do' }, h('span', { class: 'q-or', text: i ? 'then' : 'first' }), h('span', null,
-        b.kind === 'npc' ? ['Talk to ', questWho(b), at(b), '.'] : [h('b', { text: b.kind === 'spot' ? 'Walk to the spot' : 'Examine the quest object' }), at(b), '.'], hereTag(b))),
-      b.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: b.asks })) : null,
-      questAnswers(b), questRow('You fight', b.fights), b.result ? h('div', { class: 'q-hint', text: b.result }) : null));
+    const before = questBefore(w.before);
     if (w.talks) sentence = [h('b', { text: w.do }), ':'];   // the people follow as a list
     else if (w.who) {
       const seen = new Set(), people = ws.filter((x) => { const k = x.who + at(x); return !seen.has(k) && seen.add(k); });
@@ -2784,28 +2798,73 @@
       w.talks ? h('ol', { class: 'q-talks' }, w.talks.map((t) => {
         // done once the game holds the hidden flag this talk sets (live)
         const did = S.page === 'tracker' && t.flag && S.quest.live && S.quest.live.flags.has(t.flag);
+        const tb = did ? [] : questBefore(t.before);
         return h('li', { class: did ? 'q-talk-done' : null },
-          h('div', null, questWho(t), at(t), did ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null, did ? null : hereTag(t)), questAnswers(t));
+          // the walkthrough's own way comes after all the others ("then the last one")
+          h('div', null, t.last ? [h('span', { class: 'q-or', text: 'last' }), ' '] : null, questTalkWho(t), at(t),
+            t.times ? h('span', { class: 'tag', text: `${t.times} times in all` }) : null,
+            did ? h('span', { class: 'tag q-done-tag', text: 'Done' }) : null, did ? null : hereTag(t)),
+          !did ? questRow('You fight', t.fights) : null,
+          tb.length ? h('ol', { class: 'q-before' }, tb) : null,
+          !did && t.dungeon ? h('div', { class: 'q-hint', text: t.dungeon }) : null,
+          !did && t.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: t.asks })) : null,
+          questAnswers(t));
       })) : null,
+      // parts counted on the quest's own counter (no hidden flag): the server keeps that counter, the game client never
+      // gets it (comp_hack sends only the step and the kill counters), so the Tracker cannot tick them off
+      S.page === 'tracker' && w.talks && w.talks.some((t) => !t.flag && !t.last)
+        ? h('div', { class: 'q-hint', text: 'The game doesn\'t tell the client which of these you have done, so they are not ticked off here.' }) : null,
       w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
       w.hint ? h('div', { class: 'q-hint', text: w.hint }) : null,
+      w.times ? h('div', { class: 'q-hint', text: `Do this ${w.times}: the game counts each time.` }) : null,
+      w.random ? h('div', { class: 'q-hint', text: 'The game picks this one at random.' }) : null,
       w.asks ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'It asks' }), h('span', { class: 'q-asks', text: w.asks })) : null,
       questAnswers(w),
-      questRows(w));
+      questRows(w),
+      w.finishes ? h('div', { class: 'q-hint', text: 'This finishes the quest.' }) : null);
   }
   /** A step's ways as blocks: one person's ways whose answers differ become one tree, the rest stay one block each. */
+  /** Several ways the game picks one of at random from the same talk (Let's Trade!: the Demon Buster asks for one of five
+   *  items): one block, the talk once, then what each pick gives and takes. */
+  function questRandom(groups, alt) {
+    const w = groups[0][0];
+    return h('div', { class: 'q-way' },
+      h('div', { class: 'q-do' }, alt ? h('span', { class: 'q-or', text: 'or' }) : null,
+        h('span', null, w.who ? ['Talk to ', questWho(w), questAt(w), '.'] : [h('b', { text: w.do }), questAt(w), '.']), hereTag(w)),
+      w.dungeon ? h('div', { class: 'q-hint', text: w.dungeon }) : null,
+      questAnswers(w),
+      h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'At random' }),
+        h('div', { class: 'q-lines' }, h('div', { class: 'q-hint', text: `The game picks one of these ${groups.length}:` }),
+          h('ol', { class: 'q-talks' }, groups.map((g) => h('li', null, questRows(g[0]).filter(Boolean).length ? questRows(g[0]) : h('span', { class: 'q-hint', text: 'Nothing changes hands.' })))))));
+  }
   function questBlocks(s, q) {
     const blocks = [], byPerson = new Map();
+    // random picks from one talk become one block (before the per-person grouping below)
+    const rnd = new Map(), rest = [];
     questWays(s.ways || [], q).forEach((g) => {
+      const w = g[0], k = w.random && !w.talks && !w.finishes ? [w.kind, w.who || w.do, w.where, JSON.stringify(w.pick || [])].join('|') : null;
+      if (k) { if (!rnd.has(k)) rnd.set(k, []); rnd.get(k).push(g); } else rest.push(g);
+    });
+    const randomBlocks = [...rnd.values()].filter((gs) => gs.length > 1);
+    [...rnd.values()].filter((gs) => gs.length === 1).forEach((gs) => rest.push(gs[0]));
+    rest.forEach((g) => {
       const w = g[0], k = w.who && w.pick && w.pick.length && !w.talks ? [w.kind, w.who, w.where, w.grid || ''].join('|') : null;
       if (k && byPerson.has(k)) byPerson.get(k).push(g);
       else { const b = [g]; if (k) byPerson.set(k, b); blocks.push(b); }
     });
     const out = [];
+    randomBlocks.forEach((gs) => out.push(questRandom(gs, out.length > 0)));
     blocks.forEach((b) => {
       if (b.length > 1 && new Set(b.map((g) => JSON.stringify(g[0].pick))).size === b.length) out.push(questTree(b, out.length > 0));
       else b.forEach((g) => out.push(questWay(g, out.length > 0)));
     });
+    // people the game shows only during this step whom the ways above do not need (Act 6's "???" in Shibuya)
+    if (s.optional && s.optional.length) out.push(h('div', { class: 'q-way q-optional' },
+      h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: s.optional.every((x) => x.optional) ? 'Optional' : 'Also here' }),
+        h('div', { class: 'q-lines' }, s.optional.map((x) => h('div', null,
+          h('div', null, 'Talk to ', questWho(x), questAt(x), '.', hereTag(x)),
+          x.says && x.says.length ? h('div', { class: 'q-line' }, h('span', { class: 'q-key', text: 'Says' }), h('div', { class: 'q-lines' }, x.says.map((l) => h('div', { class: 'q-asks', text: l })))) : null,
+          x.note ? h('div', { class: 'q-hint', text: `Shown only during this step. ${x.note}` }) : null))))));
     return out;
   }
   // ---- live progress: the character's quests as the game has them (page command questProgress), read every few
@@ -2819,7 +2878,7 @@
   const questHere = (x) => S.page === 'tracker' && !!(x && x.zoneId && S.quest.live && S.quest.live.zone && x.zoneId === S.quest.live.zone);
   const hereTag = (x) => (questHere(x) ? h('span', { class: 'tag q-here-tag', text: 'In your zone' }) : null);
   /** Every place a step sends you: its ways, what comes before them, and the talks of a multi-talk step. */
-  const stepPlaces = (s) => (s.ways || []).flatMap((w) => [w, ...(w.before || []), ...(w.talks || [])]);
+  const stepPlaces = (s) => [...(s.ways || []).flatMap((w) => [w, ...(w.before || []), ...(w.talks || []).flatMap((t) => [t, ...(t.before || [])])]), ...(s.optional || [])];
   /** A quest in progress whose current step has something to do in the zone you are in. */
   const questHereNow = (q) => {
     const a = questLive(q);
@@ -2854,6 +2913,9 @@
     const box = h('div', { class: 'q-detail' });
     if (q.needs.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Before you can start' }), h('span', null, q.needs.join(' · '))));
     if (!q.walkthrough) box.append(h('p', { class: 'note', text: 'The server\'s event files do not cover this quest, so only the game\'s own objective text is shown.' }));
+    // a quest started only from a seasonal event's files (the public server has those switched off)
+    if (q.seasonal && q.seasonal.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Seasonal event' }),
+      h('span', null, `${q.seasonal.join(' · ')}. Its steps come from that event's files, which the public server keeps switched off, so IMAGINE may not run it.`)));
     const ol = h('ol', { class: 'q-steps' });
     q.steps.forEach((s) => ol.append(h('li', null,
       /^Step /.test(s.label) ? null : h('div', { class: 'q-step-title', text: s.label }),   // the number is already in the circle
@@ -2919,10 +2981,10 @@
     const at = questAt;
     if (w.talks) {
       const left = w.talks.filter((t) => !(t.flag && S.quest.live && S.quest.live.flags.has(t.flag)));
-      return `${w.do}: ${left.map((t) => t.who).join(', ')}`;
+      return `${w.do}: ${left.map((t) => (t.who || t.do) + (t.who || !t.where ? '' : ` in ${t.where}`)).join(', ')}`;
     }
     const first = (w.before || []).find((b) => !(S.quest.live && S.quest.live.zone && S.quest.live.zone === w.zoneId && b.zoneId !== w.zoneId));
-    if (first) return `First: ${first.kind === 'npc' ? `talk to ${first.who}` : first.kind === 'spot' ? 'walk to the spot' : 'examine the quest object'}${at(first)}`;
+    if (first) return `First: ${first.kind === 'npc' && first.who ? `talk to ${first.who}` : first.kind === 'npc' ? 'use the quest object' : first.kind === 'spot' ? 'walk to the spot' : 'examine the quest object'}${at(first)}`;
     return w.who ? `Talk to ${w.who}${at(w)}` : `${w.do}${at(w)}`;
   }
   /** A kill goal of the step you are on, with the game's counter as a bar. */
