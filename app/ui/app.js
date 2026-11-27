@@ -7472,9 +7472,9 @@
             const tier = rbpTier(it[1]), on = pay[r] === tier;
             const perRune = P.runes.map((R) => { const g = R.ranks[r - 1], x = g && g.items.find((y) => rbpTier(y[1]) === tier); return x ? `${R.name}: ${x[1]}` : null; }).filter(Boolean);
             const same = new Set(perRune.map((s) => s.slice(s.indexOf(': ') + 2))).size === 1;   // the item name itself may hold a colon ("Soul Stone: The Bull")
-            return h('button', { type: 'button', class: 'rbp-rankopt', 'aria-pressed': String(on), 'data-tip': `${RBP_TIERS[tier]} ×${it[2]} for each rebirth to rank ${r}${n ? ` (×${fmt(it[2] * n)} in all)` : ''}. ${same ? it[1] : 'Per rune: ' + perRune.join(', ')}`,
+            return h('button', { type: 'button', class: 'rbp-rankopt', 'aria-pressed': String(on), 'data-tip': `${same ? it[1] : RBP_TIERS[tier]} ×${it[2]} for each rebirth to rank ${r}${n ? ` (×${fmt(it[2] * n)} in all)` : ''}${same ? '' : '. Per rune: ' + perRune.join(', ')}`,
               onclick: () => { pay[r] = tier; rbpPaySave(); render(); } },
-              itemPic(it[0]), h('span', { class: 'rbp-rankopt-text' }, h('span', { class: 'rbp-rankopt-name', text: same ? it[1] : RBP_TIERS[tier] }), h('b', { text: `×${it[2]}` })));
+              itemPic(it[0]), h('b', { text: `×${it[2]}` }));   // the icon and the amount only; the name is in the tip (user, 2026-11-27)
           })));
       }
       gather.append(h('div', { class: 'rbp-gather-group' },

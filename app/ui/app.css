@@ -2079,7 +2079,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-rankcol-head { display: grid; gap: 1px; padding: 0 2px 3px; }
 .rbp-rankcol-head b { font-size: 12px; }
 .rbp-rankcol-head .src-count { margin: 0; font-size: 11px; white-space: normal; }
-.rbp-rankopt { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 6px 4px 4px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; min-width: 0; }
+.rbp-rankopt { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 3px 8px 3px 4px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; min-width: 0; }
 .rbp-rankopt:hover { background: var(--hover); }
 .rbp-rankopt[aria-pressed="true"] { background: color-mix(in srgb, var(--rb) 14%, var(--surface)); border-color: var(--rb); }
 .rbp-rankopt:focus-visible { outline: 2px solid var(--focus); }
