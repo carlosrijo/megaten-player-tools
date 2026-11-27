@@ -11,6 +11,8 @@ imagine = { version = "0.9.1", path = "../imagine" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", features = ["preserve_order"] }
 base64 = "0.22.1"
+chrono = "0.4.45"
+sha2 = "0.11"
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "bmp", "gif"] }
 rust-embed = { version = "8.14.0", features = ["compression", "include-exclude"] }
 tao = "0.37.3"
@@ -19,6 +21,8 @@ windows = { version = "0.62.2", features = [
     "Win32_Foundation",
     "Win32_Graphics_Dwm",
     "Win32_Graphics_Gdi",
+    "Win32_Networking_WinHttp",
+    "Win32_Security_Cryptography",
     "Win32_System_Com",
     "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_LibraryLoader",

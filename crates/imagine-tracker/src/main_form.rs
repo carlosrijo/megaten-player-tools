@@ -22,7 +22,7 @@ use crate::options::AppOptions;
 use crate::settings::AppSettings;
 use crate::site::DATA_HOST;
 use crate::ui::Ui;
-use crate::{dialogs, support, tour, winutil};
+use crate::{dialogs, support, tour, update, winutil};
 
 /// Everything that changes while the app runs.
 struct State {
@@ -63,6 +63,8 @@ pub struct MainForm {
     log_level: String,
     /// where the active character's progress object was found (client pid, address, when), for questProgress
     quest_at: Mutex<Option<(u32, i64, std::time::Instant)>>,
+    /// new versions from the releases page (update.rs)
+    updater: update::Updater,
 }
 
 impl MainForm {
@@ -87,6 +89,7 @@ impl MainForm {
         let chars = Characters::new(&data_dir, &set.character.clone().unwrap_or_else(backend::default_name), &first_csv)?;
         let wanted = opt.character.clone().or_else(|| set.active_character.clone()).unwrap_or_default();
         let active = chars.find(&wanted).or_else(|| chars.all.first()).and_then(|e| e.name.clone());
+        let scripted = opt.capture.is_some();
         Ok(MainForm {
             opt,
             data_dir,
@@ -100,6 +103,7 @@ impl MainForm {
             last_bundle: Mutex::new(None),
             quest_at: Mutex::new(None),
             log_level: level_name,
+            updater: update::Updater::new(scripted),
         })
     }
 
@@ -156,6 +160,10 @@ impl MainForm {
         }
         if let Some(m) = &o.mode {
             q.push(format!("mode={}", jsonx::escape_data_string(m)));
+        }
+        // just updated (update.rs): the page says so once
+        if let Some(v) = &o.updated_from {
+            q.push(format!("updated={}", jsonx::escape_data_string(v)));
         }
         if let Some(extra) = o.query.as_deref().filter(|s| !s.is_empty()) {
             q.push(extra.trim_start_matches(['?', '&']).to_string());
@@ -483,6 +491,12 @@ impl MainForm {
                         s.set.theme = Some(t.to_string());
                         self.ui.set_scheme(Some(t.to_string()));
                     }
+                    if let Some(b) = args.get("updateCheck").and_then(Value::as_bool) {
+                        s.set.update_check = b;
+                    }
+                    if let Some(b) = args.get("updatePre").and_then(Value::as_bool) {
+                        s.set.update_pre = b;
+                    }
                     s.set.save();
                 }
                 Ok(self.settings_json())
@@ -550,6 +564,35 @@ impl MainForm {
                 if let Some(n) = n {
                     winutil::explorer(&format!("\"https://github.com/carlosrijo/megaten-player-tools/issues/{}\"", n as u64));
                 }
+                Ok("true".to_string())
+            }
+
+            // ---- updates (update.rs): is there a newer version, install it, how that is going ----
+            // { force: true } asks GitHub even when it was asked a moment ago (the Check now button); { auto: true } is
+            // the look at start, which the "look when BABEL starts" setting can turn off
+            "updateCheck" => {
+                let (on, pre) = {
+                    let s = self.st();
+                    (s.set.update_check, s.set.update_pre)
+                };
+                if jsonx::truthy(args.get("auto")) && !on {
+                    return Ok(json!({ "enabled": true, "off": true }).to_string());
+                }
+                Ok(self.updater.check(pre, jsonx::truthy(args.get("force"))).to_string())
+            }
+            "updateInstall" => {
+                if self.no_writes() {
+                    return Err(user_error("Not updating during a capture run."));
+                }
+                let version = jsonx::str(args.get("version")).unwrap_or_default();
+                Ok(self.updater.install(&version, &self.ui, &self.opt.args)?.to_string())
+            }
+            "updateStatus" => Ok(self.updater.status().to_string()),
+            // the release's page on GitHub (the address is made by the updater, never taken from the page)
+            "updatePage" => {
+                // { current: true }: the running version's own page (the "BABEL is now ..." notice)
+                let url = if jsonx::truthy(args.get("current")) { self.updater.current_page() } else { self.updater.page() };
+                winutil::explorer(&format!("\"{url}\""));
                 Ok("true".to_string())
             }
 
@@ -936,9 +979,14 @@ impl MainForm {
 
     fn settings_json(&self) -> String {
         let e = self.active_entry();
-        let theme = self.st().set.theme.clone();
+        let (theme, update_check, update_pre) = {
+            let s = self.st();
+            (s.set.theme.clone(), s.set.update_check, s.set.update_pre)
+        };
         let csv = e.as_ref().and_then(|e| e.csv.clone()).unwrap_or_default();
         json!({
+            "updateCheck": update_check,
+            "updatePre": update_pre,
             "character": e.as_ref().and_then(|e| e.name.clone()),
             "csv": csv,
             "theme": theme,
@@ -1013,7 +1061,7 @@ fn log_command(cmd: &str, ms: u128, r: &std::thread::Result<Result<String>>) {
     if name == "log" {
         return;
     }
-    let quiet = matches!(name.as_str(), "status" | "summonedDemon" | "questProgress");
+    let quiet = matches!(name.as_str(), "status" | "summonedDemon" | "questProgress" | "updateStatus");
     match r {
         Ok(Ok(_)) => log::write(if quiet { Level::Debug } else { Level::Info }, &format!("command {name}: ok ({ms} ms)")),
         Ok(Err(e)) if imagine::error::is_user_error(e) => log::write(Level::Info, &format!("command {name}: user error: {e} ({ms} ms)")),

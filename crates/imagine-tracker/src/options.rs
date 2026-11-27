@@ -17,6 +17,9 @@
 //!   ... --capture out.png --then-scheme light|dark
 //!                                      stand in for Windows switching its light/dark setting while the app is open:
 //!                                      the page is told the new scheme after it has loaded, then the picture is taken
+//!   BABEL.exe --wait-pid <pid> --updated-from <version>
+//!                                      how an update starts the new exe (update.rs): wait for the old one to end,
+//!                                      tidy up after the swap, and say on the page that it was updated
 
 #[derive(Debug, Clone)]
 pub struct AppOptions {
@@ -36,6 +39,12 @@ pub struct AppOptions {
     pub log_level: Option<String>,
     pub width: i32,
     pub height: i32,
+    /// `--wait-pid`: the process an update replaced (update.rs)
+    pub wait_pid: Option<u32>,
+    /// `--updated-from`: the version an update replaced
+    pub updated_from: Option<String>,
+    /// every argument as given (an update passes them on to the new exe)
+    pub args: Vec<String>,
 }
 
 impl AppOptions {
@@ -56,6 +65,9 @@ impl AppOptions {
             log_level: None,
             width: 1280,
             height: 860,
+            wait_pid: None,
+            updated_from: None,
+            args: a.to_vec(),
         };
         let mut i = 0;
         while i < a.len() {
@@ -83,6 +95,9 @@ impl AppOptions {
                 "--offscreen" => o.offscreen = true,
                 "--data" => o.data = next(),
                 "--log-level" => o.log_level = next(),
+                "--wait-pid" => o.wait_pid = next().and_then(|p| p.parse().ok()),
+                // only a version, as it reaches the page's address
+                "--updated-from" => o.updated_from = next().and_then(|v| crate::update::Version::parse(&v).map(|_| v)),
                 "--size" => {
                     let s = next().unwrap_or_default();
                     let p: Vec<&str> = s.split('x').collect();

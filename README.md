@@ -27,6 +27,21 @@ first run, in PowerShell in the exe's folder:
 It must match the release's value (capital or small letters do not matter). If it does not, the file is not the one
 released: delete it and download it again from the release page, never from a copy someone passed on.
 
+### Updates
+
+From 0.10.0 on, BABEL looks for a newer release a few seconds after it starts (and every hour while it is
+open). When one is out, a notice says so. **Update and restart** downloads it, checks it, puts it in place of the
+exe and opens BABEL again; nothing is installed until you click. Settings > Updates shows the release notes and
+has **Check now**, plus two switches: *Look for a new version when BABEL starts* (on) and *Include test versions
+(pre-releases)* (off).
+
+The check before installing: the new exe's size and SHA-256 must match the release, and its signature
+(`BABEL.exe.sig`, made by the release build with a key only it has) must check with the key built into BABEL.
+Only a version newer than the running one is installed. The old exe is kept as `BABEL.exe.old` until the new one
+has started, then removed. The `data` folder is not touched. BABEL must be able to write in its own folder;
+where it can't (Program Files), it says so and the release page has the download. Builds made with `cargo build`
+never update themselves.
+
 The release has no pictures from the game: they are the game's own art. The app makes the Tools pages' pictures
 (Gear, Demon and Skill Database, DCM Locator, Dungeon Explorer) from the player's own game folder the first time a
 page shows them, and keeps them in `data\cache\page-icons`. It needs to have seen the game running once (to know
@@ -51,6 +66,12 @@ git push origin v1.0.0
 Before the tag, write what is new for players in `release-notes\v1.0.0.md` (plain words, a short bullet list) and
 commit it with the release: the workflow puts that file at the top of the release page, above the SHA-256. Without
 the file the release page has only the SHA-256 and a link to the full list of changes.
+
+The workflow also signs the exe for the updater (`BABEL.exe.sig`, see Updates above) with the repository's Actions
+secret `BABEL_UPDATE_KEY`: the private half of the key whose public half is in
+`crates\imagine-tracker\src\update.rs`. A tag fails without the secret, since players' BABEL would refuse that
+release. Never change the key without a release that carries the new public half first: versions with the old
+key built in can only install a release signed with it.
 
 A tag with a dash (`v1.1.0-beta.1`) makes a pre-release. To try the build first, run the Release workflow by hand
 (Actions > Release > Run workflow) and download the exe from the run, or build it here:

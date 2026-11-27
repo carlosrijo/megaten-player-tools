@@ -22,6 +22,7 @@ mod site;
 mod tour;
 mod support;
 mod ui;
+mod update;
 mod winutil;
 
 use std::sync::atomic::Ordering;
@@ -79,6 +80,14 @@ fn main() {
         if log::init(&logs, level, &about::build_info().line()) {
             crash::set_dir(&logs);
         }
+    }
+    // Just updated: wait for the old process to end (the two share the page's WebView2 profile), and remove the old exe
+    // the swap left beside this one (update.rs). A scripted run never updates, and leaves those files alone.
+    if opt.capture.is_none() {
+        if let Some(from) = &opt.updated_from {
+            imagine::log_info!("updated from {from}");
+        }
+        update::after_start(opt.wait_pid);
     }
 
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
@@ -333,6 +342,8 @@ fn main() {
                 if let Some(w) = web.take() {
                     w.close();
                 }
+                // an update put a new exe in place: start it now the window is gone (it waits for this process to end)
+                update::restart_if_updated();
             }
             _ => {}
         }
