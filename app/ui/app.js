@@ -4138,8 +4138,11 @@
       h('div', { class: 'ddb-stat', 'data-tip': tip || null }, h('span', { class: 'q-key', text: k }), h('b', { text: v }))))));
     const get = h('ul', { class: 'gdb-list gdb-get' });
     (x.exp || []).forEach((e) => get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Expertise' }), h('b', { text: e }))));
+    // `at`: who opens the exchange list, and where, traced in the server data (skill-db.json, npc_places); absent when no event there
+    // opens it. `lv` / `needs`: what the exchange asks of the demon (the barter condition table)
     (x.barter || []).forEach((b) => get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Barter' }), h('b', { text: b.cost }),
-      h('span', { class: 'src-count', text: b.for === 'demon' ? ' · your summoned demon learns it (Skill: Demon)' : ' · you learn it' }))));
+      h('span', { class: 'src-count', text: (b.at ? ` · ${b.at}` : '') + (b.for === 'demon' ? ' · your summoned demon learns it (Skill: Demon)' : ' · you learn it')
+        + (b.lv || b.needs ? ` · needs ${[b.lv ? `${b.for === 'demon' ? 'the demon' : 'you'} at Lv ${b.lv}` : '', b.needs || ''].filter(Boolean).join('; ')}` : '') }))));
     if (x.fusion) get.append(h('li', null, h('span', { class: 'gdb-kind', text: 'Fusion' }), h('span', null, 'A fusion skill: the game data marks it as one, it does not say which pair makes it.')));
     if (get.childNodes.length) box.append(block('How to get it', get));
     if (who && who.length) {
@@ -6905,7 +6908,7 @@
   // A demon holds 8 learned skills (comp_hack demon.xml LearnedSkills[8]). The bar starts with the demon's own skills (a
   // COMP demon: the 8 as last read from the game; a Demon Database demon: what it knows and learns up to the stats
   // level, in that order) and any slot can take any skill a demon can obtain in the game: one some demon learns (fusion
-  // inheritance) or one an NPC barters to a demon (the WILDCAT Soul Points exchange, Sacrifice Orbs, Life Orbs, gems...;
+  // inheritance) or one an NPC barters to a demon (the Demonic Researcher's Soul Points, Skill Orb and Life Orb lists, Rag's gems...;
   // skill-db.json `barter` with for = demon). User, 2026-11-27. The picks are kept with the plan (`plan.skills`: the
   // demon they were made for, and the 8 ids); another demon starts from its own skills again.
   const RBP_SKILL_SLOTS = 8;
@@ -7645,11 +7648,21 @@
           const cheapest = gemBarters.length > 1 ? gemBarters.reduce((a, b) => (b.items[0][2] < a.items[0][2] ? b : a)) : null;
           const ways = barters.map((b) => {
             const parts = (b.items || []).map(([id, name, n]) => price(id, name, n));
-            if (b.soul) { sp += b.soul; parts.push(h('span', { class: 'rbp-poolchip', 'data-tip': `${fmt(b.soul)} Soul Points at the WILDCAT Soul Points exchange`, text: `${fmt(b.soul)} Soul Points` })); }
+            // Soul Points are the demon's own: it earns them in WILDCAT runs (demon-only dungeons; user, 2026-11-27), see notes\pages\rebirth-planner.md
+            if (b.soul) { sp += b.soul; parts.push(h('span', { class: 'rbp-poolchip', 'data-tip': `${fmt(b.soul)} of the demon’s Soul Points (earned in WILDCAT runs, where the demon fights alone)`, text: `${fmt(b.soul)} Soul Points` })); }
             if (!parts.length) parts.push(h('span', { class: 'rbp-poolchip', text: b.cost }));
-            const where = b.items && b.items.length && b.items.every(([id]) => GEM(id)) ? (b === cheapest ? 'Rag’s Shop, Kakyo Castle (20% off): taught to a summoned Elemental, then passed on by fusion' : 'Rag’s Shop, Home III or Shinjuku Babel: taught to a summoned Elemental, then passed on by fusion')
-              : b.soul && !(b.items || []).length ? 'WILDCAT Soul Points exchange' : 'An NPC exchange (the data does not say which)';
-            return h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-items' }, ...parts), h('span', { class: 'rbp-way-where', text: where }));
+            // where: the gem lists are Rag's (the data agrees: "Rag in Rag's Shop"), with how a demon gets the skill; else who
+            // opens the list and where, traced in the server data (skill-db.json `at`, npc_places: the Soul Points and Skill Orb
+            // lists are the Demonic Researcher's in the Cathedral of Shadows, which the wiki's Demon Sacrifice page agrees with);
+            // else the list is in the client's table only (user, 2026-11-27: "the data does not say which" was wrong for most)
+            const gems = b.items && b.items.length && b.items.every(([id]) => GEM(id));
+            const where = gems ? (b === cheapest ? 'Rag’s Shop, Kakyo Castle (20% off): taught to a summoned Elemental, then passed on by fusion' : 'Rag’s Shop, Home III or Shinjuku Babel: taught to a summoned Elemental, then passed on by fusion')
+              : b.at ? b.at : 'An NPC exchange; no NPC in the server data offers it';
+            const tip = !gems && b.at ? 'Who opens this exchange list, and where, traced in the server data' : null;
+            // what the exchange asks of the demon (NPCBarterConditionData): its level, the skills it must not know (the orb's "incompatible" ones)...
+            const needs = [b.lv ? `the demon at Lv ${b.lv}` : '', b.needs || ''].filter(Boolean).join('; ');
+            return h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-items' }, ...parts), h('span', { class: 'rbp-way-where', 'data-tip': tip, text: where }),
+              needs ? h('span', { class: 'rbp-way-needs src-count', 'data-tip': 'What the exchange asks, from the game’s barter condition table', text: `Needs ${needs}` }) : null);
           });
           if (x.from.who && x.from.who.length) ways.push(h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-where', text: `By fusion: ${x.from.who.slice(0, 4).join(', ')}${x.from.who.length > 4 ? ` and ${x.from.who.length - 4} more` : ''} learn it` })));
           return h('li', { class: 'rbp-skillcost' }, h('div', { class: 'rbp-skillrow' }, ddbImg(x.s.icon, 24, 'skill-ico'), h('span', { class: 'rbp-skilltext' }, h('b', { text: x.s.name }), h('span', { class: 'src-count', text: rbpSkillTypeName(x.s) }))), h('div', { class: 'rbp-ways' }, ...ways));

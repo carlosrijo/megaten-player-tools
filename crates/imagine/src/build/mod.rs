@@ -12,6 +12,7 @@ pub mod dungeons;
 pub mod expertise;
 pub mod gear_db;
 pub mod item_icons;
+pub mod npc_places;
 pub mod page_icons;
 pub mod pipeline;
 pub mod preview_server;

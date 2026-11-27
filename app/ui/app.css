@@ -2118,6 +2118,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .rbp-way { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; }
 .rbp-way-items { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .rbp-way-where { color: var(--text-3); }
+.rbp-way-needs { flex-basis: 100%; margin: 0; white-space: normal; }   /* what the exchange asks of the demon, on its own line under the way */
 .rbp-pricetile { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px 2px 2px; border-radius: 6px; background: var(--surface-2); font-size: 11px; cursor: help; }
 .rbp-pricetile .rbp-itemicon { width: 20px; height: 20px; }
 .rbp-pricetile b { font-variant-numeric: tabular-nums; }
