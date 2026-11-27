@@ -35,6 +35,12 @@ pub struct AppSettings {
     pub bounds: Option<Vec<i32>>,
     #[serde(rename = "Maximized")]
     pub maximized: bool,
+    /// look for a new version when the app starts (update.rs)
+    #[serde(rename = "UpdateCheck")]
+    pub update_check: bool,
+    /// also offer pre-releases (test versions)
+    #[serde(rename = "UpdatePre")]
+    pub update_pre: bool,
     /// Set for capture and tour runs: nothing they do is written to the settings file.
     #[serde(skip)]
     pub read_only: bool,
@@ -49,6 +55,8 @@ impl Default for AppSettings {
             theme: d_theme(),
             bounds: None,
             maximized: false,
+            update_check: true,
+            update_pre: false,
             read_only: false,
         }
     }

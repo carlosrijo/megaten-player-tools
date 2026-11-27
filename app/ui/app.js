@@ -123,8 +123,12 @@
     }
     // Stand-in for a plain browser: ?empty=1 (first run), ?snap=fail, ?clients=0|1|2 (how many characters are in game)
     const get = (p, dflt) => fetch(p).then((r) => (r.ok ? r.json() : dflt)).catch(() => dflt);
-    const settings = { character: 'Rubito', csv: 'C:\\Users\\…\\smt-stats\\rubito-stats.csv', theme: store.get('theme') || 'system', dataDir: '…\\imagine-reader\\data', csvExists: true };
+    const settings = { character: 'Rubito', csv: 'C:\\Users\\…\\smt-stats\\rubito-stats.csv', theme: store.get('theme') || 'system', dataDir: '…\\imagine-reader\\data', csvExists: true, updateCheck: true, updatePre: false };
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    // Updates: ?update=1 (a new version is out), ?update=pre (a test version, with "Include test versions" ticked),
+    // ?update=nosig (out, but not installable from inside), ?update=fail (GitHub can't be reached), ?updated=0.9.0
+    // (just updated). Installing runs a pretend download, then says the preview can't install.
+    const fakeUpd = { phase: 'idle' };
     const fake = { active: 'Rubito', scanned: false, clients: [], characters: [{ name: 'Rubito', hasData: true, inGame: false, folder: '', level: 0 }] };
     // ?char=<name>: start as another saved character; only their levels (data\characters\<name>\expertise-ranks.json) load
     if (Q.get('char') && Q.get('char') !== 'Rubito') {
@@ -310,6 +314,26 @@
         if (cmd === 'saveBundle') { await wait(300); throw Object.assign(new Error('This is the browser preview: it can’t save a support bundle. Use the desktop app (BABEL.exe).'), { kind: 'user' }); }
         if (cmd === 'buildCheck') return Q.get('build') === 'old' ? { clients: 1, known: 0, unknown: [{ folder: 'client1', pid: 1, fingerprint: 'preview', same: false }] } : { clients: fake.clients.length, known: fake.clients.length, unknown: [] };
         if (cmd === 'log') return true;   // the page's error reports: nothing to write them to here
+        if (cmd === 'updateCheck') {
+          if (args && args.auto && !settings.updateCheck) return { enabled: true, off: true };
+          await wait(args && args.force ? 700 : 150);
+          const u = Q.get('update'), base = { enabled: true, current: '0.10.0', checkedAt: '2026-11-27 18:05' };
+          if (u === 'fail') return { ...base, error: 'Couldn’t reach GitHub: The server name or address could not be resolved' };
+          const pre = u === 'pre' && settings.updatePre;
+          if (u !== '1' && u !== 'nosig' && !pre) return { ...base, update: null };
+          const v = pre ? '0.11.0-beta.1' : '0.10.1';
+          return { ...base, update: { version: v, pre, installable: u !== 'nosig', size: 11157504,
+            notes: `## What's new in ${v}\n\n- **Updates**: BABEL looks for a new version when it starts, and installs it when you say so.\n- The Gear page remembers the slot you looked at last.\n- Fixed: the Quest Tracker sometimes showed a finished quest as open.` } };
+        }
+        if (cmd === 'updateStatus') return { ...fakeUpd };
+        if (cmd === 'updateInstall') {
+          const total = 11157504;
+          for (let done = 0; done <= total; done += 1400000) { Object.assign(fakeUpd, { phase: 'downloading', done, total }); await wait(180); }
+          fakeUpd.phase = 'checking'; await wait(500);
+          Object.assign(fakeUpd, { phase: 'failed', error: 'This is the browser preview: it can’t install anything.' });
+          throw Object.assign(new Error('This is the browser preview: it can’t install anything. Use the desktop app (BABEL.exe).'), { kind: 'user' });
+        }
+        if (cmd === 'updatePage') return true;
         return true;
       },
     };
@@ -6887,7 +6911,7 @@
       toast('err', 'Couldn’t change the alignment', String(e && e.message || e), 0);
     } finally { S.aligning = false; fillSettings(); }
   }));
-  $('#open-settings').addEventListener('click', () => { S.alignNote = ''; fillSettings(); fillAbout(); dlg.showModal(); });
+  $('#open-settings').addEventListener('click', () => { S.alignNote = ''; fillSettings(); fillAbout(); fillUpdates(); dlg.showModal(); });
   dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
 
   // ---------- Send feedback ----------
@@ -7210,6 +7234,140 @@
   $('#bundle-show').addEventListener('click', () => host.call('reveal', { what: 'bundle' }).catch(() => {}));
   $('#logs-show').addEventListener('click', () => host.call('reveal', { what: 'logs' }).catch(() => {}));
 
+  // ---------- updates (the app's update.rs) ----------
+  // A look at BABEL's releases at start (unless turned off) and every hour while it is open; a new version shows a notice once per
+  // run. Nothing is installed until the player clicks Update: the app then downloads it, checks its signature, swaps the
+  // exe and starts again. Settings > Updates shows where things stand and the release notes.
+  const U = { last: null, busy: false, failed: '', noticed: new Set() };
+  /** The release notes (GitHub Markdown, as the release page has them) as plain elements: headings, bullets, lines. */
+  function releaseNotes(md) {
+    const kids = [];
+    let list = null;
+    const clean = (s) => s.replace(/\*\*|__|`/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').trim();
+    for (const raw of String(md || '').split('\n')) {
+      const line = raw.trim();
+      if (!line) { list = null; continue; }
+      const head = /^#{1,6}\s+(.*)$/.exec(line), item = /^[-*+]\s+(.*)$/.exec(line);
+      if (head) { list = null; kids.push(h('div', { class: 'upd-notes-head', text: clean(head[1]) })); }
+      else if (item) { if (!list) { list = h('ul'); kids.push(list); } list.append(h('li', { text: clean(item[1]) })); }
+      else { list = null; kids.push(h('p', { text: clean(line) })); }
+    }
+    return kids;
+  }
+  const mb = (n) => (n / 1048576).toFixed(1);
+  function fillUpdates() {
+    const r = U.last, up = r && r.update, st = $('#upd-status');
+    $('#upd-auto').checked = S.settings.updateCheck !== false;
+    $('#upd-pre').checked = !!S.settings.updatePre;
+    const off = !!(r && r.enabled === false);
+    $('#upd-check').disabled = off || U.busy;
+    $('#upd-install').hidden = !(up && up.installable);
+    $('#upd-install').disabled = U.busy;
+    const notes = $('#upd-notes');
+    notes.hidden = !(up && up.notes);
+    if (up && up.notes) notes.replaceChildren(...releaseNotes(up.notes));
+    if (U.busy) return;   // the install writes its own progress
+    $('#upd-progress').hidden = true;
+    st.textContent = U.failed ? `The update didn’t go through: ${U.failed}`
+      : !r ? 'Not checked yet.'
+      : off ? r.reason
+      : r.error ? `${r.error}${r.checkedAt ? ` (${r.checkedAt})` : ''}`
+      : up ? `BABEL ${up.version} is out${up.pre ? ' (a test version)' : ''}. You have ${r.current}.${up.installable ? '' : ' This one can’t be installed from inside BABEL: download it from its release page.'}`
+      : `BABEL ${r.current} is the newest version. Checked ${r.checkedAt}.`;
+  }
+  async function checkUpdates(opts) {
+    try {
+      const r = await host.call('updateCheck', opts || {});
+      if (r && r.off) return null;   // the look at start is turned off
+      U.last = r;
+    } catch (e) { U.last = { enabled: true, error: String(e && e.message || e) }; }
+    fillUpdates();
+    return U.last;
+  }
+  function updateNotice(up) {
+    if (U.noticed.has(up.version)) return;
+    U.noticed.add(up.version);
+    const el = h('div', { class: 'toast toast-info', role: 'status' }, icon('info'),
+      h('div', null,
+        h('div', { class: 'toast-title', text: `BABEL ${up.version} is out` }),
+        h('div', { class: 'toast-text', text: up.installable ? 'BABEL closes for a moment and opens again with the new version. Your data stays as it is.' : 'This one has to be downloaded from its release page.' }),
+        h('div', { class: 'toast-acts' },
+          up.installable ? h('button', { type: 'button', class: 'btn btn-primary btn-sm', text: 'Update and restart', onclick: () => { el.remove(); installUpdate(); } }) : null,
+          h('button', { type: 'button', class: 'btn btn-sm', text: 'What’s new', onclick: () => { el.remove(); openSettingsAt('#updates'); } }))),
+      h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Later', 'data-tip': 'Later', onclick: () => el.remove() }, icon('x')));
+    homeToasts();
+    toastsEl.append(el);
+  }
+  async function autoCheckUpdates() {
+    if (U.busy) return;
+    const r = await checkUpdates({ auto: true });
+    if (r && r.update) updateNotice(r.update);
+  }
+  async function installUpdate() {
+    const up = U.last && U.last.update;
+    if (!up || !up.installable || U.busy) return;
+    U.busy = true; U.failed = '';
+    openSettingsAt('#updates');
+    fillUpdates();
+    const st = $('#upd-status'), bar = $('#upd-progress');
+    st.textContent = `Downloading BABEL ${up.version}…`;
+    bar.hidden = false; bar.removeAttribute('value');
+    const poll = setInterval(async () => {
+      const s = await host.call('updateStatus').catch(() => null);
+      if (!s || !U.busy) return;
+      if (s.phase === 'downloading' && s.total) { bar.max = s.total; bar.value = s.done; st.textContent = `Downloading BABEL ${up.version}… ${mb(s.done)} of ${mb(s.total)} MB`; }
+      else if (s.phase === 'checking') { bar.removeAttribute('value'); st.textContent = 'Checking the download’s signature…'; }
+      else if (s.phase === 'restarting') st.textContent = 'Restarting…';
+    }, 300);
+    try {
+      await host.call('updateInstall', { version: up.version });
+      st.textContent = 'Restarting…';   // the window closes and the new version opens
+    } catch (e) {
+      clearInterval(poll);
+      U.busy = false; U.failed = String(e && e.message || e);
+      fillUpdates();
+    }
+  }
+  function openSettingsAt(sel) {
+    if (!dlg.open) { S.alignNote = ''; fillSettings(); fillAbout(); fillUpdates(); dlg.showModal(); }
+    const el = $(sel);
+    if (el) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' }));
+  }
+  $('#upd-check').addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    btn.disabled = true; btn.textContent = 'Checking…'; U.failed = '';
+    await checkUpdates({ force: true });
+    btn.textContent = 'Check now'; fillUpdates();
+  });
+  $('#upd-install').addEventListener('click', installUpdate);
+  $('#upd-page').addEventListener('click', () => host.call('updatePage').catch(() => {}));
+  $('#upd-auto').addEventListener('change', (ev) => {
+    S.settings.updateCheck = ev.currentTarget.checked;
+    host.call('saveSettings', { updateCheck: S.settings.updateCheck }).catch(() => {});
+  });
+  $('#upd-pre').addEventListener('change', async (ev) => {
+    S.settings.updatePre = ev.currentTarget.checked;
+    await host.call('saveSettings', { updatePre: S.settings.updatePre }).catch(() => {});
+    if (U.last && U.last.enabled !== false) checkUpdates({});   // what is on offer changes with it
+  });
+  // Just updated (the new exe was started with --updated-from): say so once. It stays until the player dismisses it.
+  function sayUpdated() {
+    const from = Q.get('updated');
+    if (!from) return;
+    host.call('about').then((a) => {
+      const now = a && a.version ? a.version : '';
+      const el = h('div', { class: 'toast toast-ok', role: 'status' }, icon('check'),
+        h('div', null,
+          h('div', { class: 'toast-title', text: now ? `BABEL is now ${now}` : 'BABEL was updated' }),
+          h('div', { class: 'toast-text', text: `It was ${from}.` }),
+          h('div', { class: 'toast-acts' },
+            h('button', { type: 'button', class: 'btn btn-sm', text: 'What’s new', onclick: () => host.call('updatePage', { current: true }).catch(() => {}) }),
+            h('button', { type: 'button', class: 'btn btn-primary btn-sm', text: 'Dismiss', onclick: () => el.remove() }))));
+      homeToasts();
+      toastsEl.append(el);
+    }).catch(() => {});
+  }
+
   // The game was updated: say so once per game build, gently (the reader's memory layouts are for one build)
   const warnedBuilds = new Set();
   async function checkBuild() {
@@ -7270,6 +7428,10 @@
     }
     if (PICKER) setInterval(() => followSummoned(false), 5000);   // summoned another demon in game: it comes here too
     requestAnimationFrame(() => requestAnimationFrame(() => host.call('ready').catch(() => {})));
+    // updates: a few seconds after the page is up (it never slows the start), then every hour while it stays open
+    sayUpdated();
+    setTimeout(autoCheckUpdates, 4000);
+    setInterval(autoCheckUpdates, 3600 * 1000);
     if (host.native) {
       setInterval(pollStatus, 5000);
       document.addEventListener('visibilitychange', () => { if (!document.hidden) pollStatus(); });   // back from minimized: look now

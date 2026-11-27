@@ -30,6 +30,13 @@ include!("../imagine/build_info.rs");
 fn main() {
     emit_build_info();
     println!("cargo:rerun-if-changed=../../app/app.ico");
+    // Only an exe stamped with a release version updates itself (src\update.rs): tools\publish-portable.ps1 -Version.
+    // An everyday `cargo build` (no IMAGINE_VERSION) and the workflow's hand-run test build (0.0.0-dev) never do.
+    let stamped = std::env::var("IMAGINE_VERSION").ok().map(|v| v.trim().to_string()).filter(|v| !v.is_empty() && !v.starts_with("0.0.0"));
+    println!("cargo:rustc-env=BABEL_PUBLISHED_BUILD={}", if stamped.is_some() { "1" } else { "0" });
+    // test builds of the updater only (src\update.rs); never set for a release
+    println!("cargo:rerun-if-env-changed=BABEL_UPDATE_FEED");
+    println!("cargo:rerun-if-env-changed=BABEL_UPDATE_PUBKEY");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }

@@ -5,6 +5,8 @@
 #       git push origin v1.2.0
 #     A tag with a dash (v1.2.0-beta.1) makes a pre-release.
 #   Run it by hand (Actions > Release > Run workflow)  ->  only builds the exe, kept as the run's artifact for testing.
+# A release has BABEL.exe, BABEL.exe.sha256 and BABEL.exe.sig: the signature the app's updater checks before it installs
+# a new version (crates/imagine-tracker/src/update.rs). It is made with the BABEL_UPDATE_KEY secret; a tag fails without it.
 # Either way the exe's debug symbols (BABEL.pdb) are kept as a second artifact, "BABEL-symbols-<version>": not a
 # release asset, only for reading the crash reports of that exact build (HANDOVER.md).
 name: Release
@@ -72,6 +74,27 @@ jobs:
           $h = (Get-FileHash dist/BABEL.exe -Algorithm SHA256).Hash.ToLowerInvariant()
           "$h  BABEL.exe" | Out-File dist/BABEL.exe.sha256 -Encoding ascii
 
+      # The updater's signature (crates/imagine-tracker/src/update.rs): players' BABEL installs a new version only when
+      # this checks with the public key built into it. What is signed: "BABEL.exe <version> <sha-256>" (the version too,
+      # so an old exe can't be offered as a new one). BABEL_UPDATE_KEY is the private key (P-256, PKCS#8, base64), also
+      # kept in .secrets\ on the maintainer's PC. Never echo it.
+      - name: Sign for the updater
+        shell: pwsh
+        env:
+          BABEL_UPDATE_KEY: ${{ secrets.BABEL_UPDATE_KEY }}
+        run: |
+          if (-not $env:BABEL_UPDATE_KEY) {
+            if ('${{ github.ref_type }}' -eq 'tag') { Write-Error 'No BABEL_UPDATE_KEY secret: players'' BABEL would refuse this release as an update.'; exit 1 }
+            Write-Warning 'No BABEL_UPDATE_KEY secret: this test build is not signed.'
+            exit 0
+          }
+          $h = (Get-Content dist/BABEL.exe.sha256 -Raw).Split(' ')[0].Trim()
+          $ec = [Security.Cryptography.ECDsa]::Create()
+          $read = 0
+          $ec.ImportPkcs8PrivateKey([Convert]::FromBase64String($env:BABEL_UPDATE_KEY.Trim()), [ref]$read)
+          $msg = [Text.Encoding]::UTF8.GetBytes("BABEL.exe ${{ steps.ver.outputs.version }} $h")
+          [Convert]::ToBase64String($ec.SignData($msg, [Security.Cryptography.HashAlgorithmName]::SHA256)) | Out-File dist/BABEL.exe.sig -Encoding ascii -NoNewline
+
       - uses: actions/upload-artifact@v7
         with:
           name: BABEL-${{ steps.ver.outputs.version }}
@@ -119,5 +142,5 @@ jobs:
           # --generate-notes still adds the "Full Changelog" compare link under the notes.
           $flags = @('--title', "BABEL $tag", '--notes', $notes, '--generate-notes')
           if ($tag -like '*-*') { $flags += '--prerelease' }
-          gh release create $tag dist/BABEL.exe dist/BABEL.exe.sha256 @flags
+          gh release create $tag dist/BABEL.exe dist/BABEL.exe.sha256 dist/BABEL.exe.sig @flags
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

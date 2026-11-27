@@ -1181,11 +1181,13 @@ version = "0.9.1"
 dependencies = [
  "anyhow",
  "base64",
+ "chrono",
  "image",
  "imagine",
  "rust-embed",
  "serde",
  "serde_json",
+ "sha2",
  "tao",
  "webview2-com",
  "windows",

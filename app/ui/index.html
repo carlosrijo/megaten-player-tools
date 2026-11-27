@@ -131,6 +131,21 @@
         <div class="field-row"><button type="button" class="btn" id="data-show">Open folder</button></div>
       </div>
 
+      <div class="field" id="updates">
+        <span class="field-label">Updates</span>
+        <span class="field-help" id="upd-status" role="status" aria-live="polite">Not checked yet.</span>
+        <progress id="upd-progress" class="upd-progress" max="1" value="0" hidden></progress>
+        <div class="upd-notes" id="upd-notes" hidden></div>
+        <div class="field-row field-wrap">
+          <button type="button" class="btn btn-primary" id="upd-install" hidden>Update and restart</button>
+          <button type="button" class="btn" id="upd-check">Check now</button>
+          <button type="button" class="btn" id="upd-page" data-tip="Opens BABEL’s releases on GitHub in your browser">Release page</button>
+        </div>
+        <label class="check-row"><input type="checkbox" id="upd-auto"><span>Look for a new version when BABEL starts</span></label>
+        <label class="check-row"><input type="checkbox" id="upd-pre"><span>Include test versions (pre-releases)</span></label>
+        <span class="field-help">BABEL only installs a version after you click Update. Before it does, it checks that the download is signed by BABEL’s release build. Your data folder stays as it is.</span>
+      </div>
+
       <div class="field">
         <span class="field-label">About this version</span>
         <dl class="about" id="about-block"><dt>Version</dt><dd>—</dd></dl>
