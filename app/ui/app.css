@@ -1400,7 +1400,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .tag.fus-same { border-style: dashed; }
 .fus-foot { margin-top: 4px; }
 @media (max-width: 900px) { .fus-slots { grid-template-columns: minmax(0, 1fr); } .fus-slot, .fus-add { min-height: 0; } }
-/* Dungeon Explorer */
+/* Dungeon Database */
 .dun-detail { display: grid; gap: 8px; }
 .dun-detail .note { margin: 0; }
 .tbl.dun-mobs { background: var(--surface); border-radius: var(--radius-sm); }

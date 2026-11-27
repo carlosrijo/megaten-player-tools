@@ -1,4 +1,4 @@
-//! The pictures of the Tools pages (Gear Database, Dungeon Explorer, DCM Locator, Skill Database, Demon Database),
+//! The pictures of the Tools pages (Gear Database, Dungeon Database, DCM Locator, Skill Database, Demon Database),
 //! made on the player's PC from their own game folder.
 //!
 //! Those pictures are the game's own art, so they are never put in git or the exe. On the developer's PC the page

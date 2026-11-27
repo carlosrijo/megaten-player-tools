@@ -221,7 +221,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
         return Ok(0);
     }
     if cmd == "dungeons" {
-        // The Dungeon Explorer page's data: every dungeon and its enemies that can't be contracted (no game, no character).
+        // The Dungeon Database page's data: every dungeon and its enemies that can't be contracted (no game, no character).
         //   dungeons --decoded <dir with zone.xml, DevilData.xml, citem.tsv> [--datastore <server datastore>] [--client <game folder, for icons>] [--out app\ui\dungeons.json]
         let decoded = get("decoded").ok_or_else(|| user_error("dungeons needs --decoded <folder with the decoded client tables>."))?;
         let datastore = match get("datastore") {

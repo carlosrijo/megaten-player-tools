@@ -1,6 +1,6 @@
 //! Port of `src/Build/Dungeons.cs`.
 //!
-//! The Dungeon Explorer page's data (app\ui\dungeons.json): every dungeon and field, and the enemies in it that can't
+//! The Dungeon Database page's data (app\ui\dungeons.json): every dungeon and field, and the enemies in it that can't
 //! be contracted, with what the game data says about each (level, stats, affinities, skills, traits, drops).
 //!
 //! Where things come from:

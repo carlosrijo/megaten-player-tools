@@ -387,7 +387,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Explorer', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['rank', 'Demon Rank', 'podium'], ['dcm', 'DCM Locator', 'search'], ['dungeons', 'Dungeon Database', 'gate'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['sim', 'Build Planner', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -465,7 +465,7 @@
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
-    dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Explorer: opened places, opened enemies
+    dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Database: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
     // Demon Rank: which demons, the level they are compared at ('base', '1' or '99'), the column sorted (an index of RANK_COLS) and its direction (1 = highest first)
     rank: { q: '', kind: 'own', race: '', at: 'base', mt: false, sort: 0, dir: 1 },
@@ -3294,7 +3294,7 @@
     drawChips(); drawFilters(); drawHead(); draw();
     return page;
   }
-  // ---------- Tools: Dungeon Explorer ----------
+  // ---------- Tools: Dungeon Database ----------
   // dungeons.json is made by "imagine-reader dungeons" (src\Build\Dungeons.cs): the server's zone, instance and drop
   // files for where each enemy is, the IMAGINE client's demon table for what it is. Only enemies that can't be
   // contracted are in it. Enemy pictures sit in dungeon-icons\ beside it (made locally from the client, not in git).

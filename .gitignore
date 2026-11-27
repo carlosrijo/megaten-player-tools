@@ -5,7 +5,7 @@ obj/
 
 # demon icons for the DCM Locator: the game's own art, made locally by tools\dcmexport
 app/ui/dcm-icons/
-# enemy pictures for the Dungeon Explorer: game art, made locally by imagine-reader dungeons --client
+# enemy pictures for the Dungeon Database: game art, made locally by imagine-reader dungeons --client
 app/ui/dungeon-icons/
 # the assistant's 3D model: the game's own art, made locally from the client (imagine-reader.exe model, or the app on first use)
 data/cache/models/

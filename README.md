@@ -43,7 +43,7 @@ where it can't (Program Files), it says so and the release page has the download
 never update themselves.
 
 The release has no pictures from the game: they are the game's own art. The app makes the Tools pages' pictures
-(Gear, Demon and Skill Database, DCM Locator, Dungeon Explorer) from the player's own game folder the first time a
+(Gear, Demon and Skill Database, DCM Locator, Dungeon Database) from the player's own game folder the first time a
 page shows them, and keeps them in `data\cache\page-icons`. It needs to have seen the game running once (to know
 where it is installed); until then those pages show names without pictures.
 
@@ -347,7 +347,7 @@ with the client's own names and texts. The rules (DP go to the race of the demon
 when all its needs are met; DLv 10 at most, 5 without a Mitama-fused demon) are the comp_hack server's code, which
 NewMoon may have changed. Not checked in game yet. The page data is `app\ui\digi-planner.json`, made by
 `imagine-reader digiplanner` from the reference tables.
-### Tools: Dungeon Explorer
+### Tools: Dungeon Database
 
 Under **Tools** in the left bar. Every dungeon (175; each difficulty such as Bronze, Silver and Gold on its own), field and other place with enemies, and the enemies in it that
 can't be contracted (4,003 kinds): the ones you can't talk to at all, and the ones that talk but never join. Click a
