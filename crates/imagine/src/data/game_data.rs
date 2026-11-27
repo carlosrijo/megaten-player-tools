@@ -268,6 +268,18 @@ pub(crate) fn parse_xml(text: &str) -> Result<roxmltree::Document<'_>> {
 
 // ---------- record types ----------
 
+/// One weapon mod effect at one level (reference\mods-weapon.tsv: ModifiedEffectData, CModifiedEffectData,
+/// ModificationData). `slots` are the mod slots (0-4) a mod item puts it in directly.
+#[derive(Clone, Debug)]
+pub struct WeaponMod {
+    pub id: i32,
+    pub kind: i32,
+    pub level: i32,
+    pub tokusei: i32,
+    pub name: String,
+    pub slots: Vec<i32>,
+}
+
 /// One IMAGINE expertise (reference\expertise-imagine.tsv, from the client's ExpertClassData and translation.xml).
 /// Chain: (source expertise, rank it needs (points / 10000), share of its points).
 #[derive(Debug, Clone, PartialEq)]
@@ -424,6 +436,11 @@ pub struct RawTokusei {
 struct ItemsData {
     items: IndexMap<i32, Value>,
     subcats_game: HashMap<i32, i32>,
+    /// Each item's basic flags and gender restriction (`items-game.tsv` columns 8 and 9: ItemData `basic.flags`,
+    /// `restriction.gender`), for the soul infusion rules (`item_spirit_fuse`).
+    fuse_game: HashMap<i32, (u32, i32)>,
+    /// Each item's own number of mod slots (column 10: ItemData `restriction.modSlots`).
+    mod_slots_game: HashMap<i32, i32>,
 }
 
 struct RankData {
@@ -603,6 +620,7 @@ pub struct GameData {
     subcats: OnceLock<HashMap<i32, i32>>,
     sitem: OnceLock<SItemSource>,
     mods: OnceLock<Value>,
+    weapon_mods: OnceLock<IndexMap<i32, WeaponMod>>,
     enchant_sides: OnceLock<IndexMap<(i32, bool), EnchantSide>>,
     devil_icon_files: OnceLock<HashMap<i32, (String, String)>>,
     devil_icons: OnceLock<Map<String, Value>>,
@@ -656,6 +674,7 @@ impl GameData {
             subcats: OnceLock::new(),
             sitem: OnceLock::new(),
             mods: OnceLock::new(),
+            weapon_mods: OnceLock::new(),
             enchant_sides: OnceLock::new(),
             devil_icon_files: OnceLock::new(),
             devil_icons: OnceLock::new(),
@@ -791,8 +810,10 @@ impl GameData {
                 items.entry(json::int(i.at("id"))).or_insert_with(|| i.clone());
             }
             let mut subcats_game = HashMap::new();
+            let mut fuse_game = HashMap::new();
+            let mut mod_slots_game = HashMap::new();
             let Some(lines) = reference_lines("items-game.tsv")? else {
-                return Ok(ItemsData { items, subcats_game });
+                return Ok(ItemsData { items, subcats_game, fuse_game, mod_slots_game });
             };
             for line in &lines {
                 if line.starts_with('#') {
@@ -839,8 +860,55 @@ impl GameData {
                 if let Some(sc) = crate::fmt::parse_i32(p[5]) {
                     subcats_game.insert(id, sc);
                 }
+                if let (Some(fl), Some(g)) = (p.get(7).and_then(|s| s.trim().parse::<u32>().ok()), p.get(8).and_then(|s| crate::fmt::parse_i32(s.trim()))) {
+                    fuse_game.insert(id, (fl, g));
+                }
+                if let Some(n) = p.get(9).and_then(|s| crate::fmt::parse_i32(s.trim())) {
+                    mod_slots_game.insert(id, n);
+                }
             }
-            Ok(ItemsData { items, subcats_game })
+            Ok(ItemsData { items, subcats_game, fuse_game, mod_slots_game })
+        })
+    }
+
+    /// Soul infusion (the game's Spirit Fusion) as the server allows it (comp_hack `EquipmentSpiritFuse`): None when the
+    /// item list has no flags for the item (an older items-game.tsv), else whether the item may take part at all (not
+    /// Bullets, no "no fusion" flag 0x0800; every piece without durability has that flag) and its gender restriction
+    /// (2 = anyone). The other rules (same equip type and sub-category, armor of one sex) are the caller's.
+    pub fn item_spirit_fuse(&self, id: i32) -> Result<Option<(bool, i32)>> {
+        const ITEM_FLAG_FUSE: u32 = 0x0800;
+        let data = self.items_data()?;
+        let Some(&(flags, gender)) = data.fuse_game.get(&id) else { return Ok(None) };
+        let bullets = data.items.get(&id).and_then(|n| json::str(n.at("equipType"))).as_deref() == Some("EQUIP_TYPE_BULLETS");
+        Ok(Some((!bullets && flags & ITEM_FLAG_FUSE == 0, gender)))
+    }
+
+    /// An item's own number of mod slots (0-5), None when the item list doesn't say (an older items-game.tsv). Only
+    /// weapons have any in NewMoon's data; the game can add slots up to 5 (comp_hack `EquipmentModEdit`, add slot).
+    pub fn item_mod_slots(&self, id: i32) -> Result<Option<i32>> {
+        Ok(self.items_data()?.mod_slots_game.get(&id).copied())
+    }
+
+    /// Every weapon mod effect by id (reference\mods-weapon.tsv), empty when the file is missing.
+    pub fn weapon_mods(&self) -> Result<&IndexMap<i32, WeaponMod>> {
+        once(&self.weapon_mods, || {
+            let mut res = IndexMap::new();
+            if let Some(lines) = reference_lines("mods-weapon.tsv")? {
+                for line in &lines {
+                    if line.starts_with('#') {
+                        continue;
+                    }
+                    let p: Vec<&str> = line.split('\t').collect();
+                    if p.len() < 5 {
+                        continue;
+                    }
+                    let Some(id) = crate::fmt::parse_i32(p[0]) else { continue };
+                    let n = |i: usize| p.get(i).and_then(|s| crate::fmt::parse_i32(s.trim())).unwrap_or(0);
+                    let slots = p.get(6).map(|s| split_nonempty(s, ',').into_iter().filter_map(crate::fmt::parse_i32).collect()).unwrap_or_default();
+                    res.insert(id, WeaponMod { id, kind: n(1), level: n(2), tokusei: n(3), name: p[4].trim().to_string(), slots });
+                }
+            }
+            Ok(res)
         })
     }
 
@@ -1397,6 +1465,12 @@ impl GameData {
             json::as_object(Some(&v))?;
             Ok(v)
         })?;
+        if weapon {
+            // the client's current table first (mods-weapon.tsv), the website's file for what it lacks
+            if let Some(m) = self.weapon_mods()?.get(&effect).filter(|m| m.tokusei != 0) {
+                return Ok(m.tokusei);
+            }
+        }
         let n = if weapon {
             mods.at("weapon").at(&effect.to_string())
         } else {

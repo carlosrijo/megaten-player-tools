@@ -379,11 +379,15 @@ fn gear_database_matches_the_csharp_file() {
     // Database) every item the client names is in the file, not only gear: each carries "kind" and "class", gear also
     // "level" when it needs one, the other items their description, stack size and price, crystals their tarot and soul
     // lines, key items come from CKeyItemData: 3,827,363 -> 6,564,470 bytes, and the "note" names descriptions.
+    // Since 2026-11-27 night the builder reads two more ways to get items from the decoded tables (no dcmexport
+    // needed): "Crystallize <demon>" from EnchantData (362 lines) and "Craft" from SynthesisData (332 lines, with the
+    // materials, the crafting skill and the recipe): -> 6,660,146 bytes, only in "get". (A Crystallize line's special
+    // fusions come from fusion-data.json beside the output, which this temporary output has not: no change here.)
     assert!(text.starts_with(r#"{"generatedAt":""#));
     let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (6564470, GEARDB_FNV));
+    assert_eq!((text.len(), fnv(body.as_bytes())), (6660146, GEARDB_FNV));
 }
 
 /// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods", plus every non-gear item
-/// and the key items since the Item Database) after its `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 5409972581598316500;
+/// and the key items since the Item Database, plus the crystallize and craft lines) after its `{"generatedAt":"yyyy-mm-dd"` start.
+const GEARDB_FNV: u64 = 4856157540120386988;
