@@ -220,7 +220,9 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
     // NPCBarterData (client, so IMAGINE's own): resultItems SKILL_DEMON (the barter window's "Skill: Demon": your summoned
     // demon learns it) or SKILL_CHARACTER (you learn it), for tradeItems. Only exchanges an NPC list offers count
     // (NPCBarterGroupData entries); which NPC opens a list is in the live server's events, which the public data lacks.
-    let mut barter_of: HashMap<i32, Vec<(String, String)>> = HashMap::new();
+    // per skill: (who it is for, the cost as text, the items asked [id, name, amount], the Soul Points asked)
+    let mut barter_of: HashMap<i32, Vec<(String, String, Vec<(i32, String, i32)>, i32)>> = HashMap::new();
+    let mut barter_items: std::collections::BTreeMap<i32, String> = std::collections::BTreeMap::new();   // every item a demon-skill barter asks, for the dashboard's icons
     let (barter_file, group_file) = (decoded.join("NPCBarterData.xml"), decoded.join("NPCBarterGroupData.xml"));
     if barter_file.is_file() && group_file.is_file() {
         let group_text = xml::read_text(&group_file)?;
@@ -270,6 +272,9 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
                 continue;
             }
             let mut cost: Vec<String> = Vec::new();
+            let mut items: Vec<(i32, String, i32)> = Vec::new();
+            let mut soul = 0;
+            let for_demon = taught.iter().any(|(t, _)| t == "SKILL_DEMON");
             for (t, sub, n) in parts(b, "tradeItems") {
                 cost.push(match t.as_str() {
                     "ITEM" => {
@@ -277,9 +282,14 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
                             Some(n) => n.clone(),
                             None => data.item_name(sub)?.unwrap_or_else(|| "an item the data does not name".to_string()),
                         };
+                        items.push((sub, name.clone(), n));
+                        if for_demon {
+                            barter_items.entry(sub).or_insert_with(|| name.clone());
+                        }
                         if n > 1 { format!("{} × {name}", fmt::n0(n as f64)) } else { name }
                     }
-                    "SOUL_POINT" => format!("{} Soul Points", fmt::n0(n as f64)),
+                    // a Soul Point price sits in `subtype` (amount is 0 in every record; user, 2026-11-27: Maragidyne read as 0)
+                    "SOUL_POINT" => { soul = sub; format!("{} Soul Points", fmt::n0(sub as f64)) }
                     "COIN" => format!("{} Casino Coins", fmt::n0(n as f64)),
                     "BETHEL" => format!("{} Bethel", fmt::n0(n as f64)),
                     _ => continue,   // event counters, cooldowns: conditions, not a price
@@ -289,8 +299,8 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
             for (t, sid) in taught {
                 let who = if t == "SKILL_DEMON" { "demon" } else { "you" }.to_string();
                 let l = barter_of.entry(sid).or_default();
-                if !l.iter().any(|(w, c)| *w == who && *c == cost) {
-                    l.push((who, cost.clone()));
+                if !l.iter().any(|(w, c, _, _)| *w == who && *c == cost) {
+                    l.push((who, cost.clone(), items.clone(), soul));
                 }
             }
         }
@@ -352,7 +362,16 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
             s.insert("exp".into(), json!(ex));
         }
         if let Some(bs) = barter_of.get(&id) {
-            s.insert("barter".into(), Value::Array(bs.iter().map(|(who, cost)| json!({ "for": who, "cost": cost })).collect()));
+            s.insert("barter".into(), Value::Array(bs.iter().map(|(who, cost, items, soul)| {
+                let mut b = json!({ "for": who, "cost": cost });
+                if !items.is_empty() {
+                    b["items"] = Value::Array(items.iter().map(|(id, name, n)| json!([id, name, n])).collect());
+                }
+                if *soul > 0 {
+                    b["soul"] = json!(soul);
+                }
+                b
+            }).collect()));
         }
 
         if cat == 1 {
@@ -461,6 +480,15 @@ pub fn build(data: &GameData, decoded: &Path, client_dir: Option<&Path>, out_fil
     result.insert("skills".into(), Value::Array(skills.iter().cloned().map(Value::Object).collect()));
     let text = json::serialize(&Value::Object(result), Escape::Relaxed, false);
     std::fs::write(out_file, &text)?;
+    // reference\skill-barter-items.tsv: every item a demon-skill barter asks (id, name), so the dashboard exports their
+    // icons (icons.json item<id>) for the Rebirth Planner's cost card; written when the repo's reference folder is there
+    if let Some(reference) = out_dir.parent().and_then(Path::parent).map(|r| r.join("reference")).filter(|r| r.is_dir()) {
+        let mut tsv = String::from("#item id\tname (every item an NPC asks for a demon skill; NPCBarterData, made by imagine-reader skilldb)\n");
+        for (id, name) in &barter_items {
+            tsv.push_str(&format!("{id}\t{name}\n"));
+        }
+        std::fs::write(reference.join("skill-barter-items.tsv"), tsv)?;
+    }
 
     // per type, in the order of the type keys (the default string order of .NET)
     let mut keys: Vec<&str> = Vec::new();

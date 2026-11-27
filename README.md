@@ -375,7 +375,7 @@ Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before y
   last read it, with its real rebirth ranks, Mitama and slots. Set the level the stats are shown at (93 by default) and
   your XP bonus from gear and incense (it lowers the apples). The runes wear the game's own glyphs and the Mitamas
   their own pictures, cut from your game folder like the other pages' pictures.
-- **Rebirths before the Mitama fusion** (step 1): one row per rune under a header that names every column, like the
+- **Rebirths before the Mitama fusion** (step 2): one row per rune under a header that names every column, like the
   game's Rebirth tab: a bar of nine pills (click a pill to make that rank the target, or use − +; a COMP demon's rank
   now is a column of its own), the bonus that rank gives (Tiwaz: Close-Range +4 per rank, Sowilo: every stat +3, Wyrd:
   Max HP +40 and MP +10, Ingwaz: cheaper summons...; hover it for the growth type reached), and an **Ends on** radio on
@@ -386,11 +386,11 @@ Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before y
   items** lists every rebirth in an order the game accepts (the rune the demon is on first, since its own growth can
   skip rank 1; each rune fully before the next; the end path last) and the cost items taking the first choice of each
   rank (every rank accepts one of several: runestones, incense, soul stones, a Primordial Runestone).
-- **Mitama fusion** (step 2): a switch that comes alive once the rank points are there; before that, one button sets
+- **Mitama fusion** (step 3): a switch that comes alive once the rank points are there; before that, one button sets
   every rune to rank 4 and plans the fusion. Then pick the Mitama (Ara, Nigi, Kusi or Saki, each card showing the stats
   its Mitama rank bonus raises; the chips on the demon band do the same), and whether you have **Mitama Demon
   Enhancement - Iron Man** (stronger sets).
-- **After the fusion: ranks and Mitamas** (step 3, and the only step for a demon already fused): the four kinds' caps
+- **After the fusion: ranks and Mitamas** (step 4, or step 2 for a demon already fused): the four kinds' caps
   on top (how many of each the Mitama rank allows), then one row per rune: the ranks start from zero again, and a rank
   is a slot, so the rank bar's pills wear the Mitamas in the kinds' colours (solid = already on the rune, striped = to
   add); under the bar a − + counter per kind and the rune's four set bonuses as tiles with their requirement per kind.
@@ -402,6 +402,13 @@ Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before y
   Mitama of the kind you pick; read in game, not in the server tables), and the random bonus each placed Mitama rolls
   (one of the kind's list, not counted in the stats). A COMP demon's Mitamas already on a rune count and are never
   removed.
+- **Skills** (step 1): the demon holds 8 skills, shown as a bar like the game's. It starts with the demon's own
+  (a COMP demon: the 8 BABEL last read on it; any demon: what it knows and learns up to the stats level), and a click
+  on a slot opens a picker with the demon's own skills and every skill a demon can get in the game: one another demon
+  learns (fusion inheritance) or one bought for a demon at an NPC (the Soul Points exchange, Sacrifice Orbs, Life
+  Orbs, gems...), each with where it comes from. Under the bar, what each slot holds and how it is got; the demon's
+  other skills as chips (a click puts one on the bar); **Back to its own skills** undoes it all. The skills swapped in
+  are listed in the cost card with their price (Soul Points added up).
 - Under the steps, **What it all costs**: the totals (rebirths, apples, macca, Mitamas), a step-by-step table that says
   what each step is (the runes raised and to what rank, the fusion's form and Mitama rank, the Mitamas by kind) with
   its three numbers, then the items to gather. Each rebirth takes one of several items (a rank to 4, say, takes 20

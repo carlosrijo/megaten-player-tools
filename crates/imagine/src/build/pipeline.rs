@@ -131,6 +131,8 @@ pub struct CompDemon {
     pub mitama_type: i32,
     pub mitama_rank: i32,
     pub mitama_slots: Vec<i32>,
+    /// The 8 learned-skill slots (0 = empty), for the planner's skill bar.
+    pub skills: Vec<i32>,
 }
 
 impl CompDemon {
@@ -141,7 +143,7 @@ impl CompDemon {
             "current": self.current, "inGame": self.in_game, "seenAt": self.seen_at, "forceStack": self.force_stack, "equipment": self.equipment,
             "icon": self.icon, "offer": self.offer.as_ref().map(DemonOffer::to_value), "unlock": self.unlock.as_ref().map(DemonUnlock::to_value),
             "loaded": self.loaded, "summoned": self.summoned, "inComp": self.in_comp,
-            "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots,
+            "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots, "skills": self.skills,
         })
     }
 }
@@ -628,6 +630,7 @@ impl Pipeline {
                 mitama_type: d.mitama_type,
                 mitama_rank: d.mitama_rank,
                 mitama_slots: d.mitama_reunion.iter().map(|&b| b as i32).collect(),
+                skills: d.skills.clone(),
             });
         }
         // OrderByDescending(Current).ThenByDescending(InComp != false).ThenByDescending(Level).ThenBy(Name): stable
