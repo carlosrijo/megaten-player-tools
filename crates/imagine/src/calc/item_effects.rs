@@ -115,6 +115,82 @@ fn or_list(names: &[String]) -> String {
     }
 }
 
+/// "A", "A and B", "A, B and C".
+pub fn and_list(names: &[String]) -> String {
+    match names.split_last() {
+        Some((last, rest)) if !rest.is_empty() => format!("{} and {last}", rest.join(", ")),
+        Some((last, _)) => last.clone(),
+        None => String::new(),
+    }
+}
+
+/// What a tokusei's ACTIVE_TOKUSEI skill conditions ("tokusei N is active", NewMoon's own) depend on: each N is named by
+/// the skill whose tokusei list holds it ([`GameData::tokusei_owner`]). A switch skill decides by its state (on or off,
+/// which only the caller can tell: the Bonuses and Expertise pages read it from the game); any other skill (a passive)
+/// is just named; a tokusei no skill lists is unknown.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct ActiveNeeds {
+    /// Switch skills (id, game name): every one must be on.
+    pub switches: Vec<(i32, String)>,
+    /// Other skills the effect goes with, by name.
+    pub skills: Vec<String>,
+    /// Some ACTIVE_TOKUSEI condition names no skill.
+    pub unknown: bool,
+}
+
+impl ActiveNeeds {
+    /// The ACTIVE_TOKUSEI conditions among a tokusei's skill conditions, resolved to skills.
+    pub fn of(data: &GameData, skill_conditions: &[(Option<String>, i32)]) -> Result<ActiveNeeds> {
+        let mut needs = ActiveNeeds::default();
+        let names = data.skill_names()?;
+        for (_, tid) in skill_conditions.iter().filter(|s| s.0.as_deref() == Some("ACTIVE_TOKUSEI")) {
+            let Some(owner) = data.tokusei_owner(*tid)? else {
+                needs.unknown = true;
+                continue;
+            };
+            let name = names.get(&owner.skill).cloned().flatten().unwrap_or_else(|| "a skill the game data has no name for".to_string());
+            if owner.switch {
+                if !needs.switches.iter().any(|s| s.0 == owner.skill) {
+                    needs.switches.push((owner.skill, name));
+                }
+            } else if !needs.skills.contains(&name) {
+                needs.skills.push(name);
+            }
+        }
+        Ok(needs)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.switches.is_empty() && self.skills.is_empty() && !self.unknown
+    }
+
+    /// Something other than switches that the reader can't decide (a passive's own state, an unnamed tokusei): the effect
+    /// stays "in some situations" even when every switch is on.
+    pub fn undecided(&self) -> bool {
+        self.unknown || !self.skills.is_empty()
+    }
+
+    /// The words for the effect's note, with the switches' states when `on` knows them (None = not known: gear can't tell).
+    /// "while Radiant Hands is on"; a switch that is off: "only while Radiant Hands is on, and it is off now: not counted".
+    pub fn wording(&self, on: impl Fn(i32) -> Option<bool>) -> String {
+        let mut parts: Vec<String> = Vec::new();
+        let off: Vec<String> = self.switches.iter().filter(|s| on(s.0) == Some(false)).map(|s| s.1.clone()).collect();
+        if !off.is_empty() {
+            parts.push(format!("only while {} {} on, and {} off now: not counted", and_list(&off), if off.len() == 1 { "is" } else { "are" }, if off.len() == 1 { "it is" } else { "they are" }));
+        } else if !self.switches.is_empty() {
+            let names: Vec<String> = self.switches.iter().map(|s| s.1.clone()).collect();
+            parts.push(format!("while {} {} on", and_list(&names), if names.len() == 1 { "is" } else { "are" }));
+        }
+        if !self.skills.is_empty() {
+            parts.push(format!("with {}", and_list(&self.skills)));
+        }
+        if self.unknown {
+            parts.push(stat_labels::sealed_skill_condition("ACTIVE_TOKUSEI", 0).unwrap_or_else(|| "while another effect is active".to_string()));
+        }
+        parts.join(", ")
+    }
+}
+
 pub(crate) fn join(a: &str, b: &str) -> String {
     if a.is_empty() {
         b.to_string()
@@ -587,11 +663,17 @@ impl ItemEffects {
         if !demon_names.is_empty() {
             other_skill.push(format!("vs {}", or_list(&demon_names)));
         }
+        // ACTIVE_TOKUSEI ("while tokusei N is active"): worded by the skill that lists it, a switch as "while Radiant Hands is on".
+        // Gear can't tell whether the switch is on (the Expertise rows can), so the effect stays situational.
+        let needs = ActiveNeeds::of(&self.data, &d.skill_conditions)?;
+        if !needs.is_empty() {
+            other_skill.push(needs.wording(|_| None));
+        }
         let expertises = self.data.expertises().ok();
         other_skill.extend(d
             .skill_conditions
             .iter()
-            .filter(|s| !matches!(s.0.as_deref(), Some("ACTION_TYPE") | Some("EXPLICIT_SKILL") | Some("DEMON_RACE") | Some("DEMON_TYPE")))
+            .filter(|s| !matches!(s.0.as_deref(), Some("ACTION_TYPE") | Some("EXPLICIT_SKILL") | Some("DEMON_RACE") | Some("DEMON_TYPE") | Some("ACTIVE_TOKUSEI")))
             .map(|s| match s.0.as_deref() {
                 // SkillManager.cpp: 0 = the target is of another faction, 1 = the same faction
                 Some("ENEMY_FACTION") => if s.1 == 1 { "on allies".to_string() } else { "on enemies".to_string() },
@@ -1092,5 +1174,45 @@ mod tests {
         let list = crystal_effects(&[], 3113, false);
         assert!(list.iter().any(|e| e.label.starts_with("Inflicts ") && e.value.is_none() && !e.missing_data), "{list:#?}");
         assert!(list.iter().all(|e| !e.label.contains('_')), "{list:#?}");
+    }
+}
+
+#[cfg(test)]
+mod active_needs_tests {
+    use super::*;
+
+    #[test]
+    fn switch_conditions_are_worded_by_their_state() {
+        let radiant = ActiveNeeds { switches: vec![(5485, "Radiant Hands".into())], ..Default::default() };
+        assert_eq!(radiant.wording(|_| None), "while Radiant Hands is on");
+        assert_eq!(radiant.wording(|_| Some(true)), "while Radiant Hands is on");
+        assert_eq!(radiant.wording(|_| Some(false)), "only while Radiant Hands is on, and it is off now: not counted");
+        assert!(!radiant.undecided(), "a switch alone is decided by its state");
+        // two switches: the ones that are off are named
+        let two = ActiveNeeds { switches: vec![(1, "Einheri".into()), (2, "Gale Form".into())], ..Default::default() };
+        assert_eq!(two.wording(|_| Some(true)), "while Einheri and Gale Form are on");
+        assert_eq!(two.wording(|id| Some(id == 1)), "only while Gale Form is on, and it is off now: not counted");
+        assert_eq!(two.wording(|_| Some(false)), "only while Einheri and Gale Form are on, and they are off now: not counted");
+        // a passive or an unnamed tokusei can't be decided: the effect stays situational
+        let mixed = ActiveNeeds { switches: vec![(1, "Einheri".into())], skills: vec!["Limit Break Up: Strength".into()], unknown: false };
+        assert!(mixed.undecided());
+        assert_eq!(mixed.wording(|_| Some(true)), "while Einheri is on, with Limit Break Up: Strength");
+        let unknown = ActiveNeeds { unknown: true, ..Default::default() };
+        assert!(unknown.undecided() && !unknown.is_empty());
+        assert!(!unknown.wording(|_| None).is_empty());
+        assert!(ActiveNeeds::default().is_empty());
+        assert_eq!(and_list(&["A".to_string(), "B".to_string(), "C".to_string()]), "A, B and C");
+    }
+
+    /// The conditions are resolved through the skills that list the tokusei (public tables): Radiant Hands' 2100039 is a switch.
+    #[test]
+    fn conditions_resolve_to_the_skills_that_list_them() {
+        let d = GameData::with_paths(None, None);
+        let cond = |t: i32| (Some("ACTIVE_TOKUSEI".to_string()), t);
+        let needs = ActiveNeeds::of(&d, &[cond(2100039), (Some("EXPLICIT_SKILL".to_string()), 5001), cond(2100039)]).unwrap();
+        assert_eq!(needs.switches, vec![(5485, "Radiant Hands".to_string())], "listed once; other conditions are not its business");
+        assert!(needs.skills.is_empty() && !needs.unknown);
+        assert!(ActiveNeeds::of(&d, &[(Some("EXPLICIT_SKILL".to_string()), 5001)]).unwrap().is_empty());
+        assert!(ActiveNeeds::of(&d, &[cond(999_999_999)]).unwrap().unknown, "no skill lists it");
     }
 }

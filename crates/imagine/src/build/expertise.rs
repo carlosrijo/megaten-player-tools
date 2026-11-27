@@ -3,6 +3,7 @@
 //! Expertise ranks from the client's expertise tree (regular ids 0-37), chain expertises computed with the game's chain
 //! formula (expertises.json), and the passive skills they unlock with what each adds.
 
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, LazyLock, RwLock};
 
@@ -13,7 +14,7 @@ use serde_json::{Value, json};
 use crate::Result;
 use crate::calc::{character_extras, expertise_cap};
 use crate::calc::effect::rx;
-use crate::calc::item_effects::{affinity_cap_label, affinity_name, title};
+use crate::calc::item_effects::{ActiveNeeds, affinity_cap_label, affinity_name, title};
 use crate::context::Context;
 use crate::data::game_data::{GameData, item_class_name};
 use crate::data::json::{self, At, Row};
@@ -132,7 +133,7 @@ fn tbl_name(i: i32) -> &'static str {
 }
 
 /// The sums per column of one skill row.
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct Sums([f64; 18]);
 
 impl Sums {
@@ -274,6 +275,32 @@ fn desc_stat(s: &str) -> &'static str {
     }
 }
 
+/// A plain stat line of a description for the character (lower case, no bullet): the server's stat id, the value, percent or not.
+fn plain_stat(l: &str) -> Option<(String, f64, bool)> {
+    if let Some(s1) = re(r"^(?:gains )?\+(\d+) (lng-?r|cls-?r|spell|support)$").captures(l) {
+        return desc_id(&s1[2], false).map(|i| (i, dv(&s1[1]), false));
+    }
+    if let Some(s2) = re(r"^increases? (long range|close range|spell|support) by (\d+)$").captures(l) {
+        return desc_id(&s2[1], false).map(|i| (i, dv(&s2[2]), false));
+    }
+    if let Some(s3) = re(r"^(lng-r|long-range|cls-r|close-range|spell|support) damage (?:is increased by |\+)(\d+)%$").captures(l) {
+        return desc_id(&s3[1], true).map(|i| (i, dv(&s3[2]), true));
+    }
+    if let Some(s4) = re(r"^(lng-r|long-range|cls-r|close-range|spell|support) damage -(\d+)%$").captures(l) {
+        return desc_id(&s4[1], true).map(|i| (i, -dv(&s4[2]), true));
+    }
+    if let Some(s5) = re(r"^-(\d+)% (lng-r|long-range|cls-r|close-range|spell|support) damage$").captures(l) {
+        return desc_id(&s5[2], true).map(|i| (i, -dv(&s5[1]), true));
+    }
+    if let Some(s6) = re(r"^max (hp|mp) ([+-]\d+)%$").captures(l) {
+        return Some((if &s6[1] == "hp" { "HP_MAX" } else { "MP_MAX" }.to_string(), dv(&s6[2]), true));
+    }
+    if let Some(s7) = re(r"^crit(?:ical)? \+(\d+)$").captures(l) {
+        return Some(("CRITICAL".to_string(), dv(&s7[1]), false));
+    }
+    None
+}
+
 /// One effect read from a description. `id` is the server's stat id for the character's own effects; partner effects only have a label.
 struct DescEffect {
     id: Option<String>,
@@ -282,6 +309,8 @@ struct DescEffect {
     pct: bool,
     partner: bool,
     mitama: bool,
+    /// "When Radiant Hands is active, ...": the switch skill (id, name) the line depends on.
+    needs: Option<(i32, String)>,
 }
 
 fn dv(s: &str) -> f64 {
@@ -297,7 +326,10 @@ fn dv(s: &str) -> f64 {
 /// another value stays text too, so nothing is counted twice. None when no item became a number.
 /// Checked: Rubito LNG-R 473 = floor(SPD 240 x 0.5 + 9.5) + 344 flat, which needs Deadeye +20 and Locked On +15 from here
 /// (438 without them); CLS-R 116, Spell 228 and Support 176 match the same way. Critical and damage rates can't be read back.
-fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Vec<String>)> {
+/// "When Radiant Hands is active, Spell Damage +500%" is a plain line that depends on a switch skill: `switch_of` finds the
+/// switch by the name the game gives it (a name that is no switch leaves the line as text), and the effect says so
+/// (`DescEffect::needs`).
+fn parse_description(text: &str, already: &[Row], switch_of: &dyn Fn(&str) -> Option<(i32, String)>) -> Option<(Vec<DescEffect>, Vec<String>)> {
     if text.is_empty() {
         return None;
     }
@@ -353,12 +385,22 @@ fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Ve
         if l.is_empty() {
             continue;
         }
+        // "When <switch skill> is active, <plain stat line>": the line without its prefix, and the switch it needs
+        let mut needs: Option<(i32, String)> = None;
+        if let Some(w) = re(r"^(?:when|while) (.+?) is (?:active|on|switched on|turned on),? (.+)$").captures(&l) {
+            if plain_stat(&w[2]).is_some() {
+                if let Some(sw) = switch_of(&w[1]) {
+                    needs = Some(sw);
+                    l = w[2].to_string();
+                }
+            }
+        }
         // for the partner
         if let Some(a) = re(r"^(?:summoned )?partner's ([a-z]+) boost \+(\d+)%?$").captures(&l) {
             let w = &a[1];
             let mut cs = w.chars();
             let first: String = cs.next().map(|c| c.to_uppercase().collect()).unwrap_or_default();
-            effects.push(DescEffect { id: None, label: format!("{first}{} boost", cs.as_str()), value: dv(&a[2]), pct: false, partner: true, mitama: false });
+            effects.push(DescEffect { id: None, label: format!("{first}{} boost", cs.as_str()), value: dv(&a[2]), pct: false, partner: true, mitama: false, needs: None });
         } else if let Some(ac) = re(r"^(?:summoned )?partner's ([a-z]+) affinity cap \+(\d+)%$").captures(&l) {
             // "<Element> Limit Mastery" Lv3+: the partner's cap rises with the character's (the character's own line is the
             // server's tokusei 980000.., or a repeat of it here). Same label as `add_cap`, so the Partner group sums them.
@@ -373,22 +415,22 @@ fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Ve
                     && (r.get("value").and_then(Value::as_f64).unwrap_or(0.0) - value).abs() < 1e-9
             });
             if !given {
-                effects.push(DescEffect { id: None, label, value, pct: true, partner: true, mitama: false });
+                effects.push(DescEffect { id: None, label, value, pct: true, partner: true, mitama: false, needs: None });
             }
         } else if let Some(b) = re(r"^(?:summoned )?partner's movement speed \+(\d+)%$").captures(&l) {
-            effects.push(DescEffect { id: None, label: "Movement speed".into(), value: dv(&b[1]), pct: true, partner: true, mitama: false });
+            effects.push(DescEffect { id: None, label: "Movement speed".into(), value: dv(&b[1]), pct: true, partner: true, mitama: false, needs: None });
         } else if let Some(c) = re(r"^xp to summoned demon \+(\d+)%$").captures(&l) {
-            effects.push(DescEffect { id: None, label: "XP earned".into(), value: dv(&c[1]), pct: true, partner: true, mitama: false });
+            effects.push(DescEffect { id: None, label: "XP earned".into(), value: dv(&c[1]), pct: true, partner: true, mitama: false, needs: None });
         } else if let Some(d) = re(r"^experience gained by mitama fused demons \+(\d+)%$").captures(&l) {
-            effects.push(DescEffect { id: None, label: "XP earned".into(), value: dv(&d[1]), pct: true, partner: true, mitama: true });
+            effects.push(DescEffect { id: None, label: "XP earned".into(), value: dv(&d[1]), pct: true, partner: true, mitama: true, needs: None });
         } else if let Some(e) = re(r"^-(\d+)% (cls-r|lng-r|spell) damage taken by mitama fused demon$").captures(&l) {
-            effects.push(DescEffect { id: None, label: desc_stat(&e[2]).into(), value: -dv(&e[1]), pct: true, partner: true, mitama: true });
+            effects.push(DescEffect { id: None, label: desc_stat(&e[2]).into(), value: -dv(&e[1]), pct: true, partner: true, mitama: true, needs: None });
         } else if let Some(f) = re(r"^((?:str|mag|spd|vit|int|lck)(?:, (?:str|mag|spd|vit|int|lck))*) \+(\d+) to mitama fused demon$").captures(&l) {
             for s in f[1].split(", ") {
-                effects.push(DescEffect { id: None, label: desc_stat(s).into(), value: dv(&f[2]), pct: false, partner: true, mitama: true });
+                effects.push(DescEffect { id: None, label: desc_stat(s).into(), value: dv(&f[2]), pct: false, partner: true, mitama: true, needs: None });
             }
         } else if let Some(g) = re(r"^increases limit break cap by (\d+) for your summoned mitama demon$").captures(&l) {
-            effects.push(DescEffect { id: None, label: "Limit break cap".into(), value: dv(&g[1]), pct: false, partner: true, mitama: true });
+            effects.push(DescEffect { id: None, label: "Limit break cap".into(), value: dv(&g[1]), pct: false, partner: true, mitama: true, needs: None });
         }
         // the same thing said in words above the numbers ("reduces Close-Range damage taken of your summoned Demon")
         else if re(r"^(reduces|increases) [a-z ,-]+ of your summoned demon( by \d+)?$").is_match(&l) {
@@ -397,31 +439,10 @@ fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Ve
             let mut id: Option<String> = None;
             let mut v = 0.0;
             let mut pct = false;
-            if let Some(s1) = re(r"^(?:gains )?\+(\d+) (lng-?r|cls-?r|spell|support)$").captures(&l) {
-                id = desc_id(&s1[2], false);
-                v = dv(&s1[1]);
-            } else if let Some(s2) = re(r"^increases? (long range|close range|spell|support) by (\d+)$").captures(&l) {
-                id = desc_id(&s2[1], false);
-                v = dv(&s2[2]);
-            } else if let Some(s3) = re(r"^(lng-r|long-range|cls-r|close-range|spell|support) damage (?:is increased by |\+)(\d+)%$").captures(&l) {
-                id = desc_id(&s3[1], true);
-                v = dv(&s3[2]);
-                pct = true;
-            } else if let Some(s4) = re(r"^(lng-r|long-range|cls-r|close-range|spell|support) damage -(\d+)%$").captures(&l) {
-                id = desc_id(&s4[1], true);
-                v = -dv(&s4[2]);
-                pct = true;
-            } else if let Some(s5) = re(r"^-(\d+)% (lng-r|long-range|cls-r|close-range|spell|support) damage$").captures(&l) {
-                id = desc_id(&s5[2], true);
-                v = -dv(&s5[1]);
-                pct = true;
-            } else if let Some(s6) = re(r"^max (hp|mp) ([+-]\d+)%$").captures(&l) {
-                id = Some(if &s6[1] == "hp" { "HP_MAX" } else { "MP_MAX" }.to_string());
-                v = dv(&s6[2]);
-                pct = true;
-            } else if let Some(s7) = re(r"^crit(?:ical)? \+(\d+)$").captures(&l) {
-                id = Some("CRITICAL".to_string());
-                v = dv(&s7[1]);
+            if let Some((i, x, p)) = plain_stat(&l) {
+                id = Some(i);
+                v = x;
+                pct = p;
             }
             // "Support and Close-range Damage -200%": a repeat when the skill already has both
             else if let Some(s8) = re(r"^(lng-r|long-range|cls-r|close-range|spell|support) and (lng-r|long-range|cls-r|close-range|spell|support) damage -(\d+)%$").captures(&l).filter(|s8| {
@@ -439,7 +460,7 @@ fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Ve
                 continue;
             };
             let (hit, other) = has(&label_of(Some(&id)), v);
-            if hit || effects.iter().any(|x| !x.partner && x.id.as_deref() == Some(id.as_str())) {
+            if hit || effects.iter().any(|x| !x.partner && x.id.as_deref() == Some(id.as_str()) && x.needs == needs) {
                 continue; // already counted
             }
             if other {
@@ -447,7 +468,7 @@ fn parse_description(text: &str, already: &[Row]) -> Option<(Vec<DescEffect>, Ve
                 continue;
             }
             let label = label_of(Some(&id));
-            effects.push(DescEffect { id: Some(id), label, value: v, pct, partner: false, mitama: false });
+            effects.push(DescEffect { id: Some(id), label, value: v, pct, partner: false, mitama: false, needs });
         }
     }
     if effects.is_empty() { None } else { Some((effects, rest)) }
@@ -822,7 +843,7 @@ impl Expertise {
             (15, s("support")),
         ]);
         let active_toggles: HashSet<i32> = store.active_toggles()?.into_iter().collect(); // toggle skills the person marked as on
-        let sctx = SkillCtx { stat_by_tbl, active_toggles, icons };
+        let sctx = SkillCtx { stat_by_tbl, active_toggles, icons, enables: RefCell::new(Vec::new()) };
 
         // (no ranks file: a simulator base with no character behind it, which has learned nothing)
         let saved: Option<Value> = if store.expertise_ranks_path().exists() { Some(json::load(store.expertise_ranks_path())?) } else { None };
@@ -958,6 +979,15 @@ impl Expertise {
             let group = format!("Digitalize: {}", title(&tables.race_name(race)));
             for l in lv.iter().filter(|l| l.level >= 1 && l.level <= level && l.extend_skill_id > 0) {
                 self.add_skill(&sctx, &mut rows, l.extend_skill_id, &format!("dlv-{race}-{}", l.extend_skill_id), Some(&group), &format!("DLv {}", l.level))?;
+            }
+        }
+        // A switch skill's row says which other skills' effects need it on ("Cataclysmic Mind: Magic Damage +500% needs this on")
+        for (switch, line) in sctx.enables.borrow().iter() {
+            for r in rows.iter_mut().filter(|r| r.get("toggle").and_then(Value::as_bool) == Some(true) && r.get("skill_id").and_then(Value::as_i64) == Some(*switch as i64)) {
+                let text = r.get("effects").and_then(Value::as_str).unwrap_or("").to_string();
+                if !text.split("; ").any(|t| t == line) {
+                    r.insert("effects".into(), json!(if text.is_empty() { line.clone() } else { format!("{text}; {line}") }));
+                }
             }
         }
         Ok(rows)
@@ -1132,12 +1162,29 @@ impl Expertise {
                             _ => "",
                         };
                         let actions: Vec<i32> = full.skill_conditions.iter().filter(|s| s.0.as_deref() == Some("ACTION_TYPE")).map(|s| s.1).collect();
-                        let situational = !full.conditions.is_empty() || full.target_conditions || full.skill_conditions.iter().any(|s| s.0.as_deref() != Some("ACTION_TYPE"));
+                        // "while tokusei N is active" (ACTIVE_TOKUSEI) names the skill that lists it. A switch skill decides by its state,
+                        // read from the game: on, the effect counts like an unconditional one; off, it is listed and not counted.
+                        let needs = ActiveNeeds::of(data, &full.skill_conditions)?;
+                        let dep_off = needs.switches.iter().any(|s| !c.active_toggles.contains(&s.0));
+                        let situational = !full.conditions.is_empty()
+                            || full.target_conditions
+                            || needs.undecided()
+                            || full.skill_conditions.iter().any(|s| !matches!(s.0.as_deref(), Some("ACTION_TYPE") | Some("ACTIVE_TOKUSEI")));
                         let src = if full.from_client_text { " (from the client's text)" } else { "" };
-                        let cond_txt = condition_text(full.conditions.iter().map(|c| (c.r#type.clone().unwrap_or_default(), c.value)));
+                        let cond_txt = {
+                            let base = condition_text(full.conditions.iter().map(|c| (c.r#type.clone().unwrap_or_default(), c.value)));
+                            let dep = needs.wording(|id| Some(c.active_toggles.contains(&id)));
+                            match (base.is_empty(), dep.is_empty()) {
+                                (_, true) => base,
+                                (true, false) => format!(" ({dep})"),
+                                (false, false) => format!(" ({}, {dep})", trim_cond(&base)),
+                            }
+                        };
                         let note = [trim_cond(src), trim_cond(&cond_txt)].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join("; ");
                         let who2_text = if who2.is_empty() { String::new() } else { format!("{who2} ") };
                         let fx_before = fx.len();
+                        let sfx_before = sfx.len();
+                        let sums_before = sums.clone();
                         let mut unworded = false;
                         for cc in &full.correct {
                             if is_stale(t, cc.id.as_deref(), cc.value) {
@@ -1265,6 +1312,30 @@ impl Expertise {
                         if unworded && fx.len() == fx_before {
                             unknown_tok.push(t);
                         }
+                        // what depends on a switch: it tells its own row (see `rows`); switched off the counted parts are taken back
+                        // (the text above stays, saying so), switched on they are marked as the toggle's
+                        if !needs.switches.is_empty() {
+                            let sk = skill_name.clone().unwrap_or_else(|| format!("Skill {sid}"));
+                            for r in &sfx[sfx_before..] {
+                                if r.get("target").and_then(Value::as_str) == Some("self") || r.get("target").and_then(Value::as_str) == Some("partner") {
+                                    let v = r.get("value").and_then(Value::as_f64).unwrap_or(0.0);
+                                    let label = r.get("label").and_then(Value::as_str).unwrap_or("");
+                                    let pct = r.get("pct").and_then(Value::as_bool).unwrap_or(false);
+                                    let line = format!("{sk}: {label} {}{}{} needs this on", sign(v), n(v), if pct { "%" } else { "" });
+                                    for (sw, _) in &needs.switches {
+                                        c.enables.borrow_mut().push((*sw, line.clone()));
+                                    }
+                                }
+                            }
+                            if dep_off {
+                                sfx.truncate(sfx_before);
+                                sums = sums_before;
+                            } else {
+                                for r in sfx[sfx_before..].iter_mut() {
+                                    r.insert("toggle".into(), json!(true));
+                                }
+                            }
+                        }
                     } else if raw.as_deref().is_some_and(|r| !r.is_empty()) {
                         // the raw "TYPE=value" list only when no aspect in it is one the reader can't word
                         match raw.as_deref().map(|r| r.split(", ").filter_map(|p| p.split_once('=')).any(|(k, v)| {
@@ -1355,15 +1426,38 @@ impl Expertise {
                 let cleaned = s.replace("\\n", " ").replace('\u{FFFD}', "·");
                 format!("Not in the server data; the game says: {}", re(r"\s+").replace_all(&cleaned, " ").trim())
             };
-            match text.as_deref().and_then(|t| parse_description(t, &sfx)) {
+            let switch_of = |name: &str| -> Option<(i32, String)> {
+                let id = data.switch_skill_named(name).ok().flatten()?;
+                Some((id, data.skill_names().ok()?.get(&id).cloned().flatten()?))
+            };
+            match text.as_deref().and_then(|t| parse_description(t, &sfx, &switch_of)) {
                 Some((effects, left)) => {
                     for e in &effects {
-                        let note = format!("{}from the game's description", if e.mitama { "Mitama-fused partner only; " } else { "" });
+                        // "When Radiant Hands is active, ...": counted while that switch is on, the game's own state; off, only listed
+                        let (dep_on, dep) = match &e.needs {
+                            Some((sw, name)) => {
+                                let on = c.active_toggles.contains(sw);
+                                (on, if on { format!("while {name} is on, ") } else { format!("only while {name} is on, and it is off now: not counted, ") })
+                            }
+                            None => (true, String::new()),
+                        };
+                        let note = format!("{dep}{}from the game's description", if e.mitama { "Mitama-fused partner only; " } else { "" });
                         fx.push(format!("{}{} {}{}{} ({note})", if e.partner { "Partner's " } else { "" }, e.label, sign(e.value), n(e.value), if e.pct { "%" } else { "" }));
-                        sfx.push(obj(json!({
+                        if let Some((sw, _)) = &e.needs {
+                            c.enables.borrow_mut().push((*sw, format!("{}: {} {}{}{} needs this on", skill_name.clone().unwrap_or_else(|| format!("Skill {sid}")), e.label, sign(e.value), n(e.value), if e.pct { "%" } else { "" })));
+                        }
+                        if !dep_on {
+                            continue;
+                        }
+                        let mut line = obj(json!({
                             "label": e.label, "value": e.value, "pct": e.pct, "target": if e.partner { "partner" } else { "self" },
                             "cond": if e.mitama { "situational" } else { "always" }, "note": if e.mitama { "Mitama-fused partner only" } else { "from the game's description" },
-                        })));
+                        }));
+                        if let Some((_, name)) = &e.needs {
+                            line.insert("toggle".into(), json!(true));
+                            line.insert("note".into(), json!(format!("while {name} is on")));
+                        }
+                        sfx.push(line);
                         if !e.partner {
                             if let Some(dcol) = e.id.as_deref().and_then(correct_to_col) {
                                 sums.add(dcol, e.value);
@@ -1417,6 +1511,9 @@ struct SkillCtx {
     stat_by_tbl: HashMap<i32, f64>,
     active_toggles: HashSet<i32>,
     icons: bool,
+    /// Effects of other skills that need a switch skill on (switch skill id, the line for the switch's own row): filled by
+    /// `add_skill`, read when the rows are done (the switch's row says what depends on it).
+    enables: RefCell<Vec<(i32, String)>>,
 }
 
 /// One element's boost cap raised (AFFINITY_CAP_MAX, see ItemEffects.AffinityCapLabel); quiet = the row only
@@ -1454,12 +1551,16 @@ fn rx_item(item: &str) -> String {
 mod tests {
     use super::*;
 
+    fn no_switch(_: &str) -> Option<(i32, String)> {
+        None
+    }
+
     #[test]
     fn description_items_become_numbers() {
-        let (e0, r0) = parse_description("Passive skill.\\n\\n. STR +10\\n. Max HP +5%\\n. When something happens:\\n. CRIT +9", &[]).unwrap();
+        let (e0, r0) = parse_description("Passive skill.\\n\\n. STR +10\\n. Max HP +5%\\n. When something happens:\\n. CRIT +9", &[], &no_switch).unwrap();
         assert_eq!(e0.len(), 1); // only Max HP is a plain shape; STR waits for a number rule, the "When ...:" block stays text
         assert_eq!(r0, vec!["STR +10".to_string(), "When something happens:".to_string(), "CRIT +9".to_string()]);
-        let (effects, rest) = parse_description("・Max HP +5%\\n・Critical +3\\n・Does a special thing", &[]).unwrap();
+        let (effects, rest) = parse_description("・Max HP +5%\\n・Critical +3\\n・Does a special thing", &[], &no_switch).unwrap();
         assert_eq!(effects.len(), 2);
         assert_eq!(effects[0].id.as_deref(), Some("HP_MAX"));
         assert!(effects[0].pct);
@@ -1472,22 +1573,22 @@ mod tests {
         // Slash Limit Mastery Lv3: the character's own cap is the server's tokusei (already a row), the partner's is only text
         let own = vec![obj(json!({ "label": "Slash Affinity Cap", "value": 100.0, "pct": true, "target": "self", "cond": "always" }))];
         let text = "Passive Skill\\n    \\n・Slash Affinity Cap +100%\\n・Summoned Partner's Slash Affinity Cap +100%";
-        let (effects, rest) = parse_description(text, &own).unwrap();
+        let (effects, rest) = parse_description(text, &own, &no_switch).unwrap();
         assert_eq!(effects.len(), 1); // the self line is a repeat, not counted again
         assert!(effects[0].partner && effects[0].pct && effects[0].id.is_none());
         assert_eq!((effects[0].label.as_str(), effects[0].value), ("Slash Affinity Cap", 100.0));
         assert!(rest.is_empty());
         // a full-width full stop ends the line the same way (Fire Lv3..10), and the half-strength Lv1-2 text reads the same
-        let (fire, _) = parse_description("Passive Skill\\n\\n・Fire Affinity Cap +100%\\n・Summoned Partner's Fire Affinity Cap +100%。", &[]).unwrap();
+        let (fire, _) = parse_description("Passive Skill\\n\\n・Fire Affinity Cap +100%\\n・Summoned Partner's Fire Affinity Cap +100%。", &[], &no_switch).unwrap();
         assert!(fire.iter().any(|e| e.partner && e.label == "Fire Affinity Cap" && e.value == 100.0));
-        let (death, _) = parse_description("Passive Skill\\n\\n・Death Affinity Cap +50%\\n・Summoned Partner's Death Affinity Cap +50%", &[]).unwrap();
+        let (death, _) = parse_description("Passive Skill\\n\\n・Death Affinity Cap +50%\\n・Summoned Partner's Death Affinity Cap +50%", &[], &no_switch).unwrap();
         assert!(death.iter().any(|e| e.partner && e.label == "Death Affinity Cap" && e.value == 50.0));
         // already given by the skill's other tokusei: not added again
         let both = vec![
             own[0].clone(),
             obj(json!({ "label": "Slash Affinity Cap", "value": 100.0, "pct": true, "target": "partner", "cond": "always" })),
         ];
-        assert!(parse_description(text, &both).is_none());
+        assert!(parse_description(text, &both, &no_switch).is_none());
     }
 
     #[test]

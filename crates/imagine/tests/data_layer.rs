@@ -501,3 +501,52 @@ fn a_tokusei_the_text_backs_is_not_flagged() {
     let text = gd.skill_text(5450).unwrap().expect("Criminal Bullet has a description");
     assert!(imagine::build::skill_description::stale_effects(&def, &text).is_empty(), "the text agrees with it");
 }
+
+/// Cataclysmic Mind (160611, Essence of Magic 9-3) says "When Radiant Hands is active, Spell Damage +500%". Radiant Hands (5485)
+/// is a switch skill, so that line follows the switch the game reports: counted while it is on, listed and not counted while it
+/// is off, and Radiant Hands' own row says the line needs it. Run on the public data (no sealed tokusei): the line is read from
+/// the skill's description, as for any skill the server tables lack (GitHub issue 5).
+#[test]
+fn a_skill_that_needs_a_switch_follows_its_state() {
+    let rows_for = |name: &str, switch_on: bool| {
+        let dir = temp(name);
+        let st = Store::new(&dir);
+        std::fs::write(
+            st.expertise_ranks_path(),
+            "{\"ranks\":[{\"id\":43,\"name\":\"Essence of Magic\",\"class\":9,\"rank\":3},{\"id\":53,\"name\":\"Enhancement\",\"class\":7,\"rank\":5}],\"learned_skills\":[160611,5485]}",
+        )
+        .unwrap();
+        if switch_on {
+            std::fs::create_dir_all(st.profile_path().parent().unwrap()).unwrap();
+            st.save_toggles([5485]).unwrap();
+        }
+        let ctx = std::sync::Arc::new(imagine::context::Context::new(Store::new(&dir), GameData::with_paths(None, None).without_sealed_data()));
+        let exp = imagine::build::expertise::Expertise::new(ctx);
+        let ranks = vec![
+            serde_json::json!({ "id": 43, "name": "Essence of Magic", "class": 9, "rank": 3 }),
+            serde_json::json!({ "id": 53, "name": "Enhancement", "class": 7, "rank": 5 }),
+        ];
+        let rows = exp.rows(None, &ranks, false).unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+        let get = |id: i64| rows.iter().find(|r| r.get("skill_id").and_then(|s| s.as_i64()) == Some(id)).cloned().unwrap_or_else(|| panic!("skill {id} is a row"));
+        (get(160611), get(5485))
+    };
+    let magic = |row: &imagine::data::json::Row| -> Vec<(f64, String, bool)> {
+        row["fx"].as_array().unwrap().iter().filter(|f| f["label"] == "Magic Damage").map(|f| (f["value"].as_f64().unwrap(), f["cond"].as_str().unwrap().to_string(), f["toggle"].as_bool().unwrap_or(false))).collect()
+    };
+    // Radiant Hands on: Cataclysmic Mind's +500% counts (it cancels Radiant Hands' -500%) and is marked as the switch's
+    let (cata, radiant) = rows_for("switch-on", true);
+    assert!(cata["effects"].as_str().unwrap().contains("Magic Damage +500% (while Radiant Hands is on, from the game's description)"), "{}", cata["effects"]);
+    assert_eq!(magic(&cata), vec![(500.0, "always".to_string(), true)]);
+    assert_eq!(cata["dmg_spell"].as_f64().unwrap(), 500.0);
+    assert_eq!(radiant["dmg_spell"].as_f64().unwrap(), -500.0);
+    assert!(radiant["effects"].as_str().unwrap().ends_with("; Cataclysmic Mind: Magic Damage +500% needs this on"), "{}", radiant["effects"]);
+    // Radiant Hands off: listed with the reason, nothing counted, and Radiant Hands still says what depends on it
+    let (cata, radiant) = rows_for("switch-off", false);
+    assert!(cata["effects"].as_str().unwrap().contains("Magic Damage +500% (only while Radiant Hands is on, and it is off now: not counted"), "{}", cata["effects"]);
+    assert!(magic(&cata).is_empty());
+    assert_eq!(cata["dmg_spell"].as_f64().unwrap(), 0.0);
+    assert_eq!(radiant["dmg_spell"].as_f64().unwrap(), 0.0);
+    assert!(radiant["effects"].as_str().unwrap().contains("Cataclysmic Mind: Magic Damage +500% needs this on"));
+    assert!(radiant["effects"].as_str().unwrap().starts_with("Toggle skill, switched off (not counted): "));
+}

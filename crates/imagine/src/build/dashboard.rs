@@ -281,7 +281,7 @@ pub struct Part {
     /// the digitalize demon's own stats (added to the character's base stats). Both matter to the simulator only.
     pub fuse: bool,
     pub demon_stat: bool,
-    /// From a toggle (switch) skill that is switched on. Toggles that are off never get this far (they have no effects).
+    /// From a toggle (switch) skill that is switched on, or from another skill's effect that needs one on. Toggles that are off never get this far (they have no effects).
     pub toggle: bool,
 }
 
@@ -843,7 +843,8 @@ impl Dashboard {
                     note: f.at("note").and_then(Value::as_str).unwrap_or("").to_string(),
                     from: format!("{} ({})", text("skill"), text("expertise")),
                     skill_id: r.get("skill_id").and_then(Value::as_i64).map_or(0, |i| i as i32),
-                    toggle: r.get("toggle_on").and_then(Value::as_bool).unwrap_or(false),
+                    // a switch skill that is on, or a line of another skill that needs one on (Cataclysmic Mind's +500% Spell damage)
+                    toggle: r.get("toggle_on").and_then(Value::as_bool).unwrap_or(false) || f.at("toggle").and_then(Value::as_bool).unwrap_or(false),
                     ..Default::default()
                 });
             }

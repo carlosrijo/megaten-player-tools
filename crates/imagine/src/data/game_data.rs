@@ -405,6 +405,15 @@ pub struct TokuseiDef {
     pub from_client_text: bool,
 }
 
+/// The skill that lists a tokusei, as an ACTIVE_TOKUSEI skill condition ("tokusei N is active") points at it: the tokusei is
+/// active while that skill applies, so for a switch (toggle) skill while the switch is on. See [`GameData::tokusei_owner`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokuseiOwner {
+    pub skill: i32,
+    /// A switch (toggle) skill: its tokusei apply only while it is on.
+    pub switch: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawTokusei {
     pub target: Option<String>,
@@ -580,6 +589,7 @@ pub struct GameData {
     expertises: OnceLock<Value>,
     rank_skills: OnceLock<Value>,
     passives: OnceLock<Map<String, Value>>,
+    tokusei_owner: OnceLock<HashMap<i32, TokuseiOwner>>,
     exp_client: OnceLock<IndexMap<i32, ExpertiseDef>>,
     rank_client: OnceLock<RankData>,
     skill_text: OnceLock<HashMap<i32, String>>,
@@ -632,6 +642,7 @@ impl GameData {
             expertises: OnceLock::new(),
             rank_skills: OnceLock::new(),
             passives: OnceLock::new(),
+            tokusei_owner: OnceLock::new(),
             exp_client: OnceLock::new(),
             rank_client: OnceLock::new(),
             skill_text: OnceLock::new(),
@@ -903,6 +914,54 @@ impl GameData {
             }
             Ok(res)
         })
+    }
+
+    /// The skill whose tokusei list holds `tid` (reference\skills-game.tsv): what an ACTIVE_TOKUSEI skill condition on `tid`
+    /// ("while tokusei N is active") depends on. When several skills list it, a switch skill wins (its state decides), then the
+    /// lowest skill id. None: no skill lists it (NewMoon's tokusei 2000010 and others), so what makes it active isn't known.
+    pub fn tokusei_owner(&self, tid: i32) -> Result<Option<TokuseiOwner>> {
+        let map = once(&self.tokusei_owner, || {
+            let mut res: HashMap<i32, TokuseiOwner> = HashMap::new();
+            for (key, v) in self.passives()? {
+                let Some(skill) = crate::fmt::parse_i32(key) else { continue };
+                let switch = json::int(v.at("mainCategory")) == 2;
+                for t in json::arr(v.at("tokuseiIds")) {
+                    let t = json::int(Some(t));
+                    if t == 0 {
+                        continue;
+                    }
+                    let better = match res.get(&t) {
+                        None => true,
+                        Some(old) => (switch, std::cmp::Reverse(skill)) > (old.switch, std::cmp::Reverse(old.skill)),
+                    };
+                    if better {
+                        res.insert(t, TokuseiOwner { skill, switch });
+                    }
+                }
+            }
+            Ok(res)
+        })?;
+        Ok(map.get(&tid).cloned())
+    }
+
+    /// The switch (toggle) skill the game calls `name` (a description says "When Radiant Hands is active"); None when no
+    /// switch skill has that name, or two do.
+    pub fn switch_skill_named(&self, name: &str) -> Result<Option<i32>> {
+        let names = self.skill_names()?;
+        let mut found: Option<i32> = None;
+        for (key, v) in self.passives()? {
+            if json::int(v.at("mainCategory")) != 2 {
+                continue;
+            }
+            let Some(id) = crate::fmt::parse_i32(key) else { continue };
+            if names.get(&id).cloned().flatten().is_some_and(|n| crate::text::eq_ic(&n, name.trim())) {
+                if found.is_some_and(|f| f != id) {
+                    return Ok(None);
+                }
+                found = Some(id);
+            }
+        }
+        Ok(found)
     }
 
     /// IMAGINE's expertise names and chain formulas; empty when the reference file is missing.
@@ -1762,4 +1821,22 @@ fn parse_client_tokusei(id: i32, parsed: &str) -> Option<TokuseiDef> {
     }
     let target = target?;
     Some(TokuseiDef { id, target, conditions: Vec::new(), skill_conditions: skill, target_conditions: false, correct, aspects, from_client_text: true })
+}
+
+/// An ACTIVE_TOKUSEI condition ("tokusei N is active") points at the skill that lists N: Radiant Hands (a switch) lists
+/// 2100039, so what depends on 2100039 depends on that switch. A passive that lists one is no switch, and a tokusei no skill
+/// lists stays unknown.
+#[cfg(test)]
+#[test]
+fn a_tokusei_finds_the_skill_that_lists_it() {
+    let d = GameData::with_paths(None, None);
+    assert_eq!(d.tokusei_owner(2100039).unwrap(), Some(TokuseiOwner { skill: 5485, switch: true }));
+    assert_eq!(d.tokusei_owner(2000127).unwrap(), Some(TokuseiOwner { skill: 160611, switch: false }), "a passive is found, and is no switch");
+    assert_eq!(d.tokusei_owner(0).unwrap(), None);
+    assert_eq!(d.tokusei_owner(1).unwrap(), None);
+    // the switch is found by the name the game gives it, case aside; a passive's name finds nothing
+    assert_eq!(d.switch_skill_named("Radiant Hands").unwrap(), Some(5485));
+    assert_eq!(d.switch_skill_named("radiant hands").unwrap(), Some(5485));
+    assert_eq!(d.switch_skill_named("Cataclysmic Mind").unwrap(), None);
+    assert_eq!(d.switch_skill_named("No Such Skill").unwrap(), None);
 }
