@@ -215,10 +215,10 @@
           await wait(args && args.cached ? 0 : 1200);   // seen before: at once; looking at the game: a moment
           const cur = (S.data && S.data.digitalize && S.data.digitalize.demon) || 'Specter';   // the saved demon, as the app would mark it
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
-            ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
+            ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false], ['Santa Black Frost', 42, 'Nocturne', 'Kusi', 1, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
             ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, summoned: name === 'Specter' && Q.get('summoned') !== '0', icon: null, loaded: name !== 'Pixie', inComp: name !== 'Seraph', seenAt: '2026-11-23T15:40:23',
               // the Rebirth Planner's fields: the demon's type, growth type, rebirth ranks, Mitama type and rank, slot bonus ids
-              type: { Specter: 11004, Shikigami: 11030, Alilat: 10041, Seraph: 22, Pixie: 570 }[name], growthType: { Specter: 215, Shikigami: 123, Alilat: 118, Seraph: 118 }[name] || 113,
+              type: { Specter: 11004, Shikigami: 11030, Alilat: 10041, Seraph: 22, Pixie: 570, 'Santa Black Frost': 10733 }[name], growthType: { Specter: 215, Shikigami: 123, Alilat: 118, Seraph: 118 }[name] || 113,
               reunion: mitama ? (name === 'Specter' ? [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8] : name === 'Shikigami' ? [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] : [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) : name === 'Seraph' ? [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0] : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
               mitamaType: { Kusi: 3, Ara: 1, Nigi: 2 }[mitama] || 0, mitamaRank: name === 'Specter' ? 12 : 0, mitamaSlots: name === 'Specter' ? [65, 66, 67, 68, 1, 2, 3, 4, ...Array(88).fill(0)] : Array(96).fill(0),
               // stand-ins for the three states of the unlock tag
@@ -7007,6 +7007,10 @@
         const f = F.demons.find((row) => row[8] === c.type);
         if (f) { x = d.demons.find((q) => q.id === f[0]) || d.demons.find((q) => q.name === f[1] && q.race === (F.races[f[2]] || '') && q.level === f[4]); fused = !!x; }
       }
+      if (!x && c.type > 10000) {   // an event demon the Fusion Planner doesn't list (Santa Black Frost...): the server's Mitama type is its id + 10000
+        x = d.demons.find((q) => q.id === c.type - 10000 && q.mt);
+        fused = !!x;
+      }
       if (!x) return { missing: c };
       const ranks = Array.isArray(c.reunion) && c.reunion.length === 12 ? c.reunion.map((v) => Math.max(0, n0(v))) : Array(12).fill(0);
       return { x, comp: c, name: c.name, level: c.level, fused: fused || n0(c.mitamaType) > 0, kind: n0(c.mitamaType), mitamaRank: n0(c.mitamaRank), ranks,
@@ -7306,7 +7310,7 @@
     return rbpEqItems;
   }
   /** The Mitama form's demon type, from the Fusion Planner's data (its row's column 8). */
-  function rbpMtType(D) { const F = S.fus.eng && S.fus.eng.F, f = F && F.demons.find((r) => r[0] === D.x.id); return f ? f[8] : 0; }
+  function rbpMtType(D) { const F = S.fus.eng && S.fus.eng.F, f = F && F.demons.find((r) => r[0] === D.x.id); return f ? f[8] : D.x.mt ? D.x.id + 10000 : 0; }   // demons the Fusion Planner doesn't list (events) follow id + 10000
   /** The 4 feature slots (skill ids, 0 = none) of the demon as it ends: the Mitama form's when it is or will be fused. */
   function rbpTraitSlots(P, D, endFused) {
     const type = endFused ? (D.fused && D.comp ? D.comp.type : rbpMtType(D)) : D.x.id;
