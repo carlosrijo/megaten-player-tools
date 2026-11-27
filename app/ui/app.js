@@ -2565,7 +2565,7 @@
       S.dcm.data = d; S.dcm.notes = (n && n.notes) || {};
       S.dcm.state = d ? 'ready' : 'failed';
       if (d) d.items.forEach((it) => { it.lines = dcmLines(it); it.kinds = new Set(it.lines.map((l) => l.group)); it.hay = [it.demon, ...it.lines.map((l) => [l.text, l.sub || '', ...(l.tags || [])].join(' '))].join(' ').toLowerCase(); });
-      if (S.page === 'dcm') render();
+      if (S.page === 'dcm' || S.page === 'rebirth') render();   // the Rebirth Planner asks it which demons a DCM gives
     });
   }
   /** One DCM's sources as display lines, best first: { group, kind, text, sub, value, tags }. */
@@ -3970,6 +3970,12 @@
   // (the server's growth and dependent-stat rules); Critical is the demon's own value from the client (CorrectTbl
   // CRITICAL), which does not grow with level. P.Def and M.Def are left out on purpose.
   const RANK_KINDS = [['contract', 'Can be contracted'], ['own', 'Any way to get it'], ['all', 'All demons']];
+  /** Whether the player can get the demon some way: a contract, a normal fusion, a DCM, or another way the data lists
+   *  (an exchange item, a special fusion, an event or NPC gift), the same rule as the Stat Ranking's
+   *  "Any way to get it". The Rebirth Planner's demon list uses it; the DCM part needs dcm-sources.json loaded (loadDcm). */
+  function ddbCanOwn(x) {
+    return x.contract.length > 0 || !!x.fusion || !!(S.dcm.data && S.dcm.data.items.some((it) => it.devilId === x.id)) || !!(x.get && x.get.length);
+  }
   /** The demon's face, with the game's Mitama mark on its top left corner (as Overview's summoned demon) when the Mitama form is shown. */
   const rankFace = (x, mt) => { const pic = ddbFace(x); if (mt && S.data) { pic.classList.add('rank-face'); mitamaMark(pic, true); } return pic; };
   function pageRank() {
@@ -4854,11 +4860,13 @@
     const db = U.src === 'db', search = $('#rbp-demons-search');
     search.hidden = !db;
     $('#rbp-demons-load').parentElement.hidden = db;
-    $('#rbp-demons-note').textContent = db ? '' : 'The demons as BABEL last read them, with their rebirth ranks and Mitama slots. The pick is the planner’s own: your digitalize demon is not changed.';
+    $('#rbp-demons-note').textContent = db ? 'Only demons the game can Mitama-fuse and that you can get some way: a contract, a fusion, a DCM, an exchange or a gift.' : 'The demons as BABEL last read them, with their rebirth ranks and Mitama slots. The pick is the planner’s own: your digitalize demon is not changed.';
     if (db) {
-      // the Demon Database's demons (a search narrows them; the first 80 are listed)
+      // the Demon Database's demons that can be planned: ones with a Mitama form (the server Mitama-fuses only a type
+      // with a mitamaFusionID, CharacterManager::MitamaDemon) that the player can get (ddbCanOwn); a search narrows
+      // them, the first 80 are listed
       const d = S.ddb.data, q = (search.querySelector('input').value || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
-      const all = d ? d.demons.filter((x) => words.every((w) => (x.name + ' ' + x.race).toLowerCase().includes(w))) : [];
+      const all = d ? d.demons.filter((x) => rbpPlannable(x) && words.every((w) => (x.name + ' ' + x.race).toLowerCase().includes(w))) : [];
       all.sort((a, b) => (q && a.name.toLowerCase().startsWith(q) ? 0 : 1) - (q && b.name.toLowerCase().startsWith(q) ? 0 : 1) || a.name.localeCompare(b.name) || a.level - b.level);
       const shown = all.slice(0, 80);
       list.replaceChildren(...shown.map((x) => h('button', { type: 'button', class: 'char', 'aria-current': x.id === U.demonId ? 'true' : null,
@@ -6728,7 +6736,7 @@
         if (S.page === 'rebirth') render();
       });
     }
-    loadDemonDb(); loadFusion();
+    loadDemonDb(); loadFusion(); loadDcm();   // the DCM list: which demons a DCM gives (ddbCanOwn)
     if (S.rbp.compState === 'idle' && !S.rbp.comp) {   // the COMP demons as last seen (no look at the game: the Overview's picker does that)
       S.rbp.compState = 'loading';
       host.call('compDemons', { cached: true }).then((list) => { S.rbp.comp = Array.isArray(list) ? list : []; S.rbp.compState = 'ready'; if (S.page === 'rebirth') render(); })
@@ -6769,9 +6777,11 @@
       return { x, comp: c, name: c.name, level: c.level, fused: fused || n0(c.mitamaType) > 0, kind: n0(c.mitamaType), mitamaRank: n0(c.mitamaRank), ranks,
         growth: n0(c.growthType) || (fused && x.mt ? x.mt.growth : x.growth), slots: Array.isArray(c.mitamaSlots) ? c.mitamaSlots.map(n0) : Array(96).fill(0), known: c.loaded !== false };
     }
-    const x = d.demons.find((q) => q.id === U.demonId);
+    const x = d.demons.find((q) => q.id === U.demonId && rbpPlannable(q));   // a pick kept from before the list was narrowed may no longer be one
     return x ? { x, name: x.name, level: x.level, fused: false, kind: 0, mitamaRank: 0, ranks: Array(12).fill(0), growth: x.growth, slots: Array(96).fill(0), known: true } : null;
   }
+  /** Whether "Any demon" offers it: it has a Mitama form (the only demons the server Mitama-fuses) and the player can get it. */
+  const rbpPlannable = (x) => !!x.mt && ddbCanOwn(x);
   /** The server's level for a rank, and the XP from level 1 to a level. */
   const rbpLevelFor = (rank) => (rank >= 9 ? 99 : rank * 10 + 10);
   function rbpXpTo(P, level) { let s = 0; for (let l = 1; l < level; l++) s += P.xp[l] || 0; return s; }
@@ -6902,7 +6912,7 @@
             h('button', { type: 'button', 'aria-pressed': String(U.src === id), 'data-tip': id === 'db' ? 'A fresh demon from the Demon Database: no ranks, no Mitama' : 'One of your COMP demons as last read from the game, with its rebirth ranks and Mitama slots',
               onclick: () => { U.src = id; store.set('rbp-src', id); render(); } }, label))),
         h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Back to no targets, no fusion, no Mitamas', onclick: () => { U.plan = null; store.set('rbp-plan', ''); render(); } }, 'Reset the plan'))));
-    if (U.state !== 'ready' || S.ddb.state !== 'ready' || S.fus.state === 'loading' || S.fus.state === 'idle') {
+    if (U.state !== 'ready' || S.ddb.state !== 'ready' || S.fus.state === 'loading' || S.fus.state === 'idle' || S.dcm.state === 'loading' || S.dcm.state === 'idle') {
       page.append(h('p', { class: 'note', text: U.state === 'failed' ? 'The planner data could not be loaded (rebirth-planner.json is missing beside the page).' : S.ddb.state === 'failed' ? 'The demon list could not be loaded (demon-db.json is missing beside the page).' : 'Loading the rebirth tables…' }));
       return page;
     }
