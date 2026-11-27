@@ -240,8 +240,9 @@ Under **Tools** in the left bar, next to the other databases. Lists every quest 
 and, when opened, what to do step by step: who to talk to and where (zone and map grid position), which dialogue
 choices to pick, what you need, what you get and give, and the kill or collect counts. For each question the answer to
 pick is shown with the other answers that work as well and the ones that do not move the quest on, worded as the game
-words them now (since the update of 19 November several answers are in Japanese in game, and the guide shows them that
-way). When a step needs several talks (Act 1: Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with
+words them now. Since the update of 19 November several answers are in Japanese in game: the guide shows BABEL's
+English for them greyed out, with the game's Japanese in the tooltip (also event names and item names the game has only
+in Japanese). When a step needs several talks (Act 1: Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with
 their answers and whether the order matters. When your answers decide the outcome (Uriel in Act 13: Envoy for the
 Messian Church moves your alignment to a different place for each line of answers, and one of them also gives you
 Inexperienced Uriel) the talk is shown as a tree of answers, each branch with what it gives and what it does to your

@@ -2801,7 +2801,11 @@
     S.quest.state = 'loading';
     // the people's pictures (npc-pictures.json beside this file); the names show without them until it loads
     fetch('npc-pictures.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((f) => { S.quest.faces = f; if (f && S.quest.data && (S.page === 'quests' || S.page === 'tracker')) render(); });
-    fetch('quest-guide.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+    const json = (f) => fetch(f, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    // quest-tl.json: BABEL's English for the Japanese the quest data still has (answers, event names, item and valuable
+    // names inside a line); without it the guide shows the game's Japanese
+    Promise.all([json('quest-guide.json'), json('quest-tl.json')]).then(([d, tl]) => {
+      if (d && tl) S.quest.tl = questTranslate(d, tl);
       S.quest.data = d; S.quest.state = d ? 'ready' : 'failed';
       if (d) d.quests.forEach((q) => {
         const words = [q.title, q.client, q.zone, ...(q.seasonal || [])];
@@ -2814,6 +2818,48 @@
       if (S.page === 'quests' || S.page === 'tracker') render();
     });
   }
+  /**
+   * Puts BABEL's English into the quest data in place (quest-tl.json: `text` = whole strings, `names` = item and valuable
+   * names inside a line, both Japanese -> English) and returns English -> the game's Japanese for every string it changed.
+   * Object keys are translated too (`answerFx` is keyed by the answer). The page greys those strings (`questTlMark`).
+   */
+  function questTranslate(d, tl) {
+    const text = tl.text || {}, names = Object.keys(tl.names || {}).sort((a, b) => b.length - a.length), back = new Map();
+    const one = (s) => {
+      if (typeof s !== 'string' || !/[぀-ヿ㐀-鿿]/.test(s)) return s;
+      let t = text[s];
+      if (t === undefined) { t = s; for (const n of names) if (t.includes(n)) t = t.split(n).join(tl.names[n]); }
+      if (t !== s) back.set(t, s);
+      return t;
+    };
+    const walk = (o) => {
+      if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) o[i] = typeof o[i] === 'string' ? one(o[i]) : walk(o[i]); return o; }
+      if (!o || typeof o !== 'object') return o;
+      for (const k of Object.keys(o)) {
+        const v = typeof o[k] === 'string' ? one(o[k]) : walk(o[k]), k2 = one(k);
+        if (k2 !== k) delete o[k];
+        o[k2] = v;
+      }
+      return o;
+    };
+    walk(d);
+    return back;
+  }
+  /** Greys the quest lines that are BABEL's translation (S.quest.tl), with the game's Japanese in the tooltip: any element
+   *  whose whole text is such a line. Runs on what the page adds, so every way a line is drawn is covered. */
+  function questTlMark(root) {
+    const tl = S.quest.tl;
+    if (!tl || !tl.size || root.nodeType !== 1) return;
+    const GAME_TEXT = '.q-pick, .q-said, .q-asks, .q-goals > li, .q-item';
+    for (const el of [...(root.matches(GAME_TEXT) ? [root] : []), ...root.querySelectorAll(GAME_TEXT)]) {
+      if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3 || el.classList.contains('tl-name')) continue;
+      const ja = tl.get(el.textContent);
+      if (ja === undefined) continue;
+      el.classList.add('tl-name');
+      if (!el.hasAttribute('data-tip')) el.setAttribute('data-tip', `BABEL's translation: the game has this only in Japanese. In game: ${ja}`);
+    }
+  }
+  new MutationObserver((muts) => { if (S.quest && S.quest.tl && (S.page === 'quests' || S.page === 'tracker')) muts.forEach((m) => m.addedNodes.forEach(questTlMark)); }).observe(document.body, { childList: true, subtree: true });
   /**
    * The ways of doing a step, as groups: ways that ask the same and give the same differ only in who you talk to
    * (three NPCs who all take the report), so they become one instruction naming all of them.
@@ -2839,7 +2885,7 @@
     // answers that take the quest another way: only those that change your alignment are worth a warning (the others are
     // shown as their own way, or are menus and repeats); in a tree its own branches are left out
     const other = ((x.elsewhere && x.elsewhere[i]) || []).filter((t) => fx[t] && !(skip && skip.has(t)));
-    const said = (t) => [`“${t}”`, fx[t] ? h('span', { class: 'q-fx', text: ` (${fx[t].map((f) => f[0].toLowerCase() + f.slice(1)).join('; ')})` }) : null];
+    const said = (t) => ['“', h('span', { class: 'q-said', text: t }), '”', fx[t] ? h('span', { class: 'q-fx', text: ` (${fx[t].map((f) => f[0].toLowerCase() + f.slice(1)).join('; ')})` }) : null];
     // a flat list: h() flattens one level only
     return [...[p, ...also].flatMap((t, j) => [j ? h('span', { class: 'q-arrow', text: 'or' }) : null, h('span', { class: 'q-pick', text: t })]),
       not.length ? h('span', { class: 'q-not' }, 'not ', not.flatMap((t, j) => [j ? ' or ' : '', ...said(t)])) : null,
@@ -2858,7 +2904,7 @@
     return src ? h('span', { class: 'q-who' }, h('img', { class: 'q-face', src, alt: '', onerror: (e) => e.target.remove() }), h('b', { text: x.who })) : h('b', { text: x.who });
   };
   const questAt = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
-  const questRow = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
+  const questRow = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.flatMap((t, i) => [i ? ', ' : '', h('span', { class: 'q-item', text: t })]))) : null);
   /** What you need, fight, get, hand over and what changes for a way. What changes is one line each: an alignment change
    *  can depend on your alignment ("If your alignment is …"). */
   const questRows = (w) => [questRow('You must', w.needs), questRow('You fight', w.fights), questRow('You receive', w.get, 'q-get'), questRow('You hand over', w.lose),
@@ -3054,11 +3100,11 @@
   const panelOpen = () => Promise.resolve(host.call('panel', { open: true })).catch(() => null);
   function questDetail(q) {
     const box = h('div', { class: 'q-detail' });
-    if (q.needs.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Before you can start' }), h('span', null, q.needs.join(' · '))));
+    if (q.needs.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Before you can start' }), h('span', null, q.needs.flatMap((t, i) => [i ? ' · ' : '', h('span', { class: 'q-item', text: t })]))));
     if (!q.walkthrough) box.append(h('p', { class: 'note', text: 'The server\'s event files do not cover this quest, so only the game\'s own objective text is shown.' }));
     // a quest started only from a seasonal event's files (the public server has those switched off)
     if (q.seasonal && q.seasonal.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Seasonal event' }),
-      h('span', null, `${q.seasonal.join(' · ')}. Its steps come from that event's files, which the public server keeps switched off, so IMAGINE may not run it.`)));
+      h('span', null, ...q.seasonal.flatMap((t, i) => [i ? ' · ' : '', h('span', { class: 'q-item', text: t })]), `. Its steps come from that event's files, which the public server keeps switched off, so IMAGINE may not run it.`)));
     const ol = h('ol', { class: 'q-steps' });
     q.steps.forEach((s) => ol.append(h('li', null,
       /^Step /.test(s.label) ? null : h('div', { class: 'q-step-title', text: s.label }),   // the number is already in the circle
