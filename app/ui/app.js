@@ -510,7 +510,8 @@
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
     fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
-    rbp: { state: 'idle', P: null, src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), compKey: store.get('rbp-comp') || null, comp: null, compState: 'idle', plan: null, openSteps: false },   // Rebirth Planner: the plan is rbpPlan() (kept in storage)
+    rbp: { state: 'idle', P: null, src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), compKey: store.get('rbp-comp') || null, compSnap: (() => { try { const v = JSON.parse(store.get('rbp-snap') || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } })(), comp: null, compState: 'idle', plan: null, openSteps: false,
+      view: 'home', id: null, name: '', builds: null, naming: false, confirmDel: false, saveState: '', navOpen: store.get('rbp-nav') !== '0' },   // view: the page of builds ('home') or the planner ('edit'), for the saved build `id` (null: the unsaved plan)   // Rebirth Planner: the plan is rbpPlan() (kept in storage)
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Database: opened places, opened enemies
       group: store.get('dun-group') !== '0', shown: new Set() },   // listed under the place you enter them from; the groups opened (all start folded)
     // Demon Rank: which demons, the level they are compared at ('base', '1' or '99'), the column sorted (an index of RANK_COLS) and its direction (1 = highest first)
@@ -750,6 +751,10 @@
   const simNavBox = h('div', { class: 'nav-sub', hidden: true });
   const simNavToggle = h('button', { type: 'button', class: 'nav-fold', hidden: true, 'aria-label': 'Show or hide your saved builds',
     onclick: () => { S.sim.navOpen = !S.sim.navOpen; store.set('sim-nav', S.sim.navOpen ? '1' : '0'); drawSimNav(); } }, icon('chevron'));
+  // the same for the Demon Planner's saved builds (drawRbpNav)
+  const rbpNavBox = h('div', { class: 'nav-sub', hidden: true });
+  const rbpNavToggle = h('button', { type: 'button', class: 'nav-fold', hidden: true, 'aria-label': 'Show or hide your saved demon builds',
+    onclick: () => { S.rbp.navOpen = !S.rbp.navOpen; store.set('rbp-nav', S.rbp.navOpen ? '1' : '0'); drawRbpNav(); } }, icon('chevron'));
   // Related tools sit together under one fold-away entry ("Databases", "Planners"), open every time the app starts; the
   // entry folds them away for this session only (nothing is saved, so they are open again next launch). Inside a group
   // the repeated word is left off each name ("Skill Database" -> "Skills", "Fusion Planner" -> "Fusion"); the page's own
@@ -779,12 +784,13 @@
   const looseTools = [];
   TOOLS.forEach(([id, fullLabel, ic]) => {
     const g = groupOf(id), label = g ? g.short(fullLabel) : fullLabel;
-    const btn = h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => (id === 'sim' ? simGoHome() : go(id)) },
+    const btn = h('button', { type: 'button', class: 'nav-item', 'data-page': id, 'data-tip': label, onclick: () => (id === 'sim' ? simGoHome() : id === 'rebirth' ? rbpGoHome() : go(id)) },
       icon(ic), h('span', { class: 'nav-label', text: label }));
-    const entry = id === 'sim' ? [h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox] : [btn];
+    const entry = id === 'sim' ? [h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox] : id === 'rebirth' ? [h('div', { class: 'nav-group' }, btn, rbpNavToggle), rbpNavBox] : [btn];
     if (g) g.box.append(...entry); else looseTools.push(...entry);
   });
   nav.append(...NAV_GROUPS.flatMap((g) => [g.head, g.box]), ...looseTools);
+  setTimeout(() => drawRbpNav(), 0);   // (the saved demon builds, once the page's code is all set up)
   function go(page) {
     if (S.page === page) return;
     remember();
@@ -810,7 +816,7 @@
     geardb: { gdb: ['q', 'kind', 'cls', 'known', 'gender', 'align', 'src', 'range', 'aff', 'maxLv', 'sort', 'dir', 'fopen', 'open', 'pg'] },
     rank: { rank: ['q', 'kind', 'race', 'at', 'mt', 'sort', 'dir'] },
     dcm: { dcm: ['q', 'kind', 'open'] },
-    rebirth: { rbp: ['src', 'demonId', 'compKey', 'openSteps'] },
+    rebirth: { rbp: ['openSteps'] },   // (which build is open is `rebirth` in here() and step())
     dungeons: { dun: ['q', 'kind', 'open', 'mob', 'shown'] },
     guides: { guides: ['q', 'tag', 'open', 'outOpen'] },
     quests: { quest: ['q', 'type', 'open'] },
@@ -822,7 +828,7 @@
   function here() {
     const kept = {};
     Object.entries(PAGE_KEEP[S.page] || {}).forEach(([part, keys]) => { kept[part] = {}; keys.forEach((k) => { kept[part][k] = keepCopy(S[part][k]); }); });
-    return { page: S.page, kept, scroll: $('#main').scrollTop, sim: S.page === 'sim' ? { view: S.sim.view, id: S.sim.id } : null };
+    return { page: S.page, kept, scroll: $('#main').scrollTop, sim: S.page === 'sim' ? { view: S.sim.view, id: S.sim.id } : null, rbp: S.page === 'rebirth' ? { view: S.rbp.view, id: S.rbp.id } : null };
   }
   function remember() {
     if (trail.quiet) return;
@@ -831,7 +837,8 @@
     trail.fwd = [];
   }
   const pageName = (id) => (PAGES.concat(TOOLS).find((p) => p[0] === id) || [])[1] || '';
-  const stepName = (e) => (e.page === 'sim' && e.sim && e.sim.view === 'edit' ? (e.sim.id ? ((S.sim.builds || []).find((b) => b.id === e.sim.id) || {}).name || 'a build' : 'the unsaved build') : pageName(e.page));
+  const stepName = (e) => (e.page === 'rebirth' && e.rbp && e.rbp.view === 'edit' ? (e.rbp.id ? ((rbpBuilds().find((b) => b.id === e.rbp.id) || {}).name || 'a demon build') : 'the unsaved demon build')
+    : e.page === 'sim' && e.sim && e.sim.view === 'edit' ? (e.sim.id ? ((S.sim.builds || []).find((b) => b.id === e.sim.id) || {}).name || 'a build' : 'the unsaved build') : pageName(e.page));
   /** Back (dir -1) or forward (+1) one step. */
   function step(dir) {
     const from = dir < 0 ? trail.back : trail.fwd, to = dir < 0 ? trail.fwd : trail.back;
@@ -847,6 +854,8 @@
     try {
       if (e.sim && e.sim.view === 'edit' && (S.sim.view !== 'edit' || S.sim.id !== e.sim.id)) simOpen(e.sim.id);
       else if (e.sim && e.sim.view === 'home' && S.sim.view === 'edit') simGoHome();
+      else if (e.rbp && e.rbp.view === 'edit' && (S.rbp.view !== 'edit' || S.rbp.id !== e.rbp.id)) rbpOpen(e.rbp.id);
+      else if (e.rbp && e.rbp.view === 'home' && S.rbp.view === 'edit') rbpGoHome();
       else render();
     } finally { trail.quiet = false; }
     scroll();
@@ -885,6 +894,7 @@
     $('#page-title').textContent = (PAGES.concat(TOOLS).find((p) => p[0] === S.page) || [])[1] || '';   // the page's name, in the middle of the top bar
     document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.page === S.page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     drawSimNav();
+    drawRbpNav();
     drawGroupNav();
     drawNavButtons();
     const foot = $('#side-foot');
@@ -5075,79 +5085,95 @@
   }
   simDemonsMenu.addEventListener('toggle', (ev) => { if (ev.newState === 'open') { simPlace(simDemonsMenu, simDemonsFor); drawSimDemons(); } });
   $('#main').addEventListener('scroll', () => { if (simDemonsMenu.matches(':popover-open')) simDemonsMenu.hidePopover(); });   // its button moves away
-  // The Rebirth Planner's COMP demon picker: the same dropdown as the Overview's demon line, under the name in the
-  // planner's demon card. Rows are the COMP demons as last seen (S.rbp.comp); "Load demons from the game" looks at the
-  // game again (the same read the Overview's picker does). The pick is the planner's own.
-  const rbpDemonsMenu = $('#rbp-demons');
-  let rbpDemonsFor = null, rbpDemonsLook = 0;
-  function drawRbpDemons(status, loading) {
-    const U = S.rbp, list = $('#rbp-demons-list'), demons = U.comp || [];
-    const db = U.src === 'db', search = $('#rbp-demons-search');
-    search.hidden = !db;
-    $('#rbp-demons-load').parentElement.hidden = db;
-    $('#rbp-demons-note').textContent = db ? 'Only demons the game can Mitama-fuse and that you can get some way: a contract, a fusion, a DCM, an exchange or a gift.' : 'The demons as BABEL last read them, with their rebirth ranks and Mitama slots. The pick is the planner’s own: your digitalize demon is not changed.';
-    if (db) {
-      // the Demon Database's demons that can be planned: ones with a Mitama form (the server Mitama-fuses only a type
-      // with a mitamaFusionID, CharacterManager::MitamaDemon) that the player can get (ddbCanOwn); a search narrows
-      // them, the first 80 are listed
-      const d = S.ddb.data, q = (search.querySelector('input').value || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
-      const all = d ? d.demons.filter((x) => rbpPlannable(x) && words.every((w) => (x.name + ' ' + x.race).toLowerCase().includes(w))) : [];
-      all.sort((a, b) => (q && a.name.toLowerCase().startsWith(q) ? 0 : 1) - (q && b.name.toLowerCase().startsWith(q) ? 0 : 1) || a.name.localeCompare(b.name) || a.level - b.level);
-      const shown = all.slice(0, 80);
-      list.replaceChildren(...shown.map((x) => h('button', { type: 'button', class: 'char', 'aria-current': x.id === U.demonId ? 'true' : null,
-        onclick: () => { rbpDemonsMenu.hidePopover(); U.demonId = x.id; store.set('rbp-demon', String(x.id)); render(); } },
-        ddbImg(x.icon || (d && d.noIcon), 32, 'dm-icon rbp-dm-icon'), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: x.name }), h('span', { class: 'char-line', text: `Lv ${x.level} · ${x.race}${x.mt ? ' · has a Mitama form' : ''}` })))));
-      $('#rbp-demons-status').textContent = !d ? 'Loading the demons…' : !all.length ? 'No demon matches.' : all.length > shown.length ? `${shown.length} of ${all.length} shown: type more to narrow it.` : '';
-      simPlace(rbpDemonsMenu, rbpDemonsFor);
-      return;
-    }
-    const pick = (d) => { rbpDemonsMenu.hidePopover(); U.compKey = d.key; store.set('rbp-comp', d.key); render(); };
+  // The Rebirth Planner's demon picker: under the name in the planner's demon card, any demon from the Demon Database
+  // with a search. "Import demon" (top right) is the other way in: one of the COMP demons as last seen (S.rbp.comp),
+  // with its ranks and Mitama slots; "Load demons from the game" there looks at the game again (the same read the
+  // Overview's picker does). Either pick is the planner's own: the digitalize demon is not changed.
+  const rbpDemonsMenu = $('#rbp-demons'), rbpImportMenu = $('#rbp-import');
+  let rbpDemonsFor = null, rbpImportFor = null, rbpDemonsLook = 0;
+  function drawRbpDemons() {
+    const U = S.rbp, list = $('#rbp-demons-list'), search = $('#rbp-demons-search');
+    $('#rbp-demons-note').textContent = 'Only demons the game can Mitama-fuse and that you can get some way: a contract, a fusion, a DCM, an exchange or a gift.';
+    // the Demon Database's demons that can be planned: ones with a Mitama form (the server Mitama-fuses only a type
+    // with a mitamaFusionID, CharacterManager::MitamaDemon) that the player can get (ddbCanOwn); a search narrows
+    // them, the first 80 are listed
+    const d = S.ddb.data, q = (search.querySelector('input').value || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+    const all = d ? d.demons.filter((x) => rbpPlannable(x) && words.every((w) => (x.name + ' ' + x.race).toLowerCase().includes(w))) : [];
+    all.sort((a, b) => (q && a.name.toLowerCase().startsWith(q) ? 0 : 1) - (q && b.name.toLowerCase().startsWith(q) ? 0 : 1) || a.name.localeCompare(b.name) || a.level - b.level);
+    const shown = all.slice(0, 80);
+    list.replaceChildren(...shown.map((x) => h('button', { type: 'button', class: 'char', 'aria-current': U.src === 'db' && x.id === U.demonId ? 'true' : null,
+      onclick: () => { rbpDemonsMenu.hidePopover(); U.src = 'db'; U.demonId = x.id; U.compKey = null; U.compSnap = null; rbpSave(); render(); } },
+      ddbImg(x.icon || (d && d.noIcon), 32, 'dm-icon rbp-dm-icon'), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: x.name }), h('span', { class: 'char-line', text: `Lv ${x.level} · ${x.race}${x.mt ? ' · has a Mitama form' : ''}` })))));
+    $('#rbp-demons-status').textContent = !d ? 'Loading the demons…' : !all.length ? 'No demon matches.' : all.length > shown.length ? `${shown.length} of ${all.length} shown: type more to narrow it.` : '';
+    simPlace(rbpDemonsMenu, rbpDemonsFor);
+  }
+  /** The import dropdown: it hangs under its button, right edges together. */
+  function rbpImportPlace() {
+    const btn = rbpImportFor;
+    if (!btn || !btn.isConnected || !rbpImportMenu.matches(':popover-open')) return;
+    const r = btn.getBoundingClientRect(), w = rbpImportMenu.offsetWidth, hgt = rbpImportMenu.offsetHeight;
+    rbpImportMenu.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + 'px';
+    rbpImportMenu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
+  }
+  function drawRbpImport(status, loading) {
+    const U = S.rbp, list = $('#rbp-import-list'), demons = U.comp || [];
+    $('#rbp-import-note').textContent = 'The demons as BABEL last read them. Importing plans that demon from where it stands: its rebirth ranks and Mitama slots. Your digitalize demon is not changed.';
+    const pick = (d) => { rbpImportMenu.hidePopover(); U.src = 'comp'; U.compKey = d.key; U.compSnap = rbpSnap(d); rbpSave(); render(); };
     const row = (d) => {
       const ranks = Array.isArray(d.reunion) ? d.reunion.filter((r) => r > 0) : [];
       const line = [`Lv ${d.level}`, d.race, d.mitama ? `${d.mitama} Mitama · rank ${n0(d.mitamaRank)}` : null, ranks.length ? `${ranks.length} rune${ranks.length === 1 ? '' : 's'} raised` : 'no rebirths'].filter(Boolean).join(' · ');
       const pic = h('span', { class: 'dm-icon' + (d.icon ? '' : ' dm-none dm-off'), text: d.icon ? null : String(d.name || '?').charAt(0) });
       if (d.icon) pic.append(h('img', { class: 'dm-icon', src: d.icon, alt: '' }));
-      return h('button', { type: 'button', class: 'char', 'aria-current': d.key === U.compKey ? 'true' : null, onclick: () => pick(d) },
+      return h('button', { type: 'button', class: 'char', 'aria-current': U.src === 'comp' && d.key === U.compKey ? 'true' : null, onclick: () => pick(d) },
         pic, h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: d.name }), h('span', { class: 'char-line', text: line })),
         d.inComp === false ? h('span', { class: 'tag tag-off', text: 'Not in the COMP' }) : d.loaded === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed it: open its status window in game, then load again', text: 'Not read' }) : d.summoned ? h('span', { class: 'tag', text: 'Summoned' }) : null);
     };
     list.replaceChildren(...demons.map(row));
-    const load = $('#rbp-demons-load');
+    const load = $('#rbp-import-load');
     load.disabled = !!loading;
     load.textContent = loading ? 'Reading the game…' : 'Load demons from the game';
-    $('#rbp-demons-status').textContent = status || (!demons.length && !loading ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
-    simPlace(rbpDemonsMenu, rbpDemonsFor);
+    $('#rbp-import-status').textContent = status || (!demons.length && !loading ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
+    rbpImportPlace();
   }
   async function loadRbpDemons() {
     const look = ++rbpDemonsLook;
-    drawRbpDemons(null, true);
+    drawRbpImport(null, true);
     try {
       const demons = await host.call('compDemons', {});
       if (look !== rbpDemonsLook) return;
       S.rbp.comp = Array.isArray(demons) ? demons : [];
       S.demons = S.rbp.comp;   // the Overview's picker sees the same read
       const live = S.rbp.comp.filter((d) => d.inGame).length;
-      drawRbpDemons(!host.native ? 'Browser preview: stand-in demons.' : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.' : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.' : `${live} demons in your COMP.`);
+      drawRbpImport(!host.native ? 'Browser preview: stand-in demons.' : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.' : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.' : `${live} demons in your COMP.`);
       if (S.page === 'rebirth') render();
-    } catch (e) { if (look === rbpDemonsLook) drawRbpDemons(String(e && e.message || e)); }
+    } catch (e) { if (look === rbpDemonsLook) drawRbpImport(String(e && e.message || e)); }
   }
   rbpDemonsMenu.addEventListener('toggle', (ev) => {
+    if (ev.newState !== 'open') return;
+    const inp = $('#rbp-demons-search input'); inp.value = ''; drawRbpDemons(); inp.focus();
+  });
+  rbpImportMenu.addEventListener('toggle', (ev) => {
     if (ev.newState !== 'open') { rbpDemonsLook++; return; }
-    drawRbpDemons();
-    if (S.rbp.src === 'db') { const inp = $('#rbp-demons-search input'); inp.value = ''; drawRbpDemons(); inp.focus(); return; }
-    const b = $('#rbp-demons-list [aria-current="true"]') || $('#rbp-demons-list button');
-    if (b && rbpDemonsFor && rbpDemonsFor.matches(':focus-visible')) b.focus();
+    drawRbpImport();
+    const b = $('#rbp-import-list [aria-current="true"]') || $('#rbp-import-list button');
+    if (b && rbpImportFor && rbpImportFor.matches(':focus-visible')) b.focus();
   });
   $('#rbp-demons-search input').addEventListener('input', () => drawRbpDemons());
   $('#rbp-demons-search input').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { const b = $('#rbp-demons-list button'); if (b) b.click(); ev.preventDefault(); } else if (ev.key === 'ArrowDown') { const b = $('#rbp-demons-list button'); if (b) { b.focus(); ev.preventDefault(); } } });
   rbpDemonsMenu.addEventListener('keydown', (ev) => {
     if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
-    const rows = [...rbpDemonsMenu.querySelectorAll('.char, #rbp-demons-load')], i = rows.indexOf(document.activeElement);
+    const rows = [...rbpDemonsMenu.querySelectorAll('.char')], i = rows.indexOf(document.activeElement);
     const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
     if (next) { next.focus(); ev.preventDefault(); }
   });
-  $('#rbp-demons-load').addEventListener('click', loadRbpDemons);
-  $('#main').addEventListener('scroll', () => { if (rbpDemonsMenu.matches(':popover-open')) rbpDemonsMenu.hidePopover(); });
+  rbpImportMenu.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    const rows = [...rbpImportMenu.querySelectorAll('.char, #rbp-import-load')], i = rows.indexOf(document.activeElement);
+    const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
+    if (next) { next.focus(); ev.preventDefault(); }
+  });
+  $('#rbp-import-load').addEventListener('click', loadRbpDemons);
+  $('#main').addEventListener('scroll', () => { if (rbpDemonsMenu.matches(':popover-open')) rbpDemonsMenu.hidePopover(); if (rbpImportMenu.matches(':popover-open')) rbpImportMenu.hidePopover(); });
   /** The Build Planner's first page: "New build", then every saved build as a card. */
   function simHome(page) {
     const M = S.sim, builds = M.builds || [], n = simDraftCount();
@@ -6981,43 +7007,397 @@
     if (!S.rbp.plan) {
       let p = null;
       try { p = JSON.parse(store.get('rbp-plan') || 'null'); } catch (e) { p = null; }
+      S.rbp.plan = rbpPlanFrom(p);
+    }
+    return S.rbp.plan;
+  }
+  /** A plan made safe to use from anything kept or shared (a build, the unsaved plan, a pasted code): every field checked, the rest dropped. */
+  function rbpPlanFrom(p) {
+    if (!p || typeof p !== 'object') p = null;
+    {
       const ranks = (v) => (Array.isArray(v) && v.length === 12 ? v.map((x) => Math.max(0, Math.min(9, n0(x)))) : Array(12).fill(0));
-      S.rbp.plan = { level: p && p.levelSet && p.level ? Math.max(1, Math.min(99, n0(p.level))) : 93, levelSet: !!(p && p.levelSet), xpBonus: p ? n0(p.xpBonus) : 0, pre: ranks(p && p.pre), last: p ? n0(p.last) : 0,
+      const plan = { level: p && p.levelSet && p.level ? Math.max(1, Math.min(99, n0(p.level))) : 93, levelSet: !!(p && p.levelSet), xpBonus: p ? n0(p.xpBonus) : 0, pre: ranks(p && p.pre), last: p ? n0(p.last) : 0,
         fuse: !!(p && p.fuse), kind: p && p.kind >= 1 && p.kind <= 4 ? p.kind : 1, boost: !!(p && p.boost), post: ranks(p && p.post), postLast: p ? n0(p.postLast) : 0,
         slots: {}, view: p && p.view === 'boosts' ? 'boosts' : 'runes', picks: p && Array.isArray(p.picks) ? p.picks.map(n0).filter((v) => v >= 0 && v < 48) : [], kindAuto: !(p && p.kindAuto === false),
         boostPre: ranks(p && p.boostPre), boostPost: ranks(p && p.boostPost), itemKind: p && RBP_ITEM_KINDS.some(([k]) => k === p.itemKind) ? p.itemKind : 'rune',
         skills: p && p.skills && typeof p.skills === 'object' && Array.isArray(p.skills.slots) ? { key: String(p.skills.key || ''), slots: p.skills.slots.slice(0, 8).map(n0), touched: !!p.skills.touched } : null,
         equip: p && p.equip && typeof p.equip === 'object' && Array.isArray(p.equip.slots) ? { key: String(p.equip.key || ''), slots: p.equip.slots.slice(0, 4).map(n0), touched: !!p.equip.touched } : null };   // ranks the player raised by hand in the boosts view, over what the boosts need; the skill bar (for which demon)
       // the slots per rune: counts per kind (an older plan's set + extras becomes counts)
-      if (p && p.slots && typeof p.slots === 'object') Object.entries(p.slots).forEach(([i, sl]) => { if (sl && Array.isArray(sl.counts)) S.rbp.plan.slots[i] = { counts: sl.counts.map((v) => Math.max(0, Math.min(8, n0(v)))) }; });
+      if (p && p.slots && typeof p.slots === 'object') Object.entries(p.slots).forEach(([i, sl]) => { if (/^(?:[0-9]|1[01])$/.test(i) && sl && Array.isArray(sl.counts)) plan.slots[i] = { counts: sl.counts.slice(0, 4).map((v) => Math.max(0, Math.min(8, n0(v)))) }; });
+      plan.last = Math.max(0, Math.min(11, plan.last)); plan.postLast = Math.max(0, Math.min(11, plan.postLast));
+      return plan;
     }
-    return S.rbp.plan;
   }
-  const rbpSave = () => store.set('rbp-plan', JSON.stringify(S.rbp.plan));
+  /**
+   * Keeps what is in the planner. The unsaved plan (and the demon it is for) goes to the page's storage; a saved build
+   * keeps every change in its own entry of "rbp-builds", as it is made.
+   */
+  function rbpSave() {
+    const U = S.rbp;
+    if (U.id) {
+      const b = rbpBuilds().find((x) => x.id === U.id);
+      if (b) { Object.assign(b, rbpBuildOf(), { saved_at: new Date().toISOString() }); rbpStoreBuilds(); U.saveState = 'saved'; rbpStatus(); }
+      return;
+    }
+    store.set('rbp-plan', JSON.stringify(rbpPlan()));
+    store.set('rbp-src', U.src);
+    store.set('rbp-demon', U.demonId === null || U.demonId === undefined ? '' : String(U.demonId));
+    store.set('rbp-comp', U.compKey || '');
+    store.set('rbp-snap', U.compSnap ? JSON.stringify(U.compSnap) : '');
+  }
   /** The chosen demon: its Demon Database entry, whether it is already Mitama-fused, and its state (level, ranks, Mitama). */
   function rbpDemon() {
     const U = S.rbp, d = S.ddb.data;
     if (!d) return null;
     if (U.src === 'comp') {
-      const c = (U.comp || []).find((q) => q.key === U.compKey);
+      const c = U.compSnap || (U.comp || []).find((q) => q.key === U.compKey);   // an imported demon is kept as it was when imported
       if (!c) return null;
-      const F = S.fus.eng && S.fus.eng.F;
-      let x = d.demons.find((q) => q.id === c.type), fused = false;
-      if (!x && F) {   // a Mitama-fused type: the Fusion Planner's data says which demon it is the form of
-        const f = F.demons.find((row) => row[8] === c.type);
-        if (f) { x = d.demons.find((q) => q.id === f[0]) || d.demons.find((q) => q.name === f[1] && q.race === (F.races[f[2]] || '') && q.level === f[4]); fused = !!x; }
-      }
-      if (!x && c.type > 10000) {   // an event demon the Fusion Planner doesn't list (Santa Black Frost...): the server's Mitama type is its id + 10000
-        x = d.demons.find((q) => q.id === c.type - 10000 && q.mt);
-        fused = !!x;
-      }
-      if (!x) return { missing: c };
+      const r = rbpResolve(c);
+      if (!r) return { missing: c };
+      const { x, fused } = r;
       const ranks = Array.isArray(c.reunion) && c.reunion.length === 12 ? c.reunion.map((v) => Math.max(0, n0(v))) : Array(12).fill(0);
       return { x, comp: c, name: c.name, level: c.level, fused: fused || n0(c.mitamaType) > 0, kind: n0(c.mitamaType), mitamaRank: n0(c.mitamaRank), ranks,
         growth: n0(c.growthType) || (fused && x.mt ? x.mt.growth : x.growth), slots: Array.isArray(c.mitamaSlots) ? c.mitamaSlots.map(n0) : Array(96).fill(0), known: c.loaded !== false };
     }
     const x = d.demons.find((q) => q.id === U.demonId && rbpPlannable(q));   // a pick kept from before the list was narrowed may no longer be one
     return x ? { x, name: x.name, level: x.level, fused: false, kind: 0, mitamaRank: 0, ranks: Array(12).fill(0), growth: x.growth, slots: Array(96).fill(0), known: true } : null;
+  }
+  // ---------- Demon Planner builds ----------
+  // A demon build is a plan and the demon it is for: a Demon Database demon (`demonId`), or a COMP demon as it was
+  // imported (`comp`: its rebirth ranks, Mitama slots and skills as last read, kept with the build). The saved builds
+  // are in the page's storage ("rbp-builds"), as the unsaved plan is; the Build Planner's are files because they hang
+  // on a character, these hang on no one. The page has two views: the gallery ('home') and the planner ('edit').
+  function rbpBuilds() {
+    const U = S.rbp;
+    if (!U.builds) {
+      let list = [];
+      try { const v = JSON.parse(store.get('rbp-builds') || '[]'); if (Array.isArray(v)) list = v.filter((b) => b && typeof b === 'object' && typeof b.id === 'string' && b.plan && typeof b.plan === 'object'); } catch (e) { list = []; }
+      U.builds = list.map((b) => ({ ...b, name: String(b.name || 'Demon build').slice(0, 60) }));
+    }
+    return U.builds;
+  }
+  const rbpStoreBuilds = () => store.set('rbp-builds', JSON.stringify(rbpBuilds()));
+  const rbpNewId = () => 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const rbpClone = (v) => JSON.parse(JSON.stringify(v));
+  /** A COMP demon as a build keeps it: only what the planner reads of it. */
+  function rbpSnap(c) {
+    if (!c || typeof c !== 'object') return null;
+    const list = (v, len) => (Array.isArray(v) ? v.slice(0, len).map(n0) : null);
+    const icon = typeof c.icon === 'string' && c.icon.length < 400 && !c.icon.startsWith('data:') ? c.icon : null;
+    return { key: String(c.key || '').slice(0, 80), type: n0(c.type), name: String(c.name || '').slice(0, 60), level: Math.max(0, Math.min(99, n0(c.level))), race: String(c.race || '').slice(0, 40), mitama: String(c.mitama || '').slice(0, 20), icon,
+      growthType: n0(c.growthType), reunion: list(c.reunion, 12), mitamaType: n0(c.mitamaType), mitamaRank: n0(c.mitamaRank), mitamaSlots: list(c.mitamaSlots, 96),
+      skills: list(c.skills, 8), equipment: list(c.equipment, 4), loaded: c.loaded !== false };
+  }
+  /** What the planner holds now, as a build is written (the name and the plan, and the demon it is for). */
+  function rbpBuildOf() {
+    const U = S.rbp, live = U.src === 'comp' ? U.compSnap || (U.comp || []).find((q) => q.key === U.compKey) : null;
+    return { name: U.name, src: U.src, demonId: U.demonId === null || U.demonId === undefined ? null : U.demonId, comp: live ? rbpSnap(live) : null, plan: rbpClone(rbpPlan()) };
+  }
+  /** Puts a saved build in the planner (null: the unsaved plan, as it was kept). */
+  function rbpLoad(b) {
+    const U = S.rbp;
+    if (b) {
+      U.plan = rbpPlanFrom(b.plan); U.src = b.src === 'comp' ? 'comp' : 'db'; U.demonId = num(b.demonId);
+      U.compSnap = b.comp && typeof b.comp === 'object' ? b.comp : null; U.compKey = U.compSnap ? U.compSnap.key : null;
+      U.id = b.id; U.name = b.name; U.saveState = 'saved';
+    } else {
+      U.plan = null; U.src = store.get('rbp-src') === 'comp' ? 'comp' : 'db'; U.demonId = num(store.get('rbp-demon')); U.compKey = store.get('rbp-comp') || null;
+      try { const v = JSON.parse(store.get('rbp-snap') || 'null'); U.compSnap = v && typeof v === 'object' ? v : null; } catch (e) { U.compSnap = null; }
+      U.id = null; U.name = ''; U.saveState = '';
+    }
+    Object.assign(U, { naming: false, confirmDel: false });
+  }
+  const rbpStatus = () => { const el = S.rbp.statusEl; if (el) el.textContent = { saved: 'Saved', failed: 'Not saved' }[S.rbp.saveState] || ''; };
+  const rbpShow = () => { if (S.page !== 'rebirth') go('rebirth'); else { render(); $('#main').scrollTop = 0; } };
+  /** Opens a build in the planner (no id: the unsaved plan). */
+  function rbpOpen(id) {
+    const U = S.rbp, b = id ? rbpBuilds().find((x) => x.id === id) : null;
+    if (id && !b) { toast('err', 'That build can’t be opened', 'It is not among your saved demon builds.'); return; }
+    const same = U.view === 'edit' && U.id === (id || null);
+    if (S.page === 'rebirth' && !same) remember();   // (from another page, go() does it)
+    if (!same) rbpLoad(b);
+    U.view = 'edit';
+    rbpShow();
+  }
+  /** The page of builds. */
+  function rbpGoHome() {
+    const U = S.rbp;
+    if (S.page === 'rebirth' && U.view === 'edit') remember();
+    U.view = 'home';
+    rbpShow();
+  }
+  /** The saved builds under "Demon Planner" in the left bar; the one in the planner is marked instead of the entry itself. */
+  function drawRbpNav() {
+    const U = S.rbp, list = rbpBuilds(), open = U.navOpen && list.length > 0;
+    const editing = S.page === 'rebirth' && U.view === 'edit' && U.id ? U.id : null;
+    rbpNavToggle.hidden = !list.length;
+    rbpNavToggle.setAttribute('aria-expanded', String(open));
+    rbpNavToggle.dataset.tip = open ? 'Hide your saved demon builds' : `Show your ${list.length} saved demon build${list.length === 1 ? '' : 's'}`;
+    rbpNavBox.hidden = !open;
+    rbpNavBox.replaceChildren(...list.map((b) => h('button', { type: 'button', class: 'nav-subitem', 'aria-current': b.id === editing ? 'page' : null, 'data-tip': b.name, onclick: () => rbpOpen(b.id) }, b.name)));
+    const entry = nav.querySelector('.nav-item[data-page="rebirth"]');
+    if (entry && editing && open) entry.removeAttribute('aria-current');
+  }
+  const rbpNewName = (base) => {
+    const names = new Set(rbpBuilds().map((b) => b.name));
+    if (base) {
+      const fit = (ending) => String(base).slice(0, 60 - ending.length).trimEnd() + ending;
+      let n = fit(' copy'), i = 2;
+      while (names.has(n)) n = fit(` copy ${i++}`);
+      return n;
+    }
+    let i = names.size + 1; while (names.has(`Demon build ${i}`)) i++;
+    return `Demon build ${i}`;
+  };
+  /** The unsaved plan becomes a saved build with this name; "New build" then starts from nothing again. */
+  function rbpSaveDraft(name) {
+    const U = S.rbp;
+    U.name = name;
+    const id = rbpNewId();
+    rbpBuilds().push({ id, ...rbpBuildOf(), saved_at: new Date().toISOString() });
+    rbpStoreBuilds();
+    ['rbp-plan', 'rbp-src', 'rbp-demon', 'rbp-comp', 'rbp-snap'].forEach((k) => store.set(k, ''));
+    Object.assign(U, { id, saveState: 'saved', naming: false });
+    drawRbpNav();
+  }
+  /** A copy of a build (b: a saved one, or { name, ...rbpBuildOf() }); `open`: into the planner. */
+  function rbpDuplicate(b, open) {
+    const id = rbpNewId();
+    rbpBuilds().push({ id, name: rbpNewName(b.name), src: b.src, demonId: b.demonId, comp: b.comp ? rbpClone(b.comp) : null, plan: rbpClone(b.plan), saved_at: new Date().toISOString() });
+    rbpStoreBuilds(); drawRbpNav();
+    if (open) rbpOpen(id); else render();
+  }
+  function rbpDelete(id) {
+    const U = S.rbp;
+    U.builds = rbpBuilds().filter((b) => b.id !== id);
+    rbpStoreBuilds();
+    if (U.id === id) { U.view = 'home'; rbpLoad(null); }
+    drawRbpNav(); render();
+  }
+  // --- sharing: a text code ("BABELD1-…") that another player pastes into "Import build". It holds the plan and the demon
+  //     it is for (a Demon Database demon's id, or a COMP demon's ranks and Mitama slots); no build name. A pasted code
+  //     is a stranger's input: it is only ever read as data (JSON of numbers), every field is checked and cut to size
+  //     (rbpPlanFrom, rbpSnap), and a demon the Demon Database doesn't have is refused. Importing adds a new build. ---
+  const RBP_CODE = 'BABELD1-';
+  function rbpCode(b) {
+    const bytes = new TextEncoder().encode(JSON.stringify({ s: b.src, d: b.demonId, c: b.src === 'comp' ? b.comp : null, p: b.plan }));
+    let bin = ''; bytes.forEach((v) => { bin += String.fromCharCode(v); });
+    return RBP_CODE + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  /** The build a code holds ({ src, demonId, comp, plan }); throws a plain-words reason when it holds none. */
+  function rbpReadCode(text) {
+    const t = String(text || '').replace(/\s+/g, '');
+    if (!t.startsWith(RBP_CODE)) throw new Error(t.startsWith('BABEL1-') ? 'That is a Build Planner code. Paste it in the Build Planner’s “Import build”.' : 'That is not a demon build code: it starts with “BABELD1-”.');
+    if (t.length > 12000) throw new Error('That code is too long to be a demon build.');
+    let o;
+    try {
+      const bin = atob(t.slice(RBP_CODE.length).replace(/-/g, '+').replace(/_/g, '/'));
+      o = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+    } catch (e) { throw new Error('The code is damaged or cut short: copy it again, all of it.'); }
+    if (!o || typeof o !== 'object' || (o.s !== 'db' && o.s !== 'comp')) throw new Error('The code holds no demon build.');
+    const d = S.ddb.data;
+    if (!d) throw new Error('The demon list is still loading: try again in a moment.');
+    const b = { src: o.s, demonId: null, comp: null, plan: rbpPlanFrom(o.p) };
+    if (o.s === 'comp') {
+      b.comp = rbpSnap(o.c);
+      if (!b.comp || !rbpResolve(b.comp)) throw new Error('The demon in the code is not in the Demon Database, so it can’t be planned here.');
+    } else {
+      b.demonId = n0(o.d);
+      const x = d.demons.find((q) => q.id === b.demonId);
+      if (!x) throw new Error('The demon in the code is not in the Demon Database, so it can’t be planned here.');
+    }
+    return b;
+  }
+  /** What a build is, in a few words: its demon and what is planned. { x, name, level, tags } (x: the database entry, or null). */
+  function rbpSummary(b) {
+    const d = S.ddb.data;
+    if (!d) return null;
+    let x = null, name = '', level = 0, fused = false;
+    if (b.src === 'comp' && b.comp) { const r = rbpResolve(b.comp); if (r) x = r.x; name = b.comp.name || (x ? x.name : ''); level = n0(b.comp.level); fused = n0(b.comp.mitamaType) > 0 || !!(r && r.fused); }
+    else { x = d.demons.find((q) => q.id === n0(b.demonId)) || null; if (x) { name = x.name; level = x.level; } }
+    const plan = rbpPlanFrom(b.plan);
+    const runes = plan.pre.reduce((n, v, i) => n + (v > 0 || plan.post[i] > 0 ? 1 : 0), 0);
+    const tags = [];
+    if (plan.view === 'boosts') tags.push(plan.picks.length ? `${plan.picks.length} boost${plan.picks.length === 1 ? '' : 's'} picked` : 'Boosts view');
+    else if (runes) tags.push(`${runes} rune${runes === 1 ? '' : 's'} planned`);
+    if (b.src === 'comp' && n0(b.comp && b.comp.mitamaType) > 0) tags.push(`${RBP_KINDS[n0(b.comp.mitamaType) - 1] || ''} Mitama`.trim());
+    else if (plan.fuse) tags.push(`Fusing with ${RBP_KINDS[plan.kind - 1]}`);
+    if (b.src === 'comp') tags.push('From your COMP');
+    return { x, name: name || 'Unknown demon', level, tags };
+  }
+  const rbpCodeDlg = () => $('#sim-code');   // the Build Planner's share / import dialog, with this planner's words in it
+  /** "Share": the code of a build ({ src, demonId, comp, plan }), to copy. */
+  async function rbpShare(b, name) {
+    const dlg = rbpCodeDlg(), code = rbpCode(b);
+    ++simCodeSeq;
+    $('#sim-code-title').textContent = 'Share demon build';
+    const box = h('textarea', { class: 'input sim-code-box', readonly: true, rows: 4, spellcheck: 'false', 'aria-label': 'Build code' });
+    box.value = code;
+    box.addEventListener('focus', () => box.select());
+    const copy = h('button', { type: 'button', class: 'btn btn-primary', onclick: async () => {
+      if (await copyText(code)) flashLabel(copy, 'Copied');
+      else { box.focus(); box.select(); toast('info', 'Copy it by hand', 'The code is selected: press Ctrl+C.'); }
+    } }, 'Copy code');
+    simFill($('#sim-code-body'),
+      h('p', { class: 'field-help', text: `The code of ${name ? `“${name}”` : 'this build'}. Send it to another player: they paste it into “Import build” in their Demon Planner.` }),
+      box,
+      h('div', { class: 'field-row' }, copy, h('span', { class: 'field-help sim-code-count', text: `${code.length} characters` })),
+      h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'The code holds the plan and the demon it is for (for one of your COMP demons: its rebirth ranks and Mitama slots as last read). It does not hold your character’s name or the build’s name.' })));
+    if (!dlg.open) dlg.showModal();
+    copy.focus();
+  }
+  /** "Import build": paste a code, see what it holds, and save it as a new build. */
+  function rbpImportOpen() {
+    const dlg = rbpCodeDlg(), mine = ++simCodeSeq;
+    let build = null;
+    $('#sim-code-title').textContent = 'Import demon build';
+    const box = h('textarea', { class: 'input sim-code-box', rows: 4, spellcheck: 'false', autocomplete: 'off', maxlength: 12000, placeholder: 'BABELD1-…', 'aria-label': 'Build code' });
+    const status = h('p', { class: 'field-help sim-code-status', role: 'status' });
+    const preview = h('div', { class: 'sim-code-preview' });
+    const names = new Set(rbpBuilds().map((b) => b.name));
+    let fresh = 'Imported demon build', i = 2;
+    while (names.has(fresh)) fresh = `Imported demon build ${i++}`;
+    const nameIn = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: fresh, 'aria-label': 'Name of the build', spellcheck: 'false' });
+    const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', disabled: true, onclick: () => save() }, 'Save as build');
+    const foot = h('div', { class: 'sim-code-foot', hidden: true }, h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Name' }), nameIn), saveBtn);
+    const say = (text, bad) => { status.textContent = text || ''; status.classList.toggle('bad', !!bad); };
+    function read() {
+      const text = box.value.trim();
+      build = null; saveBtn.disabled = true; foot.hidden = true; simFill(preview);
+      if (!text) { say(''); return; }
+      try { build = rbpReadCode(text); } catch (e) { say(String((e && e.message) || e), true); return; }
+      say('');
+      const s = rbpSummary(build);
+      simFill(preview, h('div', { class: 'sim-code-list' },
+        h('div', { class: 'sim-code-row' }, s && s.x ? ddbImg(s.x.icon || (S.ddb.data && S.ddb.data.noIcon), 32, 'dm-icon rbp-dm-icon') : h('span'),
+          h('span', { class: 'sim-code-piece' }, h('b', { text: s ? s.name : '' }), h('span', { class: 'dgt-line', text: s && s.x ? `Lv ${s.level} · ${s.x.race}` : '' }))),
+        s && s.tags.length ? h('div', { class: 'sim-code-ranks' }, s.tags.map((t) => h('span', { class: 'tag', text: t }))) : h('p', { class: 'note', text: 'Nothing is planned in it yet.' })));
+      foot.hidden = false; saveBtn.disabled = false;
+    }
+    function save() {
+      if (!build || mine !== simCodeSeq) return;
+      const name = nameIn.value.replace(/\s+/g, ' ').trim() || fresh, id = rbpNewId();
+      rbpBuilds().push({ id, name, src: build.src, demonId: build.demonId, comp: build.comp, plan: build.plan, saved_at: new Date().toISOString() });
+      rbpStoreBuilds(); drawRbpNav();
+      dlg.close();
+      toast('ok', `Imported “${name}”`, 'It is a new build of yours. Nothing else was changed.', 4000);
+      rbpOpen(id);
+    }
+    let timer = null;
+    box.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(read, 200); });
+    nameIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') save(); });
+    simFill($('#sim-code-body'),
+      h('p', { class: 'field-help', text: 'Paste a demon build code another player shared with you. You see what it holds before anything is saved.' }),
+      box, status, preview, foot,
+      h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'A code is only numbers: a plan and the demon it is for, each checked against the game data. Importing adds a new build and changes nothing else.' })));
+    if (!dlg.open) dlg.showModal();
+    box.focus();
+  }
+  /** One saved build as a card in the gallery. */
+  function rbpCard(b) {
+    const s = rbpSummary(b);
+    const acts = h('span', { class: 'sim-build-acts' });
+    // (the path, not ev.target.closest: a button of the actions is replaced by the click itself, and then has no parent to find)
+    const el = h('div', { class: 'dg-tile sim-build rbp-build', onclick: (ev) => { if (!ev.composedPath().includes(acts)) rbpOpen(b.id); } });
+    const drawActs = (asking) => simFill(acts, asking
+      ? [h('span', { class: 'dgt-line', text: 'Delete it?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => rbpDelete(b.id) }, 'Delete'),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => drawActs(false) }, 'Keep')]
+      : [h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Share ${b.name}`, 'data-tip': 'Share: a code another player can import', onclick: () => rbpShare(b, b.name) }, icon('share')),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Duplicate ${b.name}`, 'data-tip': 'Duplicate', onclick: () => rbpDuplicate(b, false) }, icon('copy')),
+        h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Delete ${b.name}`, 'data-tip': 'Delete', onclick: () => drawActs(true) }, icon('trash'))]);
+    drawActs(false);
+    const pic = h('span', { class: 'rbp-build-pic' + (s && s.x ? '' : ' none') }, s && s.x ? ddbImg(b.comp && b.comp.icon ? b.comp.icon : s.x.icon || (S.ddb.data && S.ddb.data.noIcon), 56, 'rbp-build-img') : null);
+    simFill(el, pic, h('span', { class: 'sim-build-body' },
+      h('span', { class: 'sim-build-head' },
+        h('span', { class: 'dgt-id' }, h('button', { type: 'button', class: 'sim-build-name', 'data-tip': `Open ${b.name}`, text: b.name }),
+          h('span', { class: 'dgt-line', text: s ? (s.x ? `${s.name} · Lv ${s.level}` : `${s.name} is not in the Demon Database`) : 'Loading the demons…' })),
+        acts),
+      s && s.tags.length ? h('span', { class: 'dgt-tags' }, s.tags.map((t) => h('span', { class: 'tag', text: t }))) : null,
+      b.saved_at ? h('span', { class: 'dgt-line sim-build-saved', text: `Saved ${when(b.saved_at)}` }) : null));
+    return el;
+  }
+  /** The page of builds: "New build" (the unsaved plan, or a fresh one), "Import build", and every saved build. */
+  function rbpHome(page) {
+    const builds = rbpBuilds();
+    // the unsaved plan as it was kept: the demon it is for, if any, and whether anything is planned
+    let kept = null;
+    try { kept = { src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), comp: JSON.parse(store.get('rbp-snap') || 'null'), plan: JSON.parse(store.get('rbp-plan') || 'null') }; } catch (e) { kept = null; }
+    const ks = kept && S.ddb.state === 'ready' && (kept.src === 'comp' ? kept.comp : kept.demonId !== null) ? rbpSummary(kept) : null;
+    page.append(pageHead('Your demon builds. Open one to keep working on it, or start a new one. Nothing here touches the game or your demons.'));
+    page.append(h('div', { class: 'sim-builds rbp-builds' },
+      h('div', { class: 'dg-tile sim-build sim-new', onclick: (ev) => { if (!ev.target.closest('.sim-new-import')) rbpOpen(null); } },
+        h('button', { type: 'button', class: 'sim-new-main' },
+          h('span', { class: 'sim-new-plus', 'aria-hidden': 'true' }, icon('plus')),
+          h('span', { class: 'dgt-id' }, h('span', { class: 'dgt-name', text: 'New build' }),
+            h('span', { class: 'dgt-line', text: ks && ks.x ? `Continue where you left off: ${ks.name}, not saved yet` : 'Pick any demon, or import one from your COMP' }))),
+        h('button', { type: 'button', class: 'btn btn-sm btn-ghost sim-new-import', 'data-tip': 'Paste a code another player shared with you', onclick: () => rbpImportOpen() },
+          h('span', { class: 'btn-icon', 'aria-hidden': 'true' }, icon('download')), 'Import build')),
+      builds.map(rbpCard)));
+    page.append(h('p', { class: 'note', text: builds.length
+      ? 'A saved build keeps every change you make to it. Each card says which demon it is for and what is planned.'
+      : 'No saved builds yet. Start a new one and press “Save build”: it then shows up here and under Demon Planner in the left bar.' }));
+    return page;
+  }
+  /** The planner's top line: back to the builds, the build's name, and what can be done with it. */
+  function rbpTitleBar() {
+    const U = S.rbp, bar = h('div', { class: 'sim-title' });
+    function draw() {
+      const back = h('button', { type: 'button', class: 'btn btn-ghost sim-back', 'data-tip': 'All your demon builds', onclick: rbpGoHome }, h('span', { class: 'chev' }, icon('chevron')), 'Builds');
+      if (!U.id && !U.naming) {
+        simFill(bar, back, h('b', { class: 'sim-name-text', text: 'New build' }), h('span', { class: 'card-sub', text: 'not saved' }),
+          h('button', { type: 'button', class: 'btn btn-primary', 'data-tip': 'Keep this build: it gets a name, a card and a line under Demon Planner', onclick: () => { U.naming = true; draw(); } }, 'Save build…'),
+          h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Share this build', 'data-tip': 'Share: a code another player can import', onclick: () => rbpShare(rbpBuildOf(), '') }, icon('share')));
+        return;
+      }
+      if (!U.id) {
+        const input = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: rbpNewName(), 'aria-label': 'Name of the build', spellcheck: 'false' });
+        const save = () => {
+          const name = input.value.replace(/\s+/g, ' ').trim();
+          if (!name) { input.focus(); return; }
+          rbpSaveDraft(name); draw();
+          toast('ok', `Saved “${U.name}”`, 'It keeps every change you make to it from now on.', 4000);
+        };
+        input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') save(); else if (ev.key === 'Escape') { ev.stopPropagation(); U.naming = false; draw(); } });
+        simFill(bar, back, input, h('button', { type: 'button', class: 'btn btn-primary', onclick: save }, 'Save'),
+          h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => { U.naming = false; draw(); } }, 'Cancel'));
+        input.focus(); input.select();
+        return;
+      }
+      const name = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: U.name, 'aria-label': 'Name of the build', 'data-tip': 'Click to rename', spellcheck: 'false' });
+      name.addEventListener('input', () => {
+        const v = name.value.replace(/\s+/g, ' ').trim();
+        if (!v) return;
+        U.name = v; rbpSave(); drawRbpNav();
+      });
+      name.addEventListener('change', () => { if (!name.value.trim()) name.value = U.name; });
+      name.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') name.blur(); });
+      U.statusEl = h('span', { class: 'card-sub', role: 'status', 'data-tip': 'A saved build keeps every change as you make it' });
+      simFill(bar, back, name, U.statusEl,
+        U.confirmDel
+          ? [h('span', { class: 'card-sub', text: 'Delete this build?' }), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => rbpDelete(U.id) }, 'Delete'),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { U.confirmDel = false; draw(); } }, 'Keep')]
+          : [h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Share this build', 'data-tip': 'Share: a code another player can import', onclick: () => rbpShare(rbpBuildOf(), U.name) }, icon('share')),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Duplicate this build', 'data-tip': 'Duplicate: a copy to change freely', onclick: () => rbpDuplicate(rbpBuildOf(), true) }, icon('copy')),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-square', 'aria-label': 'Delete this build', 'data-tip': 'Delete this build', onclick: () => { U.confirmDel = true; draw(); } }, icon('trash'))]);
+      rbpStatus();
+    }
+    draw();
+    return bar;
+  }
+  /** A COMP demon's Demon Database entry, and whether its type is a Mitama-fused one; null when the database has none. */
+  function rbpResolve(c) {
+    const d = S.ddb.data, F = S.fus.eng && S.fus.eng.F;
+    if (!d) return null;
+    let x = d.demons.find((q) => q.id === c.type), fused = false;
+    if (!x && F) {   // a Mitama-fused type: the Fusion Planner's data says which demon it is the form of
+      const f = F.demons.find((row) => row[8] === c.type);
+      if (f) { x = d.demons.find((q) => q.id === f[0]) || d.demons.find((q) => q.name === f[1] && q.race === (F.races[f[2]] || '') && q.level === f[4]); fused = !!x; }
+    }
+    if (!x && c.type > 10000) {   // an event demon the Fusion Planner doesn't list (Santa Black Frost...): the server's Mitama type is its id + 10000
+      x = d.demons.find((q) => q.id === c.type - 10000 && q.mt);
+      fused = !!x;
+    }
+    return x ? { x, fused } : null;
   }
   /** Whether "Any demon" offers it: it has a Mitama form (the only demons the server Mitama-fuses) and the player can get it. */
   const rbpPlannable = (x) => !!x.mt && ddbCanOwn(x);
@@ -7453,17 +7833,18 @@
   function pageRebirth() {
     const U = S.rbp, page = h('div', { class: 'page page-rbp' });
     loadRebirth();
+    if (U.view === 'home') return rbpHome(page);
+    page.append(h('div', { class: 'page-head sim-head' }, rbpTitleBar()));
     page.append(pageHead('Plan a demon’s rebirths and its Mitama: set the rank of each rune, fuse it with a Mitama, fill its slots, and see what it costs and what the demon becomes.',
       h('div', { class: 'rbp-headright' },
         h('div', { class: 'seg', role: 'group', 'aria-label': 'How to plan' },
           [['runes', 'Plan the runes'], ['boosts', 'Pick boosts first']].map(([id, label]) =>
             h('button', { type: 'button', 'aria-pressed': String((rbpPlan().view || 'runes') === id), 'data-tip': id === 'runes' ? 'Set each rune’s rank, the fusion and the slots yourself' : 'Pick the Mitama set boosts you want; the ranks, Mitamas and costs follow from them (an experiment)',
               onclick: () => { rbpPlan().view = id; rbpSave(); render(); } }, label))),
-        h('div', { class: 'seg', role: 'group', 'aria-label': 'Start from' },
-          [['db', 'Any demon'], ['comp', 'My COMP']].map(([id, label]) =>
-            h('button', { type: 'button', 'aria-pressed': String(U.src === id), 'data-tip': id === 'db' ? 'A fresh demon from the Demon Database: no ranks, no Mitama' : 'One of your COMP demons as last read from the game, with its rebirth ranks and Mitama slots',
-              onclick: () => { U.src = id; store.set('rbp-src', id); render(); } }, label))),
-        h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Back to no targets, no fusion, no Mitamas', onclick: () => { U.plan = null; store.set('rbp-plan', ''); render(); } }, 'Reset the plan'))));
+        h('button', { type: 'button', class: 'btn btn-sm sim-import', popovertarget: 'rbp-import', 'aria-haspopup': 'menu',
+          'data-tip': 'Plan one of your COMP demons as last read from the game, with its rebirth ranks and Mitama slots. Nothing of the demon is changed',
+          onclick: (ev) => { rbpImportFor = ev.currentTarget; } }, 'Import demon', h('span', { class: 'chev down' }, icon('chevron'))),
+        h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Back to no targets, no fusion, no Mitamas', onclick: () => { U.plan = rbpPlanFrom(null); rbpSave(); render(); } }, 'Reset the plan'))));
     if (U.state !== 'ready' || S.ddb.state !== 'ready' || S.fus.state === 'loading' || S.fus.state === 'idle' || S.dcm.state === 'loading' || S.dcm.state === 'idle') {
       page.append(h('p', { class: 'note', text: U.state === 'failed' ? 'The planner data could not be loaded (rebirth-planner.json is missing beside the page).' : S.ddb.state === 'failed' ? 'The demon list could not be loaded (demon-db.json is missing beside the page).' : 'Loading the rebirth tables…' }));
       return page;
@@ -7472,7 +7853,7 @@
     const D = rbpDemon();
     page.append(rbpDemonCard(P, plan, d, D));
     if (!D || D.missing) {
-      page.append(h('p', { class: 'note', text: D && D.missing ? `${D.missing.name} isn’t in the Demon Database, so it can’t be planned here.` : U.src === 'comp' ? 'Pick one of your demons above.' : 'Pick a demon above to start planning.' }));
+      page.append(h('p', { class: 'note', text: D && D.missing ? `${D.missing.name} isn’t in the Demon Database, so it can’t be planned here.` : U.src === 'comp' ? 'Import one of your demons at the top right, or pick any demon above.' : 'Pick a demon above, or import one of your COMP demons at the top right, to start planning.' }));
       return page;
     }
     // ---- the phases: rebirths before the Mitama fusion (none for a demon already fused), the fusion, rebirths after it, the slots ----
@@ -7685,8 +8066,8 @@
     const src = D && D.comp && D.comp.icon ? D.comp.icon : x && x.icon ? x.icon : null;
     if (src) { const img = h('img', { src, alt: '' }); img.onerror = () => img.remove(); pic.append(img); }
     if (x && D.fused) mitamaMark(pic, true);
-    const label = U.src === 'comp' && U.compState !== 'ready' ? 'Looking for your demons…' : D && !D.missing ? D.name : D && D.missing ? D.missing.name : U.src === 'comp' ? 'Pick one of your demons' : 'Pick a demon';
-    const name = h('button', { type: 'button', class: 'name-btn', popovertarget: 'rbp-demons', 'aria-haspopup': 'menu', 'data-tip': U.src === 'comp' ? 'Pick one of your COMP demons' : 'Pick any demon from the Demon Database',
+    const label = U.src === 'comp' && U.compState !== 'ready' ? 'Looking for your demons…' : D && !D.missing ? D.name : D && D.missing ? D.missing.name : 'Pick a demon';
+    const name = h('button', { type: 'button', class: 'name-btn', popovertarget: 'rbp-demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick any demon from the Demon Database (or import one of your COMP demons at the top right)',
       onclick: (ev) => { rbpDemonsFor = ev.currentTarget; } }, label, h('span', { class: 'chev down' }, icon('chevron')));
     const id = h('div', { class: 'demon-id' }, h('h3', { class: 'demon-name' }, name));
     if (x) {
@@ -7699,8 +8080,9 @@
             ...P.mitama.kinds.map((K) => h('button', { type: 'button', class: 'rbp-kindchip', style: `--k:var(--mt-${K.type})`, 'aria-pressed': String(!(plan.view === 'boosts' && plan.kindAuto) && plan.kind === K.type),
               'data-tip': `${K.demonName}: the Mitama rank bonus raises ${(K.ranks[12] || []).map(([, l]) => l).join(', ')}`, onclick: () => { plan.kind = K.type; plan.kindAuto = false; rbpSave(); render(); } }, rbpKindIcon(K.type - 1), K.name)),
             plan.view === 'boosts' ? h('button', { type: 'button', class: 'rbp-kindchip rbp-kindauto', 'aria-pressed': String(!!plan.kindAuto), 'data-tip': 'The kind the picked boosts use most', onclick: () => { plan.kindAuto = true; rbpSave(); render(); } }, 'Auto') : null),
-        D.comp && D.known === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed this demon: its ranks and slots were not read. Open its status window in game and read the demons again.', text: 'Ranks not read' }) : h('span', { hidden: true }));
-    } else id.append(h('span', { class: 'tag tag-off', text: U.src === 'comp' ? 'Your COMP' : 'Demon Database' }));
+        D.comp && D.known === false ? h('span', { class: 'tag tag-off', 'data-tip': 'The game only listed this demon: its ranks and slots were not read. Open its status window in game and read the demons again.', text: 'Ranks not read' }) : h('span', { hidden: true }),
+        D.comp ? h('span', { class: 'tag tag-off', 'data-tip': 'Imported from your COMP: its rebirth ranks and Mitama slots are the ones last read from the game', text: 'From your COMP' }) : null);
+    } else id.append(h('span', { class: 'tag tag-off', text: 'Demon Database' }));
     const inputs = h('div', { class: 'rbp-inputs' },
       h('label', { class: 'rbp-field', 'data-tip': 'The level the stats on the right are shown at' }, 'Stats at level', rbpNum(plan.level, 1, 99, (v) => { plan.level = v; plan.levelSet = true; rbpSave(); render(); })),
       h('label', { class: 'rbp-field', 'data-tip': 'Your XP bonus from gear and incense when you use the apples at Vivian: the apples’ XP goes up by it' }, 'XP bonus', rbpNum(plan.xpBonus, -90, 500, (v) => { plan.xpBonus = v; rbpSave(); render(); }), '%'));

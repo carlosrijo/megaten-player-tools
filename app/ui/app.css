@@ -1899,7 +1899,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 :root:not([data-theme="dark"]) .rbp-capbar i { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 75%, black), inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -3px 0 rgba(0, 0, 0, .28); }
 .rbp-namebtn { font: 600 15px/1.3 var(--font-display); margin: 0; padding: 6px 8px 6px 10px; border: 1px solid var(--border-strong); background: var(--surface); }
 .rbp-namebtn:hover { background: var(--surface-2); }
-#rbp-demons .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
+#rbp-demons .dm-icon img, #rbp-import .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
 /* the demon band as the Overview's: the inputs sit at the right of the band */
 .rbp-demon.demon-card { align-items: center; }
 .rbp-demon .rbp-inputs { align-self: center; }
@@ -1997,10 +1997,10 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 /* the runestone list scrolls past about eight rows, so the sticky cost card stays short */
 .rbp-needlist { max-height: 212px; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
 /* the same thin scrollbar as the Overview's demon picker (#demons .char-list) on the runestone list and the planner's own picker */
-.rbp-needlist::-webkit-scrollbar, #rbp-demons .char-list::-webkit-scrollbar { width: 8px; }
-.rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
+.rbp-needlist::-webkit-scrollbar, #rbp-demons .char-list::-webkit-scrollbar, #rbp-import .char-list::-webkit-scrollbar { width: 8px; }
+.rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb, #rbp-import .char-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
 .rbp-needlist { padding-right: 0; }
-#rbp-demons .menu-note:empty { display: none; }   /* no note under the Any-demon list */
+#rbp-demons .menu-note:empty, #rbp-import .menu-note:empty { display: none; }   /* no note under the Any-demon list */
 
 /* Dungeon Guides (Tools): per dungeon its outcomes, each with numbered steps (the Quest Guide's step list and lines) */
 .guide-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
@@ -2239,3 +2239,10 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .guide-out-btn:hover .guide-res-text { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 .guide-out.open > .q-steps { margin-left: 22px; }
 .guide-out.open > .guide-fails { margin-left: 22px; }
+/* the Demon Planner's builds: the gallery's cards (the Build Planner's, with the demon's picture where the pieces are) */
+.rbp-build-pic { width: 56px; height: 56px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; overflow: hidden; align-self: start; }
+.rbp-build-pic.none { opacity: .5; }
+.rbp-build-img { display: block; width: 56px; height: 56px; }
+.rbp-build-img img { width: 56px; height: 56px; display: block; }
+.sim-build.rbp-build:not(.sim-new) { min-height: 110px; }
+.rbp-builds .sim-new { min-height: 110px; }
