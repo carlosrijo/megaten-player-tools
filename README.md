@@ -370,7 +370,8 @@ NewMoon may have changed. Not checked in game yet. The page data is `app\ui\digi
 
 Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before you spend anything:
 
-- **The demon**: any demon from the Demon Database (fresh: no ranks), or **My COMP**: one of your own demons as BABEL
+- **The demon**: any demon from the Demon Database that the game can Mitama-fuse and that you can get some way (a
+  contract, a fusion, a DCM, an exchange or a gift; fresh: no ranks), or **My COMP**: one of your own demons as BABEL
   last read it, with its real rebirth ranks, Mitama and slots. Set the level the stats are shown at (93 by default) and
   your XP bonus from gear and incense (it lowers the apples). The runes wear the game's own glyphs and the Mitamas
   their own pictures, cut from your game folder like the other pages' pictures.
