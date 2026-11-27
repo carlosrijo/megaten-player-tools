@@ -3333,7 +3333,7 @@
     if (k.newmoon) notes.push('NewMoon’s own: the public server files don’t have it, so this comes from the game’s own description.');
     if (k.seasonal) notes.push('Only from a seasonal event, which may not be running.');
     if (!k.sure) notes.push('Worked out from the game files, not checked in game.');
-    if (k.enSrc === 'translated') notes.push('The game names it only in Japanese; the English name is a translation.');
+    if (k.enSrc === 'translated') notes.push(`The game names it only in Japanese (${k.jp}); the English name is BABEL’s translation.`);
     if (notes.length) box.append(h('p', { class: 'note', text: notes.join(' ') }));
     return box;
   }
@@ -3379,7 +3379,8 @@
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : '') + (held && !has(k) ? ' key-missing' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')),
-            h('span', null, h('span', { class: 'key-en', text: k.en }),
+            // a translated name is greyed like the other pages' (the game names it only in Japanese, shown under it)
+            h('span', null, k.enSrc === 'translated' ? h('span', { class: 'key-en tl-name', 'data-tip': TL_TIP(k.jp, 'key item'), text: k.en }) : h('span', { class: 'key-en', text: k.en }),
               k.enSrc === 'translated' ? h('span', { class: 'key-tr', tabindex: 0, 'data-tip': 'The game names it only in Japanese; this is a translation', text: 'translated' }) : null,
               k.jp && k.jp.normalize('NFKC') !== k.en.normalize('NFKC') ? h('span', { class: 'key-jp', lang: 'ja', text: k.jp }) : null))),
           h('td', { class: 'key-does' }, k.unlocks && k.unlocks !== 'Not known.' ? keyFirst(k.unlocks) : h('span', { class: 'zero', text: 'Not known' })),

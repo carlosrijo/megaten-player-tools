@@ -225,8 +225,8 @@ They appear first, marked "IMAGINE note".
 
 Under **Tools** in the left bar. Lists the game's key items (the 282 it shows; its hidden progress flags are left out):
 which ones your character has, what each one does and how to get it. The game names most key items only in Japanese:
-each shows its English name, from the game's own English text where there is one, else a translation marked
-"translated", with the Japanese name greyed under it. Chips filter by kind (modes and access such as WILDCAT and
+each shows its English name, from the game's own English text where there is one, else BABEL's translation, greyed
+out and marked "translated" like the other pages' translations, with the Japanese name greyed under it. Chips filter by kind (modes and access such as WILDCAT and
 BEARCAT, licenses, COMP and system, shops and people, expertise cap, story, quest items, records, Electronic Corridor
 programs, seasonal) and by **You have** / **Missing**. Click one for how to get it, what it does in full and the quests
 involved, each with a link to it in the Quest Database. Which ones you have is read from the game every few seconds while
