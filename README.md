@@ -342,17 +342,11 @@ them the list shows empty boxes.
 
 ### Tools: Fusion Planner
 
-Under **Tools** in the left bar. Three views:
+Under **Tools** in the left bar. Two views:
 
 - **Fuse demons**: pick two demons (or three for a tri-fusion) and see what they make, with why: the races, the
   fusion level worked out from their levels, elemental rank up or down, special fusions and the plugin they need. Each
   demon starts at its base level; type its real level, since the result depends on it.
-- **Find a recipe**: pick the demon you want and get every way to make it: special fusions, every
-  two-demon fusion and every tri-fusion, each as a card in an even grid. **Easiest to get first** (the default) puts the
-  recipes from demons you can simply go and get on top, and marks those demons **Contract** or **PG**; **Lowest levels
-  first** sorts by the levels added up. A special fusion that needs a plugin says which key item; hover it for how to get
-  it in game. Recipes with an elemental are marked **Rank up** or **Rank down**. Click any demon in a recipe to see how to
-  make that one too ("Back to" returns). **Show the whole tree** opens the demon in the Fusion tree.
 - **Fusion tree**: pick the demon you want and get the whole way to it from scratch, as a pyramid: the demon on top,
   what it is fused from under it, down to demons you can simply go and get.
   - **What it starts from**: demons you can contract all year, and demons a **Summon PG** gives when an NPC trades that
@@ -366,16 +360,27 @@ Under **Tools** in the left bar. Three views:
   - Under the tree, **Fusions in order** lists each fusion, ingredients first. Last on the page, **Get these first**
     lists every demon to get with how many, where (hover for every place) and the level to raise it to, and the plugins
     the special fusions need.
-  - **Click a demon** in the tree for where to get it, why the fusion gives it, and every other way to get it (easiest
-    first): **Use this way** changes the tree, **Back to the easiest way** undoes it. **I already have it** stops the tree
-    there for one of them (it is remembered) and uses that demon where it helps.
+  - **Click a demon** in the tree for where to get it, why the fusion gives it, and every way to get it: **Use this
+    way** changes the tree, **Back to the easiest way** undoes it. **I already have it** stops the tree there for one of
+    them (it is remembered) and uses that demon where it helps.
+  - **Every way to get it** has two lists (this is what the separate "Find a recipe" view used to be). **Easiest of each
+    kind**: the best pair of each two races with levels raised where that helps, each special fusion, and getting it
+    directly. **Every recipe**: every special fusion, two-demon fusion and tri-fusion that makes it at base levels, the
+    ones from demons that are easy to get first, in pages. Demons you can simply go and get are marked **Contract** or
+    **PG**; a special fusion that needs a plugin says which key item (hover it for how to get it); a recipe with a demon
+    no start leads to says so and can't be used.
+  - **Only ways with this demon or race** narrows either list. Type a demon you already hold (say "Jack Frost") and the
+    first list shows the best ways that use it, with the levels to raise to.
   - A demon made the same way twice is drawn in full once; the other gets a small card with only the pictures of what
     it is fused from (hover it for the names, click it to show them in full there too, **Fold** to put it back). Big trees:
     drag to move around, and pick 75% or 50%.
-  - Normal tri-fusions are not used (two demons can make every race); special fusions of three are.
+  - The tree itself never picks a normal tri-fusion (two demons can make every race); special fusions of three are
+    used. A normal tri-fusion from **Every recipe** can be picked with **Use this way**.
+  - A demon no start leads to can still be picked: the page says so and lists its recipes.
 
-Mitama-fused demons are not in the lists: the game won't fuse them. **Find a recipe** only offers demons some fusion
-makes (417 of 850); the others come from quests, events or contracts.
+Mitama-fused demons are not in the lists: the game won't fuse them. The Fusion tree offers the demons some fusion makes
+(417 of 850). The others come only from a contract, a Summon PG, a quest, an event or a gift: they can't be picked, and
+still show inside trees as demons to get, with where.
 
 Demons, levels, races and special fusions are the IMAGINE client's. The race chart and the tri-fusion and elemental
 rules are the comp_hack server's fusion code, which IMAGINE may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.
@@ -563,7 +568,7 @@ marked **inferred** were worked out from how the script fits together rather tha
 Under **Tools** in the left bar. Every demon you can own (the compendium's 359 and 592 variants such as Open-minded Ishtar) with its picture, race, base level and
 alignment. Click a demon and its details open on **Where to get it**: the places it can be contracted with their
 levels, its DCM (with a button to the DCM Locator), whether it can be fused (how many two-demon recipes, tri-fusions and
-special fusions make it, the cheapest recipe, and a button that opens it in the Fusion Planner's "Find a recipe"), each
+special fusions make it, the cheapest recipe, and a button that opens it in the Fusion Planner's tree with every way to make it), each
 special fusion with the plugin it needs, each plugin once with where to get it (quest, exchange; a quest has a button
 that opens it in the Quest Guide), and, for a variant,
 the exchange item (a "Summon PG" or a voucher) that gives it with where the item comes from, or its event gift; where the
