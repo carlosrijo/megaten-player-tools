@@ -58,3 +58,5 @@ dist-symbols/
 /app/ui/*.local.json
 # the website, made by toolsuild-site.ps1
 /site/
+# wrangler's local state (pages deploy from the repo folder)
+/.wrangler/
