@@ -10438,6 +10438,14 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     const name = pageName(S.page);
     const what = isTool(S.page) ? (S.page === 'tracker' ? 'follows your quests in the running game' : 'works out your builds with BABEL’s own calculation')
       : 'shows your own character, read from the running game';
+    // the Quest Tracker has no demo to show, so it gets the same banner the character pages have, on its own
+    if (S.page === 'tracker') return h('div', { class: 'web-demo-wrap' }, h('div', { class: 'web-demo' },
+      h('img', { class: 'web-demo-logo', src: 'icon.png', alt: '', width: 52, height: 52 }),
+      h('div', { class: 'web-demo-text' },
+        h('h2', { class: 'web-demo-title', text: 'Follow your quests as you play' }),
+        h('p', { text: 'BABEL follows your quests in the running game, so this page needs the desktop app on your PC. The databases and the other planners work right here.' })),
+      h('div', { class: 'web-demo-cta' },
+        h('a', { class: 'btn btn-primary web-demo-btn', href: RELEASES_URL, target: '_blank', rel: 'noopener' }, icon('download'), 'Download BABEL'))));
     return h('div', { class: 'page' }, h('div', { class: 'empty' },
       h('h2', { class: 'empty-title', text: `${name} needs BABEL` }),
       h('p', { class: 'page-sub', text: `This page ${what}. That needs BABEL, the desktop app, on your PC. The databases and the other planners work right here.` }),
