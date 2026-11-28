@@ -176,6 +176,7 @@
     };
     // pictures: a drawn stand-in for the game window, cropped here in the browser
     const fakePic = {}, fakeSrc = {}, fakeAuto = {}, fakeGone = new Set();   // fakeGone: snapshots (taken_at) and demons (key) deleted in this preview, in memory only
+    if (Q.get('pic') === '1') fakePic.Rubito = '../../data/picture.png';   // ?pic=1: start with the saved picture (Community Builds' picture)
     const fakeShot = () => {
       const c = document.createElement('canvas'); c.width = 1280; c.height = 800;
       const g = c.getContext('2d'), sky = g.createLinearGradient(0, 0, 0, 800);
@@ -278,6 +279,7 @@
               const g = args.digi && (await this.call('compDemons', { cached: true })).find((x) => x.key === args.digi);
               b.digitalize = g ? { ...cases.good.demon.demon, type: g.type, level: g.level } : null;
             }
+            if (args && args.picture) { const p = await previewThumb(S.meta.picture); if (p) b.picture = p; }   // (the app's reader makes it from picture.png)
             return { build: b };
           }
           const d = (await this.call('compDemons', { cached: true })).find((x) => x.key === args.demon);
@@ -5465,8 +5467,9 @@
     } catch (e) { toast('err', 'This build can’t be exported', String((e && e.message) || e)); }
     finally { if (btn) btn.disabled = false; }
   }
-  /** "Import build": paste a code, see what it holds, choose what it stands on, and save it as a new build. */
-  function simImportOpen() {
+  /** "Import build": paste a code, see what it holds, choose what it stands on, and save it as a new build.
+   *  `given` { code, name }: a code already in hand (Community Builds' "Open in planner"), read at once. */
+  function simImportOpen(given) {
     const M = S.sim, mine = ++simCodeSeq, me = simActive();
     let chars = (S.state.characters || []).filter((c) => c.hasData || c.name === me).map((c) => c.name);
     if (me && !chars.includes(me)) chars = [me, ...chars];
@@ -5477,8 +5480,9 @@
     const status = h('p', { class: 'field-help sim-code-status', role: 'status' });
     const preview = h('div', { class: 'sim-code-preview' });
     const names = new Set((M.builds || []).map((b) => b.name));
-    let fresh = 'Imported build', i = 2;
-    while (names.has(fresh)) fresh = `Imported build ${i++}`;
+    const base = given && given.name ? String(given.name).slice(0, 50) : 'Imported build';
+    let fresh = base, i = 2;
+    while (names.has(fresh)) fresh = `${base} ${i++}`;
     const nameIn = h('input', { class: 'input sim-name', type: 'text', maxlength: 60, value: fresh, 'aria-label': 'Name of the build', spellcheck: 'false' });
     const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', disabled: true, onclick: () => save() }, 'Save as build');
     const foot = h('div', { class: 'sim-code-foot', hidden: true }, h('label', { class: 'field' }, h('span', { class: 'field-label', text: 'Name' }), nameIn), saveBtn);
@@ -5554,6 +5558,7 @@
       box, status, preview, foot,
       h('p', { class: 'dlg-note' }, icon('shield'), h('span', { text: 'A code is only numbers: pieces, fusions and expertise ranks, each checked against the game data. Importing adds a new build and changes nothing else.' })));
     if (!simCodeDlg.open) simCodeDlg.showModal();
+    if (given && given.code) { box.value = given.code; read(); nameIn.focus(); nameIn.select(); return; }
     box.focus();
   }
   /** The saved builds under "Build Planner" in the left bar; the one in the editor is marked instead of the entry itself. */
@@ -11236,10 +11241,57 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     player: [['weapon', 'Weapon'], ['band', 'Level']],
     demon: [['mitama', 'Mitama']],
   };
-  const CB_COLS = {
-    player: [['name', 'Build'], ['level', 'Level'], ['weapon', 'Weapon'], ['digi', 'Digitalize demon'], ['exp', 'Main expertise'], ['updated', 'Updated']],
-    demon: [['demon', 'Demon'], ['level', 'Level'], ['race', 'Race'], ['mitama', 'Mitama'], ['name', 'Published by'], ['updated', 'Updated']],
-  };
+  // the grid's order: newest first, the highest level first, or by name (a second click turns it round)
+  const CB_SORTS = [['updated', 'Newest'], ['level', 'Level'], ['name', 'Name']];
+  /** The builds of the cards on screen, in batches of 100 (the gallery's limit), into S.cb.got; `done` once they are in. */
+  function cbBodies(ids, done) {
+    const want = ids.filter((id) => !S.cb.got.has(id));
+    if (!want.length) return;
+    want.forEach((id) => S.cb.got.set(id, { loading: true }));
+    const batches = [];
+    for (let i = 0; i < want.length; i += 100) batches.push(want.slice(i, i + 100));
+    Promise.all(batches.map((ids2) => galleryCall('GET', `/builds?ids=${ids2.join(',')}`).then((r) => {
+      const got = new Map(((r.data && r.data.builds) || []).map((x) => [x.id, x]));
+      ids2.forEach((id) => { const x = got.get(id); S.cb.got.set(id, x ? { build: x.build, created: x.created, updated: x.updated } : { error: 'That build is not in the gallery (any more).' }); });
+    }).catch(() => ids2.forEach((id) => S.cb.got.set(id, { error: 'The gallery couldn’t be reached.' }))))).then(done);   // (an error, not forgotten: no endless retry)
+  }
+  /** A demon build as the Demon Planner's gallery draws a build: its picture, name, tags, then its skill, Demon Force and equipment bars and its ranks. */
+  function cbDemonCard(r, open) {
+    const got = S.cb.got.get(r.id), d = got && got.build ? cbDemon(got.build.demon) : null;
+    const pic = h('span', { class: 'rbp-build-pic' + (r.icon ? '' : ' none') }, ddbImg(r.icon || (S.ddb.data && S.ddb.data.noIcon), 56, 'rbp-build-img'));
+    if (d && d.mitama) mitamaMark(pic, d.mitama);
+    const k = d ? n0(d.mitamaType) : 0;
+    const mt = k ? h('span', { class: 'tag rbp-kindtag', style: `--k:var(--mt-${k})`, 'data-tip': 'M-Type: the Mitama it was fused with, and its Mitama rank' }, rbpKindIcon(k - 1), `${RBP_KINDS[k - 1]} Mitama · rank ${n0(d.mitamaRank)}`) : null;
+    const bars = d ? rbpMiniBars({ src: 'comp', comp: { ...d, equipment: d.equipmentIds }, demonId: null, plan: null }, true) : null;
+    return h('div', { class: 'dg-tile sim-build rbp-build cb-tile', tabindex: 0, role: 'link', 'aria-label': r.title || r.demon, onclick: open, onkeydown: (ev) => { if (ev.key === 'Enter') open(); } },
+      h('span', { class: 'rbp-build-top' }, pic, h('span', { class: 'sim-build-body' },
+        h('span', { class: 'sim-build-head' }, h('span', { class: 'dgt-id' }, h('span', { class: 'sim-build-name', text: r.title || r.demon }),
+          h('span', { class: 'dgt-line', text: `${r.demon} · Lv ${r.level} · by ${r.name}` }))),
+        h('span', { class: 'dgt-tags' }, r.race ? h('span', { class: 'tag', text: r.race }) : null, mt))),
+      bars ? h('span', { class: 'rbp-build-bars' }, bars) : h('span', { class: 'dgt-line', text: got && got.error ? got.error : 'Loading…' }),
+      r.updated ? h('span', { class: 'dgt-line sim-build-saved', text: `Updated ${ago(r.updated) || when(r.updated)}` }) : null);
+  }
+  /** A character build as the Character Planner's gallery draws a build: its pieces as pictures down the left, one box per slot, then who and what. */
+  function cbCharCard(r, open) {
+    const got = S.cb.got.get(r.id), b = got && got.build ? got.build : null;
+    const col = h('span', { class: 'sim-build-col' }, Array.from({ length: 15 }, (_, k) => {
+      const p = b ? b.gear.find((x) => x.slot === k) : null, it = p ? cbItem(p.id) : null;
+      return h('span', { class: 'sim-build-slot' + (p ? '' : ' none'), 'data-tip': p ? cbItemName(p.id) + (p.tarot || p.soul ? `\n${[p.tarot ? 'Tarot: ' + cbCrystal(p.tarot) : '', p.soul ? 'Soul: ' + cbCrystal(p.soul) : ''].filter(Boolean).join('\n')}` : '') : null },
+        it && it.icon ? h('img', { src: it.icon, alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null);
+    }));
+    const exps = b ? [...b.expertise].sort((x, y) => y[1] - x[1]).slice(0, 3) : [];
+    return h('div', { class: 'dg-tile sim-build cb-tile', tabindex: 0, role: 'link', 'aria-label': r.title || `${r.name}’s build`, onclick: open, onkeydown: (ev) => { if (ev.key === 'Enter') open(); } },
+      col, h('span', { class: 'sim-build-body' },
+        h('span', { class: 'sim-build-head' }, h('span', { class: 'dgt-id' }, h('span', { class: 'sim-build-name', text: r.title || `${r.name}’s build` }),
+          h('span', { class: 'dgt-line', text: [`by ${r.name}`, `Lv ${r.level}`, b ? alignName(b.alignment) : null].filter(Boolean).join(' · ') })),
+          // the character's picture, at the end of the name row (when the player sent one)
+          b && b.picture ? h('img', { class: 'cb-pic ' + alignClass(b.alignment), src: b.picture, alt: `Picture of ${r.name}’s character` }) : null),
+        h('span', { class: 'dgt-tags' }, r.weaponName ? h('span', { class: 'tag', 'data-tip': r.weaponName, text: r.weapon }) : null,
+          h('span', { class: 'tag tag-demon', 'data-tip': 'The digitalize demon that goes with the build', text: r.digi })),
+        b ? h('span', { class: 'dgt-adds' }, exps.map(([id, pts]) => h('span', { class: 'dgt-add' }, h('span', { text: cbExpName(id) }), h('b', { text: cbRank(pts).replace('Class ', '').replace(' · Rank ', '-') }))))
+          : h('span', { class: 'dgt-line', text: got && got.error ? got.error : 'Loading…' }),
+        r.updated ? h('span', { class: 'dgt-line sim-build-saved', text: `Updated ${ago(r.updated) || when(r.updated)}` }) : null));
+  }
   function cbRows(kind, list) {
     return list.map((s) => {
       const f = s.facets || {}, base = { s, id: s.id, name: s.name, title: s.title || '', level: s.level, updated: s.updated || '', band: cbBand(s.level) };
@@ -11275,7 +11327,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     const words = () => L.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const hay = (r) => [r.name, r.title, r.weapon, r.weaponName, r.digi, r.exp, r.demon, r.race, r.mitama].filter(Boolean).join(' ').toLowerCase();
     const pass = (r, skip) => groups.every(([g]) => g === skip || !L.f[g] || r[g] === L.f[g]) && words().every((w) => hay(r).includes(w));
-    const chipBox = h('div', { class: 'cb-chips' }), body = h('tbody'), head = h('tr'), pager = h('nav', { class: 'pager', 'aria-label': 'Pages' });
+    const chipBox = h('div', { class: 'cb-chips' }), grid = h('div', { class: 'sim-builds cb-grid-cards' + (kind === 'demon' ? ' rbp-builds' : '') }), sortBox = h('div', { class: 'seg', role: 'group', 'aria-label': 'Sort' }), pager = h('nav', { class: 'pager', 'aria-label': 'Pages' });
     const chip = (on, label, n, onclick) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(on), onclick }, label, h('span', { class: 'count', text: n }));
     const drawChips = () => chipBox.replaceChildren(...groups.map(([g, label]) => {
       const vals = [...new Set(rows.map((r) => r[g]).filter(Boolean))].sort((a, b) => (g === 'band' ? b.localeCompare(a, undefined, { numeric: true }) : a.localeCompare(b)));
@@ -11284,31 +11336,23 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
         chip(!L.f[g], 'All', rows.filter((r) => pass(r, g)).length, () => { delete L.f[g]; L.pg = 0; drawChips(); draw(); }),
         vals.map((v) => chip(L.f[g] === v, g === 'band' ? `Lv ${v}` : v, rows.filter((r) => pass(r, g) && r[g] === v).length, () => { L.f[g] = v; L.pg = 0; drawChips(); draw(); })));
     }).filter(Boolean));
-    const cell = (r, k) => {
-      if (k === 'name' && kind === 'player') return h('td', null, h('b', { text: r.title || `${r.name}’s build` }), h('div', { class: 'note', text: `by ${r.name}` }));
-      if (k === 'demon') return h('td', null, h('div', { class: 'cb-demon' }, ddbImg(r.icon, 28), h('div', null, h('b', { text: r.demon }), r.title ? h('div', { class: 'note', text: r.title }) : null)));
-      if (k === 'level') return h('td', { class: 'num', text: String(r.level) });
-      if (k === 'updated') return h('td', { class: 'note', text: r.updated ? ago(r.updated) || when(r.updated) : '' });
-      if (k === 'weapon') return h('td', { 'data-tip': r.weaponName || null, text: r.weapon });
-      return h('td', { text: r[k] || '' });
-    };
-    const sortVal = (r) => (L.sort === 'level' ? r.level : L.sort === 'updated' ? r.updated : String(r[L.sort === 'name' && kind === 'player' ? 'title' : L.sort] || r.name || '').toLowerCase());
+    const sortVal = (r) => (L.sort === 'level' ? r.level : L.sort === 'updated' ? r.updated : String((r.title || r.demon || r.name || '')).toLowerCase());
     const draw = () => {
       const shown = rows.filter((r) => pass(r)).sort((a, b) => { const x = sortVal(a), y = sortVal(b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * L.dir; });
       const pg = pageOf(L, shown);
-      body.replaceChildren(...(pg.rows.length ? pg.rows.map((r) => h('tr', { class: 'cb-row', tabindex: 0, onclick: () => cbOpen(kind, r.id), onkeydown: (ev) => { if (ev.key === 'Enter') cbOpen(kind, r.id); } },
-        CB_COLS[kind].map(([k]) => cell(r, k))))
-        : [h('tr', null, h('td', { colspan: CB_COLS[kind].length, class: 'empty-row', text: 'No build matches.' }))]));
-      drawPager(pager, L, shown.length, pg, draw, () => body.closest('table'), 'builds');
+      const card = (r) => (kind === 'demon' ? cbDemonCard : cbCharCard)(r, () => cbOpen(kind, r.id));
+      grid.replaceChildren(...(pg.rows.length ? pg.rows.map(card) : [h('p', { class: 'note', text: 'No build matches.' })]));
+      drawPager(pager, L, shown.length, pg, draw, () => grid, 'builds');
+      // the cards draw the builds themselves: fetch this page's, then draw it again
+      cbBodies(pg.rows.map((r) => r.id), () => { if (grid.isConnected) draw(); });
     };
-    const drawHead = () => head.replaceChildren(...CB_COLS[kind].map(([k, label]) => { const on = L.sort === k;
-      return h('th', { scope: 'col', class: k === 'level' ? 'num' : null, 'aria-sort': on ? (L.dir === 1 ? 'ascending' : 'descending') : null },
-        h('button', { type: 'button', class: 'th-btn', 'data-tip': `Sort by ${label.toLowerCase()}${on ? ' the other way' : ''}.`,
-          onclick: () => { if (on) L.dir = -L.dir; else { L.sort = k; L.dir = k === 'level' || k === 'updated' ? -1 : 1; } L.pg = 0; drawHead(); draw(); } },
-          h('span', { text: label }), on ? h('span', { class: 'sort-mark', text: L.dir === 1 ? '▲' : '▼' }) : null)); }));
-    page.append(h('div', { class: 'toolbar' }, searchBox(L.q, kind === 'player' ? 'Search a name, weapon, demon or expertise' : 'Search a demon, race or name', (v) => { L.q = v; L.pg = 0; drawChips(); draw(); })),
-      chipBox, h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cb-tbl' }, h('thead', null, head), body)), pager);
-    drawChips(); drawHead(); draw();
+    const drawSort = () => sortBox.replaceChildren(...CB_SORTS.map(([k, label]) => { const on = L.sort === k;
+      return h('button', { type: 'button', 'aria-pressed': String(on), 'data-tip': on ? 'Click again to turn the order round' : `Sort by ${label.toLowerCase()}`,
+        onclick: () => { if (on) L.dir = -L.dir; else { L.sort = k; L.dir = k === 'name' ? 1 : -1; } L.pg = 0; drawSort(); draw(); } },
+        k === 'updated' && on && L.dir === 1 ? 'Oldest' : label, on && k !== 'updated' ? h('span', { class: 'sort-mark', text: L.dir === 1 ? ' ▲' : ' ▼' }) : null); }));
+    page.append(h('div', { class: 'toolbar' }, searchBox(L.q, kind === 'player' ? 'Search a name, weapon, demon or expertise' : 'Search a demon, race or name', (v) => { L.q = v; L.pg = 0; drawChips(); draw(); }), sortBox),
+      chipBox, grid, pager);
+    drawChips(); drawSort(); draw();
     return page;
   }
   function cbOpen(kind, id) {
@@ -11345,54 +11389,210 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
         } }, h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: label })))));
     page.append(h('div', { class: 'over-top' }, back, h('div', { class: 'over-top-actions' },
       copyBtn('Copy link', link, 'Link copied', 'A link to this build, to share'),
-      kind === 'player' ? copyBtn('Copy build code', b.code, 'Build code copied', 'Paste it in BABEL’s Character Planner (Import build) to try this gear and expertise on your own character') : null,
+      // the build in the Character Planner: its Import build, with this build's code already in (on the website, the
+      // planner page, which needs BABEL and says so)
+      kind === 'player' ? h('button', { type: 'button', class: 'btn btn-primary btn-sm', 'data-tip': 'Try this gear and expertise in the Character Planner, on your own character or on none',
+        onclick: () => { simGoHome(); if (!WEB) simImportOpen({ code: b.code, name: a.title || `${a.name}’s build` }); } }, icon('flask'), 'Open in planner') : null,
       reportBtn, menu)));
     const demonName = kind === 'demon' ? cbDemonName(b.demon.type) : '';
-    page.append(h('div', { class: 'cb-head' },
-      h('h2', { class: 'cb-title', text: a.title || (kind === 'player' ? `${a.name}’s build` : `${a.name}’s ${demonName}`) }),
-      h('p', { class: 'page-who', text: [`by ${a.name}`, kind === 'player' ? `Level ${b.level} · ${alignName(b.alignment)}` : `${demonName} Lv ${b.demon.level}`,
-        got.updated ? `updated ${ago(got.updated) || when(got.updated)}` : null].filter(Boolean).join(' · ') }),
+    // a player build's stats (Max HP, Max MP and the 12, base + bonus), beside the picture and the name as on the Overview
+    let statBars = null;
+    if (kind === 'player') {
+      const rows = [['HP', b.maxHp, 0, 'hpmp'], ['MP', b.maxMp, 0, 'hpmp'], ...STATS.map(([k, label], i) => [label, n0((b.stats[k] || [])[0]), n0((b.stats[k] || [])[1]), i < 6 ? 'base' : i < 10 ? 'atk' : 'def'])];
+      const gmax = {};
+      rows.forEach(([, base, bonus, g]) => { gmax[g] = Math.max(gmax[g] || 1, base + bonus); });
+      const bar = (cls, v, g) => (v > 0 ? h('i', { class: cls, style: `width:${(v / gmax[g]) * 100}%` }) : null);
+      statBars = h('div', { class: 'dg-bars who-stats' }, rows.map(([label, base, bonus, g]) => h('div', { class: 'srow dg-row', tabindex: 0,
+        'data-tip': g === 'hpmp' ? `Max ${label} ${fmt(base)}` : `${label} ${fmt(base + bonus)} = base ${fmt(base)} + bonus ${fmt(bonus)}` },
+        h('span', { class: 'srow-label', text: label === 'Support' ? 'Supp' : label }),
+        h('div', { class: 'strack' }, bar('base', base, g), bar('bonus', bonus, g)),
+        h('span', { class: 'srow-value', text: fmt(base + bonus) }))));
+    }
+    // who: the picture, the title and who published it, and (a player build) the stats beside them
+    page.append(h('div', { class: 'cb-head' + (b.picture ? ' with-pic' : '') },
+      b.picture ? h('img', { class: 'cb-pic cb-pic-big ' + alignClass(b.alignment), src: b.picture, alt: `Picture of ${a.name}’s character` }) : null,
+      h('div', { class: 'cb-head-text' },
+        h('div', { class: 'who-line' },
+          h('div', null,
+            h('h2', { class: 'cb-title', text: a.title || (kind === 'player' ? `${a.name}’s build` : `${a.name}’s ${demonName}`) }),
+            h('p', { class: 'page-who', text: [`by ${a.name}`, kind === 'player' ? `Level ${b.level} · ${alignName(b.alignment)}` : `${demonName} Lv ${b.demon.level}`,
+              got.updated ? `updated ${ago(got.updated) || when(got.updated)}` : null].filter(Boolean).join(' · ') })),
+          statBars ? h('div', { class: 'who-right' }, legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'])) : null),
+        statBars)));
+    // then what they wrote, and where it comes from
+    page.append(h('div', { class: 'cb-about' },
       a.note ? h('p', { class: 'cb-note', text: a.note }) : null,
-      h('p', { class: 'field-help', text: `Read from the game by BABEL${b.takenAt || b.seenAt ? ' on ' + when(b.takenAt || b.seenAt) : ''}. Anyone can publish, so this is what they sent, not something BABEL can vouch for.` })));
+      h('p', { class: 'field-help', text: `Read from the game by BABEL${b.takenAt || b.seenAt ? ' on ' + when(b.takenAt || b.seenAt) : ''}. Anyone can publish, so this is what they sent, not something BABEL can vouch for.`
+        + (kind === 'player' && !b.statsLive ? ' The stats were kept from an earlier reading.' : '') })));
     if (kind === 'demon') {
       page.append(partnerCard({ d: cbDemon(b.demon), title: 'Demon' }));
       return page;
     }
-    // a player build: stats, the demons that go with it, gear, expertise, switch skills
-    const rows = [['HP', b.maxHp, 0, 'hpmp'], ['MP', b.maxMp, 0, 'hpmp'], ...STATS.map(([k, label], i) => [label, n0((b.stats[k] || [])[0]), n0((b.stats[k] || [])[1]), i < 6 ? 'base' : i < 10 ? 'atk' : 'def'])];
-    const gmax = {};
-    rows.forEach(([, base, bonus, g]) => { gmax[g] = Math.max(gmax[g] || 1, base + bonus); });
-    const bar = (cls, v, g) => (v > 0 ? h('i', { class: cls, style: `width:${(v / gmax[g]) * 100}%` }) : null);
-    const stats = h('section', { class: 'card cb-card', 'aria-label': 'Stats' }, h('div', { class: 'band-head' }, h('h3', { class: 'band-title', text: 'Stats' }), legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'])),
-      h('div', { class: 'dg-bars who-stats' }, rows.map(([label, base, bonus, g]) => h('div', { class: 'srow dg-row', tabindex: 0,
-        'data-tip': g === 'hpmp' ? `Max ${label} ${fmt(base)}` : `${label} ${fmt(base + bonus)} = base ${fmt(base)} + bonus ${fmt(bonus)}` },
-        h('span', { class: 'srow-label', text: label === 'Support' ? 'Supp' : label }),
-        h('div', { class: 'strack' }, bar('base', base, g), bar('bonus', bonus, g)),
-        h('span', { class: 'srow-value', text: fmt(base + bonus) })))),
-      b.statsLive ? null : h('p', { class: 'note', text: 'These stats were kept from an earlier reading.' }));
-    page.append(stats, partnerCard({ d: cbDemon(b.digitalize), title: 'Digitalize demon' }));
-    if (b.partner) page.append(partnerCard({ d: cbDemon(b.partner), title: 'Summoned demon' }));
-    const fuse = (p) => (p.fuse.some(Boolean) ? p.fuse.map((v) => `+${v}`).join(' / ') : '');
-    page.append(sect('Gear', `${b.gear.length} pieces${b.gearPartial ? ' (some without their mods and fusions: the game hadn’t shown them)' : ''}`, null,
-      h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cb-gear' },
-        h('thead', null, h('tr', null, ['Slot', 'Piece', 'Tarot', 'Soul', 'Fusion bonuses', 'Mods'].map((t) => h('th', { scope: 'col', text: t })))),
-        h('tbody', null, b.gear.map((p) => {
-          const it = cbItem(p.id);
-          const from = [p.basic !== p.id ? `features of ${cbItemName(p.basic)}` : null, p.special !== p.id ? `characteristics of ${cbItemName(p.special)}` : null].filter(Boolean);
-          return h('tr', null, h('td', { class: 'note', text: it ? it.slot || '' : '' }),
-            h('td', null, h('div', { class: 'cb-demon' }, ddbImg(it && it.icon, 28, 'dcm-icon gdb-icon'), h('div', null, h('b', { text: cbItemName(p.id) }), from.length ? h('div', { class: 'note', text: 'With the ' + from.join(' and the ') }) : null))),
-            h('td', { text: p.tarot ? cbCrystal(p.tarot) : '' }), h('td', { text: p.soul ? cbCrystal(p.soul) : '' }),
-            h('td', { class: 'note', text: fuse(p) }), h('td', { class: 'num', text: String(p.mods.filter(Boolean).length || '') }));
-        }))))));
-    const exps = [...b.expertise].sort((x, y) => y[1] - x[1]);
+    // Then the expertise bar; under it the digitalize demon and the switch skills that are on (then the summoned demon).
+    // Then the Character Planner's layout, read only: the gear grid with the clicked piece's details below it, and the
+    // key stats on the right.
+    page.append(cbExpBand(b));
+    page.append(partnerCard({ d: cbDemon(b.digitalize), title: 'Digitalize demon' }));
     const toggles = b.toggles.map((sid) => cbSkill(sid) || { id: sid, name: S.skl.state === 'ready' ? 'A skill the game data has no name for' : '…' });
-    page.append(h('div', { class: 'cb-grid' },
-      sect('Expertise', `${exps.length} raised`, null, h('section', { class: 'card cb-card' }, h('div', { class: 'cb-lines' }, exps.map(([eid, pts]) => h('div', { class: 'cb-line' },
-        h('span', { text: cbExpName(eid) }), h('span', { class: 'note', text: cbRank(pts) })))))),
-      sect('Switch skills', `${toggles.length} on`, null, h('section', { class: 'card cb-card' }, toggles.length ? h('div', { class: 'cb-lines' }, toggles.map((x) => h('div', { class: 'cb-line' },
-        h('span', { class: 'cb-demon' }, ddbImg(x.icon, 22, 'dcm-icon'), h('span', { text: x.name })))))
-        : h('p', { class: 'note', text: 'None on.' })))));
+    // (its title inside the card, as the expertise bar and the demon cards have theirs)
+    page.append(h('section', { class: 'card cb-card cb-switches', 'aria-label': 'Switch skills' },
+      h('div', { class: 'cb-card-head' }, h('h3', { class: 'band-title', text: 'Switch skills' }), h('span', { class: 'card-sub', text: `${toggles.length} on` })),
+      toggles.length ? h('div', { class: 'cb-lines cb-lines-cols' }, toggles.map((x) => withTip(h('div', { class: 'cb-line', tabindex: 0 },
+        h('span', { class: 'cb-demon' }, ddbImg(x.icon, 22, 'dcm-icon'), h('span', { text: x.name }))), cbSkillTip(x, 'Switch skill, on'))))
+        : h('p', { class: 'note', text: 'None on.' })));
+    if (b.partner) page.append(partnerCard({ d: cbDemon(b.partner), title: 'Summoned demon' }));
+    const left = h('div', { class: 'sim-edit' }, h('div', { class: 'sim-edit-body' }, h('div', { class: 'sim-slots' }, cbGearGrid(b, L), cbPieceCard(b, L))));
+    page.append(h('div', { class: 'sim-layout cb-layout' }, left, h('aside', { class: 'sim-out' }, cbSheet(b))));
     return page;
+  }
+
+  /** A skill's tooltip from the Skill Database: its picture, name, kind (and where it comes from), then the game's own description. */
+  const cbSkillTip = (s, from) => () => {
+    const kind = s.type ? ((S.skl.data && (S.skl.data.types || []).find((t) => t.key === s.type)) || {}).name || (s.type.charAt(0).toUpperCase() + s.type.slice(1)) : '';
+    const pic = h('span', { class: 'skill-ico' }, s.icon ? h('img', { src: s.icon, alt: '' }) : null);
+    return h('div', null, tipHead(pic, s.name, [kind === 'Passive' || !kind ? kind : `${kind} skill`, from].filter(Boolean).join(' · ')),
+      ...(s.desc ? tipLines(s.desc) : [h('div', { class: 'tt-line', text: S.skl.state === 'ready' ? 'The game has no text for it.' : 'Loading the skill…' })]));
+  };
+
+  // ---------- a character build, the Character Planner's way (read only) ----------
+  // the slots in the game's equipment window order (its three rows of five), as the planner's grid has them
+  const CB_SLOTS = ['Weapon', 'Bullets', 'Ring', 'Earring', 'Talisman', 'Head', 'Face', 'Top', 'Neck', 'Back', 'Arms', 'COMP', 'Bottom', 'Feet', 'Extra'];
+  const cbPiece = (b, k) => b.gear.find((p) => p.slot === k) || null;
+  const cbCrystalItem = (e) => (S.cb.crystals && e ? cbItem(S.cb.crystals.get(e)) : null);
+  const cbPic = (it, cls) => (it && it.icon ? h('img', { class: cls || 'slot-icon', src: it.icon, alt: '', onerror: (ev) => ev.target.remove() }) : h('span', { class: (cls || 'slot-icon') + ' sim-noicon' }));
+  /** The Overview's expertise bar for a build: points over the cap, the chains reached with their class-rank, and every skill they give as icons. */
+  function cbExpBand(b) {
+    const counted = b.expertise.filter(([id]) => id <= 37 && !((S.cb.exp && S.cb.exp.get(id)) || {}).chain).reduce((s, [, p]) => s + p, 0);
+    const pt = (v) => (n0(v) / 100).toFixed(2) + 'pt';
+    const points = b.cap ? h('div', { class: 'band-points', tabindex: 0, 'data-tip': counted < b.cap ? `${pt(b.cap - counted)} free` : 'At the cap' },
+      h('span', { class: 'band-pts', text: `${pt(counted)} / ${pt(b.cap)}` }),
+      h('span', { class: 'band-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (counted / b.cap) * 100))}%` })))
+      : h('div', { class: 'band-points' }, h('span', { class: 'band-pts', text: `${pt(counted)}, no cap` }));
+    const chains = b.chains || [];
+    const rank = ([id, cls, rk]) => h('span', { class: 'exp-rank', tabindex: 0, 'aria-label': `${cbExpName(id)}, class ${cls} rank ${rk}` }, h('span', { text: cbExpName(id) }), h('b', { text: `${cls}-${rk}` }));
+    const icons = ([id, , , skills]) => {
+      const all = skills.map((sid) => cbSkill(sid) || { id: sid, name: 'A skill the game data has no name for' });
+      return all.filter((s) => s.type === 'passive').concat(all.filter((s) => s.type !== 'passive')).map((s, i) => {
+        // its tooltip is the skill itself: the game's description, from the Skill Database
+        const ic = withTip(h('span', { class: 'skill-ico' + (i === 0 ? ' first' : ''), tabindex: 0, 'aria-label': `${s.name}, ${cbExpName(id)}` }, s.icon ? h('img', { src: s.icon, alt: '', loading: 'lazy', onerror: (ev) => ev.target.remove() }) : null),
+          cbSkillTip(s, cbExpName(id)));
+        return ic;
+      });
+    };
+    // opened ("Show all ranks"): every expertise raised, the most points first, with its class-rank and how far up its
+    // top class it is; the chains after them
+    const open = !!S.cb.expOpen;
+    const toggle = h('button', { type: 'button', class: 'btn btn-sm', 'aria-expanded': String(open), onclick: () => { S.cb.expOpen = !open; render(); } }, open ? 'Hide ranks' : 'Show all ranks');
+    // under each rank, the skills that rank gives, as one inline bar of icons (passives first), as the compact card has them
+    const skillsOf = new Map((b.expSkills || []).map(([id, list]) => [id, list]));
+    const bar = (id, list) => (list && list.length ? h('div', { class: 'cb-exp-skills', role: 'group', 'aria-label': `${cbExpName(id)}: skills` }, icons([id, 0, 0, list]))
+      : h('div', { class: 'cb-exp-skills none', text: list ? 'No skills at this rank.' : '' }));
+    const detail = !open ? null : h('div', { class: 'cb-exp-detail' },
+      h('h4', { class: 'list-head', text: `Expertise · ${b.expertise.length} raised` }),
+      h('div', { class: 'cb-exp-list' }, [...b.expertise].sort((x, y) => y[1] - x[1] || x[0] - y[0]).map(([id, pts]) => {
+        const max = ((S.cb.exp && S.cb.exp.get(id)) || {}).max || 10;
+        return h('div', { class: 'cb-exp-item' },
+          h('div', { class: 'cb-exp-row', 'data-tip': `${cbExpName(id)}: ${fmt(pts)} points (${cbRank(pts)}), top class ${max}` },
+            h('span', { class: 'cb-exp-name', text: cbExpName(id) }),
+            h('span', { class: 'band-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, (pts / (max * 100000)) * 100))}%` })),
+            h('b', { text: `${Math.floor(pts / 100000)}-${Math.floor((pts % 100000) / 10000)}` })),
+          b.expSkills ? bar(id, skillsOf.get(id) || []) : null);
+      })),
+      chains.length ? [h('h4', { class: 'list-head', text: `Chains · ${chains.length} reached` }),
+        h('div', { class: 'cb-exp-list' }, chains.map(([id, cls, rk, skills]) => {
+          // the same bar as the others: how far up its top class the chain is (a top class the data gives lower than
+          // the class reached counts as reached)
+          const max = Math.max(cls, ((S.cb.exp && S.cb.exp.get(id)) || {}).max || 10) || 10;
+          return h('div', { class: 'cb-exp-item' },
+            h('div', { class: 'cb-exp-row', 'data-tip': `${cbExpName(id)}: class ${cls} rank ${rk}, top class ${max}; ${skills.length} skill${skills.length === 1 ? '' : 's'}` },
+              h('span', { class: 'cb-exp-name', text: cbExpName(id) }),
+              h('span', { class: 'band-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, ((cls * 10 + rk) / (max * 10)) * 100))}%` })),
+              h('b', { text: `${cls}-${rk}` })),
+            bar(id, skills));
+        }))] : null);
+    return h('section', { class: 'card band exp-band', 'aria-label': 'Expertise' },
+      h('div', { class: 'band-head' },
+        h('div', { class: 'exp-top' }, h('h3', { class: 'band-title', text: 'Expertise' }), points),
+        chains.length ? h('div', { class: 'exp-ranks', style: `--rows:${Math.ceil(chains.length / 2)}` }, chains.map(rank))
+          : h('span', { class: 'note', text: b.chains ? 'No chain expertise unlocked.' : 'This build was published without its chain expertise.' })),
+      h('div', { class: 'band-items exp-icons-run' }, chains.map(icons)),
+      toggle, detail);
+  }
+  /** The planner's gear grid: 15 tiles in the game's order; a click shows that piece's details under it (nothing can be changed). */
+  function cbGearGrid(b, L) {
+    const sel = Number.isInteger(L.gearSel) ? L.gearSel : 0;
+    const tile = (k) => {
+      const p = cbPiece(b, k), it = p ? cbItem(p.id) : null, name = p ? cbItemName(p.id) : 'Empty';
+      const donor = (n, id, what) => {
+        const own = id === p.id, x = cbItem(id);
+        return h('span', { class: 'sim-grid-donor' + (own ? '' : ' infused'), 'data-tip': `Slot ${n}, ${what}: ${own ? `${name} (its own)` : cbItemName(id)}` },
+          h('span', { class: 'sim-grid-n', text: String(n) }), x && x.icon ? h('img', { class: 'sim-grid-crystal', src: x.icon, alt: '' }) : null,
+          h('span', { class: 'sim-grid-donor-name', text: own ? name : cbItemName(id) }));
+      };
+      const donors = p ? [donor(2, p.basic, 'basic features'), CB_SLOTS[k] === 'Bullets' ? null : donor(3, p.special, 'characteristics')].filter(Boolean) : [];
+      const mods = p ? p.mods.filter((m) => m && m !== 255).length : 0;
+      const tc = p && p.tarot ? cbCrystalItem(p.tarot) : null, sc = p && p.soul ? cbCrystalItem(p.soul) : null;
+      const marks = p ? [
+        p.tarot ? (tc && tc.icon ? h('img', { class: 'sim-grid-crystal', src: tc.icon, alt: '', 'data-tip': `Tarot: ${cbCrystal(p.tarot)}` }) : h('span', { class: 'sim-grid-mark', 'data-tip': `Tarot: ${cbCrystal(p.tarot)}`, text: 'Tarot' })) : null,
+        p.soul ? (sc && sc.icon ? h('img', { class: 'sim-grid-crystal', src: sc.icon, alt: '', 'data-tip': `Soul: ${cbCrystal(p.soul)}` }) : h('span', { class: 'sim-grid-mark', 'data-tip': `Soul: ${cbCrystal(p.soul)}`, text: 'Soul' })) : null,
+        p.fuse.length && p.fuse.every((v) => v >= 50) ? h('span', { class: 'sim-grid-mark limit', 'data-tip': 'Fusion bonus at MAX', text: 'LIMIT' }) : null,
+        mods ? h('span', { class: 'sim-grid-mark', 'data-tip': `${mods} mod${mods === 1 ? '' : 's'}`, text: `${mods} mod${mods === 1 ? '' : 's'}` }) : null,
+      ].filter(Boolean) : [];
+      return h('button', { type: 'button', class: 'sim-grid-tile' + (k === sel ? ' on' : '') + (p ? '' : ' sim-grid-empty'), 'aria-pressed': String(k === sel), 'aria-label': `${CB_SLOTS[k]}: ${name}. Show it below`,
+        onclick: () => { if (k !== sel) { L.gearSel = k; render(); } } },
+        h('span', { class: 'sim-grid-slot', text: CB_SLOTS[k] }),
+        h('span', { class: 'sim-grid-main' }, p ? cbPic(it) : h('span', { class: 'slot-icon sim-noicon' }), h('span', { class: 'sim-grid-name', text: name })),
+        donors.length ? h('span', { class: 'sim-grid-donors' }, donors) : null,
+        marks.length ? h('span', { class: 'sim-grid-marks' }, marks) : null);
+    };
+    return h('div', { class: 'sim-grid', role: 'group', 'aria-label': 'The gear at a glance' }, CB_SLOTS.map((_, k) => tile(k)));
+  }
+  /** The picked piece, as the planner's box shows one, read only: its three slots, its crystals, fusion bonuses and mods (from the Item Database's text). */
+  function cbPieceCard(b, L) {
+    const k = Number.isInteger(L.gearSel) ? L.gearSel : 0, p = cbPiece(b, k);
+    const card = h('section', { class: 'card sim-piece cb-piece' });
+    if (!p) { card.append(h('div', { class: 'card-head' }, h('h2', { class: 'section-title', text: CB_SLOTS[k] }), h('span', { class: 'card-sub', text: 'Nothing worn' }))); return card; }
+    const it = cbItem(p.id), basic = cbItem(p.basic), special = cbItem(p.special);
+    const lines = (list, none) => (list && list.length ? h('ul', { class: 'gdb-list' }, list.map((x) => h('li', { text: x }))) : h('p', { class: 'note', text: none }));
+    const col = (key, sub, x, list, none) => h('div', { class: 'sim-col' }, h('div', { class: 'sim-col-key' }, h('span', { text: key }), sub ? h('small', { text: sub }) : null),
+      h('div', { class: 'cb-demon' }, cbPic(x), h('b', { text: x ? x.name : 'An item the game data has no name for' })), lines(list, none));
+    const crystal = (label, e, side) => {
+      const x = cbCrystalItem(e);
+      return h('div', { class: 'sim-col' }, h('div', { class: 'sim-col-key' }, h('span', { text: label })),
+        h('div', { class: 'cb-demon' }, cbPic(x), h('b', { text: cbCrystal(e) })), lines(x ? x[side] : null, 'The game data has no text for it.'));
+    };
+    card.append(h('div', { class: 'card-head' }, cbPic(it), h('h2', { class: 'section-title', text: it ? it.name : cbItemName(p.id) }), h('span', { class: 'card-sub', text: CB_SLOTS[k] })),
+      h('div', { class: 'sim-cols' },
+        col('Slot 1', 'the piece', it, it ? it.appearance : null, 'No appearance bonus.'),
+        col('Slot 2', p.basic === p.id ? 'basic features, its own' : 'basic features', basic, basic ? basic.stats : null, 'No basic features.'),
+        CB_SLOTS[k] === 'Bullets' ? null : col('Slot 3', p.special === p.id ? 'characteristics, its own' : 'characteristics', special, special ? special.effects : null, 'No characteristics.')),
+      p.tarot || p.soul ? h('div', { class: 'sim-cols' }, p.tarot ? crystal('Tarot fusion', p.tarot, 'tarot') : null, p.soul ? crystal('Soul fusion', p.soul, 'soul') : null) : null,
+      h('div', { class: 'cb-piece-foot' },
+        h('span', null, h('span', { class: 'q-key', text: 'Fusion bonuses' }), ' ', p.fuse.some(Boolean) ? p.fuse.map((v) => `+${v}`).join(' / ') + (p.fuse.every((v) => v >= 50) ? ' (MAX)' : '') : 'none'),
+        h('span', null, h('span', { class: 'q-key', text: 'Mods' }), ' ', String(p.mods.filter((m) => m && m !== 255).length || 'none'))));
+    return card;
+  }
+  /** The key stats, as the planner's right side shows them: the Overview's sheet, with or without the digitalize demon. */
+  function cbSheet(b) {
+    const T = b.totals || null;
+    if (!T) return h('section', { class: 'card sim-card sheet' }, h('p', { class: 'note', text: 'This build was published without its key stats.' }));
+    const hasDigi = Object.values(T).some((v) => v[1] !== null && v[1] !== undefined);
+    if (S.cb.digiView === undefined) S.cb.digiView = true;
+    const D = hasDigi && S.cb.digiView;
+    const unitOf = (k) => { const c = COMBAT.find((x) => x[0] === k) || OTHER_STATS.find((x) => x[0] === k); return c ? c[2] : ''; };
+    const nameOf = (k, label) => { const c = COMBAT.find((x) => x[0] === k) || OTHER_STATS.find((x) => x[0] === k); return c ? c[1] : label; };
+    const row = ([k, label]) => {
+      const v = T[k];
+      if (!v) return null;
+      const to = n0(D ? v[1] : v[0]), unit = unitOf(k);
+      return h('div', { class: 'sim-key' }, h('span', { class: 'sheet-label', text: label }), capTag(to, CAPS[k] === undefined ? null : CAPS[k], unit),
+        h('b', { class: 'sheet-value' + (to < 0 && !lowIsGood(nameOf(k, label)) ? ' bad' : ''), text: fmt(to, unit) }), h('span', { class: 'delta same' }));
+    };
+    const pick = (on, label) => h('button', { type: 'button', 'aria-pressed': String(D === on), onclick: () => { S.cb.digiView = on; render(); } }, label);
+    return h('section', { class: 'card sim-card sheet' },
+      h('div', { class: 'card-head' }, h('h2', { class: 'section-title', text: 'Key stats' }),
+        hasDigi ? h('div', { class: 'seg', role: 'group', 'aria-label': 'Shown as' }, pick(false, 'Normal'), pick(true, 'Digitalized')) : h('span', { class: 'card-sub', text: 'not digitalized' })),
+      SHEET.flat().map(([title, rows]) => { const kids = rows.map(row).filter(Boolean); return kids.length ? h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), kids) : null; }));
   }
 
   // ---------- Community Builds: Publish build ----------
@@ -11408,13 +11608,26 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   // with a few sample builds (the gallery's test builds, gallery-worker\test\builds.json) so the lists have something.
   const fakeGallery = new Map();
   let fakeSeeded = null;
+  /** The browser preview's stand-in for the reader's picture_thumbnail: a square from the top of the picture, 96 px, JPEG. */
+  async function previewThumb(src) {
+    if (!src) return null;
+    try {
+      const img = new Image();
+      await new Promise((ok, no) => { img.onload = ok; img.onerror = no; img.src = src; });
+      const side = Math.min(img.naturalWidth, img.naturalHeight), c = document.createElement('canvas');
+      c.width = c.height = 96;
+      c.getContext('2d').drawImage(img, (img.naturalWidth - side) / 2, 0, side, side, 0, 0, 96, 96);
+      return c.toDataURL('image/jpeg', 0.82);
+    } catch (e) { return null; }
+  }
   const fakeId = () => (Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-5)).padEnd(10, '0').slice(0, 10).replace(/[^a-z0-9]/g, '0');
   function fakeSeed() {
-    return (fakeSeeded = fakeSeeded || fetch('../../gallery-worker/test/builds.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((c) => {
+    return (fakeSeeded = fakeSeeded || fetch('../../gallery-worker/test/builds.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then(async (c) => {
       if (!c) return;
       const at = (days) => new Date(Date.now() - days * 864e5).toISOString().slice(0, 16) + 'Z';
       const add = (build, days) => fakeGallery.set(fakeId(), { secret: 'sample', build, created: at(days + 3), updated: at(days) });
-      add(c.good.player, 1);
+      const pic = await previewThumb(S.meta && S.meta.picture);   // the shown character's picture on the first sample
+      add(pic ? { ...c.good.player, picture: pic } : c.good.player, 1);
       add({ ...c.good.player, level: 88, alignment: 'LAW', digitalize: null, about: { name: 'Nobitta', title: 'Budget Law build', note: '' } }, 5);
       add({ ...c.good.player, alignment: 'CHAOS', digitalize: { ...c.good.demon.demon, type: 22, level: 92 }, about: { name: 'Accsquad', title: '', note: 'Still farming the last pieces.' } }, 12);
       add(c.good.demon, 2);
@@ -11438,6 +11651,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
           level: e.build.kind === 'demon' ? e.build.demon.level : e.build.level, created: e.created, updated: e.updated, facets: cbFacets(e.build) }));
         return { status: 200, data: { ok: true, builds: builds.sort((a, b) => b.updated.localeCompare(a.updated)) } };
       }
+      const many = /^\/builds\?ids=([A-Za-z0-9,]+)/.exec(path);
+      if (many) return { status: 200, data: { ok: true, builds: many[1].split(',').filter((id) => fakeGallery.has(id)).map((id) => { const e = fakeGallery.get(id); return { id, kind: e.build.kind, created: e.created, updated: e.updated, build: e.build }; }) } };
       if (/\/report$/.test(path)) return { status: 200, data: { ok: true } };
       const m = /^\/builds\/([A-Za-z0-9]{10})$/.exec(path);
       if (method === 'POST') {
@@ -11463,6 +11678,18 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     } finally { clearTimeout(timer); }
   }
   const galleryOffline = (e) => e && (e.name === 'AbortError' || e instanceof TypeError);
+  // what reads as a web address in text a player typed (the gallery's own rule, gallery-worker\src\build.js LINK)
+  const PUB_LINK = /(:\/\/|(?:^|[^a-z0-9:])\/\/[a-z0-9]|\bwww\.|\b(?:mailto|javascript|vbscript|data|file|ftp|ftps|sftp|ssh|telnet|irc|ircs|magnet|steam|tel|sms|ws|wss|blob|about|chrome|intent|market|skype|callto|news|nntp|gopher|ldap|smb|git|svn|ed2k|bitcoin|ms-[a-z]+):(?!\s)|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|gg|io|me|ly|co|xyz|ru|tk|app|dev|link|site|online|info|biz|cc|tv|us|uk|de|fr|br|jp|cn|kr|shop|store|live|top|club|gl|to|in|eu)\b)/i;
+  /** Text as a build may hold it (the gallery's own rule, gallery-worker\\src\\build.js cleanChar): composed characters, no
+   *  markup (< > become the look-alike ‹ ›), no invisible or zero-width characters, no other line breaks than plain ones in
+   *  a note (no more than one empty line in a row), single spaces in a name or title. */
+  function pubClean(s, lines) {
+    let t = String(s || '').normalize('NFC').replace(/\r\n?|[\u2028\u2029]/g, '\n').replace(/</g, '‹').replace(/>/g, '›')
+      .replace(/[\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180F\u200B-\u200F\u202A-\u202E\u2060-\u206F\u3164\uFE00-\uFE0F\uFEFF\uFFA0\uFFF0-\uFFFF]|[\u{E0000}-\u{E007F}]/gu, '')
+      .replace(/[^\P{Cc}\n]/gu, ' ');
+    if (!lines) return t.replace(/\s+/g, ' ').trim();
+    return t.split('\n').map((l) => l.replace(/[ \t]+/g, ' ').replace(/ $/, '')).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
   const pubSay = (t) => { $('#pub-error').textContent = t || ''; };
 
   /** This character's saved entry for what is picked, with the key it is saved under: the player build, or the demon's
@@ -11542,6 +11769,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       `Your points in ${b.expertise.length} expertises, and the ${b.toggles.length} switch skills that are on`,
       b.digitalize ? `Your digitalize demon: ${demonName(b.digitalize.type)} Lv ${b.digitalize.level}` : 'No digitalize demon',
       b.partner ? `Your summoned demon: ${demonName(b.partner.type)} Lv ${b.partner.level}` : null,
+      b.picture ? 'Your character’s picture, made small' : null,
     ] : [
       `${demonName(b.demon.type)} Lv ${b.demon.level}: its stats, Max HP and MP, and its ${b.demon.skills.filter(Boolean).length} skills`,
       'Its rebirth ranks, Mitama, Demon Force stack and demon equipment',
@@ -11549,7 +11777,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     what.replaceChildren(h('span', { class: 'field-label', text: 'What goes out' }),
       h('ul', { class: 'pub-list' }, lines.filter(Boolean).map((t) => h('li', { text: t }))),
       h('p', { class: 'field-help', text: 'Only numbers: never your character’s name, effect text, or anything about this PC. The website names everything from its own files.' }),
-      h('details', { class: 'pub-raw' }, h('summary', { text: 'Exactly what is sent' }), h('pre', { text: pubJson(b) })));
+      // (the picture's text is thousands of letters: shortened here, it is the picture shown above)
+      h('details', { class: 'pub-raw' }, h('summary', { text: 'Exactly what is sent' }), h('pre', { text: pubJson(b.picture ? { ...b, picture: `${b.picture.slice(0, 32)}… (${fmt(b.picture.length)} characters: the picture above)` } : b) })));
   }
   /** JSON as sent, but readable: one field a line, and a list of plain values (or of short lists) on one line. */
   function pubJson(v, pad = '') {
@@ -11574,9 +11803,35 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     $('#pub-remove').disabled = pub.busy;
     const n = $('#pub-note').value.length;
     $('#pub-count').textContent = n ? `${n} / 500` : '';
+    // a character build can take the character's picture (a small copy of it, made by the reader): shown as it will go
+    $('#pub-pic-row').hidden = pub.kind !== 'player' || !S.meta.picture;
+    const pic = $('#pub-pic-img');
+    pic.hidden = !(pub.build && pub.build.picture);
+    if (pub.build && pub.build.picture) pic.src = pub.build.picture;
     pubDrawWhat();
   }
 
+  /**
+   * What a character build carries besides the reader's ids, read from the page as the Overview shows it: the key stats
+   * (the sheet's lines; digitalized only when the build's demon is the character's own, else those numbers would be
+   * another demon's) and the chain expertise reached with the skills their ranks give (the expertise bar).
+   */
+  function pubExtras() {
+    const own = (S.demons || []).find((d) => d.current), digiOk = !!S.data.digitalize && (pub.digi === null || (own && pub.digi === own.key));
+    const totals = {};
+    SHEET.flat().forEach(([, rows]) => rows.forEach(([k]) => {
+      const c = COMBAT.find((x) => x[0] === k) || OTHER_STATS.find((x) => x[0] === k);
+      if (!c) return;
+      const r = bonusRowOf(k, c[1], c[2]);
+      totals[k] = [round2(simRowVal(r, false)), digiOk ? round2(simRowVal(r, true)) : null];
+    }));
+    const chains = ((S.data.ranks && S.data.ranks.ranks) || []).filter((x) => x.chain).slice(0, 40)
+      .map((x) => [n0(x.id), Math.min(10, n0(x.class)), Math.min(10, n0(x.rank)), (x.skills || []).map((s) => n0(s.id)).filter((id) => id > 0).slice(0, 64)]);
+    // the other expertises' skills as their ranks give them (each rank's skill bar on the build page)
+    const expSkills = ((S.data.ranks && S.data.ranks.ranks) || []).filter((x) => !x.chain && Array.isArray(x.skills)).slice(0, 64)
+      .map((x) => [n0(x.id), x.skills.map((s) => n0(s.id)).filter((id) => id > 0).slice(0, 64)]);
+    return { totals, expSkills, chains };
+  }
   /** The build for what is picked (and, for one already published, its title and note as the gallery has them). */
   async function pubLoad() {
     const mine = ++pub.seq;
@@ -11584,9 +11839,11 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     if (pub.kind === 'demon' && !pub.demon) return;
     $('#pub-what').replaceChildren(h('p', { class: 'note', text: 'Reading your build…' }));
     try {
-      const r = await host.call('communityBuild', pub.kind === 'demon' ? { demon: pub.demon } : pub.digi === null ? {} : { digi: pub.digi });
+      const args = pub.kind === 'demon' ? { demon: pub.demon } : { ...(pub.digi === null ? {} : { digi: pub.digi }), picture: !!S.meta.picture && $('#pub-pic').checked };
+      const r = await host.call('communityBuild', args);
       if (mine !== pub.seq) return;
       pub.build = r && r.build;
+      if (pub.build && pub.kind === 'player') Object.assign(pub.build, pubExtras());
     } catch (e) {
       if (mine !== pub.seq) return;
       $('#pub-what').replaceChildren();
@@ -11629,9 +11886,12 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   $('#pub-form').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     if (pub.busy || !pub.build) return;
-    const name = $('#pub-name').value.trim();
+    const name = pubClean($('#pub-name').value, false);
     if (!name) { pubSay('Type a display name: the gallery shows it with the build.'); $('#pub-name').focus(); return; }
-    const body = { ...pub.build, about: { name, title: $('#pub-title').value.trim(), note: $('#pub-note').value.trim().replace(/\r\n?/g, '\n') } };
+    const body = { ...pub.build, about: { name, title: pubClean($('#pub-title').value, false), note: pubClean($('#pub-note').value, true) } };
+    // text only: the gallery refuses links (the same rule: gallery-worker\src\build.js LINK), so say which field first
+    const linked = [['name', 'the display name', '#pub-name'], ['title', 'the title', '#pub-title'], ['note', 'the note', '#pub-note']].find(([k]) => PUB_LINK.test(body.about[k].replace(/[。．｡]/g, '.')));
+    if (linked) { pubSay(`Links aren’t allowed: take the web address out of ${linked[1]}. Builds are text only.`); $(linked[2]).focus(); return; }
     const { key, entry } = pubEntry();
     pub.busy = true; pubSay(''); $('#pub-send').textContent = entry ? 'Updating…' : 'Publishing…'; pubDraw();
     try {
@@ -11677,6 +11937,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     pubDrawDemons(); pubLoad();
   }));
   $('#pub-note').addEventListener('input', pubDraw);
+  $('#pub-pic').addEventListener('change', () => pubLoad());
   $('#pub-close').addEventListener('click', () => pubDlg.close());
   $('#pub-cancel').addEventListener('click', () => pubDlg.close());
   pubDlg.addEventListener('click', (ev) => { if (ev.target === pubDlg) pubDlg.close(); });

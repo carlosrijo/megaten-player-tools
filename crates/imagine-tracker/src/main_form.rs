@@ -379,8 +379,19 @@ impl MainForm {
                 let e = self.require_active("No character is selected yet.")?;
                 let demon = jsonx::str(args.get("demon"));
                 let digi = args.get("digi").and_then(Value::as_str).map(str::to_string);
+                // `picture` (a player build): the character's picture goes with it, as a small thumbnail
+                let with_picture = demon.is_none() && jsonx::truthy(args.get("picture"));
                 let dir = self.char_dir(&e);
-                self.guarded(|| Ok(json!({ "build": self.backend.community_build(e.name(), &dir, demon.as_deref(), digi.as_deref())? }).to_string()))
+                self.guarded(|| {
+                    let mut build = self.backend.community_build(e.name(), &dir, demon.as_deref(), digi.as_deref())?;
+                    if with_picture {
+                        if let Some(p) = imagine::build::community::picture_thumbnail(&imagine::data::store::Store::new(&dir))? {
+                            build["picture"] = json!(p);
+                            imagine::build::community::check(&build).map_err(|why| anyhow::anyhow!("the build came out wrong ({why})"))?;
+                        }
+                    }
+                    Ok(json!({ "build": build }).to_string())
+                })
             }
 
             "communityDemons" => {

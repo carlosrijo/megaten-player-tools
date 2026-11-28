@@ -12,7 +12,7 @@
 //!
 //! Format, version 1 (`v`):
 //!   player = { v, kind: "player", takenAt, level, alignment, maxHp, maxMp, statsLive, stats, gear, gearPartial,
-//!              expertise, cap, toggles, code, partner, digitalize [, about] }
+//!              expertise, cap, toggles, code, partner, digitalize [, about] [, picture] [, totals] [, chains] [, expSkills] }
 //!     stats      = { str, mag, vit, int, spd, luck, clsr, lngr, spell, support, pdef, mdef: [base, bonus] }
 //!     gear       = [ { slot (0-14), id, basic, special, tarot, soul, fuse: [3], mods: [5] } ] (worn pieces only)
 //!     expertise  = [ [expertise id, points] ] (ids rising, points > 0); cap = the expertise point cap or null
@@ -23,6 +23,12 @@
 //!     a demon = { type, level, growthType, reunion: [12], mitamaType, mitamaRank, mitamaSlots: [96], skills: [8],
 //!                 forceStackIds: [8], equipmentIds: [4], stats: [14] (Max HP, Max MP, the 12 stats) }
 //!   about  = { name, title, note }: what the player typed in the Publish dialog (plain text; the page shows it as text)
+//!   totals  = { key: [normal, digitalized or null] }: the key stats (Critical, Limit break, damage dealt and taken, boosts,
+//!             costs, speed, EXP...) as the Overview's sheet shows them; keys from TOTALS. Digitalized only when the build's
+//!             digitalize demon is the character's own.
+//!   chains  = [ [expertise id, class, rank, [skill ids]] ]: the chain expertises reached and the skills their ranks give
+//!   expSkills = [ [expertise id, [skill ids]] ]: the other expertises' skills, as their ranks give them
+//!   picture = the character's picture as a small JPEG ("data:image/jpeg;base64,...", 96 x 96), only when the player ticks it
 //!   takenAt / seenAt = "YYYY-MM-DDTHH:MM" (to the minute)
 
 use crate::build::pipeline::{CompDemon, Pipeline};
@@ -32,8 +38,11 @@ use crate::{Result, user_error};
 use serde_json::{Map, Value, json};
 
 pub const VERSION: i64 = 1;
-/// The largest build the gallery takes (a real one is 2-4 KB).
-pub const MAX_BYTES: usize = 16 * 1024;
+/// The largest build the gallery takes (a real one is 2-4 KB, and up to MAX_PICTURE more with a picture).
+pub const MAX_BYTES: usize = 32 * 1024;
+/// The longest picture (its data: text): a 96 x 96 JPEG is 3-8 KB.
+pub const MAX_PICTURE: usize = 20_000;
+pub const PICTURE_SIZE: u32 = 96;
 pub const MAX_NAME: usize = 24;
 pub const MAX_TITLE: usize = 60;
 pub const MAX_NOTE: usize = 500;
@@ -47,6 +56,9 @@ const MAX_FUSE: i64 = 50;
 const MAX_POINTS: i64 = share_code::MAX_POINTS as i64;
 const MAX_CAP: i64 = share_code::MAX_CAP as i64;
 const MAX_TOGGLES: usize = 64;
+const MAX_TOTAL: f64 = 10_000_000.0;
+/// The key stats a build's `totals` may hold (the Overview's sheet).
+pub const TOTALS: [&str; 33] = ["crit", "final_crit", "lb_chance", "lb_power", "lb_cap", "ta_chance", "ta_power", "pursuit_chance", "pursuit_power", "xp_earned", "xp_partner", "xp_expertise", "soul_earned", "digi_points", "bethel_gain", "hp_cost", "mp_cost", "dmg_close", "dmg_long", "dmg_spell", "dmg_support", "taken_close", "taken_long", "taken_spell", "taken_support", "boost_spin", "boost_attack", "boost_rush", "boost_rapid", "boost_shot", "cooldown", "incantation", "move_speed"];
 
 // ---------- making a build ----------
 
@@ -144,6 +156,29 @@ pub fn demon_build(pipe: &Pipeline, name: &str, key: &str) -> Result<Value> {
     });
     check(&out).map_err(|why| anyhow::anyhow!("the demon build came out wrong ({why}); nothing published"))?;
     Ok(out)
+}
+
+/// The character's picture as a build carries it: cut square from the top (where the face is, as the Overview
+/// shows it), PICTURE_SIZE pixels, JPEG. None when the character has no picture.
+pub fn picture_thumbnail(store: &crate::data::store::Store) -> Result<Option<String>> {
+    let path = store.picture_path();
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let img = image::open(&path)?.to_rgb8();
+    let (w, h) = img.dimensions();
+    let side = w.min(h);
+    let square = image::imageops::crop_imm(&img, (w - side) / 2, 0, side, side).to_image();
+    let small = image::imageops::resize(&square, PICTURE_SIZE, PICTURE_SIZE, image::imageops::FilterType::Lanczos3);
+    for quality in [82u8, 70, 55, 40] {
+        let mut bytes = Vec::new();
+        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, quality).encode_image(&small)?;
+        let text = format!("data:image/jpeg;base64,{}", crate::build::demon_model::base64(&bytes));
+        if text.len() <= MAX_PICTURE {
+            return Ok(Some(text));
+        }
+    }
+    Ok(None)
 }
 
 /// The demons of the list that can be published (their details were read), with their keys.
@@ -297,9 +332,12 @@ fn check_player(o: &Map<String, Value>) -> Check {
     keys(
         o,
         &["v", "kind", "takenAt", "level", "alignment", "maxHp", "maxMp", "statsLive", "stats", "gear", "gearPartial", "expertise", "cap", "toggles", "code", "partner", "digitalize"],
-        &["about"],
+        &["about", "picture", "totals", "chains", "expSkills"],
         "the build",
     )?;
+    if let Some(p) = o.get("picture") {
+        picture(p)?;
+    }
     time(&o["takenAt"], "takenAt")?;
     int(&o["level"], 1, 99, "level")?;
     match o["alignment"].as_str() {
@@ -349,6 +387,37 @@ fn check_player(o: &Map<String, Value>) -> Check {
     if !o["cap"].is_null() {
         int(&o["cap"], 0, MAX_CAP, "cap")?;
     }
+    if let Some(t) = o.get("totals") {
+        let t = object(t, "totals")?;
+        keys(t, &[], &TOTALS, "totals")?;
+        for v in t.values() {
+            for x in list(v, 2, 2, "a total")? {
+                if !x.is_null() && !x.as_f64().is_some_and(|n| n.is_finite() && n.abs() <= MAX_TOTAL) {
+                    return Err("a total is not a number".into());
+                }
+            }
+        }
+    }
+    if let Some(c) = o.get("chains") {
+        for e in list(c, 0, 40, "chains")? {
+            let e = list(e, 4, 4, "a chain")?;
+            int(&e[0], 0, share_code::MAX_EXPERTISE_ID as i64, "a chain id")?;
+            int(&e[1], 0, 10, "a chain class")?;
+            int(&e[2], 0, 10, "a chain rank")?;
+            for s in list(&e[3], 0, 64, "a chain's skills")? {
+                int(s, 1, MAX_ID, "a skill")?;
+            }
+        }
+    }
+    if let Some(c) = o.get("expSkills") {
+        for e in list(c, 0, 64, "expSkills")? {
+            let e = list(e, 2, 2, "an expertise's skills")?;
+            int(&e[0], 0, share_code::MAX_EXPERTISE_ID as i64, "an expertise id")?;
+            for s in list(&e[1], 0, 64, "an expertise's skills")? {
+                int(s, 1, MAX_ID, "a skill")?;
+            }
+        }
+    }
     let toggles = list(&o["toggles"], 0, MAX_TOGGLES, "toggles")?;
     for t in toggles {
         int(t, 1, MAX_ID, "a switch skill")?;
@@ -388,6 +457,19 @@ fn check_demon(v: &Value, what: &str) -> Check {
     ints_in(&d["forceStackIds"], 8, 0, MAX_ID, "the force stack")?;
     ints_in(&d["equipmentIds"], 4, 0, MAX_ID, "demon equipment")?;
     ints_in(&d["stats"], 14, 0, MAX_STAT, "demon stats")
+}
+
+/// A picture: a JPEG or PNG as a data: text, base64 only, not too long (the page shows it in an <img>).
+fn picture(v: &Value) -> Check {
+    let s = v.as_str().ok_or("picture is not text")?;
+    let body = s.strip_prefix("data:image/jpeg;base64,").or_else(|| s.strip_prefix("data:image/png;base64,")).ok_or("picture is not a JPEG or PNG")?;
+    if s.len() > MAX_PICTURE {
+        return Err(format!("picture is longer than {MAX_PICTURE} characters"));
+    }
+    if body.len() < 16 || body.len() % 4 != 0 || !body.trim_end_matches('=').bytes().all(|b| b.is_ascii_alphanumeric() || b == b'+' || b == b'/') {
+        return Err("picture is not base64".into());
+    }
+    Ok(())
 }
 
 fn about(o: &Map<String, Value>) -> Check {
@@ -460,8 +542,35 @@ fn text(v: &Value, max: usize, lines: bool, what: &str) -> Check {
     if s.chars().any(|c| c.is_control() && !(lines && c == '\n')) || s.chars().any(|c| matches!(c, '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')) {
         return Err(format!("{what} has characters that aren't text"));
     }
+    if let Some(c) = s.chars().find(|&c| !clean_char(c, lines)) {
+        return Err(format!("{what} has a character that isn't plain text ({})", if c == '<' || c == '>' { "< or >".to_string() } else { format!("U+{:04X}", c as u32) }));
+    }
+    if looks_like_link(s) {
+        return Err(format!("{what} has a link; only text is allowed"));
+    }
     Ok(())
 }
+
+/// A character text a player typed may hold: no markup (< >), no invisible or zero-width characters, no line or paragraph
+/// separators but the plain line break (in a note). The Publish dialog cleans text to this before it is sent; the gallery
+/// Worker has the same rule (src/build.js cleanChar).
+pub fn clean_char(c: char, lines: bool) -> bool {
+    !matches!(c, '<' | '>' | '\u{00AD}' | '\u{034F}' | '\u{061C}' | '\u{115F}' | '\u{1160}' | '\u{17B4}' | '\u{17B5}' | '\u{180B}'..='\u{180F}' | '\u{200B}'..='\u{200F}' | '\u{2028}'..='\u{202E}' | '\u{2060}'..='\u{206F}' | '\u{3164}' | '\u{FE00}'..='\u{FE0F}' | '\u{FEFF}' | '\u{FFA0}' | '\u{FFF0}'..='\u{FFFF}' | '\u{E0000}'..='\u{E007F}')
+        && (!c.is_control() || (lines && c == '\n'))
+}
+
+/// Whether text a player typed holds something that reads as a web address (a scheme such as https://, "www.", or a
+/// name ending in a common domain ending). Builds are text only. The gallery Worker has the same rule (src/build.js).
+pub fn looks_like_link(s: &str) -> bool {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| regex::Regex::new(LINK_PATTERN).expect("the link pattern"));
+    // full-width and ideographic dots read as dots
+    let plain: String = s.chars().map(|c| if matches!(c, '。' | '．' | '｡') { '.' } else { c }).collect();
+    re.is_match(&plain)
+}
+
+/// The same pattern as the gallery Worker's LINK (gallery-worker/src/build.js).
+const LINK_PATTERN: &str = r"(?i)(://|(?:^|[^a-z0-9:])//[a-z0-9]|\bwww\.|\b(?:mailto|javascript|vbscript|data|file|ftp|ftps|sftp|ssh|telnet|irc|ircs|magnet|steam|tel|sms|ws|wss|blob|about|chrome|intent|market|skype|callto|news|nntp|gopher|ldap|smb|git|svn|ed2k|bitcoin|ms-[a-z]+):[^\s]|\b[a-z0-9\-]+(?:\.[a-z0-9\-]+)*\.(?:com|net|org|gg|io|me|ly|co|xyz|ru|tk|app|dev|link|site|online|info|biz|cc|tv|us|uk|de|fr|br|jp|cn|kr|shop|store|live|top|club|gl|to|in|eu)\b)";
 
 #[cfg(test)]
 mod tests {
@@ -604,6 +713,30 @@ mod tests {
         // taken down
         save_published(&store, Some("10041:Alilat:93"), None, None, None, None).unwrap();
         assert_eq!(published(&store)["demons"], json!({}));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_picture_is_a_small_jpeg_or_png() {
+        let dir = std::env::temp_dir().join(format!("imagine-community-pic-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let store = crate::data::store::Store::new(&dir);
+        assert_eq!(picture_thumbnail(&store).unwrap(), None);
+        // a tall noisy picture: cut square from the top, made small enough
+        let img = image::RgbImage::from_fn(300, 500, |x, y| image::Rgb([(x * 7 + y * 13) as u8, (x * y) as u8, (x ^ y) as u8]));
+        img.save(store.picture_path()).unwrap();
+        let p = picture_thumbnail(&store).unwrap().unwrap();
+        assert!(p.starts_with("data:image/jpeg;base64,") && p.len() <= MAX_PICTURE, "{}", p.len());
+        let mut b = player();
+        b["picture"] = json!(p);
+        assert_eq!(check(&b), Ok(()));
+        for bad in ["data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=", "data:image/jpeg;base64,not base64 at all!!", "https://example.com/a.jpg"] {
+            b["picture"] = json!(bad);
+            assert!(check(&b).is_err(), "{bad}");
+        }
+        b["picture"] = json!(format!("data:image/jpeg;base64,{}", "A".repeat(MAX_PICTURE)));
+        assert!(check(&b).is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

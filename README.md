@@ -682,7 +682,9 @@ game or your saved data. It starts from your character as last read (take a snap
   demons', in the gallery the BABEL website shows. The dialog lists what goes out (and the exact text sent): only
   numbers (level, stats, the worn pieces with their crystals, fusions and mods, expertise points, the switch skills
   that are on, the digitalize and summoned demon; for a demon: its stats, skills, rebirth ranks, Mitama, Demon Force
-  stack and equipment), with a display name, title and note you type. Never the character's name, effect text or
+  stack and equipment), with a display name, title and note you type: text only (no links or web addresses of any
+  protocol, no markup, no invisible characters; the dialog cleans the text, and BABEL and the gallery both refuse
+  anything else, the same rule: `community.rs` `clean_char` / `LINK_PATTERN`). Never the character's name, effect text or
   anything about the PC. Only demons BABEL has seen up close (summoned, or their status window opened) can be
   published. The gallery gives each build a secret that only your BABEL keeps (`community.json` in the character's
   folder; not in support bundles): only with it can you update the build or take it down, from the same dialog.

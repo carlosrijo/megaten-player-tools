@@ -57,6 +57,10 @@ impl Store {
     pub fn community_path(&self) -> PathBuf {
         self.dir.join("community.json")
     }
+    /// The character's picture (the app's CharacterPicture writes it).
+    pub fn picture_path(&self) -> PathBuf {
+        self.dir.join("picture.png")
+    }
     pub fn last_stats_path(&self) -> PathBuf {
         self.cache_dir().join("last-stats.json")
     }

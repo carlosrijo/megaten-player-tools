@@ -126,7 +126,7 @@ test('what is stored is the clean copy; bad builds and other pages are turned aw
   const noAbout = good('demon');
   delete noAbout.about;
   assert.match((await call('POST', '/builds', { body: noAbout })).data.error, /display name/);
-  assert.equal((await call('POST', '/builds', { body: { ...good('demon'), pad: 'x'.repeat(30000) } })).status, 413);
+  assert.equal((await call('POST', '/builds', { body: { ...good('demon'), pad: 'x'.repeat(50000) } })).status, 413);
   // only the app's page (or no browser) may publish: not the website, not another site
   assert.equal((await call('POST', '/builds', { body: good('demon'), origin: 'https://babel-7vg.pages.dev' })).status, 403);
   assert.equal((await call('POST', '/builds', { body: good('demon'), origin: 'https://evil.example' })).status, 403);
@@ -192,6 +192,19 @@ test('a list is kept a little while, and dropped when this instance changes some
   await call('POST', '/builds', { body: 'not json' });
   await call('GET', '/builds?kind=demon');
   assert.equal(reads, 2);
+});
+
+test('several builds at once, for one page of cards', async () => {
+  const { call } = service();
+  const a = (await call('POST', '/builds', { body: good('player') })).data.id;
+  const b = (await call('POST', '/builds', { body: good('demon') })).data.id;
+  const r = await call('GET', `/builds?ids=${a},${b},AAAAAAAAAA`);
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.data.builds.map((x) => x.id).sort(), [a, b].sort());
+  assert.deepEqual(r.data.builds.find((x) => x.id === a).build, good('player'));
+  assert.equal((await call('GET', '/builds?ids=')).status, 400);
+  assert.equal((await call('GET', '/builds?ids=bad!')).status, 400);
+  assert.equal((await call('GET', `/builds?ids=${Array.from({ length: 101 }, (_, i) => String(i).padStart(10, 'A')).join(',')}`)).status, 400);
 });
 
 test('not for search engines', async () => {

@@ -595,10 +595,62 @@
      40
     ]
    },
+   "totals": {
+    "crit": [
+     750,
+     900
+    ],
+    "lb_chance": [
+     45,
+     55.5
+    ],
+    "cooldown": [
+     -79,
+     -79
+    ],
+    "move_speed": [
+     50,
+     70
+    ],
+    "xp_earned": [
+     20,
+     null
+    ]
+   },
+   "expSkills": [
+    [
+     3,
+     [
+      5450,
+      5451
+     ]
+    ],
+    [
+     4,
+     []
+    ]
+   ],
+   "chains": [
+    [
+     37,
+     8,
+     4,
+     [
+      5450,
+      5451
+     ]
+    ],
+    [
+     40,
+     4,
+     6,
+     []
+    ]
+   ],
    "about": {
     "name": "Rubito",
     "title": "Gun build",
-    "note": "Shot and Rapid.\nTwo lines."
+    "note": "Lv.95, 1.5x damage, e.g. Rapid 10-0 & \"Shot\". About: v1.2 of my build: use it!"
    }
   },
   "demon": {
@@ -1002,6 +1054,187 @@
    "base": "demon",
    "path": "/kind",
    "to": "item"
+  },
+  {
+   "why": "an SVG picture",
+   "base": "player",
+   "path": "/picture",
+   "to": "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4="
+  },
+  {
+   "why": "a picture that is not base64",
+   "base": "player",
+   "path": "/picture",
+   "to": "data:image/jpeg;base64,not base64 at all!!"
+  },
+  {
+   "why": "a picture link",
+   "base": "player",
+   "path": "/picture",
+   "to": "https://example.com/a.jpg"
+  },
+  {
+   "why": "a picture as a number",
+   "base": "player",
+   "path": "/picture",
+   "to": 5
+  },
+  {
+   "why": "a picture on a demon build",
+   "base": "demon",
+   "path": "/picture",
+   "to": "data:image/jpeg;base64,AAAAAAAAAAAAAAAA"
+  },
+  {
+   "why": "an unknown total",
+   "base": "player",
+   "path": "/totals/secret",
+   "to": [
+    1,
+    2
+   ]
+  },
+  {
+   "why": "a total as text",
+   "base": "player",
+   "path": "/totals/crit",
+   "to": [
+    "750",
+    null
+   ]
+  },
+  {
+   "why": "a total too big",
+   "base": "player",
+   "path": "/totals/crit",
+   "to": [
+    1000000000,
+    null
+   ]
+  },
+  {
+   "why": "a chain with text",
+   "base": "player",
+   "path": "/chains/0/3",
+   "to": [
+    "Shot Booster"
+   ]
+  },
+  {
+   "why": "a chain class 11",
+   "base": "player",
+   "path": "/chains/0/1",
+   "to": 11
+  },
+  {
+   "why": "an expertise skill as text",
+   "base": "player",
+   "path": "/expSkills/0/1",
+   "to": [
+    "Shot Booster"
+   ]
+  },
+  {
+   "why": "an expertise id 200",
+   "base": "player",
+   "path": "/expSkills/0/0",
+   "to": 200
+  },
+  {
+   "why": "a link in the note",
+   "base": "player",
+   "path": "/about/note",
+   "to": "Guide at https://example.com/build"
+  },
+  {
+   "why": "www. in the title",
+   "base": "player",
+   "path": "/about/title",
+   "to": "see www.mysite"
+  },
+  {
+   "why": "a Discord invite in the name",
+   "base": "player",
+   "path": "/about/name",
+   "to": "discord.gg/abc"
+  },
+  {
+   "why": "a bare domain in the note",
+   "base": "player",
+   "path": "/about/note",
+   "to": "free gold at goldsite.com now"
+  },
+  {
+   "why": "a full-width dot domain",
+   "base": "player",
+   "path": "/about/note",
+   "to": "free gold at goldsite．com"
+  },
+  {
+   "why": "a javascript: text",
+   "base": "player",
+   "path": "/about/title",
+   "to": "javascript:alert(1)"
+  },
+  {
+   "why": "an ftp link",
+   "base": "player",
+   "path": "/about/note",
+   "to": "files at ftp://files.example/pack"
+  },
+  {
+   "why": "another protocol",
+   "base": "player",
+   "path": "/about/note",
+   "to": "see gopher://hole"
+  },
+  {
+   "why": "a // link",
+   "base": "player",
+   "path": "/about/note",
+   "to": "mirror //files.example.zz/a"
+  },
+  {
+   "why": "an irc: address",
+   "base": "player",
+   "path": "/about/title",
+   "to": "irc:chat.example"
+  },
+  {
+   "why": "a script tag",
+   "base": "player",
+   "path": "/about/note",
+   "to": "nice <script>alert(1)</script>"
+  },
+  {
+   "why": "markup in the name",
+   "base": "player",
+   "path": "/about/name",
+   "to": "<b>Rubito</b>"
+  },
+  {
+   "why": "a zero-width space",
+   "base": "player",
+   "path": "/about/name",
+   "to": "Rub​ito"
+  },
+  {
+   "why": "a line separator in the note",
+   "base": "player",
+   "path": "/about/note",
+   "to": "a b"
+  },
+  {
+   "why": "a BOM in the title",
+   "base": "player",
+   "path": "/about/title",
+   "to": "﻿Gun build"
+  },
+  {
+   "why": "a tag character",
+   "base": "player",
+   "path": "/about/title",
+   "to": "Gun󠁁build"
   }
  ]
 }

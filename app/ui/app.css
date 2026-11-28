@@ -844,6 +844,40 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .cb-lines { display: grid; gap: 6px; }
 .cb-line { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 13px; }
 .cb-report { min-width: 220px; }
+.cb-card-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.cb-lines-cols { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); column-gap: 24px; row-gap: 6px; }
+/* (a picture box pulls itself into a table row with a negative margin: not in these lists, where they'd overlap) */
+.cb-lines .dcm-icon { margin: 0; width: 26px; height: 26px; }
+.cb-lines .dcm-icon img { width: 26px; height: 26px; }
+.cb-piece .card-head { align-items: center; gap: 10px; }
+.cb-piece .sim-cols + .sim-cols { margin-top: 12px; }
+.cb-piece-foot { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 12px; font-size: 13px; color: var(--text-2); }
+.cb-layout { margin-top: 4px; }
+/* the expertise bar, opened: every rank */
+.cb-exp-detail { grid-column: 1 / -1; display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+.cb-exp-detail .list-head { padding: 4px 0 0; }   /* flush with the list, not indented as in a menu */
+/* the ranks flow down columns (a taller one, with a long skill bar, doesn't leave a gap beside it) */
+.cb-exp-list { columns: 300px; column-gap: 32px; }
+.cb-exp-item { display: grid; gap: 6px; min-width: 0; break-inside: avoid; margin-bottom: 14px; }
+.cb-exp-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 45%) 40px; align-items: center; gap: 12px; font-size: 13px; }
+.cb-exp-row b { text-align: right; color: var(--exp, var(--text)); }
+.cb-exp-row .band-bar { grid-column: auto; height: 8px; border-radius: 4px; }   /* (a band's bar spans the whole row elsewhere) */
+.cb-exp-row .band-bar i { border-radius: 4px; }
+.cb-exp-skills { display: flex; flex-wrap: wrap; gap: 3px; }
+.cb-exp-skills .skill-ico.first { margin-left: 0; }
+.cb-exp-skills.none { font-size: 12px; color: var(--text-3); }
+.cb-exp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the character's picture: at the end of a card's name row, beside a build's title, in the Publish dialog */
+.cb-pic { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; box-shadow: 0 0 0 2px var(--border-strong); margin-left: auto; }
+.cb-pic.align-law, .cb-pic.align-neutral, .cb-pic.align-chaos { box-shadow: 0 0 0 2px var(--align); }
+.cb-pic-big { width: 96px; height: 96px; border-radius: 12px; margin: 0; }
+.cb-head.with-pic { grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: start; }
+.cb-head-text { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.cb-head .who-line { align-items: flex-start; }
+.cb-head .cb-title { line-height: 1.2; }
+.cb-about { display: grid; gap: 4px; }
+.cb-about .cb-note { margin: 0; }
+#pub-pic-row img { width: 32px; height: 32px; margin-left: 4px; }
 /* Publish build (Community Builds) */
 .dlg.dlg-publish { width: min(560px, calc(100vw - 32px)); }
 .dlg.dlg-publish.pub-wide { width: min(880px, calc(100vw - 32px)); }   /* "A demon": the digitalize picker's list */

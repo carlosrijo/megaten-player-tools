@@ -6,6 +6,7 @@
 //   DELETE /builds/<id>       Authorization: Bearer <secret>       -> { ok }
 // Reading (anyone):
 //   GET    /builds?kind=player|demon                              -> { ok, builds: [ { id, kind, name, title, level, created, updated, facets } ] }
+//   GET    /builds?ids=<id>,<id>,...  (up to 100)                     -> { ok, builds: [ { id, kind, created, updated, build } ] }   (the cards of one page)
 //   GET    /builds/<id>                                           -> { ok, id, kind, created, updated, build }
 //   POST   /builds/<id>/report  { reason }                        -> { ok }   (from the website or the app)
 // The developer (Authorization: Bearer <ADMIN_KEY>, a Worker secret):
@@ -19,7 +20,7 @@
 
 import { check, facets } from './build.js';
 
-export const MAX_REQUEST = 20 * 1024;
+export const MAX_REQUEST = 40 * 1024;
 export const MAX_BUILDS = 5000;            // visible builds of each kind; past it new ones wait for room
 export const CREATES_PER_DAY = 10;         // new builds from one address in 24 hours
 export const AUTO_HIDE = 3;                // reports from different people that hide a build until it is checked
@@ -95,7 +96,7 @@ async function route(request, env, origin) {
   const fromApp = !origin || origin === APP_ORIGIN || local(origin);
 
   if (path === '/builds') {
-    if (m === 'GET') return list(env, url.searchParams.get('kind'));
+    if (m === 'GET') return url.searchParams.has('ids') ? many(env, url.searchParams.get('ids')) : list(env, url.searchParams.get('kind'));
     if (m === 'POST') return fromApp ? create(request, env) : reply(403, { ok: false, error: 'Builds are published from BABEL.' });
     return reply(405, { ok: false, error: 'Use GET or POST.' });
   }
@@ -144,6 +145,17 @@ async function show(env, id) {
   const r = await env.DB.prepare('SELECT id, kind, created, updated, body FROM builds WHERE id = ? AND hidden = 0').bind(id).first();
   if (!r) return reply(404, { ok: false, error: 'That build is not in the gallery (any more).' });
   return reply(200, { ok: true, id: r.id, kind: r.kind, created: iso(r.created), updated: iso(r.updated), build: JSON.parse(r.body) }, { 'Cache-Control': 'public, max-age=60' });
+}
+
+// The builds of one page of cards at once (a card draws the build itself: its pieces, its demon's bars). Hidden ones and
+// ids that aren't there are left out.
+export const MAX_IDS = 100;
+async function many(env, text) {
+  const ids = [...new Set(String(text || '').split(',').map((s) => s.trim()).filter(Boolean))];
+  if (!ids.length || ids.length > MAX_IDS || ids.some((id) => !/^[A-Za-z0-9]{10}$/.test(id))) return reply(400, { ok: false, error: `Ask for 1 to ${MAX_IDS} build ids.` });
+  const { results } = await env.DB.prepare(`SELECT id, kind, created, updated, body FROM builds WHERE hidden = 0 AND id IN (${ids.map(() => '?').join(', ')})`).bind(...ids).all();
+  const builds = results.map((r) => ({ id: r.id, kind: r.kind, created: iso(r.created), updated: iso(r.updated), build: JSON.parse(r.body) }));
+  return reply(200, { ok: true, builds }, { 'Cache-Control': 'public, max-age=60' });
 }
 
 // ---------- publishing ----------

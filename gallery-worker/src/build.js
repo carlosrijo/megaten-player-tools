@@ -5,7 +5,8 @@
 // Whatever reaches the gallery may come from anywhere: only the copy is ever stored.
 
 export const VERSION = 1;
-export const MAX_BYTES = 16 * 1024;
+export const MAX_BYTES = 32 * 1024;
+export const MAX_PICTURE = 20_000;
 export const MAX_NAME = 24;
 export const MAX_TITLE = 60;
 export const MAX_NOTE = 500;
@@ -23,6 +24,8 @@ const MAX_ID = 1_000_000;
 const MAX_STAT = 99_999;
 const MAX_FUSE = 50;
 const MAX_TOGGLES = 64;
+const MAX_TOTAL = 10_000_000;
+export const TOTALS = ['crit', 'final_crit', 'lb_chance', 'lb_power', 'lb_cap', 'ta_chance', 'ta_power', 'pursuit_chance', 'pursuit_power', 'xp_earned', 'xp_partner', 'xp_expertise', 'soul_earned', 'digi_points', 'bethel_gain', 'hp_cost', 'mp_cost', 'dmg_close', 'dmg_long', 'dmg_spell', 'dmg_support', 'taken_close', 'taken_long', 'taken_spell', 'taken_support', 'boost_spin', 'boost_attack', 'boost_rush', 'boost_rapid', 'boost_shot', 'cooldown', 'incantation', 'move_speed'];
 
 class Bad extends Error {}
 const bad = (why) => { throw new Bad(why); };
@@ -43,7 +46,8 @@ export function check(v) {
 }
 
 function player(o) {
-  keys(o, ['v', 'kind', 'takenAt', 'level', 'alignment', 'maxHp', 'maxMp', 'statsLive', 'stats', 'gear', 'gearPartial', 'expertise', 'cap', 'toggles', 'code', 'partner', 'digitalize'], ['about'], 'the build');
+  keys(o, ['v', 'kind', 'takenAt', 'level', 'alignment', 'maxHp', 'maxMp', 'statsLive', 'stats', 'gear', 'gearPartial', 'expertise', 'cap', 'toggles', 'code', 'partner', 'digitalize'], ['about', 'picture', 'totals', 'chains', 'expSkills'], 'the build');
+  if ('picture' in o) picture(o.picture);
   time(o.takenAt, 'takenAt');
   int(o.level, 1, 99, 'level');
   if (!ALIGNMENTS.includes(o.alignment)) bad("alignment is not one of the game's");
@@ -93,6 +97,17 @@ function player(o) {
     v: VERSION, kind: 'player', takenAt: o.takenAt, level: o.level, alignment: o.alignment, maxHp: o.maxHp, maxMp: o.maxMp,
     statsLive: o.statsLive, stats, gear, gearPartial: o.gearPartial, expertise, cap, toggles, code: o.code, partner, digitalize,
   };
+  if ('picture' in o) out.picture = o.picture;
+  if ('totals' in o) {
+    const t = object(o.totals, 'totals');
+    keys(t, [], TOTALS, 'totals');
+    out.totals = {};
+    for (const k of TOTALS) if (k in t) out.totals[k] = list(t[k], 2, 2, 'a total').map((x) => { if (x !== null && !(typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= MAX_TOTAL)) bad('a total is not a number'); return x; });
+  }
+  if ('expSkills' in o) out.expSkills = list(o.expSkills, 0, 64, 'expSkills').map((e) => { const c = list(e, 2, 2, "an expertise's skills");
+    return [int(c[0], 0, MAX_EXPERTISE_ID, 'an expertise id'), list(c[1], 0, 64, "an expertise's skills").map((s) => int(s, 1, MAX_ID, 'a skill'))]; });
+  if ('chains' in o) out.chains = list(o.chains, 0, 40, 'chains').map((e) => { const c = list(e, 4, 4, 'a chain');
+    return [int(c[0], 0, MAX_EXPERTISE_ID, 'a chain id'), int(c[1], 0, 10, 'a chain class'), int(c[2], 0, 10, 'a chain rank'), list(c[3], 0, 64, 'a chain\x27s skills').map((s) => int(s, 1, MAX_ID, 'a skill'))]; });
   return withAbout(o, out);
 }
 
@@ -118,6 +133,15 @@ function demon(v, what) {
     equipmentIds: ints(d.equipmentIds, 4, 0, MAX_ID, 'demon equipment'),
     stats: ints(d.stats, 14, 0, MAX_STAT, 'demon stats'),
   };
+}
+
+// the character's picture: a small JPEG or PNG as a data: text, base64 only (the page shows it in an <img>)
+function picture(v) {
+  if (typeof v !== 'string') bad('picture is not text');
+  const m = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+=*)$/.exec(v);
+  if (!m) bad('picture is not a JPEG or PNG');
+  if (v.length > MAX_PICTURE) bad(`picture is longer than ${MAX_PICTURE} characters`);
+  if (m[2].length < 16 || m[2].length % 4) bad('picture is not base64');
 }
 
 function withAbout(o, out) {
@@ -173,7 +197,23 @@ function text(v, max, lines, what) {
   if ([...v].length > max) bad(`${what} is longer than ${max} characters`);
   const control = lines ? /[\p{Cc}--\n]/v : /\p{Cc}/u;
   if (control.test(v) || /[‪-‮⁦-⁩]/u.test(v)) bad(`${what} has characters that aren't text`);
+  const odd = [...v].find((c) => !cleanChar(c, lines));
+  if (odd) bad(`${what} has a character that isn't plain text (${odd === '<' || odd === '>' ? '< or >' : 'U+' + odd.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')})`);
+  if (looksLikeLink(v)) bad(`${what} has a link; only text is allowed`);
   return v;
+}
+
+// Something that reads as a web address: a scheme (https://), "www.", or a name with a common domain ending. Builds are
+// text only. The app has the same rule (crates\imagine\src\build\community.rs, LINK_PATTERN).
+export const LINK = /(:\/\/|(?:^|[^a-z0-9:])\/\/[a-z0-9]|\bwww\.|\b(?:mailto|javascript|vbscript|data|file|ftp|ftps|sftp|ssh|telnet|irc|ircs|magnet|steam|tel|sms|ws|wss|blob|about|chrome|intent|market|skype|callto|news|nntp|gopher|ldap|smb|git|svn|ed2k|bitcoin|ms-[a-z]+):(?!\s)|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|gg|io|me|ly|co|xyz|ru|tk|app|dev|link|site|online|info|biz|cc|tv|us|uk|de|fr|br|jp|cn|kr|shop|store|live|top|club|gl|to|in|eu)\b)/i;
+// A character text a player typed may hold: no markup (< >), no invisible or zero-width characters, no line or paragraph
+// separators but the plain line break (in a note). The app has the same rule (community.rs clean_char).
+const NOT_CLEAN = /[<>\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B-\u180F\u200B-\u200F\u2028-\u202E\u2060-\u206F\u3164\uFE00-\uFE0F\uFEFF\uFFA0\uFFF0-\uFFFF]|[\u{E0000}-\u{E007F}]/u;
+export function cleanChar(c, lines) {
+  return !NOT_CLEAN.test(c) && !(/\p{Cc}/u.test(c) && !(lines && c === '\n'));
+}
+export function looksLikeLink(s) {
+  return LINK.test(String(s).replace(/[。．｡]/g, '.'));   // (full-width and ideographic dots read as dots)
 }
 
 // A Build Planner code: "BABEL1-" + base64url, its first two bytes a CRC-16/CCITT-FALSE of the rest. The app decodes
