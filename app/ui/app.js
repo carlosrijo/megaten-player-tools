@@ -129,12 +129,17 @@
       });
       return { native: true, call: (cmd, args) => new Promise((resolve, reject) => { const id = ++seq; pending.set(id, { resolve, reject }); wv.postMessage({ id, cmd, args: args || {} }); }) };
     }
-    // The website: no character, no game; the theme is kept in the browser. Anything else needs the desktop app.
+    // The website: no game; the character pages show the demo character (demo/demo.json, tools\build-demo.mjs), and
+    // the theme is kept in the browser. Anything else needs the desktop app.
     if (WEB) {
       const settings = { theme: store.get('theme') || 'system' };
+      const none = { snapshots: [], gear: [], expertise: [], bonuses: [], ranks: null, digitalize: null, icons: {}, unlocks: [], summoned: null, meta: {} };
+      let demo = null;   // demo.json, once fetched
       const answers = {
         state: () => ({ active: null, scanned: true, clients: [], characters: [] }),
-        load: () => ({ snapshots: [], gear: [], expertise: [], bonuses: [], ranks: null, digitalize: null, icons: {}, unlocks: [], summoned: null, meta: {} }),
+        load: () => (demo = demo || fetch('demo/demo.json').then((r) => (r.ok ? r.json() : none)).catch(() => none)),
+        // the demo character's demon list as last seen (its partner card and demon picker); reading the game needs BABEL
+        compDemons: async (a) => { if (a && a.cached) return ((await answers.load()).comp || []).map((d) => ({ ...d, inGame: false })); throw Object.assign(new Error('This needs BABEL, the desktop app, on your PC.'), { kind: 'user' }); },
         status: () => ({ gameRunning: false, busy: false, clientsChanged: false }),
         getSettings: () => ({ ...settings }),
         saveSettings: (a) => { if (a && a.theme) { settings.theme = a.theme; store.set('theme', a.theme); } return { ...settings }; },
@@ -522,7 +527,7 @@
     data: null, meta: {}, v: null,
     settings: { character: 'Rubito', csv: '', theme: 'system', dataDir: '' },
     mode: Q.get('mode') || store.get('mode') || 'normal',
-    page: Q.get('page') || (WEB ? 'skills' : 'overview'),   // always opens on Overview (the last page is not remembered); the website on the Skill Database
+    page: Q.get('page') || 'overview',   // always opens on Overview (the last page is not remembered; the website's is the demo character's)
     busy: false, scanning: false, lastScan: 0,
     state: { active: null, scanned: false, clients: [], characters: [] },   // who is in game, whose data is shown
     compare: null,
@@ -1049,8 +1054,8 @@
       h('div', { class: 'demon-main' }, h('div', { class: 'demon-id' },
         h('h3', { class: 'demon-name' }, S.over.switching
           ? h('span', { class: 'demon-switching', role: 'status' }, h('span', { class: 'spin ink' }), `Switching to ${S.over.switching}…`)
-          : h('button', { type: 'button', class: 'name-btn', popovertarget: 'demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick a demon to see your numbers while digitalized with it',
-            onclick: (ev) => { demonsFor = ev.currentTarget; } }, 'No demon', h('span', { class: 'chev down' }, icon('chevron')))),
+          : h('button', { type: 'button', class: 'name-btn', 'aria-haspopup': 'dialog', 'data-tip': 'Pick a demon to see your numbers while digitalized with it',
+            onclick: () => overviewDemonPick() }, 'No demon', h('span', { class: 'chev down' }, icon('chevron')))),
         h('span', { class: 'tag tag-off', text: 'Not digitalized' }))));
     const why = isTrue(DG.digitalized_when_taken) ? 'you were digitalized with it when it was saved' : 'it is the demon you last digitalized with or picked';
     // its icon from the game (32x32, shown at double size, pixel-crisp); its initial when there is none
@@ -1143,8 +1148,8 @@
         onclick: () => { S.over.demon = !open; store.set('demon-open', open ? '0' : '1'); render(); } }, h('span', { class: 'chev' }, icon('chevron')), open ? 'Less' : 'Details'));
     const name = S.over.switching
       ? h('span', { class: 'demon-switching', role: 'status' }, h('span', { class: 'spin ink' }), `Switching to ${S.over.switching}…`)
-      : h('button', { type: 'button', class: 'name-btn', popovertarget: 'demons', 'aria-haspopup': 'menu', 'data-tip': 'Pick another demon, or no demon',
-        onclick: (ev) => { demonsFor = ev.currentTarget; } }, DG.demon, h('span', { class: 'chev down' }, icon('chevron')));
+      : h('button', { type: 'button', class: 'name-btn', 'aria-haspopup': 'dialog', 'data-tip': 'Pick another demon, or no demon',
+        onclick: () => overviewDemonPick() }, DG.demon, h('span', { class: 'chev down' }, icon('chevron')));
     const id = h('div', { class: 'demon-id' },
       h('h3', { class: 'demon-name' }, name), open ? chips : chips.slice(0, idChips), open || !SK ? null : SK.icons, actions);
     if (!open) return h('section', { class: 'card demon-card closed' }, pic, h('div', { class: 'demon-main' }, id));
@@ -1234,21 +1239,23 @@
     const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
     const by = { boost: new Map(), resistance: new Map(), cap: new Map() };
     const at = (map, name) => { if (!map.has(name)) map.set(name, { name, gear: 0, exp: 0, demon: 0 }); return map.get(name); };
-    (S.data.bonuses || []).forEach((r) => {
-      if (r.group !== 'Partner' || !isTrue(r.counted)) return;
+    // (its Mitamas' part counts as its own, with its resistance as a demon of its kind)
+    partnerRows().forEach((r) => {
+      if (!isTrue(r.counted)) return;
       const m = /^(.+?) (affinity cap|affinity|resist)$/i.exec(String(r.bonus || ''));
       if (!m) return;
       const k = m[2].toLowerCase(), e = at(by[k === 'affinity cap' ? 'cap' : k === 'resist' ? 'resistance' : 'boost'], m[1].charAt(0).toUpperCase() + m[1].slice(1));
-      e.gear = round2(e.gear + n0(r.gear)); e.exp = round2(e.exp + n0(r.total) - n0(r.gear));
+      const mt = mitamaPart(r);
+      e.gear = round2(e.gear + n0(r.gear)); e.exp = round2(e.exp + n0(r.total) - n0(r.gear) - mt); e.demon = round2(e.demon + mt);
     });
     const r0 = d && S.ddb.data ? rbpResolve(d) : null, v = r0 ? ((r0.fused || n0(d.mitamaType) > 0) && r0.x.mt ? r0.x.mt : r0.x) : null;
-    if (v && Array.isArray(v.res)) S.ddb.data.elements.forEach((name, i) => { if (n0(v.res[i])) at(by.resistance, name).demon = n0(v.res[i]); });
+    if (v && Array.isArray(v.res)) S.ddb.data.elements.forEach((name, i) => { if (n0(v.res[i])) { const e = at(by.resistance, name); e.demon = round2(e.demon + n0(v.res[i])); } });
     const rank = (n) => { const i = AFF_ORDER.indexOf(n); return i < 0 ? AFF_ORDER.length : i; };
     const names = [...new Set([...by.boost.values(), ...by.resistance.values(), ...by.cap.values()].filter((e) => round2(e.gear + e.exp + e.demon)).map((e) => e.name))]
       .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
     const list = (map) => names.map((name) => { const e = map.get(name) || { name, gear: 0, exp: 0, demon: 0 }; return { ...e, total: round2(e.gear + e.exp + e.demon) }; });
     return { aff: { boost: list(by.boost), resistance: list(by.resistance), cap: list(by.cap).map((e) => ({ ...e, raise: e.total, total: round2(100 + e.total) })) },
-      demon: d || null, own: d ? `${d.name}’s own` : 'its own', ownKnown: !!v };
+      demon: d || null, own: d ? `${d.name}’s own` : 'its own', ownKnown: !!v, mitama: !!d && partnerMitamaBonuses(d).length > 0 };
   }
   function affinityTable(aff, P) {
     const split = (e) => { const parts = affParts(e, P); return parts.length ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : ''; };
@@ -1286,7 +1293,7 @@
     const card = h('section', { class: 'card', 'aria-label': P ? 'Your partner’s affinities' : 'Affinity' });
     // what the partner's numbers are, and what they leave out
     const about = !P ? null : h('p', { class: 'note', text: (P.ownKnown ? `Resistance is ${P.own} as a demon of its kind has it, plus what you give it. ` : P.demon ? `${P.own} resistances aren’t loaded yet, so only what you give it is shown. ` : 'No demon is summoned, so this is only what you give a partner. ')
-      + 'Boost and cap are what you give it. Its Demon Force, Mitama slots and skills are not included.' });
+      + (P.mitama ? 'Boost and cap are what you give it, plus its Mitamas. Its Demon Force and skills are not included.' : 'Boost and cap are what you give it. Its Demon Force, Mitama slots and skills are not included.') });
     if (n < 3) {   // a radar needs three spokes: the table alone (or a line when there is nothing)
       card.append(n || (!P && weaponBoost()) ? affinityTable(aff, P) : h('p', { class: 'note', text: 'No affinity boosts or resistances yet.' }), about);
       return card;
@@ -1453,7 +1460,7 @@
    * No cap bars: the partner's caps aren't known here. A click opens where a line comes from.
    */
   function partnerSheet() {
-    const rows = (S.data.bonuses || []).filter((r) => r.group === 'Partner' && r.counted !== false);
+    const rows = partnerRows().filter((r) => r.counted !== false);   // (with what its own Mitamas add: partnerRows)
     const byName = new Map(rows.map((r) => [String(r.bonus).trim().toLowerCase(), r]));
     const used = new Set();
     const take = (...names) => { for (const n of names) { const r = n && byName.get(String(n).toLowerCase()); if (r && !used.has(r)) { used.add(r); return r; } } return null; };
@@ -1474,8 +1481,8 @@
       const id = 'p:' + r.row, open = S.over.open === id, f = (v) => fmt(v, r.unit, true);
       const src = new Map();   // per kind of source, without what only counts while digitalized (no partner is out then)
       (Array.isArray(r.parts) ? r.parts : []).filter((p) => !isTrue(p.digi) && n0(p.value)).forEach((p) => {
-        const gear = GEAR_KINDS.has(p.kind), name = gear ? 'Gear' : KIND[p.kind] || 'Other';
-        const e = src.get(name) || { cls: gear ? 'sw-gear' : p.kind === 'expertise' || p.kind === 'clan' ? 'sw-exp' : p.kind === 'demon' || p.kind === 'summoned' ? 'sw-demon' : 'sw-base', v: 0, from: [] };
+        const gear = GEAR_KINDS.has(p.kind), name = gear ? 'Gear' : p.kind === 'mitama' ? 'Its Mitamas' : KIND[p.kind] || 'Other';
+        const e = src.get(name) || { cls: gear ? 'sw-gear' : p.kind === 'expertise' || p.kind === 'clan' ? 'sw-exp' : p.kind === 'demon' || p.kind === 'summoned' || p.kind === 'mitama' ? 'sw-demon' : 'sw-base', v: 0, from: [] };
         e.v = round2(e.v + n0(p.value)); e.from.push(p.source); src.set(name, e);
       });
       if (!src.size) return plain(label, f(r.total), n0(r.total) < 0 && !lowIsGood(r.bonus));
@@ -1486,7 +1493,8 @@
       if (!open) return row;
       return [row, h('div', { class: 'sheet-detail' },
         [...src].map(([name, e]) => h('div', { class: 'sheet-src' }, h('i', { class: 'swatch ' + e.cls }), h('span', null, name, h('small', { text: [...new Set(e.from)].join(', ') })), h('b', { text: f(e.v) }))),
-        h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this, on the Bonuses page', onclick: () => { S.bonus.q = r.bonus; S.bonus.group = 'all'; S.bonus.open.add(r.row); go('bonuses'); } }, 'View more'))];
+        // (a line only its Mitamas give has no row on the Bonuses page: the Mitama section below has it)
+        r.mitamaOnly ? null : h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this from you, on the Bonuses page', onclick: () => { S.bonus.q = r.bonus; S.bonus.group = 'all'; S.bonus.open.add(r.row); go('bonuses'); } }, 'View more'))];
     };
     const col = (titles) => h('div', { class: 'sheet-col' }, titles.filter((t) => (groups.get(t) || []).length).map((t) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: t }), groups.get(t).map(line))));
     // the player's two columns, each with one of the extra groups under it
@@ -1498,6 +1506,114 @@
    * its own numbers as its status window showed them when it was last read (Max HP / MP and the 12 stats, bars scaled
    * within their group as yours), and what it gives you while it is out (the "summoned" parts of the bonus list).
    */
+  /**
+   * A demon user's Mitama-fused partner, under its key stats: the ranks and the Mitamas on each rune as the Demon
+   * Planner draws them (read only: the demon as last read from the game), then what the Mitamas give it: the Mitama
+   * rank bonus at its level, the sets that are on (the stronger ones with Iron Man, the Mitama Demon Growth Science
+   * expertise skill) and the random bonus each placed Mitama rolled. null for a demon that isn't fused, or while the
+   * Demon Planner's tables load (the partner card draws the page again then).
+   */
+  /** A Mitama-fused partner as the Demon Planner models it (its runes, slots and sets as last read), or null. */
+  function partnerMitamaModel(d) {
+    const P = S.rbp.state === 'ready' ? S.rbp.P : null;
+    if (!P || S.ddb.state !== 'ready' || !d || d.loaded === false) return null;
+    const D = rbpDemonOf('comp', { ...d, equipment: Array.isArray(d.equipmentIds) ? d.equipmentIds : null }, null);
+    if (!D || D.missing || !D.fused) return null;
+    const M = rbpSlotsModel(P, rbpPlanFrom(null), D, D.ranks, D.mitamaRank);
+    return { P, D, M, L: D.level || 1, K: D.kind ? P.mitama.kinds[D.kind - 1] : null, boost: (S.data.expertise || []).some((r) => r.skill === P.mitama.boostName) };
+  }
+  // A Mitama bonus's name (the game's table) as the bonus list names that line, where they differ
+  const MT_BONUS_NAME = { 'close-range damage taken': 'Close-range damage taken', 'long-range damage taken': 'Long-range damage taken', 'magic damage taken': 'Spell damage taken',
+    'close-range damage': 'Close-range damage dealt', 'long-range damage': 'Long-range damage dealt', 'magic damage': 'Spell damage dealt', 'support magic damage': 'Support damage dealt',
+    'limit break power': 'Limit break power', 'limit break chance': 'Limit break chance', 'movement speed': 'Movement speed', 'exp earned': 'EXP Earned', 'almighty resist': 'Almighty resist' };
+  /**
+   * What a Mitama-fused partner's Mitamas add, as bonus lines: [{ name, unit, value, source }] (the rank bonus at its
+   * level, each set that is on, the placed Mitamas' random bonuses). Text-only set effects and the summon magnetite are
+   * left out (the Mitama section lists them). Empty for a demon that isn't fused.
+   */
+  function partnerMitamaBonuses(d) {
+    const m = partnerMitamaModel(d);
+    if (!m) return [];
+    const { P, D, M, L, K, boost } = m, out = [];
+    const add = (id, label, value, source) => {
+      if (id < 0 || !n0(value)) return;
+      const name = MT_BONUS_NAME[String(label).toLowerCase()] || label;
+      out.push({ name, unit: id >= 78 ? '%' : '', value: n0(value), source });
+    };
+    if (K) (K.ranks[Math.max(0, Math.min(12, D.mitamaRank))] || []).forEach(([id, label, b]) => add(id, label, rbpRankBonus(b, L), `Mitama rank ${D.mitamaRank}`));
+    M.activeSets.forEach((s) => (boost ? s.bonusEx : s.bonus).forEach(([id, label, v]) => add(id, label, v, `${P.runes[s.rune].name} Mitama set`)));
+    const slots = P.mitama.kinds.flatMap((k) => k.slots);
+    D.slots.slice(0, 96).forEach((id) => { const sb = n0(id) ? slots.find((q) => q[0] === n0(id)) : null; if (sb) add(sb[1], sb[2], sb[3], 'Placed Mitamas'); });
+    return out;
+  }
+  /**
+   * The bonus list's "Partner" rows (what the partner gets from you), with what its own Mitamas add folded in as parts
+   * of kind "mitama" (a line only the Mitamas give is added). The partner's key stats and affinities read these.
+   */
+  function partnerRows() {
+    const base = (S.data.bonuses || []).filter((r) => r.group === 'Partner');
+    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+    const mt = d ? partnerMitamaBonuses(d) : [];
+    if (!mt.length) return base;
+    const out = base.map((r) => ({ ...r })), byName = new Map(out.map((r) => [String(r.bonus).trim().toLowerCase(), r]));
+    mt.forEach(({ name, unit, value, source }) => {
+      let r = byName.get(name.toLowerCase());
+      if (!r) { r = { row: 'mitama:' + name, group: 'Partner', bonus: name, unit, counted: true, gear: 0, total: 0, parts: [], mitamaOnly: true }; out.push(r); byName.set(name.toLowerCase(), r); }
+      r.total = round2(n0(r.total) + value);
+      r.parts = [...(Array.isArray(r.parts) ? r.parts : []), { kind: 'mitama', source, value }];
+    });
+    return out;
+  }
+  const mitamaPart = (r) => round2((Array.isArray(r.parts) ? r.parts : []).filter((p) => p.kind === 'mitama').reduce((s, p) => s + n0(p.value), 0));
+  function partnerMitama(d) {
+    const m = partnerMitamaModel(d);
+    if (!m) return null;
+    const { P, D, M, L, K, boost } = m, held = M.perKind.reduce((a, b) => a + b, 0);
+    // the four kinds: how many it holds of the most its Mitama rank allows
+    const caps = h('div', { class: 'rbp-caps' }, RBP_KINDS.map((n, k) => { const v = M.perKind[k]; return h('div', { class: 'rbp-cap' + (v === M.cap ? ' full' : ''), style: `--k:var(--mt-${k + 1})`, 'data-tip': `${n} Mitamas on the demon, of the ${M.cap} its Mitama rank allows` },
+      h('div', { class: 'rbp-cap-top' }, h('div', { class: 'rbp-cap-text' }, h('span', { class: 'rbp-cap-name', text: n }), h('b', { text: `${v} / ${M.cap}` })), rbpKindFace(k)), h('div', { class: 'rbp-capbar' }, h('i', { style: `width:${Math.min(100, v / M.cap * 100)}%` }))); }));
+    // what it was fused with (the kind, in its colour) and what its Mitama rank means: set by the fusion from the rune
+    // ranks' total, (total - 48) / 4, it is how many Mitamas of each kind the demon can hold (12 + rank), and from rank 3
+    // up a stat bonus (newmoon-kb rebirth-mitama.md)
+    const fusedLine = h('div', { class: 'rbp-line' }, h('span', { class: 'q-key', text: 'Fused with' }),
+      D.kind ? h('span', { class: 'rbp-kindtag', style: `--k:var(--mt-${D.kind})` }, rbpKindIcon(D.kind - 1), ` ${RBP_KINDS[D.kind - 1]} Mitama`) : h('span', { text: 'a Mitama the game didn’t name' }),
+      h('span', { class: 'src-count', tabindex: 0, 'data-tip': `The fusion set it from the demon’s rune ranks then (their total − 48, ÷ 4). It decides how many Mitamas of each kind it can hold (12 + rank), and from rank 3 up it adds stats.`,
+        text: `Mitama rank ${D.mitamaRank}: holds up to ${M.cap} of each kind` }));
+    // a compact row per rune as the Demon Planner's "What it takes" draws it: the rank as pills (coloured by the Mitama
+    // on that slot), the rank, and the rune's bonus at it
+    const rows = h('div', { class: 'rbp-ranks pm-ranks' }, M.rows.map((r) => {
+      const i = r.i, R = P.runes[i], rank = D.ranks[i];
+      const bar = rbpRankBar(rank, rank, () => {}, R, rbpSlotFills(r.have, [0, 0, 0, 0]));
+      bar.querySelectorAll('button').forEach((b, j) => { b.disabled = true; if (j + 1 > rank) { const t = `Rank ${j + 1}: not reached`; b.dataset.tip = t; b.setAttribute('aria-label', t); } });
+      const held = r.have.map((n, k) => (n ? `${n} ${RBP_KINDS[k]}` : null)).filter(Boolean).join(', ');
+      return h('div', { class: 'rbp-rrow rbp-rmini pm-rmini', 'data-tip': `${R.name} rank ${rank}${held ? `: ${held}` : ': no Mitamas'}${r.on.length ? ` · ${r.on.length} set${r.on.length === 1 ? '' : 's'} on` : ''}` },
+        h('span', { class: 'rbp-rname' }, rbpRuneIcon(i), h('span', { class: 'rbp-rune', text: R.name })), bar,
+        h('b', { class: 'pm-rnum', text: String(rank) }), h('span', { class: 'rbp-rbonus', text: rbpBonusAt(R, rank) }));
+    }));
+    // what the Mitamas give: the rank bonus, the sets that are on, the placed Mitamas' random bonuses (added up)
+    const rankParts = K ? (K.ranks[Math.max(0, Math.min(12, D.mitamaRank))] || []).map(([, label, b]) => [label, rbpRankBonus(b, L)]).filter(([, v]) => v) : [];
+    const bySlot = new Map();
+    D.slots.slice(0, 96).forEach((id) => { if (!n0(id)) return; const sb = P.mitama.kinds.flatMap((k) => k.slots).find((q) => q[0] === n0(id)); if (sb) bySlot.set(sb[2], (bySlot.get(sb[2]) || 0) + sb[3]); });
+    const chipsOf = (parts) => h('span', { class: 'pm-gives-chips' }, parts.map(([label, v]) => h('span', { class: 'rbp-poolchip', text: `${label} +${fmt(v)}` })));
+    const gives = h('div', { class: 'pm-gives' },
+      // (only when its Mitama rank gives something: rank 3 is the first that does)
+      rankParts.length ? h('div', { class: 'pm-give' }, h('span', { class: 'q-key', 'data-tip': `What its Mitama rank ${D.mitamaRank} adds to its stats (the ${K.name} rank bonus), at its level ${L}`, tabindex: 0, text: `Mitama rank bonus · rank ${D.mitamaRank}` }),
+        chipsOf(rankParts)) : null,
+      h('div', { class: 'pm-give' }, h('span', { class: 'q-key', 'data-tip': boost ? 'The stronger set bonuses: you have Iron Man (Mitama Demon Growth Science)' : 'A set is on when its rune holds enough Mitamas of each kind', tabindex: 0, text: `Sets on · ${M.activeSets.length}${boost ? ' · Iron Man' : ''}` }),
+        // a line per set that is on: the Mitamas of each kind it needs (the planner's coloured numbers), its rune, its boost
+        M.activeSets.length ? h('ul', { class: 'pm-setlist' }, M.activeSets.map((s) => {
+          const R = P.runes[s.rune], text = rbpBoostText(boost ? s.exText : s.text);
+          return h('li', { 'data-tip': `${s.req.map((q, k) => (q ? `${q} ${RBP_KINDS[k]}` : null)).filter(Boolean).join(', ')} on ${R.name}` },
+            h('span', { class: 'rbp-set-req' }, s.req.map((q, k) => (q ? h('i', { style: `--k:var(--mt-${k + 1})`, class: 'met', text: q }) : null))),
+            h('span', null, h('b', { text: R.name }), ` ${text}`));
+        })) : h('span', { class: 'note', text: 'None: no rune holds the Mitamas a set needs.' })),
+      h('div', { class: 'pm-give' }, h('span', { class: 'q-key', 'data-tip': 'Each placed Mitama rolled one bonus when it was placed; these are them, added up', tabindex: 0, text: `Placed Mitamas · ${held}` }),
+        bySlot.size ? chipsOf([...bySlot]) : h('span', { class: 'note', text: held ? 'Their bonuses aren’t in the game data the page has.' : 'No Mitamas placed yet.' })));
+    const sub = `${D.name} · ${held} Mitama${held === 1 ? '' : 's'} placed, ${M.activeSets.length} set${M.activeSets.length === 1 ? '' : 's'} on`;
+    // left: the kinds, the fusion and the runes; right, a column of its own: what the Mitamas give
+    return sect('Mitama', sub, null, h('div', { class: 'card pm-card' },
+      h('div', { class: 'pm-cols' }, h('div', { class: 'pm-left' }, caps, fusedLine, rows), gives)));
+  }
   function partnerCard() {
     const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
     if (!d) return h('section', { class: 'card partner-card none', 'aria-label': 'Your partner' }, h('h3', { class: 'band-title', text: 'Your partner' }),
@@ -1666,9 +1782,11 @@
     // rows); right, the affinity card as the partner's. No "What changed": that compares your own snapshots.
     if (demonUser()) {
       const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
-      page.append(sect('Key stats and affinities', digi() ? 'Your partner’s. Nobody is out while digitalized: this is what a summoned partner gets' : d ? `${d.name}’s, from you` : 'Your partner’s. No demon was summoned when the game was last read', null,
+      const mt = d && d.loaded !== false ? partnerMitama(d) : null;
+      page.append(sect('Key stats and affinities', digi() ? 'Your partner’s. Nobody is out while digitalized: this is what a summoned partner gets' : d ? `${d.name}’s, from you${mt ? ' and its Mitamas' : ''}` : 'Your partner’s. No demon was summoned when the game was last read', null,
         h('div', { class: 'over-grid' }, h('div', { class: 'over-left' }, partnerSheet()), affinityCard(partnerAffinity()))));
-      page.append(h('p', { class: 'note', text: 'Not included: your partner’s own bonuses from its skills, buffs, and bonuses that only count in some fights (those are on the Bonuses page). Your own key stats and affinities are in the Player view.' }));
+      if (mt) page.append(mt);
+      page.append(h('p', { class: 'note', text: (mt ? 'Its Mitamas are included (marked as its own). ' : '') + 'Not included: your partner’s own bonuses from its skills, buffs, and bonuses that only count in some fights (those are on the Bonuses page). Your own key stats and affinities are in the Player view.' }));
       return page;
     }    const sheet = h('section', { class: 'card sheet', 'aria-label': 'Key stats' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' }, col.map(sheetGroup)))));
 
@@ -5600,6 +5718,10 @@
   //   choose(o)         what picking a row does (the dialog closes first)
   //   previewRes(o)     the Character Planner's strip: the build's result with that demon, compared with cfg.cur()
   //   foot(refresh)     else: what goes where the strip is (Import demon: "Load demons from the game")
+  //   plans: false      only "My demons" (the Overview: a demon build can't be the digitalize demon)
+  //   noneLine          the "No demon" row's line
+  //   remove(o)         -> a function that takes the demon off the list (then the list is read again), or null: a
+  //                     trash button on its row, clicked twice ("Remove?")
   async function demonPick(cfg) {
     const list = $('#sim-pick-list'), tools = $('#sim-pick-tools'), preview = $('#sim-pick-preview');
     const note = (text) => h('p', { class: 'note', style: 'padding:12px', text });
@@ -5614,7 +5736,7 @@
     let got = await cfg.load();
     if (!alive) return;
 
-    const GROUPS = [['mine', 'My demons'], ['plan', 'From Demon Planner']];
+    const GROUPS = cfg.plans === false ? [['mine', 'My demons']] : [['mine', 'My demons'], ['plan', 'From Demon Planner']];
     let mine = [], plans = [], opts = [];
     const setLists = (r) => {
       mine = r.mine || []; plans = r.plans || [];
@@ -5676,6 +5798,20 @@
       return p;
     };
     const hit = (label) => (st.amountLabel === label ? 'sim-hit' : null);
+    const removeBtn = (o) => {
+      const go = cfg.remove && !o.none && o.group === 'mine' ? cfg.remove(o) : null;
+      if (!go) return null;
+      const b = h('button', { type: 'button', class: 'btn btn-ghost btn-sm sim-ddel', 'aria-label': `Remove ${o.name} from the list`,
+        'data-tip': `Remove from this list: ${o.name} is no longer in your COMP, so what it gives can’t be read again`,
+        onclick: async (ev) => {
+          ev.stopPropagation();
+          if (!b.dataset.ask) { b.dataset.ask = '1'; b.replaceChildren(icon('trash'), 'Remove?'); return; }
+          b.disabled = true;
+          await go();
+          await refresh();
+        } }, icon('trash'));
+      return b;
+    };
     const row = (o, i) => {
       const O = o.offer, plan = o.group === 'plan', now = cfg.current(o);
       const stats = O ? (O.stats || []).filter((s) => n0(s.value)) : [];
@@ -5690,8 +5826,8 @@
             o.mitama ? h('span', { class: 'tag', text: `${o.mitama} Mitama` }) : null,
             plan ? h('span', { class: 'tag', 'data-tip': `Your Demon Planner build “${o.name}”: ${o.demonName} as the plan ends${o.planned ? '. The Mitamas it only plans count for the sets, not for their random bonus' : ''}`, text: o.demonName !== o.name ? `Demon Planner · ${o.demonName}` : 'Demon Planner' }) : null,
             now ? h('span', { class: 'tag sim-tag-use', text: now }) : null,
-            o.group === 'mine' ? demonUnlockTags(o) : null),
-          o.none ? h('div', { class: 'sim-opt-lines', text: 'Not digitalized: only what the build itself gives.' })
+            o.group === 'mine' ? demonUnlockTags(o) : null, removeBtn(o)),
+          o.none ? h('div', { class: 'sim-opt-lines', text: cfg.noneLine || 'Not digitalized: only what the build itself gives.' })
             : O ? h('div', { class: 'sim-opt-lines' }, `${fmt(O.rate)}% of its stats`, stats.map((s) => [' · ', h('span', { class: hit(s.stat), text: `${s.stat} ${fmt(s.value, '', true)}` })]))
             : h('div', { class: 'sim-opt-lines zero', text: o.loaded === false ? 'Not read yet. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (that loads your whole COMP), then load the demons again.' : 'What it gives can’t be worked out for this character.' }),
           adds.length ? h('div', { class: 'sim-opt-lines' }, adds.map(([k, l, u], j) => [j ? ' · ' : null, h('span', { class: hit(l), text: `${l} ${fmt(O.combat[k], u, true)}` })])) : null,
@@ -5721,7 +5857,7 @@
       });
       if (!words.length) {   // an empty part says why
         if ((st.group === 'all' || st.group === 'mine') && !mine.length) out.splice(cfg.none ? 1 : 0, 0, h('div', { class: 'list-head sim-dhead', text: 'My demons' }), note(cfg.noMine || 'No demons seen yet. Open the COMP in game, then load the demons.'));
-        if ((st.group === 'all' || st.group === 'plan') && !plans.length) out.push(h('div', { class: 'list-head sim-dhead', text: 'From Demon Planner' }), note('No saved demon builds. Plan a demon in the Demon Planner and press “Save build”: it shows up here.'));
+        if (cfg.plans !== false && (st.group === 'all' || st.group === 'plan') && !plans.length) out.push(h('div', { class: 'list-head sim-dhead', text: 'From Demon Planner' }), note('No saved demon builds. Plan a demon in the Demon Planner and press “Save build”: it shows up here.'));
       }
       list.replaceChildren(...out);
       if (!st.rows.length && words.length) list.append(h('p', { class: 'empty-row', text: `Nothing matches “${st.q.trim()}”.` }));
@@ -5742,7 +5878,7 @@
           `${label} `, h('span', { class: 'sim-dcount', text: String(count(id)) }))));
     };
     drawChips();
-    simFill(tools, h('div', { class: 'search' }, icon('search'), input), chips, sortNote);
+    simFill(tools, h('div', { class: 'search' }, icon('search'), input), GROUPS.length > 1 ? chips : null, sortNote);
     // read the lists again (Import demon's "Load demons from the game"), keeping the search and the part shown
     const refresh = async () => { got = await cfg.load(); if (!alive) return; setLists(got); drawChips(); draw(); };
     if (!cfg.previewRes && cfg.foot) simFill(preview, cfg.foot(refresh));
@@ -8783,20 +8919,20 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     const preRow = D.fused ? null : rows.find((r) => r.title === 'Ranks'), postRow = rows.find((r) => (D.fused ? r.title === 'Ranks' : r.title === 'After fusion'));
     const before = preRow ? sum(preRow) : null, after = postRow ? sum(postRow) : 0;
     const key = (cls, label, n) => h('span', { class: 'rbp-radar-key', 'data-tip': label }, h('i', { class: cls }), h('span', { text: label }), h('b', { text: String(n) }));
-    // (live, the Overview's partner card: the same graph, colours and labels as a build card, the user's call; only the tip drops "as planned")
+    // (live, the Overview's partner card: the same graph and colours as a build card, without the Pre-/Post-Mitama labels
+    // under it (the user's call: a fused demon's ranks from before the fusion are gone, so they would only half apply);
+    // the tip still says it all, without "as planned")
     const rankTip = (D.fused ? `${after} rebirth rank${after === 1 ? '' : 's'} on the runes since the Mitama fusion`
       : `${before} rebirth rank${before === 1 ? '' : 's'} before the Mitama fusion, then ${after} after it`) + (live ? '' : ', as planned');
     // the radar in a column of its own, to the right of the rows (a narrow card puts it under them)
     const ranksBox = h('span', { class: 'rbp-miniranks', role: 'group', 'aria-label': 'Ranks' }, h('span', { class: 'rbp-minibar-title', 'data-tip': 'The rebirth rank of each rune (the centre is 0, the rim 9): before the Mitama fusion and after it', text: 'Ranks' }),
       h('span', { class: 'rbp-radar-wrap', tabindex: 0, 'data-tip': rankTip, 'aria-label': rankTip },
         rbpRanksRadar(P, preRow ? preRow.ranks : null, postRow ? postRow.ranks : null),
-        h('span', { class: 'rbp-radar-keys' }, preRow ? key('rbp-radar-pre', 'Pre-Mitama', before)
-          // The partner card, a fused demon: the same two lines as a build card. The fusion cleared the 12 ranks from
-          // before it and kept only their total as the Mitama rank = (total - 48) / 4 (comp_hack MitamaDemon;
-          // newmoon-kb rebirth-mitama.md), so "before" is that total (a range of 4) and has no outline on the radar.
-          : live && D.fused ? (() => { const lo = 48 + 4 * D.mitamaRank, hi = Math.min(96, lo + 3); const el = key('rbp-radar-pre', 'Pre-Mitama', lo === hi ? lo : `${lo}–${hi}`);
-            el.dataset.tip = `Worked out from its Mitama rank ${D.mitamaRank}: the fusion clears each rune’s rank and keeps only their total, so the radar can’t draw them`; el.tabIndex = 0; return el; })() : null,
-          key('rbp-radar-post', D.fused && !live ? 'On the runes now' : 'Post-Mitama', after))));
+        // (the partner card: under a Mitama-fused demon's radar, how many Mitamas of each kind it holds)
+        live ? (D.fused ? h('span', { class: 'rbp-radar-keys pm-kindkeys' }, rbpHeldPerKind(D).map((n, k) => h('span', { class: 'rbp-kindchip pm-kindchip', style: `--k:var(--mt-${k + 1})`, tabindex: 0, 'data-tip': `${n} ${RBP_KINDS[k]} Mitama${n === 1 ? '' : 's'} on its runes`, 'aria-label': `${RBP_KINDS[k]} ${n}` },
+          rbpKindIcon(k), h('span', { text: RBP_KINDS[k] }), h('b', { text: String(n) })))) : null)
+          : h('span', { class: 'rbp-radar-keys' }, preRow ? key('rbp-radar-pre', 'Pre-Mitama', before) : null,
+            key('rbp-radar-post', D.fused ? 'On the runes now' : 'Post-Mitama', after))));
     return h('span', { class: 'rbp-minibars' }, h('span', { class: 'rbp-minirows' }, out), ranksBox);
   }
   /**
@@ -9085,6 +9221,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   /** A Mitama kind's picture (icons.json kind<k>, the game's Mitama Enhancement counters), or nothing. */
   const rbpKindIcon = (k) => { const src = S.data && S.data.icons && S.data.icons[`kind${k}`]; return src ? h('img', { class: 'rbp-kindicon', src, alt: '', 'aria-hidden': 'true' }) : null; };
   const rbpKindOf = (slotId) => Math.min(3, Math.floor(slotId / 32));
+  /** The Mitamas a demon holds on its runes, per kind (Ara, Nigi, Kusi, Saki). */
+  const rbpHeldPerKind = (D) => { const c = [0, 0, 0, 0]; (D.slots || []).slice(0, 96).forEach((id) => { if (n0(id)) c[rbpKindOf(n0(id))]++; }); return c; };
   /** The Mitama rank bonus's value at a level: round(L / 99 x ceil(1.25 b^2 + b)). */
   const rbpRankBonus = (b, L) => Math.round(L / 99 * Math.ceil(1.25 * b * b + b));
   /** A row's counts per kind: what the plan asks for, over what the demon's rune already holds. */
@@ -10305,11 +10443,35 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       h('p', { class: 'page-sub', text: `This page ${what}. That needs BABEL, the desktop app, on your PC. The databases and the other planners work right here.` }),
       h('a', { class: 'btn btn-primary', href: RELEASES_URL, target: '_blank', rel: 'noopener' }, 'Download BABEL')));
   }
+  // The website's character pages show the demo character, with a word on what BABEL would show you here.
+  const DEMO_WHY = {
+    overview: 'See your own stats and partner',
+    bonuses: 'See every bonus you have, and where it comes from',
+    gear: 'See your own gear and what each piece gives',
+    expertise: 'See your own expertise and what to raise next',
+    digitalize: 'See your own digitalize demon and levels',
+    history: 'See your progress over time',
+  };
+  // (above the page, not in it: a wide table widens the page's grid, and the banner would grow past the window with it)
+  function withDemoNote(page) {
+    const note = h('div', { class: 'web-demo-wrap' }, h('div', { class: 'web-demo' },
+      h('img', { class: 'web-demo-logo', src: 'icon.png', alt: '', width: 52, height: 52 }),
+      h('div', { class: 'web-demo-text' },
+        h('h2', { class: 'web-demo-title', text: DEMO_WHY[S.page] || 'See your own character' }),
+        h('p', { text: `BABEL reads your character from the running game: stats, gear, bonuses, expertise and demons. This page shows ${S.meta.character || 'a player'}’s, as a demo.` })),
+      h('div', { class: 'web-demo-cta' },
+        h('a', { class: 'btn btn-primary web-demo-btn', href: RELEASES_URL, target: '_blank', rel: 'noopener' }, icon('download'), 'Download BABEL'))));
+    const box = document.createDocumentFragment();
+    box.append(note, page);
+    return box;
+  }
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
     hideTip();
-    main.replaceChildren(WEB && (!isTool(S.page) || DESKTOP_TOOLS.has(S.page)) ? needsBabel()
+    const demo = WEB && !isTool(S.page) && S.v && S.v.latest;
+    main.replaceChildren(demo ? withDemoNote(RENDER[S.page]())
+      : WEB && (!isTool(S.page) || DESKTOP_TOOLS.has(S.page)) ? needsBabel()
       : isTool(S.page) || (S.v && S.v.latest) ? RENDER[S.page]() : firstRun());
     main.scrollTop = top;
   }
@@ -10383,106 +10545,16 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     if (!why && (host.native || Q.has('clients'))) scanClients();   // opened by hand: logins may have changed since the last look
   }
   // ---------- the digitalize demon: any demon from the COMP ----------
-  // A dropdown under the demon's name on the Overview (a popover: a click outside or Esc closes it; the button's own
-  // popovertarget opens and closes it). It is also the Normal / Digitalized switch: "No demon" is the normal view,
-  // a demon is the digitalized view with it. The list is the demons seen before, kept by the host
-  // (cache\comp-demons.json) and here (S.demons), so opening never reads the game; "Load demons from the game" at the
-  // end does that (a scan of the game's memory, a second or two) and adds what it finds.
-  // Picking closes the dropdown straight away; switching to another demon (another scan, the spreadsheet, the page
-  // data) runs behind the demon line, which says so until it is done.
-  const demonsMenu = $('#demons');
-  let demonsFor = null, demonsLook = 0, demonsAsk = null;   // the button it hangs from; which look at the game is the latest; the demon asked about removing
-  function placeDemons() {
-    if (!demonsFor || !demonsFor.isConnected || !demonsMenu.matches(':popover-open')) return;
-    const r = demonsFor.getBoundingClientRect(), w = demonsMenu.offsetWidth, hgt = demonsMenu.offsetHeight;
-    demonsMenu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
-    demonsMenu.style.top = (r.bottom + 6 + hgt > window.innerHeight - 8 ? Math.max(8, r.top - 6 - hgt) : r.bottom + 6) + 'px';
-  }
+  // The demon's name on the Overview opens the demon dialog (overviewDemonPick). It is also the Normal / Digitalized
+  // switch: "No demon" is the normal view, a demon is the digitalized view with it. The list is the demons seen before,
+  // kept by the host (cache\comp-demons.json) and here (S.demons), so opening never reads the game; "Load demons from
+  // the game" at its foot does that (a scan of the game's memory, a second or two) and adds what it finds.
+  // Picking closes the dialog straight away; switching to another demon (another scan, the spreadsheet, the page data)
+  // runs behind the demon line, which says so until it is done.
   const setMode = (mode) => { S.mode = mode; store.set('mode', mode); };
-  /** The list as known now: "No demon", then every demon seen. `status`: a line under the load button. `keep` (a
-   *  selector, or null): keep the list's scroll and focus that instead of the demon in use. */
-  function drawDemons(status, loading, keep) {
-    const list = $('#demons-list'), demons = S.demons || [];
-    const had = list.contains(document.activeElement);
-    const none = h('button', { type: 'button', class: 'char', 'aria-current': digi() ? null : 'true',
-      onclick: () => { demonsMenu.hidePopover(); if (digi()) { setMode('normal'); render(); } } },
-      h('span', { class: 'dm-icon dm-none dm-off', text: '–' }),
-      h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: 'No demon' }), h('span', { class: 'char-line', text: 'Not digitalized' })));
-    // each demon as a card: what digitalizing with it would give (demonTile)
-    const row = (d) => { const on = digi() && d.current; return demonTile(d, on,
-      () => (on ? demonsMenu.hidePopover() : d.current ? (demonsMenu.hidePopover(), setMode('digi'), render())
-        : d.loaded === false ? toast('warn', `${d.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (the Master), which loads your whole COMP at once. Then press Load demons from the game.', 12000)
-          : useDemon(d))); };
-    // A cached demon (one the game no longer has: not in the COMP at the last read, not summoned, not in this read, and
-    // not the one in use) can be taken off the list: a trash button on its card, then "Remove?". The others would come
-    // back at the next read, so they have none.
-    const item = (d) => {
-      const tile = row(d);
-      if (d.current || d.inComp === true || d.summoned || d.inGame) return tile;
-      const ask = demonsAsk === d.key;
-      // asking: the same card, tinted, with the question under its content (the list stays where it was)
-      const at = (sel) => `.dg-item[data-key="${CSS.escape(d.key)}"] ${sel}`;
-      return h('div', { class: 'dg-item' + (ask ? ' asking' : ''), 'data-key': d.key }, tile,
-        ask ? h('div', { class: 'dg-ask' }, h('span', { class: 'dgt-line', text: `Remove ${d.name} from this list? It is no longer in your COMP, so what it gives can’t be read again.` }),
-          h('span', { class: 'dg-ask-btns' },
-            h('button', { type: 'button', class: 'btn btn-sm', onclick: () => forgetDemon(d) }, 'Remove'),
-            h('button', { type: 'button', class: 'btn btn-ghost btn-sm dg-keep', onclick: () => { demonsAsk = null; drawDemons(null, false, at('.dg-del')); } }, 'Keep')))
-          : h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm dg-del', 'aria-label': `Remove ${d.name} from the list`, 'data-tip': 'Remove from this list',
-            onclick: () => { demonsAsk = d.key; drawDemons(null, false, at('.dg-keep')); } }, icon('trash')));
-    };
-    const top = list.scrollTop;
-    list.replaceChildren(none, ...demons.map(item));
-    const load = $('#demons-load');
-    load.disabled = !!loading;
-    load.textContent = loading ? 'Reading the game…' : 'Load demons from the game';
-    $('#demons-status').textContent = status || (!S.demons ? '' : !demons.length ? 'No demons seen yet. Open the COMP in game, then load them.' : '');
-    placeDemons();
-    if (keep !== undefined) {
-      // asking about (or keeping) one demon: the list stays where it was; only when the card's question runs past the
-      // bottom is it brought into view, by as little as it takes
-      list.scrollTop = top;
-      const el = keep && list.querySelector(keep);
-      if (el) { el.focus({ preventScroll: true }); (el.closest('.dg-item') || el).scrollIntoView({ block: 'nearest' }); }
-    } else if (had) { const b = list.querySelector('[aria-current="true"]') || list.querySelector('button'); if (b) b.focus(); }
-  }
-  /** The demons seen before (at once), or with `scan` a fresh look at the game added to them. */
-  async function loadDemons(scan) {
-    const look = ++demonsLook;
-    drawDemons(null, scan);
-    try {
-      const demons = await host.call('compDemons', scan ? {} : { cached: true });
-      if (look !== demonsLook) return;
-      S.demons = demons;
-      if (scan) refreshSummoned();
-      // The game keeps every COMP demon in memory only while the COMP (or Demon List) is open; otherwise just the summoned one.
-      const live = demons.filter((d) => d.inGame).length;
-      const unread = demons.filter((d) => d.inGame && d.loaded === false).length;   // listed by the game without their details
-      drawDemons(!scan ? null : !host.native ? 'Browser preview: stand-in demons.'
-        : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.'
-        : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.'
-        : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: click them in the COMP, or open the fusion window at the Cathedral of Shadows, then load again.` : ''));
-    } catch (e) { if (look === demonsLook) drawDemons(String(e && e.message || e)); }
-  }
-  demonsMenu.addEventListener('toggle', (ev) => {
-    if (ev.newState !== 'open') { demonsLook++; demonsAsk = null; return; }
-    if (S.demons) drawDemons(); else loadDemons(false);   // never the game: only what is cached
-    placeDemons();
-    const b = $('#demons-list [aria-current="true"]') || $('#demons-list button');
-    if (b && demonsFor && demonsFor.matches(':focus-visible')) b.focus();   // opened from the keyboard: go into the list
-  });
-  demonsMenu.addEventListener('keydown', (ev) => {
-    if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
-    const rows = [...demonsMenu.querySelectorAll('.char, .dg-tile, #demons-load')], i = rows.indexOf(document.activeElement);
-    const next = rows[ev.key === 'ArrowDown' ? Math.min(rows.length - 1, i + 1) : Math.max(0, i - 1)];
-    if (next) { next.focus(); ev.preventDefault(); }
-  });
-  window.addEventListener('resize', placeDemons);
-  $('#main').addEventListener('scroll', () => { if (demonsMenu.matches(':popover-open')) demonsMenu.hidePopover(); });   // its button moves away
-  $('#demons-load').addEventListener('click', () => loadDemons(true));
   async function useDemon(d) {
     if (S.over.switching) return;
     S.over.switching = d.name;
-    demonsMenu.hidePopover();
     render();   // the demon line says "Switching to …"
     try {
       const r = await host.call('useDemon', { key: d.key });
@@ -10495,13 +10567,60 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       toast('err', `Couldn’t switch to ${d.name}`, String(e && e.message || e), 0);
     } finally { if (S.over.switching) { S.over.switching = null; render(); } }
   }
+  /**
+   * The Overview's demon picker: the Character Planner's demon dialog (demonPick) with the COMP demons as last seen
+   * (no demon builds: only a demon you have can be the digitalize demon). "No demon" is the normal view, the demon in
+   * use the digitalized view with it, another demon switches to it (useDemon). Its foot loads the demons from the game;
+   * a demon no longer in the COMP can be taken off the list there.
+   */
+  function overviewDemonPick() {
+    let look = 0;
+    return demonPick({
+      title: 'Digitalize demon',
+      sub: 'Your COMP demons as BABEL last read them. Picking one makes it your digitalize demon and recalculates the latest snapshot with it (the spreadsheet is copied first). No demon shows your own numbers.',
+      none: true,
+      plans: false,
+      noneLine: 'Not digitalized: your own numbers.',
+      load: async () => {
+        if (!S.demons) { try { S.demons = await host.call('compDemons', { cached: true }); } catch (e) { S.demons = []; } }
+        return { mine: S.demons || [], plans: [], skillIcons: S.meta.skillIcons || null };
+      },
+      current: (o) => (o.none ? (digi() ? null : 'In use') : digi() && o.current ? 'In use' : null),
+      choose: (o) => {
+        if (o.none) { if (digi()) { setMode('normal'); render(); } return; }
+        if (o.current) { if (!digi()) { setMode('digi'); render(); } return; }
+        if (o.loaded === false) { toast('warn', `${o.name} can’t be used yet`, 'The game only loads a demon’s stats and skills when you look at it. Click it in the COMP in game, or open the fusion window at the Cathedral of Shadows (the Master), which loads your whole COMP at once. Then press Load demons from the game.', 12000); return; }
+        useDemon(o);
+      },
+      remove: (o) => (o.current || o.inComp === true || o.summoned || o.inGame ? null : () => forgetDemon(o)),
+      foot: (refresh) => {
+        const status = h('span', { class: 'field-help', role: 'status' });
+        const btn = h('button', { type: 'button', class: 'btn btn-sm btn-primary', onclick: async () => {
+          const mine = ++look;
+          btn.disabled = true; btn.textContent = 'Reading the game…'; status.textContent = '';
+          try {
+            const demons = await host.call('compDemons', {});
+            if (mine !== look) return;
+            S.demons = Array.isArray(demons) ? demons : [];
+            refreshSummoned();
+            const live = S.demons.filter((d) => d.inGame).length, unread = S.demons.filter((d) => d.inGame && d.loaded === false).length;
+            status.textContent = !host.native ? 'Browser preview: stand-in demons.' : !live ? 'The game isn’t running, or has no demons loaded. The list is as before.'
+              : live === 1 ? 'Only the summoned demon was loaded. Open the COMP in game, then load again for all of them.'
+              : `${live} demons in your COMP.` + (unread ? ` ${unread} not read yet: click them in the COMP, or open the fusion window at the Cathedral of Shadows, then load again.` : '');
+            await refresh();
+            if (S.page === 'overview') render();
+          } catch (e) { if (mine === look) status.textContent = String((e && e.message) || e); }
+          btn.disabled = false; btn.textContent = 'Load demons from the game';
+        } }, 'Load demons from the game');
+        return h('div', { class: 'sim-dfoot' }, btn, status);
+      },
+    });
+  }
   /** Take a demon off the list of demons seen (not the one in use). */
   async function forgetDemon(d) {
     try {
       await host.call('forgetDemon', { key: d.key });
-      demonsAsk = null;
       if (S.demons) S.demons = S.demons.filter((x) => x.key !== d.key);
-      drawDemons(null, false, null);   // the list stays where it was
       toast('ok', `${d.name} removed from the list`);
     } catch (e) { toast('err', `Couldn’t remove ${d.name}`, String(e && e.message || e), 0); }
   }

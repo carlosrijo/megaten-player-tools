@@ -14,6 +14,7 @@
 //!   extras    [--quests N|none] [--compendium N|none] [--compendium-v2 yes|no] [--name N]
 //!                                                               show the clan; set the quest/compendium counts for their bonuses
 //!   damage-log [--name N] [--watch SECONDS] [--raw]             the game's damage log (own and partner hits); --watch follows new hits
+//!   comp-demons [--name N] [--out file]                         the demon picker's list as JSON, from what was seen (no game, nothing written)
 //!
 //! Without --name, the character is read from the running client (or is the only one with saved data).
 //! Each character keeps its own folder and CSV, listed in data\characters.json.
@@ -350,7 +351,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     }
     // The character a command works on, with its pipeline (the C# `name`, `csv` and `pipe`).
     let mut chosen: Option<(Target, Pipeline)> = None;
-    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "gear-names" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve") {
+    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "gear-names" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve" | "comp-demons") {
         // Which character: --name, else the one logged in (snapshot, sets) or the only one with saved data (rebuild, recalc).
         // Each character has its own folder and CSV (data\characters.json). --data / --csv point somewhere else instead,
         // which is how tests run on copies.
@@ -381,7 +382,18 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             rebuild(t, pipe)?;
             Ok(0)
         }
-        "rebuild" => {
+        "comp-demons" => {
+            // The demon list the app's demon picker shows, from what was seen before (no game, nothing written), as
+            // JSON (the page's "compDemons" with cached: true). For the website's demo character (tools\build-demo.mjs).
+            let (t, pipe) = need(&chosen)?;
+            let list = pipe.comp_demons(&t.name, false)?;
+            let text = serde_json::Value::Array(list.iter().map(|d| d.to_value()).collect()).to_string();
+            match get("out") {
+                Some(f) => std::fs::write(f, text)?,
+                None => println!("{text}"),
+            }
+            Ok(0)
+        }        "rebuild" => {
             let (t, pipe) = need(&chosen)?;
             rebuild(t, pipe)?;
             Ok(0)

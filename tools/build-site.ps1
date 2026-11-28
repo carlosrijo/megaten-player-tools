@@ -6,8 +6,8 @@
 # What goes online: only the files git tracks in app\ui, without the game art made locally (*-icons) and anything made
 # with the sealed data (*.local.json). The copy of index.html is marked as the website, so app.js runs in web mode (WEB).
 #
-# The game's pictures (*-icons) live elsewhere (tools\publish-icons.ps1): _redirects sends those paths there, and the
-# page's Content-Security-Policy allows pictures from it.
+# The game's pictures (*-icons) and the demo character (demo\) live elsewhere (tools\publish-web-assets.ps1):
+# _redirects sends those paths there, and the page's Content-Security-Policy allows pictures and data from it.
 param([string]$Out = 'site', [string]$IconsUrl = 'https://babel-icons.babel-feedback.workers.dev')
 $ErrorActionPreference = 'Stop'
 
@@ -39,8 +39,11 @@ $html = $html.Replace($charset, $charset + "`r`n  <meta name=`"babel-mode`" cont
 $imgSrc = "img-src 'self' data: blob:"
 if (-not $html.Contains($imgSrc)) { throw "index.html's Content-Security-Policy has no `"$imgSrc`" to add the pictures' address to." }
 $html = $html.Replace($imgSrc, "$imgSrc $IconsUrl")
-$iconFolders = 'dcm-icons', 'demon-db-icons', 'dungeon-icons', 'gear-db-icons', 'skill-db-icons'
-[IO.File]::WriteAllText((Join-Path $dest '_redirects'), (($iconFolders | ForEach-Object { "/$_/* $IconsUrl/$_/:splat 302" }) -join "`n") + "`n")
+$connectSrc = "connect-src 'self'"
+if (-not $html.Contains($connectSrc)) { throw "index.html's Content-Security-Policy has no `"$connectSrc`" to add the demo's address to." }
+$html = $html.Replace($connectSrc, "$connectSrc $IconsUrl")
+$elsewhere = 'dcm-icons', 'demon-db-icons', 'dungeon-icons', 'gear-db-icons', 'skill-db-icons', 'demo'
+[IO.File]::WriteAllText((Join-Path $dest '_redirects'), (($elsewhere | ForEach-Object { "/$_/* $IconsUrl/$_/:splat 302" }) -join "`n") + "`n")
 [IO.File]::WriteAllText($index, $html)
 [IO.File]::WriteAllText((Join-Path $dest '_headers'), "/*`n  X-Robots-Tag: $noIndex`n")
 [IO.File]::WriteAllText((Join-Path $dest 'robots.txt'), "# BABEL's website is not for search engines or AI crawlers.`nUser-agent: *`nDisallow: /`n")

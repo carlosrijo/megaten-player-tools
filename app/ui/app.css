@@ -2602,3 +2602,61 @@ tr.hist-asking td { background: color-mix(in srgb, var(--bad) 10%, var(--surface
 
 /* The website (WEB in app.js): what only the desktop app can do is not shown */
 html.web [data-desktop] { display: none !important; }
+/* the demo character's note, above the page (app.js withDemoNote) */
+.web-demo-wrap { max-width: 1180px; margin: 0 auto; padding: 22px 24px 0; }
+.web-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 22px; padding: 20px 24px; border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 70%, transparent); }
+.web-demo-logo { flex: none; border-radius: 12px; }
+.web-demo-text { flex: 1 1 320px; min-width: 0; }
+.web-demo-title { margin: 0 0 4px; font-size: 21px; font-weight: 700; color: var(--text); }
+.web-demo-text p { margin: 0; color: var(--text-2); font-size: 14px; max-width: 70ch; }
+.web-demo-cta { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.web-demo-btn { height: 46px; padding: 0 24px; font-size: 16px; gap: 8px; }
+/* the demon dialog's remove button (a demon no longer in the COMP), at the end of its row's head */
+.sim-ddel { margin-left: auto; gap: 4px; }
+/* the Overview's Mitama section (a demon user's Mitama-fused partner, app.js partnerMitama): the Demon Planner's
+   caps, rows and sets, read only */
+.pm-card { display: grid; gap: 14px; }
+.pm-rows { display: grid; gap: 2px; }
+.pm-row { display: grid; grid-template-columns: 150px auto minmax(0, 1fr); align-items: center; gap: 6px 14px; padding: 8px 10px; border-radius: 8px; }
+.pm-row:nth-child(odd) { background: var(--surface-2); }
+.pm-sub { grid-column: 1 / -1; display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.pm-sub .rbp-sets { flex: 1 1 400px; min-width: 0; }
+.pm-kinds { flex: none; display: grid; gap: 4px; width: 140px; }
+.pm-kind { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.pm-kind b { font-variant-numeric: tabular-nums; }
+.pm-set { cursor: default; }
+.pm-gives { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.pm-give { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.pm-gives-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+@media (max-width: 900px) { .pm-gives { grid-template-columns: 1fr; } .pm-row { grid-template-columns: 1fr; } }
+/* the partner card: the Mitamas per kind under the radar, two by two */
+.pm-kindkeys { grid-template-columns: repeat(2, auto); gap: 4px 12px; justify-content: center; }
+/* the Mitama counts as the planner's kind chips (outlined in the kind's colour), but not buttons */
+.pm-kindchip { gap: 4px; font-size: 11px; cursor: default; }
+.pm-kindchip:hover { background: none; }
+.pm-kindchip b { font-variant-numeric: tabular-nums; color: var(--text); }
+.pm-kinds { justify-items: start; }
+/* the Mitama section as the Demon Planner's "What it takes": the kinds, the fusion and a compact row per rune on the
+   left, what the Mitamas give in a column of its own on the right */
+.pm-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); gap: 16px 22px; align-items: start; }
+.pm-left { display: grid; gap: 12px; min-width: 0; }
+.pm-rmini { grid-template-columns: 96px auto 18px minmax(0, 1fr); }
+.pm-rmini .rbp-pill { cursor: default; }
+.pm-rnum { font-variant-numeric: tabular-nums; text-align: right; }
+.pm-cols .pm-gives { grid-template-columns: 1fr; gap: 16px; padding-left: 18px; border-left: 1px solid var(--border); }
+@media (max-width: 1000px) { .pm-cols { grid-template-columns: 1fr; } .pm-cols .pm-gives { padding-left: 0; border-left: none; } }
+/* the sets that are on, as small cards (the Demon Planner's set tiles, compact), two to a row */
+.pm-setcards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.pm-setcard { display: grid; gap: 4px; height: auto; min-height: 0; padding: 6px 8px; border-radius: 8px; align-items: start; cursor: default; white-space: normal; }
+.pm-setcard-head { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 11px; }
+.pm-setcard-head .rbp-runeicon { width: 14px; height: 14px; }
+.pm-setcard-head .rbp-set-req { margin-left: auto; }
+.pm-setcard .rbp-set-text { font-size: 11px; line-height: 1.25; color: var(--text); white-space: normal; }
+/* the sets that are on, as a list: the Mitamas each needs (coloured numbers), then the rune and its boost; no divider
+   before the column */
+.pm-setlist { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
+.pm-setlist li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; align-items: start; }
+.pm-setlist .rbp-set-req { margin-top: 1px; }
+.pm-setlist b { color: var(--text); }
+.pm-cols .pm-gives { padding-left: 0; border-left: none; }

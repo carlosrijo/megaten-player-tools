@@ -9,8 +9,10 @@ it never writes to the game or changes anything.
 ## On the web
 
 The databases and planners also open in the browser, with nothing to install: **https://babel-7vg.pages.dev/**.
-Your own character's pages, the Quest Tracker and the Character Planner need the desktop app. Each release updates the
-site (`tools\build-site.ps1`, the `website` job in `.github\workflows\release.yml`).
+The character pages show a demo character (Rubito's latest snapshot) with a "Download BABEL" banner; the Quest Tracker
+and the Character Planner need the desktop app. Each release updates the site (`tools\build-site.ps1`, the `website`
+job in `.github\workflows\release.yml`). The game's pictures and the demo character aren't in git: `tools\publish-web-assets.ps1`
+uploads them from this PC (run it after new pictures or a new snapshot to show).
 
 ## Download (portable, nothing to install)
 
@@ -144,7 +146,7 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
     52000.00pt / 60000.00pt, both read from the game), then each chain expertise you have unlocked with its
     class-rank as a short list (two columns when there is room). Beside it, the icons of every skill those ranks gave you, in one run (hover one for its name and chain; a switched-off toggle is dimmed);
     click a chain to open it on the Expertise page, or "View more" for the whole page.
-  - **The digitalize demon:** its name is a dropdown to pick another one, or no demon.
+  - **The digitalize demon:** its name opens the demon dialog (the Character Planner's): your COMP demons as last read, with a search, each one's stats, skills, Demon Force, equipment and rebirth ranks, "Load demons from the game" at its foot, and a remove button on demons no longer in your COMP; or no demon.
   - **Gear:** every piece you wear as its icon from the game, then your complete sets. Hover an icon for the game's
     tooltip, click it to open that piece on the Gear page.
 
@@ -155,14 +157,19 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
   race, alignment and Mitama (with its Mitama rank), its own Max HP, Max MP and 12 stats as its status window
   showed them (saved with the next snapshot), one line of its skills, Demon Force and features (a slot's demon
   equipment is shown in place of its feature), and the rebirth ranks radar of the Demon Planner's build cards
-  (Pre-Mitama and Post-Mitama; for a fused demon the game keeps only a total of the ranks before the fusion, so
-  only the ranks since are drawn). The Gear band marks each piece with who it boosts (a dot: partner, you, or
+  (no labels: for a fused demon the game keeps only a total of the ranks before the fusion, so only the ranks since
+  are drawn; under it, a Mitama-fused demon's Mitamas per kind as coloured chips, two by two). The Gear band marks each piece with who it boosts (a dot: partner, you, or
   both), with the counts beside the title. **Key stats and affinities** then shows only the partner's numbers, in
   the Player view's layout: every key stat as what you give the partner (the "Partner" rows of the Bonuses page;
   no cap bars, the partner's caps aren't known), then what you add to its stats and the rest; and the affinity
   card as the partner's (boost and cap: what you give it; resistance: its own from the Demon Database, as a demon
-  of its kind has it, plus what you give it; its Demon Force, Mitama slots and skills are not included). Your own
-  key stats, affinities and "What changed" are in the Player view.
+  of its kind has it, plus what you give it). A Mitama-fused partner's Mitamas count too, as its own ("Its Mitamas"):
+  the rank bonus, the sets that are on and the placed Mitamas' bonuses. Its Demon Force and skills are not included.
+  Under them, **Mitama** (a fused partner only), as the Demon Planner's "What it takes": its Mitamas of each kind
+  against what its Mitama rank allows (12 + rank), what it was fused with and its Mitama rank, a row per rune with
+  its slots coloured by Mitama, its rank and bonus, and beside them the rank bonus (from rank 3), the sets that are on
+  (with the Mitamas each needs) and the placed Mitamas' bonuses. Your own key stats, affinities and "What changed"
+  are in the Player view.
 
   In both views, a key-stat line that nothing adds to is greyed out and can't be opened.
 
