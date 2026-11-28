@@ -1088,6 +1088,9 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .dcm-icon { flex: none; width: 28px; height: 28px; border-radius: 6px; background: var(--surface-2); overflow: hidden; display: inline-grid; margin: -4px 0; }
 .dcm-icon img { width: 28px; height: 28px; display: block; object-fit: cover; object-position: 50% 20%; }
 .page-dcm .row-btn { align-items: center; }
+.dcm-held { white-space: nowrap; }
+.dcm-held .tag + .tag { margin-left: 6px; }
+.dcm-hidebag { display: inline-flex; align-items: center; gap: 8px; margin-left: 8px; font-size: 13px; color: var(--text-2); cursor: pointer; }
 
 /* Demon Rank: the sorted column in the demon colour */
 .rank-tbl th, .rank-tbl td { padding-left: 6px; padding-right: 6px; }

@@ -476,6 +476,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             Ok(0)
         }
         "digilevels" => digilevels(opts),
+        "dcm" => dcm(opts),
         "damage-log" => damage_log(opts),
         _ => {
             console::write_line("usage: imagine-reader clients | snapshot|rebuild|recalc|sets [--name N] [--csv path] [--data dir] [--ignore-window]");
@@ -1598,6 +1599,36 @@ fn print_damage_totals(hits: &[imagine::game::chat_reader::Hit], span: Option<f6
         let main = hits.iter().filter(|h| h.part == MAIN_HIT).count();
         console::write_line(&format!("{} s from the first hit to the last; {} main hits per second (follow-ups not counted).", fmt::fixed(s, 1), fmt::fixed(main as f64 / s, 2)));
     }
+}
+
+fn dcm(opts: &HashMap<String, String>) -> Result<i32> {
+    // imagine-reader dcm [--name N]: the Demonic Compendium's registered entries and the DCMs in the bag (read-only).
+    use imagine::calc::character_extras as extras;
+    let who = playing(opts)?;
+    let proc = client_reader::find_client(&who)?;
+    let mem = GameMemory::new(proc.id())?;
+    let own = demon_reader::find_own_at(&mem).ok_or_else(|| user_error("Couldn't find the character's progress object in memory."))?;
+    let st = demon_reader::read_dcm_state(&mem, own).ok_or_else(|| user_error("Couldn't read the compendium from memory."))?;
+    let entries = extras::compendium_entries(&st.book)?.ok_or_else(|| user_error("reference\\devil-book.tsv is missing."))?;
+    let all = extras::all_compendium_entries()?.unwrap_or_default();
+    let mut book = vec![0u8; 512];
+    for s in &st.book {
+        if (0..4096).contains(s) {
+            book[(*s / 8) as usize] |= 1 << (*s % 8);
+        }
+    }
+    println!("compendium: {} bits, {} entries, count {}", st.book.len(), entries.len(), extras::compendium_count(Some(&book))?.map_or("?".to_string(), |c| c.to_string()));
+    let mut reg: Vec<i32> = entries.iter().copied().collect();
+    reg.sort();
+    println!("registered entries: {}", reg.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(" "));
+    match &st.bag {
+        None => println!("bag: not read"),
+        Some(bag) => {
+            let dcms: Vec<String> = bag.iter().filter(|(id, _)| all.contains(*id)).map(|(id, n)| format!("{id} x{n}")).collect();
+            println!("bag: {} items; DCMs: {}", bag.len(), if dcms.is_empty() { "none".to_string() } else { dcms.join(", ") });
+        }
+    }
+    Ok(0)
 }
 
 fn digilevels(opts: &HashMap<String, String>) -> Result<i32> {

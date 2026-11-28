@@ -439,7 +439,21 @@ const ZONE_AT: usize = 1712;
 /// Where the own character's progress object is (one pass over memory, a few hundred ms), for [`read_quest_state`]
 /// to read again cheaply. None when there is none, or two characters disagree.
 pub fn find_progress_at(mem: &GameMemory) -> Option<i64> {
-    let mut found: Option<i64> = None;
+    find_own_at(mem).map(|o| o.progress)
+}
+
+/// Where the own character's objects are: its progress object (`CPlayerData`, record +24) and its status object
+/// (`CCommonData`, record +12). `status` is 0 when the record's +12 isn't a status object.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OwnAt {
+    pub progress: i64,
+    pub status: i64,
+}
+
+/// The own character's objects (one pass over memory, a few hundred ms), for [`read_quest_state`] and
+/// [`read_dcm_state`] to read again cheaply. None when there is none, or two characters disagree.
+pub fn find_own_at(mem: &GameMemory) -> Option<OwnAt> {
+    let mut found: Option<OwnAt> = None;
     for (r, buf) in mem.scan() {
         if r.base < 0x02000000 {
             continue;
@@ -455,13 +469,85 @@ pub fn find_progress_at(mem: &GameMemory) -> Option<i64> {
             if prog < 0x10000 || mem.read(prog, 4).is_none_or(|b| u32_at(&b, 0) != PROGRESS_VTABLE) {
                 continue;
             }
-            if found.is_some_and(|f| f != prog) {
+            if found.is_some_and(|f| f.progress != prog) {
                 return None;
             }
-            found = Some(prog);
+            let st = u32_at(buf, pp + 12) as i64;
+            let status = if st >= 0x10000 && mem.read(st, 4).is_some_and(|b| u32_at(&b, 0) == STATUS_VTABLE) { st } else { 0 };
+            found = Some(OwnAt { progress: prog, status });
         }
     }
     found
+}
+
+/// Where the Demonic Compendium mask sits in the progress object, and its length.
+const COMPENDIUM_AT: usize = 0x294;
+const COMPENDIUM_LEN: usize = 512;
+/// Where the bag's std::map {head, size} sits in the status object.
+const BAG_AT: usize = 784;
+
+/// What the game has for the DCM Tracker: the compendium and the bag.
+///  * `book`: the Demonic Compendium's registered entries as DevilBookData `shiftValue`s (calc::character_extras
+///    ::compendium_entries turns them into entry ids, which are the DCMs' item ids). The server's AccountWorldData
+///    DevilBook: a 512-byte bit mask at progress +0x294 (660), bit n = byte n / 8, bit n % 8 (ConvertIDToMaskValues).
+///    Found 2026-11-28 on Rubito: 62 bits, every one a compendium entry, 61 unique entries (Pixie has two bits) = the
+///    window's "Demons: 61/339", Zhen (registered 2026-11-23) among them; there right after login with the window
+///    never opened (two relogs); a copy sits in MiInterfaceDevilBookTask +0xA0 while that object exists. Empty when
+///    nothing is registered (a character without the compendium).
+///  * `bag`: item id -> how many the bag holds (all stacks added up), None when the status object or its map can't be
+///    read. See [`read_bag`].
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct DcmState {
+    pub book: IndexSet<i32>,
+    pub bag: Option<IndexMap<i32, i32>>,
+}
+
+/// The compendium and the bag as the objects at `own` have them now; None when `own.progress` is no longer a
+/// progress object (the character logged out: find it again).
+pub fn read_dcm_state(mem: &GameMemory, own: OwnAt) -> Option<DcmState> {
+    let b = mem.read(own.progress, COMPENDIUM_AT + COMPENDIUM_LEN)?;
+    if u32_at(&b, 0) != PROGRESS_VTABLE {
+        return None;
+    }
+    let book = valuables_of(&b[COMPENDIUM_AT..COMPENDIUM_AT + COMPENDIUM_LEN]).unwrap_or_default();
+    let bag = (own.status != 0)
+        .then(|| mem.read(own.status, BAG_AT + 8))
+        .flatten()
+        .filter(|s| u32_at(s, 0) == STATUS_VTABLE)
+        .and_then(|s| read_bag(mem, u32_at(&s, BAG_AT) as i64, i32_at(&s, BAG_AT + 4)));
+    Some(DcmState { book, bag })
+}
+
+/// The bag: a std::map {head, size} at status object +784 (0x310), one node per slot: +16 slot, +28 item id, +32 the
+/// item's object id (s64), +40 stack count (u16). Found 2026-11-25 (`memmap valdiff`: Gift Melon 3 -> 2; `memmap bag`
+/// listed all 45 items with their names; on 2026-11-26 the watcher saw "DCM: Ishtar x1" arrive and leave). Item id ->
+/// count, stacks of one item added up. None when the map can't be read whole.
+fn read_bag(mem: &GameMemory, head: i64, size: i32) -> Option<IndexMap<i32, i32>> {
+    if head < 0x10000 || !(0..=500).contains(&size) {
+        return None;
+    }
+    let mut res: IndexMap<i32, i32> = IndexMap::new();
+    if size == 0 {
+        return Some(res);
+    }
+    let hb = mem.read(head, 8)?;
+    let mut seen: IndexSet<i64> = IndexSet::new();
+    let mut nodes = 0;
+    let mut stack: Vec<i64> = vec![u32_at(&hb, 4) as i64];
+    while let Some(n) = stack.pop() {
+        if n < 0x10000 || n == head || !seen.insert(n) || seen.len() as i64 > size as i64 + 1 {
+            continue;
+        }
+        let nb = mem.read(n, 42)?;
+        let id = i32_at(&nb, 28);
+        if id > 0 {
+            *res.entry(id).or_insert(0) += u16_at(&nb, 40) as i32;
+        }
+        nodes += 1;
+        stack.push(u32_at(&nb, 0) as i64);
+        stack.push(u32_at(&nb, 8) as i64);
+    }
+    if nodes == size { Some(res) } else { None }
 }
 
 /// The quests as the progress object at `at` has them now; None when `at` is no longer a progress object (the

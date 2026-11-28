@@ -217,6 +217,37 @@ pub fn compendium_count(devil_book: Option<&[u8]>) -> Result<Option<i32>> {
     Ok(Some(entries.len() as i32))
 }
 
+/// The compendium entries (DevilBookData entryID, which is also the entry's DCM item id) that a set of registered
+/// `shiftValue`s stands for (demon_reader::DcmState::book), every row of reference\devil-book.tsv, counted or not.
+/// None when the table is missing.
+pub fn compendium_entries(shifts: &IndexSet<i32>) -> Result<Option<IndexSet<i32>>> {
+    Ok(devil_book_rows()?.map(|rows| rows.into_iter().filter(|(s, _)| shifts.contains(s)).map(|(_, e)| e).collect()))
+}
+
+/// Every compendium entry id (DevilBookData entryID = the DCM item ids). None when the table is missing.
+pub fn all_compendium_entries() -> Result<Option<IndexSet<i32>>> {
+    Ok(devil_book_rows()?.map(|rows| rows.into_iter().map(|(_, e)| e).collect()))
+}
+
+/// reference\devil-book.tsv as (shiftValue, entryID) pairs. None when the table is missing.
+fn devil_book_rows() -> Result<Option<Vec<(i32, i32)>>> {
+    let Some(file) = reference_file("devil-book.tsv") else { return Ok(None) };
+    let mut rows = Vec::new();
+    for line in file.lines()? {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let r: Vec<&str> = line.split('\t').collect();
+        if r.len() < 6 {
+            continue;
+        }
+        if let (Some(s), Some(e)) = (fmt::parse_i32(r[1]), fmt::parse_i32(r[5])) {
+            rows.push((s, e));
+        }
+    }
+    Ok(Some(rows))
+}
+
 // ---------- effects ----------
 
 /// `v.ToString("0.##", InvariantCulture)`.

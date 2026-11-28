@@ -248,12 +248,19 @@ like) are listed next to their demon, each with its own stats. Stats are a fresh
 demon's (no Demon Force, rebirth or Mitama runes). Critical is the demon's own value from the game data: it does not
 grow with level, and a critical roll adds Luck to it.
 
-### Tools: DCM Locator
+### Tools: DCM Locator and DCM Tracker
 
-Under **Tools** in the left bar. Lists every DCM (Demon Compendium Memory) and where the game data says it comes from:
+Under **Tools → DCM** in the left bar: **Locator** and **Tracker**. The Locator lists every DCM (Demon Compendium Memory) and where the game data says it comes from:
 shops with prices, enemies with drop rates and zones, chests, event or NPC rewards, NPC exchanges with what they cost,
 random boxes, and presents from the demon itself. Search by demon, enemy, zone or shop; the chips filter by kind of source. It works without a snapshot.
 Each row shows the demon's own icon from your game client when the client has one.
+
+The **Tracker** is the same list with a **Compendium** column: whether each DCM's demon is **Registered** in your
+Demonic Compendium or **Not registered** yet, and how many are **in your bag**. Chips pick All, Not registered (the
+default), Registered or In your bag; with Not registered picked, **Hide the ones in your bag** leaves only the DCMs you
+still have to find. It reads both from the game every few seconds while it is open (the compendium is in memory from
+login: the compendium window doesn't need to be opened), and keeps the last reading per character, so it still shows
+it, with its date, when the game is closed. The Tracker needs the desktop app; the website has the Locator only.
 
 The DCM list, zone names, shop stock and NPC exchanges are the IMAGINE client's. Drops, chests, presents, events and
 which NPC offers an exchange come from the public server data, so IMAGINE may have changed them; DCMs with "No known source" are most likely IMAGINE additions.

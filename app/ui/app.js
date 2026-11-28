@@ -147,7 +147,7 @@
         getSettings: () => ({ ...settings }),
         saveSettings: (a) => { if (a && a.theme) { settings.theme = a.theme; store.set('theme', a.theme); } return { ...settings }; },
         updateCheck: () => ({ enabled: true, off: true }),
-        menuIcons: () => ({}), log: () => true, ready: () => true, questProgress: () => null, summonedDemon: () => null, assistant: () => null,
+        menuIcons: () => ({}), log: () => true, ready: () => true, questProgress: () => null, dcmProgress: () => null, summonedDemon: () => null, assistant: () => null,
       };
       return { native: false, web: true, async call(cmd, args) {
         if (answers[cmd]) return answers[cmd](args);
@@ -357,6 +357,12 @@
           return { active: [{ id: 902, step: 0, counters: [0, 0, 0, 0, 0] }, { id: 818, step: 0, counters: [7, 13, 5, 0, 0] }, { id: 312, step: 2, counters: [0, 0, 0, 0, 0] }, { id: 904, step: 0, counters: [0, 0, 0, 0, 0] }, ...extra],
             completed: Q.get('completed') === 'none' ? null : [1, 2, 3, 4, 5, 901], flags: [...(extra.length ? [82, 84, 124] : [82, 84]), 4, 132, 222, 250, 251], zone: Number(Q.get('zone')) || 50101 };
         }
+        // the compendium "in game": a sample of registered DCMs (Jack Frost, Pixie, Cait Sith, Zhen, Tao Tie, Loki,
+        // Lucifuge) and two in the bag (Satan, not registered; two Lokis, registered); ?dcm=none: no game
+        if (cmd === 'dcmProgress') {
+          if (Q.get('dcm') === 'none') return null;
+          return { registered: [10569, 10570, 10549, 10166, 10085, 11231, 11228], bag: [[10001, 1], [11231, 2]] };
+        }
         if (cmd === 'summonedDemon') {
           if (Q.get('summon')) return { type: Number(Q.get('summon')) || 0, name: Q.get('summonName') || 'A demon' };
           const s = await get('../../data/dash/summoned.json', null);
@@ -498,7 +504,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['dcm', 'DCM Locator', 'search'], ['rank', 'Demon Ranking', 'podium'],['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Demon Planner', 'horns'], ['sim', 'Character Planner', 'flask'], ['cbdemon', 'Demon Builds', 'horns'], ['cbplayer', 'Character Builds', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['dcm', 'DCM Locator', 'search'], ['dcmtrack', 'DCM Tracker', 'check'],['rank', 'Demon Ranking', 'podium'],['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Demon Planner', 'horns'], ['sim', 'Character Planner', 'flask'], ['cbdemon', 'Demon Builds', 'horns'], ['cbplayer', 'Character Builds', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -572,7 +578,9 @@
     demons: null,   // the COMP demons as last listed (the picker shows these at once, then looks at the game again)
     bonus: { q: '', group: 'all', open: new Set() },
     gear: { view: 'pieces', sel: null, cols: {}, colq: '', sort: null, short: Q.has('short') ? Q.get('short') === '1' : store.get('short') === '1' },
-    dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle' },
+    dcm: { q: '', kind: 'all', open: new Set(), data: null, notes: {}, state: 'idle', busy: false, live: null },
+    dcmt: { q: '', kind: 'all', held: 'missing',   // (kind stays 'all': the Tracker has no source chips)
+ hideBag: store.get('dcm-hide-bag') === '1', open: new Set() },   // the DCM Tracker's own filters (its list is S.dcm.data)
     quest: { q: '', type: 'available', open: new Set(), data: null, state: 'idle', live: null, liveRaw: null, typeTouched: false },
     keys: { q: '', cat: 'all', held: 'all', open: new Set(), pg: 0, data: null, state: 'idle', busy: false },
     guides: { q: '', tag: 'all', open: new Set(), outOpen: new Set(), data: null, state: 'idle' },   // Dungeon Guides: filters, opened dungeons, opened outcomes
@@ -840,6 +848,7 @@
     { id: 'dbs', title: 'Databases', ids: ['skills', 'ddb', 'geardb', 'quests', 'keys', 'dungeons'],
       short: (l) => (l.endsWith(' Database') ? l.slice(0, -' Database'.length) + 's' : l) },
     { id: 'planners', title: 'Planners', ids: ['fusion', 'dplan', 'rebirth', 'sim'], short: (l) => l.replace(/ Planner$/, '') },
+    { id: 'dcms', title: 'DCM', ids: ['dcm', 'dcmtrack'], short: (l) => l.replace(/^DCM /, '') },
     { id: 'community', title: 'Community Builds', ids: ['cbdemon', 'cbplayer'], last: true, short: (l) => l.replace(/ Builds$/, '') },
   ];
   S.navOpen = {};
@@ -895,6 +904,7 @@
     geardb: { gdb: ['q', 'kind', 'cls', 'known', 'gender', 'align', 'src', 'range', 'aff', 'maxLv', 'sort', 'dir', 'fopen', 'open', 'pg'] },
     rank: { rank: ['q', 'kind', 'race', 'at', 'mt', 'sort', 'dir'] },
     dcm: { dcm: ['q', 'kind', 'open'] },
+    dcmtrack: { dcmt: ['q', 'held', 'open'] },
     rebirth: { rbp: ['openSteps'] },   // (which build is open is `rebirth` in here() and step())
     dungeons: { dun: ['q', 'kind', 'open', 'mob', 'shown'] },
     guides: { guides: ['q', 'tag', 'open', 'outOpen'] },
@@ -3256,7 +3266,7 @@
       S.dcm.data = d; S.dcm.notes = (n && n.notes) || {};
       S.dcm.state = d ? 'ready' : 'failed';
       if (d) d.items.forEach((it) => { it.lines = dcmLines(it); it.kinds = new Set(it.lines.map((l) => l.group)); it.hay = [it.demon, ...it.lines.map((l) => [l.text, l.sub || '', ...(l.tags || [])].join(' '))].join(' ').toLowerCase(); });
-      if (S.page === 'dcm' || S.page === 'rebirth') render();   // the Rebirth Planner asks it which demons a DCM gives
+      if (S.page === 'dcm' || S.page === 'dcmtrack' || S.page === 'rebirth') render();   // the Rebirth Planner asks it which demons a DCM gives
     });
   }
   /** One DCM's sources as display lines, best first: { group, kind, text, sub, value, tags }. */
@@ -3292,6 +3302,42 @@
     const shown = new Set();   // two chests of one place at one rate read the same: say it once
     return lines.sort((a, b) => a.rank - b.rank).filter((l) => { const k = [l.kind, l.text, l.sub, l.value, (l.tags || []).join()].join('|'); return !shown.has(k) && shown.add(k); });
   }
+  // Which DCMs the character has: its Demonic Compendium (registered entries; an entry id is its DCM's item id) and the
+  // DCMs in its bag, read from the game (page command dcmProgress) every few seconds while this page is open, and kept
+  // per character (babel-dcm-held-<name>) so the page still says it with the game closed.
+  const DCM_HELD = [['all', 'All'], ['missing', 'Not registered'], ['have', 'Registered'], ['bag', 'In your bag']];
+  const dcmHeldKey = (name) => 'dcm-held-' + name;
+  /** { name, reg: Set of item ids, bag: Map item id -> count (empty when the bag wasn't read), at, live } or null. */
+  function dcmHeld() {
+    const name = simActive();
+    if (!name) return null;
+    const D = S.dcm;
+    if (D.live && D.live.name === name) return D.live;
+    try {
+      const v = JSON.parse(store.get(dcmHeldKey(name)) || 'null');
+      return v && Array.isArray(v.reg) ? { name, reg: new Set(v.reg), bag: new Map(v.bag || []), at: v.at, live: false } : null;
+    } catch (e) { return null; }
+  }
+  function dcmTick() {
+    const D = S.dcm, name = simActive();
+    if (D.busy || S.page !== 'dcmtrack' || document.hidden || !name) return;
+    D.busy = true;
+    Promise.resolve(host.call('dcmProgress')).catch(() => null).then((r) => {
+      D.busy = false;
+      if (!r || !Array.isArray(r.registered) || simActive() !== name) {
+        if (D.live && D.live.name === name) { D.live = null; if (S.page === 'dcmtrack') render(); }   // the game closed: fall back to the saved list
+        return;
+      }
+      const reg = [...r.registered].sort((a, b) => a - b), bag = Array.isArray(r.bag) ? r.bag : [];
+      const raw = reg.join(',') + '|' + bag.map((b) => b.join('x')).join(',');
+      const changed = !D.live || D.live.name !== name || D.live.raw !== raw;
+      const at = new Date().toISOString();
+      D.live = { name, reg: new Set(reg), bag: new Map(bag), at, live: true, raw };
+      store.set(dcmHeldKey(name), JSON.stringify({ at, reg, bag }));
+      if (changed && S.page === 'dcmtrack') render();
+    });
+  }
+  setInterval(dcmTick, 5000);
   /** The demon's own icon (made by tools\\dcmexport from the client); an empty box when there is none. */
   function dcmIcon(it) {
     const box = h('span', { class: 'dcm-icon', 'aria-hidden': 'true' });
@@ -3301,50 +3347,83 @@
     if (src) box.append(h('img', { src, alt: '', width: 28, height: 28, loading: 'lazy', onerror: (ev) => ev.target.remove() }));
     return box;
   }
-  function pageDcm() {
-    const D = S.dcm, page = h('div', { class: 'page page-dcm' });
-    loadDcm();
-    page.append(pageHead('Every DCM (Demon Compendium Memory) and where the game data says it comes from. Click a row for all its sources.'));
+  /** The DCM Locator (every DCM and where it comes from) and, with `track`, the DCM Tracker: the same list with whether
+   *  each DCM's demon is in your compendium and how many are in your bag, and chips to pick by that. Each page keeps
+   *  its own search, filters and open rows (S.dcm, S.dcmt); the list itself is loaded once (S.dcm.data). */
+  function pageDcm(track) {
+    const D = S.dcm, F = track ? S.dcmt : S.dcm, page = h('div', { class: 'page page-dcm' });
+    loadDcm(); if (track) dcmTick();
+    page.append(pageHead(track ? 'Which DCMs (Demon Compendium Memory) you still need: whether each one\'s demon is in your compendium and how many are in your bag, read from the game. Click a row for where it comes from.'
+      : 'Every DCM (Demon Compendium Memory) and where the game data says it comes from. Click a row for all its sources.'));
     if (D.state !== 'ready') {
       page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The DCM list could not be loaded (dcm-sources.json is missing beside the page).' : 'Loading the DCM list…' }));
       return page;
     }
-    page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
+    if (!track) page.append(h('div', { class: 'notice' }, icon('info'), h('span', null, h('b', { text: 'Read from game data, not checked on IMAGINE. ' }),
       'The DCM list, zone names, shop stock and NPC exchanges are the IMAGINE client\'s. Drops, chests, presents, events and which NPC offers an exchange come from the public server data, so IMAGINE may have changed them. Lines marked “IMAGINE note” are confirmed by players.')));
-    const items = D.data.items;
+    const items = D.data.items, held = track ? dcmHeld() : null;
+    const reg = (it) => !!held && held.reg.has(it.id), inBag = (it) => (held && held.bag.get(it.id)) || 0;
+    if (track) {
+      const n = items.filter(reg).length, bagged = items.filter(inBag).length;
+      const counts = `${fmt(n)} of these ${fmt(items.length)} DCMs are registered, ${fmt(items.length - n)} not yet` + (bagged ? `, and ${fmt(bagged)} ${bagged === 1 ? 'is' : 'are'} in your bag.` : '.');
+      page.append(h('div', { class: 'notice' }, icon('info'), h('span', null,
+        !simActive() ? 'Pick a character at the top left to see which DCMs are in its compendium and its bag.'
+          : !held ? `Start IMAGINE and log in as ${simActive()} to see which DCMs are in your compendium and your bag; the page reads them from the game while it is open.`
+            : held.live ? `Read from the game just now for ${simActive()}: ${counts}`
+              : `As last read from the game (${new Date(held.at).toLocaleString()}) for ${simActive()}: ${counts} Log in to read them again.`)));
+    }
     const inKind = (it, k) => k === 'all' ? true : k === 'none' ? !it.lines.length : k === 'present' ? it.lines.length > 0 && it.lines.every((l) => l.group === 'present') : it.kinds.has(k);
+    // "Not registered" with "Hide the ones in your bag": only the DCMs you still have to find
+    const inHeld = (it, k) => !held || k === 'all' || (k === 'have' ? reg(it) : k === 'missing' ? !reg(it) && !(F.hideBag && inBag(it)) : inBag(it) > 0);
     const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by source' });
+    const heldChips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Filter by whether you have it' });
     const body = h('tbody');
-    const drawChips = () => chips.replaceChildren(...DCM_KINDS.map(([id, label]) =>
-      h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(D.kind === id), onclick: () => { D.kind = id; drawChips(); draw(); } },
-        label, h('span', { class: 'count', text: items.filter((it) => inKind(it, id)).length }))));
+    const drawChips = () => {
+      chips.replaceChildren(...DCM_KINDS.map(([id, label]) =>
+        h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(F.kind === id), onclick: () => { F.kind = id; drawChips(); draw(); } },
+          label, h('span', { class: 'count', text: items.filter((it) => inKind(it, id) && inHeld(it, F.held)).length }))));
+      if (!held) return;
+      const bagHidden = items.filter((it) => inKind(it, F.kind) && !reg(it) && inBag(it)).length;
+      heldChips.replaceChildren(...DCM_HELD.map(([id, label]) =>
+        h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(F.held === id), onclick: () => { F.held = id; drawChips(); draw(); } },
+          label, h('span', { class: 'count', text: items.filter((it) => inKind(it, F.kind) && inHeld(it, id)).length }))),
+        F.held === 'missing' ? h('label', { class: 'dcm-hidebag' }, h('input', { type: 'checkbox', class: 'switch', role: 'switch', checked: !!F.hideBag, onchange: (ev) => { F.hideBag = ev.target.checked; store.set('dcm-hide-bag', F.hideBag ? '1' : '0'); drawChips(); draw(); } }),
+          `Hide the ones in your bag (${fmt(bagHidden)})`) : '');   // ('' adds nothing; replaceChildren would write null as text)
+    };
+    const cols = held ? 4 : 3;
+    /** Whether the DCM's demon is registered, and how many are in the bag. */
+    const heldCell = (it) => !held ? null
+      : h('td', { class: 'dcm-held' }, reg(it) ? h('span', { class: 'tag key-have' }, icon('check'), 'Registered') : h('span', { class: 'tag tag-off', text: 'Not registered' }),
+        inBag(it) ? h('span', { class: 'tag dcm-bag', text: inBag(it) === 1 ? 'In your bag' : `${fmt(inBag(it))} in your bag` }) : null);
     const lineEl = (l) => h('li', null, h('span', { class: 'kind', text: l.kind }),
       h('span', null, l.text, (l.tags || []).map((t) => h('span', { class: 'tag', style: 'margin-left:8px', text: t })), l.sub ? h('small', { text: l.sub }) : null),
       h('span', { class: 'pv', text: l.value || '' }));
     const draw = () => {
       body.replaceChildren();
-      const q = D.q.trim().toLowerCase();
-      const rows = items.filter((it) => inKind(it, D.kind) && (!q || it.hay.includes(q))).sort((x, y) => !x.lines.length - !y.lines.length);
+      const q = F.q.trim().toLowerCase();
+      const rows = items.filter((it) => inKind(it, F.kind) && inHeld(it, F.held) && (!q || it.hay.includes(q))).sort((x, y) => !x.lines.length - !y.lines.length);
       rows.forEach((it) => {
-        const open = D.open.has(it.id), best = it.lines[0];
-        const toggle = () => { if (D.open.has(it.id)) D.open.delete(it.id); else D.open.add(it.id); draw(); };
+        const open = F.open.has(it.id), best = it.lines[0];
+        const toggle = () => { if (F.open.has(it.id)) F.open.delete(it.id); else F.open.add(it.id); draw(); };
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')), dcmIcon(it), h('span', null, it.demon, h('span', { class: 'src-count', text: it.lines.length === 1 ? '1 source' : `${it.lines.length} sources` })))),
           best ? h('td', null, h('div', { class: 'dcm-best' }, h('span', { class: 'dcm-kind', text: best.kind }),
             h('span', null, best.text, best.sub ? h('span', { class: 'src-count', text: best.sub }) : null)))
             : h('td', { class: 'zero', text: 'No source in the game data' }),
-          h('td', { class: 'num' + (best && best.value ? '' : ' zero'), text: best && best.value ? best.value : '—' })));
-        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 3 },
+          h('td', { class: 'num' + (best && best.value ? '' : ' zero'), text: best && best.value ? best.value : '—' }),
+          heldCell(it)));
+        if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: cols },
           it.lines.length ? h('ul', { class: 'parts dcm-parts' }, it.lines.map(lineEl))
             : h('p', { class: 'note', text: 'Nothing in the data gives this DCM. It is most likely an IMAGINE addition whose source only the live server knows.' }),
           h('p', { class: 'note', style: 'margin-top:8px', text: `Item ${it.id} · ${it.name}` }))));
       });
-      if (!rows.length) body.append(h('tr', null, h('td', { colspan: 3, class: 'empty-row', text: q ? `Nothing matches “${D.q.trim()}”.` : 'No DCM in this group.' })));
+      if (!rows.length) body.append(h('tr', null, h('td', { colspan: cols, class: 'empty-row', text: q ? `Nothing matches “${F.q.trim()}”.` : 'No DCM in this group.' })));
     };
-    page.append(h('div', { class: 'toolbar' }, searchBox(D.q, 'Search a demon, enemy, zone or shop', (v) => { D.q = v; draw(); }), chips));
+    page.append(h('div', { class: 'toolbar' }, searchBox(F.q, 'Search a demon, enemy, zone or shop', (v) => { F.q = v; draw(); }), track ? (held ? heldChips : null) : chips));   // the Tracker has no source chips
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'DCM' }), h('th', { scope: 'col', text: 'Best known source' }), h('th', { scope: 'col', class: 'num', text: 'Rate or price' }))), body)));
+      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'DCM' }), h('th', { scope: 'col', text: 'Best known source' }), h('th', { scope: 'col', class: 'num', text: 'Rate or price' }),
+        held ? h('th', { scope: 'col', text: 'Compendium' }) : null)), body)));
     page.append(h('p', { class: 'note', text: `${items.length} DCMs, data made on ${D.data.generatedAt}. Rates are the chance per kill or per chest. A present is what the demon may give you while it is your partner.` }));
     drawChips(); draw();
     return page;
@@ -10537,9 +10616,9 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     return box;
   }
 
-  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, guides: pageGuides, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills, cbplayer: pageCb, cbdemon: pageCb };
+  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: () => pageDcm(false), dcmtrack: () => pageDcm(true), quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, guides: pageGuides, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills, cbplayer: pageCb, cbdemon: pageCb };
   // On the website: the character pages, and the tools that need the reader or the game, point to the desktop app.
-  const DESKTOP_TOOLS = new Set(['tracker', 'sim']);
+  const DESKTOP_TOOLS = new Set(['tracker', 'sim', 'dcmtrack']);
   function needsBabel() {
     const name = pageName(S.page);
     const what = isTool(S.page) ? (S.page === 'tracker' ? 'follows your quests in the running game' : 'works out your builds with BABEL’s own calculation')
