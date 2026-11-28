@@ -314,6 +314,70 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .gear-sets { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; }
 .gear-sets .stat-label { margin-right: 4px; }
 .gear-pc { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); cursor: pointer; }
+/* a demon user's Overview: who each worn piece boosts, as a dot on its corner (partner: the demon pink) */
+.gear-pc { position: relative; }
+.who-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface); }
+.who-partner { background: var(--demon); } .who-you { background: var(--base); } .who-both { background: linear-gradient(90deg, var(--demon) 50%, var(--base) 50%); }
+.gear-band .legend { display: grid; gap: 2px; }
+/* the partner card: who it is beside its stat bars, then what it gives you; framed in the demon pink (it is the view's subject) */
+.partner-card { display: grid; gap: 10px; padding: 12px 14px; border-color: color-mix(in srgb, var(--demon) 55%, transparent); }
+/* in the head beside you: it takes most of the row, your own part shrinks to the name and three stats in one column */
+.page-head.du { align-items: stretch; }
+.page-head.du .portrait { align-self: center; width: 112px; height: 84px; }   /* smaller here (still 4:3): the row is the partner's */
+.page-head.du.with-portrait { gap: 12px; }
+.partner-card .dg-bars.who-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }   /* the partner's stats always in three columns */
+.page-head.du .page-head-text { flex: 0 0 auto; max-width: 240px; }   /* as wide as what it holds, like the summoned card of the Player view */
+.page-head.du .page-head-text > .dg-bars.who-stats { grid-template-columns: 118px; }
+.page-head.du .page-head-text > .dg-bars.who-stats .dg-row { grid-template-columns: 26px minmax(20px, 1fr) 40px; gap: 6px; }
+.page-head.du .who-line { display: grid; justify-content: start; }
+.page-head.du .partner-card { flex: 1 1 420px; min-width: 0; align-content: center; }
+.partner-top { display: grid; grid-template-columns: minmax(150px, max-content) minmax(0, 1fr); gap: 10px 18px; align-items: center; }
+.partner-who { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-auto-rows: 18px; gap: 2px 10px; align-items: center; }   /* five rows, as tall as the stats' five */
+.partner-who .demon-pic { grid-column: 1; grid-row: 1 / span 5; align-self: center; }
+.partner-card .partner-who .demon-pic { border-color: transparent; box-shadow: none; }   /* no frame of its own here: the card carries the alignment colour */
+.partner-who > :not(.demon-pic) { grid-column: 2; min-width: 0; }
+.partner-who .list-head { padding: 0; margin: 0; }
+.partner-top { align-items: start; }
+.partner-who .dg-tile > .dgt-line { display: none; }   /* what digitalizing with it would give: not a partner's business */
+.partner-who .dg-skill-icons { display: none; }   /* its skills are the Skills bar below */
+.partner-card[class*="align-"] { border-color: color-mix(in srgb, var(--align) 70%, transparent); }   /* framed in the demon's alignment colour, as its picture (pink only while the alignment isn't known) */
+/* two columns: who, stats and the line of bars on the left; the rebirths radar in a column of its own on the right, as tall as the card */
+.partner-card { grid-template-columns: minmax(0, 1fr) auto; column-gap: 32px; }
+.partner-card.none { grid-template-columns: minmax(0, 1fr); }
+.partner-top { grid-column: 1; }
+.partner-build, .partner-build .rbp-minibars { display: contents; }
+.partner-build .rbp-minirows { grid-column: 1; }   /* no rules inside the card (the user's call): the gap sets the bars apart */
+.partner-build .rbp-miniranks { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+/* skills, Demon Force and equipment on one line, no titles (the user's call): a divider between them, each icon's tip says what it is */
+.partner-build .rbp-minibars { align-items: center; }
+.partner-build .rbp-minirows { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0; }
+.partner-build .rbp-minirows .rbp-minibar-title, .partner-build .rbp-miniranks .rbp-minibar-title { display: none; }   /* nor "Ranks" over the radar */
+.partner-build .rbp-minibar { display: flex; }
+.partner-build .rbp-minibar { align-items: center; gap: 0; }
+.partner-build .rbp-minibar + .rbp-minibar::before { content: ''; flex: none; width: 4px; height: 4px; border-radius: 50%; background: var(--text-3); margin: 0 14px; }   /* a dot between the groups (the user's call), not a rule */
+.partner-build .rbp-minislots { flex-wrap: nowrap; }@media (max-width: 760px) { .partner-top { grid-template-columns: minmax(0, 1fr); } }
+/* Switching Player <-> Demon user: a view transition. The parts that exist in both views are named (only while the
+   switch runs: html.vt-view), so each glides and resizes to its new place; everything else cross-fades. */
+html.vt-view .over-top { view-transition-name: ov-top; }
+html.vt-view .page-head .portrait { view-transition-name: ov-portrait; }
+html.vt-view .page-head .page-head-text { view-transition-name: ov-me; }
+html.vt-view .page-head .summoned:not(.none), html.vt-view .page-head .partner-card { view-transition-name: ov-partner; }
+html.vt-view .page > .exp-band { view-transition-name: ov-exp; }
+html.vt-view .page > .gear-band { view-transition-name: ov-gear; }
+html.vt-view .page > .sect { view-transition-name: ov-sheet; }
+/* the assistant in the corner stands over the page: a layer of its own, or the moving parts would cover it while the switch runs */
+html.vt-view .assistant { view-transition-name: ov-assistant; }
+html.vt-view::view-transition-old(ov-assistant), html.vt-view::view-transition-new(ov-assistant) { animation: none; }
+html.vt-view::view-transition-old(ov-assistant) { display: none; }
+html.vt-view::view-transition-group(*) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+html.vt-view::view-transition-old(*), html.vt-view::view-transition-new(*) { animation-duration: .24s; }
+/* the two that change size: their content is not stretched while the box grows or shrinks, it is uncovered from the top left */
+html.vt-view::view-transition-old(ov-me), html.vt-view::view-transition-new(ov-me),
+html.vt-view::view-transition-old(ov-partner), html.vt-view::view-transition-new(ov-partner),
+html.vt-view::view-transition-old(ov-sheet), html.vt-view::view-transition-new(ov-sheet) { width: 100%; height: 100%; object-fit: none; object-position: left top; overflow: clip; }
+html.vt-view::view-transition-group(ov-partner) { border-radius: 12px; overflow: clip; }
+.over-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.du-card { display: grid; gap: 10px; align-content: start; padding-top: 14px; }
 .gear-pc:hover { border-color: var(--border-strong); background: var(--hover); }
 .gear-pc:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 /* Overview: expertise points against the cap, then the unlocked chain expertises with their skills' icons */
@@ -363,6 +427,8 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .sheet-group .list-head { margin: 0; padding: 0 0 5px; }
 .sheet-row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto minmax(58px, auto); gap: 8px; align-items: center; min-height: 30px; padding: 0 6px; margin: 0 -6px; border-top: 1px solid var(--border); cursor: pointer; }
 .sheet-row:hover { background: var(--hover); }
+.sheet-row.static, .sheet-row.static:hover { cursor: default; background: none; }   /* a line with no sources: nothing to open */
+.sheet-row.static .sheet-label, .sheet-row.static .sheet-value { color: var(--text-3); font-weight: 400; }   /* and greyed out (the user's call) */
 .sheet-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
 .sheet-row .chev { margin: 0; }
 .sheet-name { display: flex; align-items: center; gap: 8px; min-width: 0; }

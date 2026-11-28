@@ -142,6 +142,24 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
   - **Gear:** every piece you wear as its icon from the game, then your complete sets. Hover an icon for the game's
     tooltip, click it to open that piece on the Gear page.
 
+  **Demon user view.** The **Player / Demon user** switch in the row above your picture (remembered per character)
+  turns the page around for a character whose gear mostly boosts the partner demon; the switch is animated. Your
+  own part shrinks to your picture, name and HP, MP and VIT. Beside it, taking most of the row, is **Your
+  partner**, framed in its alignment colour: the demon that was summoned when the game was last read, its level,
+  race, alignment and Mitama (with its Mitama rank), its own Max HP, Max MP and 12 stats as its status window
+  showed them (saved with the next snapshot), one line of its skills, Demon Force and features (a slot's demon
+  equipment is shown in place of its feature), and the rebirth ranks radar of the Demon Planner's build cards
+  (Pre-Mitama and Post-Mitama; for a fused demon the game keeps only a total of the ranks before the fusion, so
+  only the ranks since are drawn). The Gear band marks each piece with who it boosts (a dot: partner, you, or
+  both), with the counts beside the title. **Key stats and affinities** then shows only the partner's numbers, in
+  the Player view's layout: every key stat as what you give the partner (the "Partner" rows of the Bonuses page;
+  no cap bars, the partner's caps aren't known), then what you add to its stats and the rest; and the affinity
+  card as the partner's (boost and cap: what you give it; resistance: its own from the Demon Database, as a demon
+  of its kind has it, plus what you give it; its Demon Force, Mitama slots and skills are not included). Your own
+  key stats, affinities and "What changed" are in the Player view.
+
+  In both views, a key-stat line that nothing adds to is greyed out and can't be opened.
+
   Then **Key stats and affinities**, one row: on the left one line per key stat (a bar only where the stat has a cap,
   showing how close you are; it changes colour past the cap). Click a line to see what gear, expertise and the
   digitalize demon each add, and to jump to every source on Bonuses. An Experience group shows how much extra EXP

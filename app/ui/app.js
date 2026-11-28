@@ -174,13 +174,16 @@
         }
         if (cmd === 'load') {
           const empty = Q.get('empty') === '1' || fake.active !== 'Rubito';
+          // ?dash=characters/Nobitta: another character's saved page data under Rubito's name (to look at other builds)
+          const dd = /^[\w/-]+$/.test(Q.get('dash') || '') ? `../../data/${Q.get('dash')}/` : '../../data/';
           let [snapshots, gear, expertise, bonuses, ranks, digitalize, icons, unlocks] = empty ? [[], [], [], [], null, null, {}, []] : await Promise.all([
-            get('../../data/dash/snapshots.json', []), get('../../data/dash/gear.json', []), get('../../data/dash/expertise.json', []),
-            get('../../data/dash/bonuses.json', []), get('../../data/expertise-ranks.json', null), get(Q.get('digi') || '../../data/dash/digitalize.json', null), get('../../data/dash/icons.json', {}), get('../../data/dash/digi-unlocks.json', [])]);
+            get(dd + 'dash/snapshots.json', []), get(dd + 'dash/gear.json', []), get(dd + 'dash/expertise.json', []),
+            get(dd + 'dash/bonuses.json', []), get(dd + 'expertise-ranks.json', null), get(Q.get('digi') || dd + 'dash/digitalize.json', null), get(dd + 'dash/icons.json', {}), get(dd + 'dash/digi-unlocks.json', [])]);
           if (empty && Q.get('empty') !== '1') ranks = await get(`../../data/characters/${encodeURIComponent(fake.active)}/expertise-ranks.json`, null);
           // the summoned demon comes with the page data (dash\summoned.json); here the stand-in list's summoned one
           snapshots = snapshots.filter((x) => !fakeGone.has(x.taken_at));   // deleted here: gone until the page is reloaded
-          const summoned = empty ? null : (await this.call('compDemons', { cached: true })).find((d) => d.summoned) || null;
+          // (the saved one when there is one, as the app shows it: its real skills, Demon Force, ranks and stats)
+          const summoned = empty ? null : Q.get('summoned') === '0' ? null : (await get(dd + 'dash/summoned.json', null)) || (await this.call('compDemons', { cached: true })).find((d) => d.summoned) || null;
           const pf = empty ? null : await get('../../data/cache/profile.json', null);
           const savedAt = pf && /^Updated (\d{4}-\d{2}-\d{2} \d{2}:\d{2})/.exec(String(pf.note || ''));
           const togglesSource = !pf ? null : pf.toggles_source || (pf.toggles && savedAt ? 'saved, ' + savedAt[1] : null);
@@ -217,6 +220,7 @@
           return [['Specter', 90, 'Foul', 'Kusi', 0, false, true], ['Shikigami', 90, 'Brute', 'Ara', 8, true, true], ['Alilat', 93, 'Entity', 'Nigi', 8, false, false],
             ['Seraph', 66, 'Divine', '', 2, true, false], ['Pixie', 2, 'Fairy', '', 0, false, false], ['Santa Black Frost', 42, 'Nocturne', 'Kusi', 1, false, false]].map(([name, level, race, mitama, forceStack, equipment, inGame]) =>
             ({ key: name, name, level, race, mitama, forceStack, equipment, inGame: !(args && args.cached) && inGame, current: name === cur, summoned: name === 'Specter' && Q.get('summoned') !== '0', icon: null, loaded: name !== 'Pixie', inComp: name !== 'Seraph', seenAt: '2026-11-23T15:40:23',
+              stats: name === 'Specter' ? [4819, 1767, 143, 198, 117, 142, 124, 97, 172, 159, 199, 210, 87, 53] : null,   // made-up numbers for the partner card
               // the Rebirth Planner's fields: the demon's type, growth type, rebirth ranks, Mitama type and rank, slot bonus ids
               type: { Specter: 11004, Shikigami: 11030, Alilat: 10041, Seraph: 22, Pixie: 570, 'Santa Black Frost': 10733 }[name], growthType: { Specter: 215, Shikigami: 123, Alilat: 118, Seraph: 118 }[name] || 113,
               reunion: mitama ? (name === 'Specter' ? [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8] : name === 'Shikigami' ? [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] : [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) : name === 'Seraph' ? [4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0] : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -1192,14 +1196,44 @@
    * between): Boost, Cap (100% plus what raises it) and Resistance. Same elements and order as the radar's spokes; the
    * line's tooltip gives each number's split into gear, expertise and (digitalized) the demon.
    */
-  function affinityTable(aff) {
+  /** What an affinity number is made of, as [name, value] pairs: yours (gear, expertise, digitalize demon), or the partner's (P: from your gear, from the rest of you, its own). */
+  const affParts = (e, P) => {
     const DG = S.data.digitalize;
-    const split = (e) => { const parts = [['gear', e.gear], ['expertise', e.exp], ...(digi() && DG ? [[DG.demon, e.demon]] : [])].filter(([, v]) => v); return parts.length ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : ''; };
+    return (P ? [['your gear', e.gear], ['your expertise and the rest', e.exp], [P.own, e.demon]] : [['gear', e.gear], ['expertise', e.exp], ...(digi() && DG ? [[DG.demon, e.demon]] : [])]).filter(([, v]) => v);
+  };
+  /**
+   * The summoned partner's affinities, in the shape of `affinity()`, for a demon user's Overview. Boost and cap: the
+   * bonus list's "Partner" rows (what you give it). Resistance: the demon's own, from the Demon Database (its Mitama
+   * form's when it is fused; a fresh demon's: no Demon Force, Mitama slots or skills), plus what you give it.
+   * In an entry, `gear` is from your gear, `exp` from the rest of you, `demon` the demon's own.
+   */
+  function partnerAffinity() {
+    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+    const by = { boost: new Map(), resistance: new Map(), cap: new Map() };
+    const at = (map, name) => { if (!map.has(name)) map.set(name, { name, gear: 0, exp: 0, demon: 0 }); return map.get(name); };
+    (S.data.bonuses || []).forEach((r) => {
+      if (r.group !== 'Partner' || !isTrue(r.counted)) return;
+      const m = /^(.+?) (affinity cap|affinity|resist)$/i.exec(String(r.bonus || ''));
+      if (!m) return;
+      const k = m[2].toLowerCase(), e = at(by[k === 'affinity cap' ? 'cap' : k === 'resist' ? 'resistance' : 'boost'], m[1].charAt(0).toUpperCase() + m[1].slice(1));
+      e.gear = round2(e.gear + n0(r.gear)); e.exp = round2(e.exp + n0(r.total) - n0(r.gear));
+    });
+    const r0 = d && S.ddb.data ? rbpResolve(d) : null, v = r0 ? ((r0.fused || n0(d.mitamaType) > 0) && r0.x.mt ? r0.x.mt : r0.x) : null;
+    if (v && Array.isArray(v.res)) S.ddb.data.elements.forEach((name, i) => { if (n0(v.res[i])) at(by.resistance, name).demon = n0(v.res[i]); });
+    const rank = (n) => { const i = AFF_ORDER.indexOf(n); return i < 0 ? AFF_ORDER.length : i; };
+    const names = [...new Set([...by.boost.values(), ...by.resistance.values(), ...by.cap.values()].filter((e) => round2(e.gear + e.exp + e.demon)).map((e) => e.name))]
+      .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+    const list = (map) => names.map((name) => { const e = map.get(name) || { name, gear: 0, exp: 0, demon: 0 }; return { ...e, total: round2(e.gear + e.exp + e.demon) }; });
+    return { aff: { boost: list(by.boost), resistance: list(by.resistance), cap: list(by.cap).map((e) => ({ ...e, raise: e.total, total: round2(100 + e.total) })) },
+      demon: d || null, own: d ? `${d.name}’s own` : 'its own', ownKnown: !!v };
+  }
+  function affinityTable(aff, P) {
+    const split = (e) => { const parts = affParts(e, P); return parts.length ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : ''; };
     const cell = (text, cls) => h('span', { class: 'aff-td' + (cls ? ' ' + cls : ''), text });
     const head = h('div', { class: 'aff-tr aff-th' }, h('span', { class: 'list-head', text: 'Affinity' }), h('span', { class: 'list-head', text: 'Boost' }), h('span', { class: 'list-head', text: 'Cap' }), h('span', { class: 'list-head', text: 'Resist' }));
     // Weapon-based is not an element: a skill whose base affinity is Weapon-Based (the basic attack, Cleave, Dragon Sweep...) takes
     // your weapon's element and adds this boost to that element's own. Its Bonuses row is in the "Other" group, so it is not a spoke.
-    const wb = weaponBoost();
+    const wb = P ? null : weaponBoost();
     const wbRow = !wb ? null : h('div', { class: 'aff-tr aff-wb', tabindex: 0,
       'data-tip': `Weapon-based boost ${fmt(wb.total, '%')}${split(wb)}. Added to the boost of the element your weapon gives, for weapon-based skills only (basic attack, Cleave, Dragon Sweep...).`
         + ' In the server code it is capped on its own at 100% (plus any cap raise, and none raises this one), apart from the element’s cap. Not checked on NewMoon’s server.' },
@@ -1223,12 +1257,15 @@
     e.total = round2(e.gear + e.exp + e.demon);
     return e.total ? e : null;
   }
-  function affinityCard() {
-    const DG = S.data.digitalize, aff = affinity(), n = aff.boost.length;
-    // (no heading of its own: it shares the row's, "Key stats and affinities", with the stat sheet beside it)
-    const card = h('section', { class: 'card', 'aria-label': 'Affinity' });
+  function affinityCard(P) {   // P: the partner's (partnerAffinity()), for a demon user's view; else yours
+    const aff = P ? P.aff : affinity(), n = aff.boost.length;
+    // (no heading of its own: it shares the row's, "Key stats and affinities", with the stat sheet beside it; the partner's has one, as the cards beside it)
+    const card = h('section', { class: 'card', 'aria-label': P ? 'Your partner’s affinities' : 'Affinity' });
+    // what the partner's numbers are, and what they leave out
+    const about = !P ? null : h('p', { class: 'note', text: (P.ownKnown ? `Resistance is ${P.own} as a demon of its kind has it, plus what you give it. ` : P.demon ? `${P.own} resistances aren’t loaded yet, so only what you give it is shown. ` : 'No demon is summoned, so this is only what you give a partner. ')
+      + 'Boost and cap are what you give it. Its Demon Force, Mitama slots and skills are not included.' });
     if (n < 3) {   // a radar needs three spokes: the table alone (or a line when there is nothing)
-      card.append(n || weaponBoost() ? affinityTable(aff) : h('p', { class: 'note', text: 'No affinity boosts or resistances yet.' }));
+      card.append(n || (!P && weaponBoost()) ? affinityTable(aff, P) : h('p', { class: 'note', text: 'No affinity boosts or resistances yet.' }), about);
       return card;
     }
     const focus = AFF_SERIES.some(([k]) => k === S.over.aff) ? S.over.aff : null;
@@ -1272,7 +1309,7 @@
     // Labels go outside the rim, each centred on its spoke: the element, and under it the number of the series picked
     // (under "All", the real cap where it runs past the rim, with a small arrow on the rim). Near the top and bottom
     // neighbours sit side by side, so a label that would run into one already placed moves further out along its spoke. Each spoke's tooltip has all three numbers and where they come from.
-    const split = (e) => { const parts = [['gear', e.gear], ['expertise', e.exp], ...(digi() && DG ? [[DG.demon, e.demon]] : [])].filter(([, v]) => v); return parts.length > 1 ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : parts.length ? ` (${parts[0][0]})` : ''; };
+    const split = (e) => { const parts = affParts(e, P); return parts.length > 1 ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : parts.length ? ` (${parts[0][0]})` : ''; };
     const placed = [], raised = aff.cap.filter((c) => c.raise);
     all.forEach((i) => {
       const e = aff.boost[i], rs = aff.resistance[i], cp = aff.cap[i], capText = fmt(cp.total) + '%', c = Math.cos(ang(i)), sn = Math.sin(ang(i));
@@ -1302,10 +1339,10 @@
       mark ? h('i', { class: 'aff-key aff-key-' + k }) : null, label);
     card.append(h('div', { class: 'chart radar' }, svg),
       h('div', { class: 'seg aff-pick', role: 'group', 'aria-label': 'Show' }, pick(null, 'All'), AFF_SERIES.map(([k, label]) => pick(k, label, true))));    // a line about the series shown on its own; nothing under "All" (the user asked for that hint to go)
-    if (focus) card.append(h('p', { class: 'note', text: focus === 'cap' ? 'Boosts stop at 100%' + (raised.length ? `, except where something of yours raises the cap: ${raised.map((c) => `${c.name} ${fmt(c.total)}%`).join(', ')}.` : '. Nothing of yours raises it for any element.')
-      : focus === 'res' ? 'How much of each element you resist. Inside the 0 ring is a weakness.'
-      : 'What you add to the damage you deal with each element.' }));
-    card.append(affinityTable(aff));   // the same numbers as lines, under the radar
+    if (focus) card.append(h('p', { class: 'note', text: focus === 'cap' ? 'Boosts stop at 100%' + (raised.length ? `, except where something of yours raises ${P ? 'your partner’s' : 'the'} cap: ${raised.map((c) => `${c.name} ${fmt(c.total)}%`).join(', ')}.` : '. Nothing of yours raises it for any element.')
+      : focus === 'res' ? (P ? 'How much of each element your partner resists. Inside the 0 ring is a weakness.' : 'How much of each element you resist. Inside the 0 ring is a weakness.')
+      : P ? 'What you add to the damage your partner deals with each element.' : 'What you add to the damage you deal with each element.' }));
+    card.append(affinityTable(aff, P), about);   // the same numbers as lines, under the radar
     return card;
   }
 
@@ -1324,7 +1361,10 @@
     return h('div', { class: 'summoned' }, demonTile(d, false, null, true, tag));
   }
   /** After the list of demons changed (loaded, or read from the game): only that card, so an open demon list stays put. */
-  function refreshSummoned() { const el = $('.page-head .summoned'); if (el) el.replaceWith(summonedCard()); }
+  function refreshSummoned() {
+    const el = $('.page-head .summoned'); if (el) el.replaceWith(summonedCard());
+    const pc = $('.page-head .partner-card'); if (pc) pc.replaceWith(partnerCard());   // a demon user's view: the partner card instead
+  }
 
   /**
    * What you wear, in one line under the demon's: every worn piece as its icon from the game in a slot-like tile, then
@@ -1335,14 +1375,156 @@
     const items = S.v.gear.filter((g) => g.kind !== 'set'), sets = S.v.gear.filter((g) => g.kind === 'set');
     if (!items.length) return null;
     const open = (g) => { S.gear.view = 'pieces'; if (g) S.gear.sel = g.row; go('gear'); };
+    // a demon user's view marks each piece with who it boosts (a dot on its corner), counted beside the title
+    const du = demonUser(), WHO = { partner: 'boosts your partner', you: 'boosts you', both: 'boosts you and your partner' };
+    const count = (w) => S.v.gear.filter((g) => gearFor(g) === w).length;
     const tile = (g) => withTip(h('button', { type: 'button', class: 'gear-pc', onclick: () => open(g),
-      'aria-label': g.kind === 'set' ? `${setTitle(g)}, complete set` : `${g.slot}: ${g.item}` }, gearIcon(g)), gearTip(g));
+      'aria-label': (g.kind === 'set' ? `${setTitle(g)}, complete set` : `${g.slot}: ${g.item}`) + (du && WHO[gearFor(g)] ? ', ' + WHO[gearFor(g)] : '') },
+      gearIcon(g), du && WHO[gearFor(g)] ? h('i', { class: 'who-dot who-' + gearFor(g) }) : null), gearTip(g));
     return h('section', { class: 'card band gear-band', 'aria-label': 'Gear' },
-      h('h3', { class: 'band-title', text: 'Gear' }),
+      du ? h('div', { class: 'band-head' }, h('h3', { class: 'band-title', text: 'Gear' }),
+        legend(...[['who-partner', 'Partner', 'partner'], ['who-both', 'Both', 'both'], ['who-you', 'You', 'you']].filter(([, , w]) => count(w)).map(([cls, text, w]) => [cls, `${text} ${count(w)}`])))
+        : h('h3', { class: 'band-title', text: 'Gear' }),
       // one run of tiles that wraps in a narrow window; the sets stay together (their label never ends a line alone)
       h('div', { class: 'band-items' }, items.map(tile),
         sets.length ? h('span', { class: 'gear-sets' }, h('span', { class: 'stat-label', text: sets.length === 1 ? 'Set' : 'Sets' }), sets.map(tile)) : null),
       h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every piece and what it adds, on the Gear page', onclick: () => open(null) }, 'View more'));
+  }
+
+  // ---------- Overview for a demon user ----------
+  // A demon user's gear mostly boosts the partner, so their Overview is about the partner. Which view a character
+  // gets is the player's pick (a switch beside the name), remembered per character.
+  const duKey = () => 'du-' + (S.meta.character || '');
+  const demonUser = () => store.get(duKey()) === '1';
+  const viewSwitch = () => {
+    const pick = (on, label, tip) => h('button', { type: 'button', 'aria-pressed': String(demonUser() === on), 'data-tip': tip,
+      onclick: () => {
+        if (demonUser() === on) return;
+        const flip = () => { store.set(duKey(), on ? '1' : '0'); S.over.open = null; render(); };
+        // The browser's view transition: the picture, your stats and the demon's card each glide and resize to
+        // their place in the other view, the rest cross-fades (app.css, "vt-view"). Skipped where it isn't
+        // supported, or when the system asks for less motion.
+        const root = document.documentElement;
+        if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches || root.classList.contains('vt-view')) { flip(); return; }
+        root.classList.add('vt-view');   // the parts carry their transition names only while this is on
+        const done = () => root.classList.remove('vt-view');
+        try { document.startViewTransition(flip).finished.then(done, done); } catch (e) { done(); flip(); }
+      } }, label);
+    return h('div', { class: 'seg', role: 'group', 'aria-label': 'Overview for' },
+      pick(false, 'Player', 'Your own key stats and affinities'), pick(true, 'Demon user', 'What your partner demon gets from you, and what you keep for yourself'));
+  };
+  /** Your own stats a demon user's head still shows (the rest are in the Player view). */
+  const DU_STATS = ['HP', 'MP', 'VIT'];
+  /** Bonus parts that come from what you wear. */
+  const GEAR_KINDS = new Set(['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set']);
+  /** Who a worn piece boosts: 'partner', 'you', 'both', or 'none' (nothing counted, or only in some fights). */
+  const gearFor = (g) => {
+    let p = 0, y = 0;
+    (g.parts || []).forEach(({ row }) => { if (row.group === 'Partner') p++; else if (row.group !== 'Only in some fights') y++; });
+    return p && y ? 'both' : p ? 'partner' : y ? 'you' : 'none';
+  };
+  /**
+   * What the partner gets from you: the "Partner" rows of the bonus list (gear, expertise, digitalize levels,
+   * compendium), in the Key stats groups, then its stats, its affinities and the rest. Only lines something adds to.
+   * No cap bars: the partner's caps aren't known here. A click opens where a line comes from.
+   */
+  function partnerSheet() {
+    const rows = (S.data.bonuses || []).filter((r) => r.group === 'Partner' && r.counted !== false);
+    const byName = new Map(rows.map((r) => [String(r.bonus).trim().toLowerCase(), r]));
+    const used = new Set();
+    const take = (...names) => { for (const n of names) { const r = n && byName.get(String(n).toLowerCase()); if (r && !used.has(r)) { used.add(r); return r; } } return null; };
+    const namesOf = (k) => { const c = COMBAT.find((x) => x[0] === k), o = OTHER_STATS.find((x) => x[0] === k); return [BONUS_NAME[k], c && c[1], o && o[1], k === 'dmg_support' ? 'Support Damage' : null]; };
+    // The player's sheet, line for line (the user's layout): every Key stats line, 0 where nothing of yours adds to the
+    // partner's. Then what the player's sheet has no line for: what you add to its stats, and the rest.
+    const unitOf = (k) => { const c = COMBAT.find((x) => x[0] === k), o = OTHER_STATS.find((x) => x[0] === k); return c ? c[2] : o ? o[2] : ''; };
+    const groups = new Map(SHEET.flat().map(([title, stats]) => [title, stats.filter(([k]) => k !== 'xp_partner').map(([k, label]) => [take(...namesOf(k)), label, unitOf(k), k])]));
+    groups.set('Added to its stats', ['Max HP', 'Max MP', ...STATS.map(([, label]) => label)].map((n) => [take(n), n]).filter(([r]) => r));
+    rows.forEach((r) => { if (/ (affinity cap|affinity|resist)$/i.test(String(r.bonus))) used.add(r); });   // the affinity card beside the sheet has these
+    groups.set('Other', rows.filter((r) => !used.has(r)).map((r) => [r, r.bonus]));
+    // a line with no sources can't be opened (the user's call): no chevron, not a button
+    const plain = (label, text, bad) => h('div', { class: 'sheet-row static', tabindex: 0, 'data-tip': 'Nothing of yours adds to this for your partner' },
+      h('span'), h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label })), h('span'), h('span', { class: 'sheet-value' + (bad ? ' bad' : ''), text }));
+    const none = (label, unit) => plain(label, fmt(0, unit));
+    const line = ([r, label, unit, k]) => {
+      if (!r) return none(label, unit);
+      const id = 'p:' + r.row, open = S.over.open === id, f = (v) => fmt(v, r.unit, true);
+      const src = new Map();   // per kind of source, without what only counts while digitalized (no partner is out then)
+      (Array.isArray(r.parts) ? r.parts : []).filter((p) => !isTrue(p.digi) && n0(p.value)).forEach((p) => {
+        const gear = GEAR_KINDS.has(p.kind), name = gear ? 'Gear' : KIND[p.kind] || 'Other';
+        const e = src.get(name) || { cls: gear ? 'sw-gear' : p.kind === 'expertise' || p.kind === 'clan' ? 'sw-exp' : p.kind === 'demon' || p.kind === 'summoned' ? 'sw-demon' : 'sw-base', v: 0, from: [] };
+        e.v = round2(e.v + n0(p.value)); e.from.push(p.source); src.set(name, e);
+      });
+      if (!src.size) return plain(label, f(r.total), n0(r.total) < 0 && !lowIsGood(r.bonus));
+      const row = h('button', { type: 'button', class: 'sheet-row', 'aria-expanded': String(open), 'data-tip': [...src].map(([name, e]) => `${name} ${f(e.v)}`).join(' · '),
+        onclick: () => { S.over.open = open ? null : id; render(); } },
+        h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label })), h('span'),
+        h('span', { class: 'sheet-value' + (n0(r.total) < 0 && !lowIsGood(r.bonus) ? ' bad' : ''), text: f(r.total) }));
+      if (!open) return row;
+      return [row, h('div', { class: 'sheet-detail' },
+        [...src].map(([name, e]) => h('div', { class: 'sheet-src' }, h('i', { class: 'swatch ' + e.cls }), h('span', null, name, h('small', { text: [...new Set(e.from)].join(', ') })), h('b', { text: f(e.v) }))),
+        h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this, on the Bonuses page', onclick: () => { S.bonus.q = r.bonus; S.bonus.group = 'all'; S.bonus.open.add(r.row); go('bonuses'); } }, 'View more'))];
+    };
+    const col = (titles) => h('div', { class: 'sheet-col' }, titles.filter((t) => (groups.get(t) || []).length).map((t) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: t }), groups.get(t).map(line))));
+    // the player's two columns, each with one of the extra groups under it
+    return h('section', { class: 'card sheet', 'aria-label': 'Your partner’s key stats' },
+      h('div', { class: 'sheet-cols' }, SHEET.map((c, i) => col([...c.map(([title]) => title), i === 0 ? 'Other' : 'Added to its stats']))));
+  }
+  /**
+   * A demon user's main card, under the head: the summoned partner (who it is and its skills, as the summoned card),
+   * its own numbers as its status window showed them when it was last read (Max HP / MP and the 12 stats, bars scaled
+   * within their group as yours), and what it gives you while it is out (the "summoned" parts of the bonus list).
+   */
+  function partnerCard() {
+    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+    if (!d) return h('section', { class: 'card partner-card none', 'aria-label': 'Your partner' }, h('h3', { class: 'band-title', text: 'Your partner' }),
+      h('p', { class: 'note', text: 'No demon was summoned when the game was last read. Summon your partner and take a snapshot, or load your demons from the game in the demon list.' }));
+    const tag = h('span', { class: 'tag tag-demon', tabindex: 0, text: 'Summoned', 'data-tip': 'Your summoned demon' + (d.seenAt ? ` when the game was last read (${when(d.seenAt)})` : '') + '. A snapshot reads it again.' });
+    // Who it is, in five rows as tall as the five rows of its stats: the title, the name, level and race, alignment,
+    // Mitama (each on a row of its own: the user's layout). The picture, framed in its alignment, spans them.
+    const A = d.offer && d.offer.alignment;
+    const pic = h('span', { class: 'demon-pic ' + alignClass(A), 'aria-hidden': 'true' }, h('span', { text: String(d.name || '?').charAt(0) }));
+    if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
+    mitamaMark(pic, d.mitama);
+    const who = h('div', { class: 'partner-who' }, pic,
+      h('h3', { class: 'list-head', text: 'Your partner' }),
+      h('span', { class: 'dgt-name-line' }, h('span', { class: 'dgt-name', text: d.name }), tag),
+      h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race].filter(Boolean).join(' · ') }),
+      h('span', { class: 'dgt-line', text: A ? alignName(A) : 'Alignment not read' }),
+      h('span', { class: 'dgt-line', text: d.mitama ? `${d.mitama} Mitama · rank ${n0(d.mitamaRank)}` : 'No Mitama',   // as the planner's tag words it
+        'data-tip': d.mitama ? 'M-Type: the Mitama it was fused with, and its Mitama rank (what the fusion keeps of the rebirth ranks before it)' : null }));
+    let bars = h('p', { class: 'note', text: 'Its stats aren’t saved yet: take a snapshot with it summoned.' });
+    if (Array.isArray(d.stats) && d.stats.length === 14) {
+      const rows = [['HP', 'hpmp'], ['MP', 'hpmp'], ...STATS.map(([, label], i) => [label, i < 6 ? 'base' : i < 10 ? 'atk' : 'def'])].map(([label, group], i) => ({ label, group, v: Math.max(0, n0(d.stats[i])) }));
+      const gmax = {};
+      rows.forEach((e) => { gmax[e.group] = Math.max(gmax[e.group] || 1, e.v); });
+      bars = h('div', { class: 'dg-bars who-stats' }, rows.map((e) => h('div', { class: 'srow dg-row', tabindex: 0, 'data-tip': `${d.name}’s ${e.group === 'hpmp' ? 'Max ' : ''}${e.label} ${fmt(e.v)}, as its status window showed it` },
+        h('span', { class: 'srow-label', text: e.label === 'Support' ? 'Supp' : e.label }),
+        h('div', { class: 'strack' }, e.v > 0 ? h('i', { class: 'demon', style: `width:${(e.v / gmax[e.group]) * 100}%` }) : null),
+        h('span', { class: 'srow-value', text: fmt(e.v) }))));
+    }
+    // Its skill bar, Demon Force, demon equipment and rebirth ranks, as a Demon Planner build card draws them
+    // (rbpMiniBars on the demon as last read, with an empty plan: nothing planned, so the bars are what it has).
+    // The planner's data loads on first use; the card is drawn again when it is there.
+    let build = null;
+    if (d.loaded !== false) {
+      // (the page's demon says only whether it wears equipment; the worn parts are in equipmentIds)
+      build = rbpMiniBars({ src: 'comp', comp: { ...d, equipment: Array.isArray(d.equipmentIds) ? d.equipmentIds : null }, demonId: null, plan: null }, true);
+      if (!build && !partnerCard.waiting) {
+        partnerCard.waiting = true;
+        loadRebirth();
+        let tries = 0;
+        const again = () => {
+          const busy = [S.rbp.state, S.ddb.state, S.skl.state].some((x) => x === 'idle' || x === 'loading');
+          if (busy && ++tries < 100) { setTimeout(again, 200); return; }
+          partnerCard.waiting = false;
+          if (S.page === 'overview' && S.rbp.state === 'ready' && S.ddb.state === 'ready') { if (demonUser()) render(); else refreshSummoned(); }   // (the whole page: the affinity card reads the Demon Database too)
+        };
+        setTimeout(again, 200);
+      }
+    }
+    return h('section', { class: 'card partner-card ' + alignClass(A), 'aria-label': 'Your partner' },
+      h('div', { class: 'partner-top' }, who, bars),
+      build ? h('div', { class: 'partner-build' }, build) : null);
   }
 
   function pageOverview() {
@@ -1378,14 +1560,20 @@
       h('span', { class: 'srow-label', text: e.label === 'Support' ? 'Supp' : e.label }),
       h('div', { class: 'strack' }, seg('base', e.base, e), seg('bonus', e.bonus, e), seg('demon', e.demon, e)),
       h('span', { class: 'srow-value', text: fmt(e.total) }));
-    page.append(h('div', { class: 'page-head with-portrait' }, portrait, h('div', { class: 'page-head-text' },
+    // a row of its own above everything: the Player / Demon user switch on the left (over your picture), Export build
+    // on the right (over the demon's picture)
+    page.append(h('div', { class: 'over-top' }, viewSwitch(),
+      S.meta.character ? h('button', { type: 'button', class: 'btn btn-primary btn-sm', 'data-tip': 'A code of what you wear and your expertise ranks, for another player to import into their Build Planner',
+        onclick: (ev) => exportCurrentBuild(ev.currentTarget) }, icon('share'), 'Export build') : null));
+    // A demon user's head: the partner card sits beside you and takes most of the row; of your own stats only the
+    // ones that matter then are kept (HP, MP and VIT: the user's list).
+    const du = demonUser();
+    page.append(h('div', { class: 'page-head with-portrait' + (du ? ' du' : '') }, portrait, h('div', { class: 'page-head-text' },
       h('div', { class: 'who-line' },
         h('p', { class: 'page-who' }, h('b', { class: 'who-big', text: S.meta.character || '' }), [`Level ${fmt(L.level)}`, align].filter(Boolean).map((t) => ` · ${t}`).join('')),
         h('div', { class: 'who-right' },
-          legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : [])),
-          S.meta.character ? h('button', { type: 'button', class: 'btn btn-primary btn-sm', 'data-tip': 'A code of what you wear and your expertise ranks, for another player to import into their Build Planner',
-            onclick: (ev) => exportCurrentBuild(ev.currentTarget) }, icon('share'), 'Export build') : null)),
-      h('div', { class: 'dg-bars who-stats' }, mine.map(statRow))), summonedCard()));
+          legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'], ...(digi() && DG ? [['sw-demon', DG.demon]] : [])))),
+      h('div', { class: 'dg-bars who-stats' }, mine.filter((e) => !du || DU_STATS.includes(e.label)).map(statRow))), du ? partnerCard() : summonedCard()));
     // three one-line bands under your stats: your expertise, your demon (always there: a demon, or "No demon"), your gear
     page.append(expertiseBand(), demonCard());
     const worn = gearBand();
@@ -1421,15 +1609,16 @@
       // a bar only where there is a cap, so every bar on the sheet means the same thing: how close to the cap
       // (full and soft red when past it, with an "Over cap" tag beside the name; by how much is in the tooltip and under the opened line)
       const meter = cap === null ? h('span') : h('span', { class: 'cap-bar' + (over ? ' over' : '') }, h('i', { style: `width:${Math.max(0, Math.min(100, (r.total / cap) * 100))}%` }));
-      const row = h('button', { type: 'button', class: 'sheet-row', 'aria-expanded': String(open),
+      const canOpen = srcs.length > 0;   // a line with no sources can't be opened (the user's call; Partner EXP earned too: why it is 0 is in its tooltip)
+      const row = h(canOpen ? 'button' : 'div', { type: canOpen ? 'button' : null, class: 'sheet-row' + (canOpen ? '' : ' static'), 'aria-expanded': canOpen ? String(open) : null, tabindex: canOpen ? null : 0,
         'data-tip': (srcs.length ? srcs.map(([, name, v]) => `${name} ${f(v)}`).join(' · ') : pxNote || 'Nothing adds to this yet')
           + (cap === null ? '' : `. Caps at ${fmt(cap, r.unit)}` + (over ? `: ${plain(over)} over, which adds nothing.` : '.')),
-        onclick: () => { S.over.open = open ? null : k; render(); } },
-        h('span', { class: 'chev' }, icon('chevron')),
+        onclick: canOpen ? () => { S.over.open = open ? null : k; render(); } : null },
+        canOpen ? h('span', { class: 'chev' }, icon('chevron')) : h('span'),
         // past the cap: a short "Over cap" tag beside the name (by how much is in the tooltip and under the opened line)
         h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label }), over ? h('span', { class: 'tag tag-over', text: 'Over cap' }) : null), meter,
         h('span', { class: 'sheet-value' + (r.total < 0 && !lowIsGood(r.label) ? ' bad' : ''), text: fmt(r.total, r.unit) }));
-      if (!open) return row;
+      if (!open || !canOpen) return row;
       const bonusRow = bonusRow0;
       const line = (cls, name, value, note) => h('div', { class: 'sheet-src' }, h('i', { class: 'swatch ' + cls }),
         h('span', null, name, note ? h('small', { text: note }) : null), h('b', { text: value }));
@@ -1446,8 +1635,18 @@
         bonusRow ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this, on the Bonuses page', onclick: () => { S.bonus.q = bonusRow.bonus; S.bonus.group = 'all'; S.bonus.open.add(bonusRow.row); go('bonuses'); } },
           'View more') : null)];
     };
-    const sheet = h('section', { class: 'card sheet', 'aria-label': 'Key stats' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' },
-      col.map(([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow)))))));
+    const sheetGroup = ([title, stats]) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: title }), stats.map(sheetRow));
+
+    // Demon user: the Player view's row, with only the partner's numbers (the user's call: your own are a click away,
+    // in the Player view). Left, the Key stats sheet as what the partner gets from you (the Bonuses page's "Partner"
+    // rows); right, the affinity card as the partner's. No "What changed": that compares your own snapshots.
+    if (demonUser()) {
+      const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+      page.append(sect('Key stats and affinities', digi() ? 'Your partner’s. Nobody is out while digitalized: this is what a summoned partner gets' : d ? `${d.name}’s, from you` : 'Your partner’s. No demon was summoned when the game was last read', null,
+        h('div', { class: 'over-grid' }, h('div', { class: 'over-left' }, partnerSheet()), affinityCard(partnerAffinity()))));
+      page.append(h('p', { class: 'note', text: 'Not included: your partner’s own bonuses from its skills, buffs, and bonuses that only count in some fights (those are on the Bonuses page). Your own key stats and affinities are in the Player view.' }));
+      return page;
+    }    const sheet = h('section', { class: 'card sheet', 'aria-label': 'Key stats' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' }, col.map(sheetGroup)))));
 
     // One row under one heading: on the left the stat sheet with What changed (its own heading and snapshot picker)
     // under it, on the right affinity, whose radar and table are about as tall as those two together. Affinity carries
@@ -8481,7 +8680,7 @@
    * the build's plan, so nothing of the planner or the build is touched. Left out until its data has loaded (the page
    * draws again when it has).
    */
-  function rbpMiniBars(b) {
+  function rbpMiniBars(b, live) {   // live: a demon as it is now (the Overview's partner card), so the ranks are what it has, not a plan
     const P = S.rbp.state === 'ready' ? S.rbp.P : null;
     if (!P || S.ddb.state !== 'ready') return null;
     const D = rbpDemonOf(b.src, b.src === 'comp' ? b.comp : null, b.demonId);
@@ -8522,6 +8721,14 @@
       const traits = rbpTraitSlots(P, D, endFused), equip = rbpEquip(plan, D, endFused);
       out.push(bar('Equipment', equip.slice(0, RBP_EQ_SLOTS).map((id, i) => {
         const it = id ? eq.get(id) : null, T = traits[i] ? rbpTrait(traits[i]) : null;
+        // the partner card: a slot with no part shows its feature (a part always wins the slot)
+        if (!it && live && T) {
+          const known = !!(S.ddb.data && S.ddb.data.skills[T.id]), name = known ? T.name : 'A feature the game data does not name';
+          // its own picture when the game has one, else the features' thumbnail of the digitalize demon's card (the Features boost's picture, tinted)
+          const pic = (cls) => { if (T.icon) { const own = ddbImg(T.icon, 24, cls); if (own) return own; } const ic = skillIcon({ icon: 'digitalize_featureicon' }); ic.classList.add('as-feature'); if (cls !== 'skill-ico') ic.classList.add(cls); return ic; };
+          const el = h('span', { class: 'rbp-mini rbp-mini-feature', tabindex: 0, 'aria-label': `${name}, feature`, 'data-tip': `${name}${T.desc ? '\n' + T.desc : ''}` }, pic('rbp-mini-pic'));
+          return withTip(el, () => tt(pic('skill-ico'), name, `Feature · Slot ${i + 1}`, T.desc ? tipLines(T.desc) : [h('div', { class: 'tt-line', text: 'The game has no text for it' })], note('No demon equipment in this slot')));
+        }
         if (!it) return h('span', { class: 'rbp-mini rbp-mini-blank', tabindex: 0, 'aria-label': `Slot ${i + 1}: no part`, 'data-tip': `Slot ${i + 1}: no Epitaph Part` });
         const letter = () => h('span', { class: 'rbp-mini-pic rbp-mini-q', text: String(it.name || '?').charAt(0) });
         const el = h('span', { class: 'rbp-mini', tabindex: 0, 'aria-label': it.name, 'data-tip': `${it.name}
@@ -8539,14 +8746,21 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     const rows = rbpMiniRanks(P, plan, D), sum = (r) => (r ? r.ranks.reduce((s, n) => s + n, 0) : 0);
     const preRow = D.fused ? null : rows.find((r) => r.title === 'Ranks'), postRow = rows.find((r) => (D.fused ? r.title === 'Ranks' : r.title === 'After fusion'));
     const before = preRow ? sum(preRow) : null, after = postRow ? sum(postRow) : 0;
-    const rankTip = D.fused ? `${after} rebirth rank${after === 1 ? '' : 's'} on the runes since the Mitama fusion, as planned`
-      : `${before} rebirth rank${before === 1 ? '' : 's'} before the Mitama fusion, then ${after} after it, as planned`;
     const key = (cls, label, n) => h('span', { class: 'rbp-radar-key', 'data-tip': label }, h('i', { class: cls }), h('span', { text: label }), h('b', { text: String(n) }));
+    // (live, the Overview's partner card: the same graph, colours and labels as a build card, the user's call; only the tip drops "as planned")
+    const rankTip = (D.fused ? `${after} rebirth rank${after === 1 ? '' : 's'} on the runes since the Mitama fusion`
+      : `${before} rebirth rank${before === 1 ? '' : 's'} before the Mitama fusion, then ${after} after it`) + (live ? '' : ', as planned');
     // the radar in a column of its own, to the right of the rows (a narrow card puts it under them)
     const ranksBox = h('span', { class: 'rbp-miniranks', role: 'group', 'aria-label': 'Ranks' }, h('span', { class: 'rbp-minibar-title', 'data-tip': 'The rebirth rank of each rune (the centre is 0, the rim 9): before the Mitama fusion and after it', text: 'Ranks' }),
       h('span', { class: 'rbp-radar-wrap', tabindex: 0, 'data-tip': rankTip, 'aria-label': rankTip },
         rbpRanksRadar(P, preRow ? preRow.ranks : null, postRow ? postRow.ranks : null),
-        h('span', { class: 'rbp-radar-keys' }, preRow ? key('rbp-radar-pre', 'Before the fusion', before) : null, key('rbp-radar-post', D.fused ? 'On the runes now' : 'After the fusion', after))));
+        h('span', { class: 'rbp-radar-keys' }, preRow ? key('rbp-radar-pre', 'Pre-Mitama', before)
+          // The partner card, a fused demon: the same two lines as a build card. The fusion cleared the 12 ranks from
+          // before it and kept only their total as the Mitama rank = (total - 48) / 4 (comp_hack MitamaDemon;
+          // newmoon-kb rebirth-mitama.md), so "before" is that total (a range of 4) and has no outline on the radar.
+          : live && D.fused ? (() => { const lo = 48 + 4 * D.mitamaRank, hi = Math.min(96, lo + 3); const el = key('rbp-radar-pre', 'Pre-Mitama', lo === hi ? lo : `${lo}–${hi}`);
+            el.dataset.tip = `Worked out from its Mitama rank ${D.mitamaRank}: the fusion clears each rune’s rank and keeps only their total, so the radar can’t draw them`; el.tabIndex = 0; return el; })() : null,
+          key('rbp-radar-post', D.fused && !live ? 'On the runes now' : 'Post-Mitama', after))));
     return h('span', { class: 'rbp-minibars' }, h('span', { class: 'rbp-minirows' }, out), ranksBox);
   }
   /**
