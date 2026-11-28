@@ -1294,7 +1294,7 @@
       .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
     const list = (map) => names.map((name) => { const e = map.get(name) || { name, gear: 0, exp: 0, demon: 0 }; return { ...e, total: round2(e.gear + e.exp + e.demon) }; });
     return { aff: { boost: list(by.boost), resistance: list(by.resistance), cap: list(by.cap).map((e) => ({ ...e, raise: e.total, total: round2(100 + e.total) })) },
-      demon: d || null, own: d ? `${d.name}’s own` : 'its own', ownKnown: !!v, mitama: !!d && partnerMitamaBonuses(d).length > 0 };
+      demon: d || null, own: d ? `${d.name}’s own` : 'its own', ownKnown: !!v, mitama: !!d && partnerMitamaBonuses(d).length > 0, given: !!g };
   }
   function affinityTable(aff, P) {
     const split = (e) => { const parts = affParts(e, P); return parts.length ? ` (${parts.map(([name, v]) => `${name} ${fmt(v, '%')}`).join(' + ')})` : ''; };
@@ -1326,12 +1326,14 @@
     e.total = round2(e.gear + e.exp + e.demon);
     return e.total ? e : null;
   }
-  function affinityCard(P) {   // P: the partner's (partnerAffinity()), for a demon user's view; else yours
+  function affinityCard(P, title) {   // P: the partner's (partnerAffinity()), for a demon user's view; else yours. title: a heading inside the card
     const aff = P ? P.aff : affinity(), n = aff.boost.length;
     // (no heading of its own: it shares the row's, "Key stats and affinities", with the stat sheet beside it; the partner's has one, as the cards beside it)
     const card = h('section', { class: 'card', 'aria-label': P ? 'Your partner’s affinities' : 'Affinity' });
     // what the partner's numbers are, and what they leave out
-    const about = !P ? null : h('p', { class: 'note', text: (P.ownKnown ? `Resistance is ${P.own} as a demon of its kind has it, plus what you give it. ` : P.demon ? `${P.own} resistances aren’t loaded yet, so only what you give it is shown. ` : 'No demon is summoned, so this is only what you give a partner. ')
+    if (title) card.append(h('div', { class: 'cb-card-head' }, h('h3', { class: 'band-title', text: title })));
+    const about = !P ? null : P.given ? h('p', { class: 'note', text: (P.ownKnown ? `Resistance is ${P.own} as a demon of its kind has it${P.mitama ? ', plus its Mitamas' : ''}. ` : `${P.own} resistances aren’t loaded yet. `)
+      + (P.mitama ? 'Boost and cap are what its Mitamas give. ' : '') + 'Its Demon Force and skills are not included.' }) : h('p', { class: 'note', text: (P.ownKnown ? `Resistance is ${P.own} as a demon of its kind has it, plus what you give it. ` : P.demon ? `${P.own} resistances aren’t loaded yet, so only what you give it is shown. ` : 'No demon is summoned, so this is only what you give a partner. ')
       + (P.mitama ? 'Boost and cap are what you give it, plus its Mitamas. Its Demon Force and skills are not included.' : 'Boost and cap are what you give it. Its Demon Force, Mitama slots and skills are not included.') });
     if (n < 3) {   // a radar needs three spokes: the table alone (or a line when there is nothing)
       card.append(n || (!P && weaponBoost()) ? affinityTable(aff, P) : h('p', { class: 'note', text: 'No affinity boosts or resistances yet.' }), about);
@@ -1538,6 +1540,7 @@
     const col = (titles) => h('div', { class: 'sheet-col' }, titles.filter((t) => (groups.get(t) || []).length).map((t) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: t }), groups.get(t).map(line))));
     // the player's two columns, each with one of the extra groups under it
     return h('section', { class: 'card sheet', 'aria-label': g ? 'Key stats' : 'Your partner’s key stats' },
+      g ? h('div', { class: 'cb-card-head' }, h('h3', { class: 'band-title', text: 'Key stats' }), g.sub ? h('span', { class: 'card-sub', text: g.sub }) : null) : null,
       h('div', { class: 'sheet-cols' }, SHEET.map((c, i) => col([...c.map(([title]) => title), i === 0 ? 'Other' : 'Added to its stats']))));
   }
   /**
@@ -1652,10 +1655,13 @@
     // `view` { open, toggle } (Community Builds): folded, the kinds, the fusion and each rune's rebirth bar; the button
     // adds what the Mitamas give (the rank bonus, the sets on, the placed Mitamas)
     const more = view ? h('button', { type: 'button', class: 'btn btn-sm', 'aria-expanded': String(!!view.open), onclick: view.toggle }, view.open ? 'Show less' : 'Show details') : null;
-    if (view && !view.open) return sect('Mitama', sub, more, h('div', { class: 'card pm-card pm-compact' }, h('div', { class: 'pm-left' }, caps, fusedLine, rows)));
+    // (with a view, the title, its summary and the button are inside the card)
+    const head = view ? h('div', { class: 'cb-card-head' }, h('h3', { class: 'band-title', text: 'Mitama' }), h('span', { class: 'card-sub', text: sub }), h('span', { class: 'toolbar-spacer' }), more) : null;
+    if (view && !view.open) return h('section', { class: 'card pm-card pm-compact', 'aria-label': 'Mitama' }, head, h('div', { class: 'pm-left' }, caps, fusedLine, rows));
     // left: the kinds, the fusion and the runes; right, a column of its own: what the Mitamas give
-    return sect('Mitama', sub, more, h('div', { class: 'card pm-card' },
-      h('div', { class: 'pm-cols' }, h('div', { class: 'pm-left' }, caps, fusedLine, rows), gives)));
+    const body = h('div', { class: 'pm-cols' }, h('div', { class: 'pm-left' }, caps, fusedLine, rows), gives);
+    if (view) return h('section', { class: 'card pm-card', 'aria-label': 'Mitama' }, head, body);
+    return sect('Mitama', sub, more, h('div', { class: 'card pm-card' }, body));
   }
   /** `given` { d, title, tag }: another demon to draw the same way (Community Builds: a published one), with its own title. */
   function partnerCard(given) {
@@ -11451,8 +11457,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       // its Mitamas first, folded to the kinds and the fusion (Show details: the runes and what they give)
       const mt = partnerMitama(d, { open: !!S.cb.mtOpen, toggle: () => { S.cb.mtOpen = !S.cb.mtOpen; render(); } });
       if (mt) page.append(mt);
-      page.append(sect('Key stats and affinities', `${d.name}’s own${mt ? ', with its Mitamas' : ''}`, null,
-        h('div', { class: 'over-grid' }, h('div', { class: 'over-left' }, partnerSheet(g)), affinityCard(partnerAffinity(g)))));
+      g.sub = `${d.name}’s own${mt ? ', with its Mitamas' : ''}`;
+      page.append(h('div', { class: 'over-grid' }, h('div', { class: 'over-left' }, partnerSheet(g)), affinityCard(partnerAffinity(g), 'Affinities')));
       page.append(h('p', { class: 'note', text: (mt ? 'Its Mitamas are included (marked as its own). ' : '') + 'Not included: what a player gives it as a partner (gear, expertise), its own skills’ bonuses, buffs, and bonuses that only count in some fights.' }));
       return page;
     }
