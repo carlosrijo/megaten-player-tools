@@ -1,6 +1,6 @@
 // BABEL Community Builds (Cloudflare Worker + D1; the entry is index.js). Players publish builds from BABEL; the website lists and shows them.
 //
-// Publishing (from the app's page, https://imagine.app):
+// Publishing (from BABEL: the app itself sends these, not its page, so they come with no browser Origin):
 //   POST   /builds            body: a build (src/build.js)       -> 201 { ok, id, secret }
 //   PUT    /builds/<id>       Authorization: Bearer <secret>       -> { ok, id }     (same kind as before)
 //   DELETE /builds/<id>       Authorization: Bearer <secret>       -> { ok }
@@ -8,7 +8,7 @@
 //   GET    /builds?kind=player|demon                              -> { ok, builds: [ { id, kind, name, title, level, created, updated, facets } ] }
 //   GET    /builds?ids=<id>,<id>,...  (up to 100)                     -> { ok, builds: [ { id, kind, created, updated, build } ] }   (the cards of one page)
 //   GET    /builds/<id>                                           -> { ok, id, kind, created, updated, build }
-//   POST   /builds/<id>/report  { reason }                        -> { ok }   (from the website or the app)
+//   POST   /builds/<id>/report  { reason }                        -> { ok }   (from the website or BABEL)
 // The developer (Authorization: Bearer <ADMIN_KEY>, a Worker secret):
 //   GET    /admin/reports                                         -> { ok, builds: [ ...summary, hidden, reports: { reason: count } ] }
 //   POST   /admin/builds/<id>  { hidden: true|false }             -> { ok }
@@ -16,7 +16,8 @@
 //
 // The secret is made here and only its SHA-256 is kept: BABEL keeps the secret, so only the app that published a
 // build can change or delete it. A build is stored as check() cleaned it, never as sent. Addresses are never stored:
-// the daily limits and one-report-per-person use a keyed hash of the address (IP_SALT, a Worker secret).
+// the daily limits and one-report-per-person use a keyed hash of the address (IP_SALT, a Worker secret). An IPv6
+// address counts by its first half (the /64 one connection is given), so one connection is one person (addressOf).
 
 import { check, facets } from './build.js';
 
@@ -24,13 +25,17 @@ export const MAX_REQUEST = 40 * 1024;
 export const MAX_BUILDS = 5000;            // visible builds of each kind; past it new ones wait for room
 export const CREATES_PER_DAY = 10;         // new builds from one address in 24 hours
 export const AUTO_HIDE = 3;                // reports from different people that hide a build until it is checked
+export const REPORTS_PER_DAY = 20;         // reports from one address in 24 hours
 export const REASONS = ['spam', 'rude', 'fake', 'other'];
 const DAY = 24 * 3600 * 1000;
 
+// The page inside BABEL 0.16 (its own address, not a website) sent changes itself. Newer versions send them from the app,
+// with no Origin. That page may still change or take down its own builds (that needs the build's secret), but new
+// builds and reports come from BABEL itself or the website only.
 const APP_ORIGIN = 'https://imagine.app';
 
-// Which browser pages may send: the app's page for publishing; the website too for reports. (Anyone can still call
-// without a browser; the checks, limits and secrets are what keep it in hand.)
+// Which browser pages may send: the website for reports; pages on this PC (tests). (Anyone can still call without a
+// browser; the checks, limits and secrets are what keep it in hand.)
 function siteOrigins(env) {
   return String(env.SITE_ORIGINS || 'https://shinbabel.pages.dev').split(',').map((s) => s.trim()).filter(Boolean);
 }
@@ -55,8 +60,6 @@ export default {
       console.error(e && e.stack ? e.stack : String(e));
       return reply(500, { ok: false, error: 'Something went wrong in the gallery. Try again in a minute.' });
     });
-    // anything that went through may have changed a list (a new build, a hidden one, a new title)
-    if (request.method !== 'GET' && res.status < 400) forget(env);
     // reading is open to every page; sending only to the app's page (and the website, for reports) or no browser
     const h = new Headers(res.headers);
     const reading = request.method === 'GET';
@@ -92,12 +95,21 @@ async function route(request, env, origin) {
   }
   if (path === '/robots.txt') return new Response('User-agent: *\nDisallow: /\n', { headers: { 'Content-Type': 'text/plain' } });
 
-  // a browser page other than the app's may not publish, change or delete
+  // reading: a generous limit per address (the free plan's requests and rows are for everyone)
+  if (m === 'GET' && (path === '/builds' || path.startsWith('/builds/')) && (await limited(request, env, env.READS))) {
+    return reply(429, { ok: false, error: 'That was a lot at once. Wait a minute, then try again.' });
+  }
+  // a browser page may not publish (BABEL sends with no Origin; pages on this PC for tests); changing or deleting
+  // also takes the build's secret, so BABEL 0.16's page may still do that
   const fromApp = !origin || origin === APP_ORIGIN || local(origin);
+  const mayCreate = !origin || local(origin);
 
   if (path === '/builds') {
     if (m === 'GET') return url.searchParams.has('ids') ? many(env, url.searchParams.get('ids')) : list(env, url.searchParams.get('kind'));
-    if (m === 'POST') return fromApp ? create(request, env) : reply(403, { ok: false, error: 'Builds are published from BABEL.' });
+    if (m === 'POST') {
+      if (mayCreate) return create(request, env);
+      return reply(403, { ok: false, error: origin === APP_ORIGIN ? 'This version of BABEL can no longer publish new builds. Update BABEL, then try again.' : 'Builds are published from BABEL.' });
+    }
     return reply(405, { ok: false, error: 'Use GET or POST.' });
   }
   let mm = /^\/builds\/([A-Za-z0-9]{10})(\/report)?$/.exec(path);
@@ -182,9 +194,10 @@ async function readBuild(request) {
   return { build: c.build };
 }
 
-async function limited(request, env) {
-  if (!env.PER_IP) return false;
-  const { success } = await env.PER_IP.limit({ key: request.headers.get('CF-Connecting-IP') || 'unknown' });
+// `binding`: a Workers rate limiting binding (wrangler.toml): PER_IP for changes and reports, READS for reading
+async function limited(request, env, binding = env.PER_IP) {
+  if (!binding) return false;
+  const { success } = await binding.limit({ key: addressOf(request) });
   return !success;
 }
 
@@ -208,6 +221,7 @@ async function create(request, env) {
       .bind(id, b.kind, await sha256(secret), b.about.name.trim(), b.about.title.trim(), levelOf(b), now, now, JSON.stringify(facets(b)), JSON.stringify(b)),
     env.DB.prepare('INSERT INTO creates (who, at) VALUES (?, ?)').bind(who, now),
   ]);
+  forget(env);
   return reply(201, { ok: true, id, secret });
 }
 
@@ -229,6 +243,7 @@ async function update(request, env, id) {
   if (b.kind !== o.row.kind) return reply(400, { ok: false, error: 'A player build stays a player build, and a demon build a demon build.' });
   await env.DB.prepare('UPDATE builds SET name = ?, title = ?, level = ?, updated = ?, facets = ?, body = ? WHERE id = ?')
     .bind(b.about.name.trim(), b.about.title.trim(), levelOf(b), Date.now(), JSON.stringify(facets(b)), JSON.stringify(b), id).run();
+  forget(env);
   return reply(200, { ok: true, id });
 }
 
@@ -237,6 +252,7 @@ async function remove(request, env, id) {
   const o = await owned(request, env, id);
   if (o.error) return reply(o.error[0], { ok: false, error: o.error[1] });
   await env.DB.batch([env.DB.prepare('DELETE FROM reports WHERE build = ?').bind(id), env.DB.prepare('DELETE FROM builds WHERE id = ?').bind(id)]);
+  forget(env);
   return reply(200, { ok: true });
 }
 
@@ -244,7 +260,8 @@ async function remove(request, env, id) {
 
 async function reportBuild(request, env, id) {
   const origin = request.headers.get('Origin') || '';
-  if (origin && !(origin === APP_ORIGIN || local(origin) || siteOrigin(origin, env))) return reply(403, { ok: false, error: 'Reports come from the website or BABEL.' });
+  if (origin === APP_ORIGIN) return reply(403, { ok: false, error: 'This version of BABEL can no longer send reports. Update BABEL, or report it on the website.' });
+  if (origin && !(local(origin) || siteOrigin(origin, env))) return reply(403, { ok: false, error: 'Reports come from the website or BABEL.' });
   if (await limited(request, env)) return reply(429, { ok: false, error: 'That was a lot at once. Wait a minute, then try again.' });
   let input;
   try {
@@ -259,10 +276,17 @@ async function reportBuild(request, env, id) {
   const row = await env.DB.prepare('SELECT id, checked FROM builds WHERE id = ? AND hidden = 0').bind(id).first();
   if (!row) return reply(404, { ok: false, error: 'That build is not in the gallery (any more).' });
   const who = await addressHash(request, env);
+  const now = Date.now();
+  const sent = await env.DB.prepare('SELECT COUNT(*) AS n FROM reports WHERE who = ? AND at > ?').bind(who, now - DAY).first();
+  if (sent.n >= REPORTS_PER_DAY) return reply(429, { ok: false, error: `That's ${REPORTS_PER_DAY} reports today from here. Try again tomorrow.` });
   // one report per person and build: a second one changes nothing
-  await env.DB.prepare('INSERT OR IGNORE INTO reports (build, who, reason, at) VALUES (?, ?, ?, ?)').bind(id, who, reason, Date.now()).run();
+  const added = await env.DB.prepare('INSERT OR IGNORE INTO reports (build, who, reason, at) VALUES (?, ?, ?, ?)').bind(id, who, reason, now).run();
+  if (!added.meta || !added.meta.changes) return reply(200, { ok: true });
   const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM reports WHERE build = ?').bind(id).first();
-  if (n.n - row.checked >= AUTO_HIDE) await env.DB.prepare('UPDATE builds SET hidden = 1 WHERE id = ?').bind(id).run();
+  if (n.n - row.checked >= AUTO_HIDE) {
+    await env.DB.prepare('UPDATE builds SET hidden = 1 WHERE id = ?').bind(id).run();
+    forget(env);   // off the lists
+  }
   return reply(200, { ok: true });
 }
 
@@ -290,6 +314,7 @@ async function admin(request, env, path) {
     const id = mm[1];
     if (m === 'DELETE') {
       await env.DB.batch([env.DB.prepare('DELETE FROM reports WHERE build = ?').bind(id), env.DB.prepare('DELETE FROM builds WHERE id = ?').bind(id)]);
+      forget(env);
       return reply(200, { ok: true });
     }
     if (m === 'POST') {
@@ -302,6 +327,7 @@ async function admin(request, env, path) {
       if (typeof input?.hidden !== 'boolean') return reply(400, { ok: false, error: 'Send { hidden: true|false }.' });
       // shown again after a check: the reports so far are counted as seen, so it takes AUTO_HIDE new ones to hide it
       await env.DB.prepare('UPDATE builds SET hidden = ?, checked = (SELECT COUNT(*) FROM reports WHERE build = ?) WHERE id = ?').bind(input.hidden ? 1 : 0, id, id).run();
+      forget(env);
       return reply(200, { ok: true });
     }
   }
@@ -340,8 +366,22 @@ async function sha256(text) {
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Who is sending, for the limits and reports: an IPv4 address as it is, an IPv6 address by its first four groups (the
+// /64 one connection is given, which holds a great many addresses).
+export function addressOf(request) {
+  const ip = String(request.headers.get('CF-Connecting-IP') || '').trim().toLowerCase();
+  if (!ip) return 'unknown';
+  if (!ip.includes(':')) return ip;
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(ip);   // an IPv4 address written as IPv6
+  if (mapped) return mapped[1];
+  const [head, tail] = ip.split('::');
+  const a = head ? head.split(':') : [];
+  const b = tail === undefined ? [] : tail ? tail.split(':') : [];
+  const groups = tail === undefined ? a : [...a, ...Array(Math.max(0, 8 - a.length - b.length)).fill('0'), ...b];
+  return groups.slice(0, 4).map((g) => (parseInt(g, 16) || 0).toString(16)).join(':') + '::/64';
+}
+
 // the address, never stored as it is: a keyed hash, the same for one address all day long
 async function addressHash(request, env) {
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  return (await sha256(`${env.IP_SALT || ''}|${ip}`)).slice(0, 32);
+  return (await sha256(`${env.IP_SALT || ''}|${addressOf(request)}`)).slice(0, 32);
 }

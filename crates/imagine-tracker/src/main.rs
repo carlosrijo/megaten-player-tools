@@ -12,6 +12,7 @@
 mod backend;
 mod character_picture;
 mod dialogs;
+mod gallery;
 mod host;
 mod jsonx;
 mod live_tour;

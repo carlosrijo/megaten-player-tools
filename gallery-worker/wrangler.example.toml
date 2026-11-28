@@ -23,3 +23,9 @@ database_id = "<d1 database id>"
 name = "PER_IP"
 namespace_id = "1002"
 simple = { limit = 10, period = 60 }
+
+# At most 120 reads a minute from one address (a page of cards is one or two).
+[[ratelimits]]
+name = "READS"
+namespace_id = "1003"
+simple = { limit = 120, period = 60 }

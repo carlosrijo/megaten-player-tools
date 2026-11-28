@@ -11702,6 +11702,12 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       fakeGallery.delete(m[1]);
       return { status: 200, data: { ok: true } };
     }
+    // in the app, what changes the gallery is sent by BABEL itself (galleryCall, gallery.rs), not by this page
+    if (host.native && method !== 'GET') {
+      const r = await host.call('galleryCall', { method, path, body: body || null, secret: secret || null });
+      if (!r || r.offline) throw new TypeError('The gallery couldn’t be reached.');
+      return { status: r.status, data: r.data };
+    }
     const headers = {};
     if (body) headers['Content-Type'] = 'application/json';
     if (secret) headers.Authorization = 'Bearer ' + secret;

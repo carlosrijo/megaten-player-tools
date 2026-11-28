@@ -422,6 +422,19 @@ impl MainForm {
                 Ok(imagine::build::community::save_published(&store, demon.as_deref(), id.as_deref(), secret.as_deref(), info, name.as_deref())?.to_string())
             }
 
+            "galleryCall" => {
+                // a change to the gallery (publish, update, take down, report), sent by BABEL (gallery.rs): { status,
+                // data } or { offline: true }
+                if self.no_writes() {
+                    return Err(user_error("Not sending to the gallery during a capture run."));
+                }
+                let method = jsonx::str(args.get("method")).unwrap_or_default();
+                let path = jsonx::str(args.get("path")).unwrap_or_default();
+                let secret = jsonx::str(args.get("secret"));
+                let body = args.get("body").filter(|b| !b.is_null());
+                Ok(crate::gallery::call(&method, &path, body, secret.as_deref())?.to_string())
+            }
+
             "useDemon" => {
                 let e = self.require_active("No character is selected yet.")?;
                 if self.no_writes() {
