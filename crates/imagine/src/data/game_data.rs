@@ -593,7 +593,7 @@ pub struct TokuseiDef {
     pub from_client_text: bool,
 }
 
-/// The skill that lists a tokusei, as an ACTIVE_TOKUSEI skill condition ("tokusei N is active") points at it: the tokusei is
+/// The skill that lists a tokusei, as a linked skill condition ("tokusei N applies") points at it: the tokusei is
 /// active while that skill applies, so for a switch (toggle) skill while the switch is on. See [`GameData::tokusei_owner`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokuseiOwner {
@@ -1170,9 +1170,9 @@ impl GameData {
         })
     }
 
-    /// The skill whose tokusei list holds `tid` (reference\skills-game.tsv): what an ACTIVE_TOKUSEI skill condition on `tid`
-    /// ("while tokusei N is active") depends on. When several skills list it, a switch skill wins (its state decides), then the
-    /// lowest skill id. None: no skill lists it (NewMoon's tokusei 2000010 and others), so what makes it active isn't known.
+    /// The skill whose tokusei list holds `tid` (reference\skills-game.tsv): what a linked skill condition on `tid`
+    /// ([`super::stat_labels::linked_condition`]) depends on. When several skills list it, a switch skill wins (its state
+    /// decides), then the lowest skill id. None: no skill lists it, so what makes it apply isn't known.
     pub fn tokusei_owner(&self, tid: i32) -> Result<Option<TokuseiOwner>> {
         let map = once(&self.tokusei_owner, || {
             let mut res: HashMap<i32, TokuseiOwner> = HashMap::new();
@@ -2141,7 +2141,7 @@ fn parse_client_tokusei(id: i32, parsed: &str) -> Option<TokuseiDef> {
     Some(TokuseiDef { id, target, conditions: Vec::new(), skill_conditions: skill, target_conditions: false, correct, aspects, from_client_text: true })
 }
 
-/// An ACTIVE_TOKUSEI condition ("tokusei N is active") points at the skill that lists N: Radiant Hands (a switch) lists
+/// A linked condition ("tokusei N applies") points at the skill that lists N: Radiant Hands (a switch) lists
 /// 2100039, so what depends on 2100039 depends on that switch. A passive that lists one is no switch, and a tokusei no skill
 /// lists stays unknown.
 #[cfg(test)]

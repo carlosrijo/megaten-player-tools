@@ -85,7 +85,8 @@ pub const UNCOUNTED_NOTE: &str = "not counted: how it applies isn't known";
 
 /// The sealed data's wording for ids comp_hack's schema doesn't have (entry [`super::pack::LABELS`]: lines of
 /// `kind<TAB>id<TAB>text`): kind `status` (an aspect whose value is a status: `{status}` in the text), `named` (an aspect
-/// shown, not counted), `skill` (a skill condition: `{v}` is its value). Empty in a build without the sealed data.
+/// shown, not counted), `skill` (a skill condition: `{v}` is its value), `role` (a type name the code looks for, by
+/// what it does: see [`linked_condition`]). Empty in a build without the sealed data.
 fn sealed_labels() -> &'static HashMap<(String, String), String> {
     static L: OnceLock<HashMap<(String, String), String>> = OnceLock::new();
     L.get_or_init(|| {
@@ -102,6 +103,17 @@ fn sealed_labels() -> &'static HashMap<(String, String), String> {
 /// A skill condition worded by the sealed data (kind `skill`), `{v}` filled in; `None` when it has no wording.
 pub fn sealed_skill_condition(id: &str, value: i32) -> Option<String> {
     sealed_labels().get(&("skill".to_string(), id.to_string())).map(|t| t.replace("{v}", &value.to_string()))
+}
+
+/// The skill condition type whose value is another tokusei: the effect applies while that one does (kind `role`, id
+/// `linked`). `None` in a build without the sealed data, where no tokusei has such a condition.
+pub fn linked_condition() -> Option<&'static str> {
+    sealed_labels().get(&("role".to_string(), "linked".to_string())).map(String::as_str)
+}
+
+/// Whether a skill condition's type is [`linked_condition`].
+pub fn is_linked_condition(typ: Option<&str>) -> bool {
+    typ.is_some() && typ == linked_condition()
 }
 
 /// `None` for a plain stat (one [`has`] names); otherwise how to show it.
