@@ -1272,12 +1272,12 @@
    * form's when it is fused; a fresh demon's: no Demon Force, Mitama slots or skills), plus what you give it.
    * In an entry, `gear` is from your gear, `exp` from the rest of you, `demon` the demon's own.
    */
-  function partnerAffinity() {
-    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+  function partnerAffinity(g) {   // g: as partnerRows
+    const d = g ? g.d : S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
     const by = { boost: new Map(), resistance: new Map(), cap: new Map() };
     const at = (map, name) => { if (!map.has(name)) map.set(name, { name, gear: 0, exp: 0, demon: 0 }); return map.get(name); };
     // (its Mitamas' part counts as its own, with its resistance as a demon of its kind)
-    partnerRows().forEach((r) => {
+    partnerRows(g).forEach((r) => {
       if (!isTrue(r.counted)) return;
       const m = /^(.+?) (affinity cap|affinity|resist)$/i.exec(String(r.bonus || ''));
       if (!m) return;
@@ -1496,8 +1496,8 @@
    * compendium), in the Key stats groups, then its stats, its affinities and the rest. Only lines something adds to.
    * No cap bars: the partner's caps aren't known here. A click opens where a line comes from.
    */
-  function partnerSheet() {
-    const rows = partnerRows().filter((r) => r.counted !== false);   // (with what its own Mitamas add: partnerRows)
+  function partnerSheet(g) {   // g: as partnerRows (no "View more": a published demon has no Bonuses page)
+    const rows = partnerRows(g).filter((r) => r.counted !== false);   // (with what its own Mitamas add: partnerRows)
     const byName = new Map(rows.map((r) => [String(r.bonus).trim().toLowerCase(), r]));
     const used = new Set();
     const take = (...names) => { for (const n of names) { const r = n && byName.get(String(n).toLowerCase()); if (r && !used.has(r)) { used.add(r); return r; } } return null; };
@@ -1510,7 +1510,7 @@
     rows.forEach((r) => { if (/ (affinity cap|affinity|resist)$/i.test(String(r.bonus))) used.add(r); });   // the affinity card beside the sheet has these
     groups.set('Other', rows.filter((r) => !used.has(r)).map((r) => [r, r.bonus]));
     // a line with no sources can't be opened (the user's call): no chevron, not a button
-    const plain = (label, text, bad) => h('div', { class: 'sheet-row static', tabindex: 0, 'data-tip': 'Nothing of yours adds to this for your partner' },
+    const plain = (label, text, bad) => h('div', { class: 'sheet-row static', tabindex: 0, 'data-tip': g ? 'Nothing adds to this' : 'Nothing of yours adds to this for your partner' },
       h('span'), h('span', { class: 'sheet-name' }, h('span', { class: 'sheet-label', text: label })), h('span'), h('span', { class: 'sheet-value' + (bad ? ' bad' : ''), text }));
     const none = (label, unit) => plain(label, fmt(0, unit));
     const line = ([r, label, unit, k]) => {
@@ -1531,11 +1531,11 @@
       return [row, h('div', { class: 'sheet-detail' },
         [...src].map(([name, e]) => h('div', { class: 'sheet-src' }, h('i', { class: 'swatch ' + e.cls }), h('span', null, name, h('small', { text: [...new Set(e.from)].join(', ') })), h('b', { text: f(e.v) }))),
         // (a line only its Mitamas give has no row on the Bonuses page: the Mitama section below has it)
-        r.mitamaOnly ? null : h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this from you, on the Bonuses page', onclick: () => { S.bonus.q = r.bonus; S.bonus.group = 'all'; S.bonus.open.add(r.row); go('bonuses'); } }, 'View more'))];
+        r.mitamaOnly || g ? null : h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Every source of this from you, on the Bonuses page', onclick: () => { S.bonus.q = r.bonus; S.bonus.group = 'all'; S.bonus.open.add(r.row); go('bonuses'); } }, 'View more'))];
     };
     const col = (titles) => h('div', { class: 'sheet-col' }, titles.filter((t) => (groups.get(t) || []).length).map((t) => h('div', { class: 'sheet-group' }, h('h3', { class: 'list-head', text: t }), groups.get(t).map(line))));
     // the player's two columns, each with one of the extra groups under it
-    return h('section', { class: 'card sheet', 'aria-label': 'Your partner’s key stats' },
+    return h('section', { class: 'card sheet', 'aria-label': g ? 'Key stats' : 'Your partner’s key stats' },
       h('div', { class: 'sheet-cols' }, SHEET.map((c, i) => col([...c.map(([title]) => title), i === 0 ? 'Other' : 'Added to its stats']))));
   }
   /**
@@ -1557,7 +1557,7 @@
     const D = rbpDemonOf('comp', { ...d, equipment: Array.isArray(d.equipmentIds) ? d.equipmentIds : null }, null);
     if (!D || D.missing || !D.fused) return null;
     const M = rbpSlotsModel(P, rbpPlanFrom(null), D, D.ranks, D.mitamaRank);
-    return { P, D, M, L: D.level || 1, K: D.kind ? P.mitama.kinds[D.kind - 1] : null, boost: (S.data.expertise || []).some((r) => r.skill === P.mitama.boostName) };
+    return { P, D, M, L: D.level || 1, K: D.kind ? P.mitama.kinds[D.kind - 1] : null, boost: d.ironMan !== undefined ? !!d.ironMan : (S.data.expertise || []).some((r) => r.skill === P.mitama.boostName) };
   }
   // A Mitama bonus's name (the game's table) as the bonus list names that line, where they differ
   const MT_BONUS_NAME = { 'close-range damage taken': 'Close-range damage taken', 'long-range damage taken': 'Long-range damage taken', 'magic damage taken': 'Spell damage taken',
@@ -1587,9 +1587,9 @@
    * The bonus list's "Partner" rows (what the partner gets from you), with what its own Mitamas add folded in as parts
    * of kind "mitama" (a line only the Mitamas give is added). The partner's key stats and affinities read these.
    */
-  function partnerRows() {
-    const base = (S.data.bonuses || []).filter((r) => r.group === 'Partner');
-    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+  function partnerRows(g) {   // g { d, base }: another demon and the rows it gets (Community Builds: a published demon, none)
+    const base = g ? g.base || [] : (S.data.bonuses || []).filter((r) => r.group === 'Partner');
+    const d = g ? g.d : S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
     const mt = d ? partnerMitamaBonuses(d) : [];
     if (!mt.length) return base;
     const out = base.map((r) => ({ ...r })), byName = new Map(out.map((r) => [String(r.bonus).trim().toLowerCase(), r]));
@@ -1602,7 +1602,7 @@
     return out;
   }
   const mitamaPart = (r) => round2((Array.isArray(r.parts) ? r.parts : []).filter((p) => p.kind === 'mitama').reduce((s, p) => s + n0(p.value), 0));
-  function partnerMitama(d) {
+  function partnerMitama(d, view) {
     const m = partnerMitamaModel(d);
     if (!m) return null;
     const { P, D, M, L, K, boost } = m, held = M.perKind.reduce((a, b) => a + b, 0);
@@ -1647,8 +1647,12 @@
       h('div', { class: 'pm-give' }, h('span', { class: 'q-key', 'data-tip': 'Each placed Mitama rolled one bonus when it was placed; these are them, added up', tabindex: 0, text: `Placed Mitamas · ${held}` }),
         bySlot.size ? chipsOf([...bySlot]) : h('span', { class: 'note', text: held ? 'Their bonuses aren’t in the game data the page has.' : 'No Mitamas placed yet.' })));
     const sub = `${D.name} · ${held} Mitama${held === 1 ? '' : 's'} placed, ${M.activeSets.length} set${M.activeSets.length === 1 ? '' : 's'} on`;
+    // `view` { open, toggle } (Community Builds): folded, the kinds, the fusion and each rune's rebirth bar; the button
+    // adds what the Mitamas give (the rank bonus, the sets on, the placed Mitamas)
+    const more = view ? h('button', { type: 'button', class: 'btn btn-sm', 'aria-expanded': String(!!view.open), onclick: view.toggle }, view.open ? 'Show less' : 'Show details') : null;
+    if (view && !view.open) return sect('Mitama', sub, more, h('div', { class: 'card pm-card pm-compact' }, h('div', { class: 'pm-left' }, caps, fusedLine, rows)));
     // left: the kinds, the fusion and the runes; right, a column of its own: what the Mitamas give
-    return sect('Mitama', sub, null, h('div', { class: 'card pm-card' },
+    return sect('Mitama', sub, more, h('div', { class: 'card pm-card' },
       h('div', { class: 'pm-cols' }, h('div', { class: 'pm-left' }, caps, fusedLine, rows), gives)));
   }
   /** `given` { d, title, tag }: another demon to draw the same way (Community Builds: a published one), with its own title. */
@@ -1702,7 +1706,7 @@
         setTimeout(again, 200);
       }
     }
-    return h('section', { class: 'card partner-card ' + alignClass(A), 'aria-label': title },
+    return h('section', { class: 'card partner-card ' + alignClass(A) + (given ? ' cb-partner' : ''), 'aria-label': title },
       h('div', { class: 'partner-top' }, who, bars),
       build ? h('div', { class: 'partner-build' }, build) : null);
   }
@@ -11425,7 +11429,16 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       h('p', { class: 'field-help', text: `Read from the game by BABEL${b.takenAt || b.seenAt ? ' on ' + when(b.takenAt || b.seenAt) : ''}. Anyone can publish, so this is what they sent, not something BABEL can vouch for.`
         + (kind === 'player' && !b.statsLive ? ' The stats were kept from an earlier reading.' : '') })));
     if (kind === 'demon') {
-      page.append(partnerCard({ d: cbDemon(b.demon), title: 'Demon' }));
+      // the Overview's demon user view for this demon: its card, then its key stats and affinities, then its Mitamas.
+      // Only what is its own: no player behind it (and so no Iron Man for the stronger Mitama sets).
+      const d = { ...cbDemon(b.demon), ironMan: false }, g = { d, base: [] };
+      page.append(partnerCard({ d, title: 'Demon' }));
+      // its Mitamas first, folded to the kinds and the fusion (Show details: the runes and what they give)
+      const mt = partnerMitama(d, { open: !!S.cb.mtOpen, toggle: () => { S.cb.mtOpen = !S.cb.mtOpen; render(); } });
+      if (mt) page.append(mt);
+      page.append(sect('Key stats and affinities', `${d.name}’s own${mt ? ', with its Mitamas' : ''}`, null,
+        h('div', { class: 'over-grid' }, h('div', { class: 'over-left' }, partnerSheet(g)), affinityCard(partnerAffinity(g)))));
+      page.append(h('p', { class: 'note', text: (mt ? 'Its Mitamas are included (marked as its own). ' : '') + 'Not included: what a player gives it as a partner (gear, expertise), its own skills’ bonuses, buffs, and bonuses that only count in some fights.' }));
       return page;
     }
     // Then the expertise bar; under it the digitalize demon and the switch skills that are on (then the summoned demon).
