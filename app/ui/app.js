@@ -537,7 +537,7 @@
     xp: { who: '', state: 'idle', error: '', init: null, cur: null, points: null, cap: null, demon: '', open: new Set(), seq: 0, loadSeq: 0, timer: null, working: false, redraw: null },
     dg: { q: '', closed: new Set() },
     extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
-    hist: { key: store.get('hist') || 'lngr' },
+    hist: { keys: (store.get('hist') ?? 'lngr').split(',').filter(Boolean), slot: {}, asking: null, deleting: false, top: 0, focus: null },   // the stats ticked on the History graph (the old value was one key)
   };
   if (Q.get('page') === 'compare') { S.page = 'gear'; S.gear.view = 'table'; }   // --page compare, for captures
   if (!PAGES.concat(TOOLS).some((p) => p[0] === S.page)) S.page = 'overview';
@@ -2591,6 +2591,16 @@
   }
 
   // ---------- History ----------
+  // One series' mark in the list, the column heads and the tooltip: its colour, and its dash pattern once the colours run out
+  // (six colours, then the same six dashed, then dotted), so two lines are never told apart by colour alone.
+  const HIST_COLOURS = 6, HIST_DASH = ['', '6 4', '2 4'];
+  const histStyle = (i) => ({ colour: `var(--s${(i % HIST_COLOURS) + 1})`, dash: HIST_DASH[Math.floor(i / HIST_COLOURS) % HIST_DASH.length] });
+  function histSwatch(i) {
+    const st = histStyle(i), svg = s('svg', { class: 'hist-sw', viewBox: '0 0 20 8', width: 20, height: 8, 'aria-hidden': 'true' });
+    svg.append(s('line', { x1: 1, x2: 19, y1: 4, y2: 4, style: `stroke:${st.colour};stroke-width:2.5;stroke-linecap:round;` + (st.dash ? `stroke-dasharray:${st.dash}` : '') }));
+    return svg;
+  }
+  /** Axis with about `count` intervals, its own nice step (a second axis that need not share gridlines). */
   function niceScale(min, max, count) {
     if (min === max) { const pad = Math.abs(min) * 0.1 || 1; min -= pad; max += pad; }
     const raw = (max - min) / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
@@ -2599,84 +2609,197 @@
     for (let v = lo; v <= hi + step / 2; v += step) ticks.push(Number(v.toFixed(8)));
     return { lo, hi, ticks };
   }
-  function drawHistory(el, pts, label, unit) {
+  /** Axis for values between `min` and `max` with exactly `n` intervals (so a second axis can share the same gridlines). */
+  function niceScaleN(min, max, n) {
+    if (min === max) { const pad = Math.abs(min) * 0.1 || 1; min -= pad; max += pad; }
+    const mag = Math.pow(10, Math.floor(Math.log10((max - min) / n)));
+    for (let k = 0; k < 60; k++) {
+      const step = [1, 2, 2.5, 5][k % 4] * mag * Math.pow(10, Math.floor(k / 4)), lo = Math.floor(min / step + 1e-9) * step;
+      if (lo + n * step >= max - step * 1e-9) return { lo, hi: lo + n * step, ticks: Array.from({ length: n + 1 }, (_, i) => Number((lo + i * step).toFixed(8))) };
+    }
+    return { lo: min, hi: max, ticks: Array.from({ length: n + 1 }, (_, i) => min + ((max - min) * i) / n) };
+  }
+  /** `series`: [{ label, unit, style, pts: [{ t, v, at }] }], one per ticked stat. Two graphs laid over each other, sharing the
+   *  time axis: the absolutes (stats, HP, critical...) with their value axis on the left, which also draws the gridlines, and
+   *  the percentages (limit break chance, damage dealt...) with theirs on the right, each fitted to its own lines. Without
+   *  absolutes the gridlines come from the percentages' axis.
+   *  `snapTimes` ([{ t, at }]) is for the empty graph (nothing ticked): the time axis and gridlines with nothing plotted. */
+  function drawHistory(el, series, snapTimes) {
     el.replaceChildren();
-    if (!pts.length) { el.append(h('p', { class: 'note', text: `No snapshot has a value for ${label} yet.` })); return; }
-    const W = Math.max(320, el.clientWidth), H = 250, m = { t: 16, r: 64, b: 30, l: 52 };
-    const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    const empty = !series.length;
+    const live = series.filter((q) => q.pts.length);
+    if (!empty && !live.length) { el.append(h('p', { class: 'note', text: series.length === 1 ? `No snapshot has a value for ${series[0].label} yet.` : 'No snapshot has a value for the stats ticked yet.' })); return; }
+    const atOf = new Map(); live.forEach((q) => q.pts.forEach((p) => atOf.set(p.t, p.at)));
+    if (empty) snapTimes.forEach((p) => atOf.set(p.t, p.at));
+    const times = [...atOf.keys()].sort((a, b) => a - b), ats = times.map((t) => atOf.get(t));
+    const axisL = live.filter((q) => q.unit !== '%'), axisR = live.filter((q) => q.unit === '%');
+    const W = Math.max(320, el.clientWidth), H = 415, m = { t: 16, r: axisR.length ? 58 : live.length === 1 ? 64 : 16, b: 30, l: axisL.length || empty ? 52 : 16 };
+    const t0 = times[0], t1 = times[times.length - 1];
     const x = (t) => (t1 === t0 ? (m.l + W - m.r) / 2 : m.l + ((t - t0) / (t1 - t0)) * (W - m.l - m.r));
-    const vs = pts.map((p) => p.v), sc = niceScale(Math.min(...vs), Math.max(...vs), 4);
-    const y = (v) => H - m.b - ((v - sc.lo) / (sc.hi - sc.lo)) * (H - m.t - m.b);
-    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': `${label} across ${pts.length} snapshots` });
-    sc.ticks.forEach((v) => svg.append(
-      s('line', { class: v === sc.lo ? 'axisline' : 'gridline', x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }),
-      Object.assign(s('text', { x: m.l - 8, y: y(v), dy: '0.32em', 'text-anchor': 'end' }), { textContent: fmt(v, unit) })));
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': empty ? 'Empty graph' : `${series.map((q) => q.label).join(', ')} across ${times.length} snapshots` });
+    const yAt = (frac) => H - m.b - frac * (H - m.t - m.b);
+    const level = [0, 0.25, 0.5, 0.75, 1];
+    // the left graph's axis has 4 intervals; the right one has its own steps (and, with no left graph, the same 4 so the gridlines fit it)
+    const fit = (group, own) => {
+      const vs = group.flatMap((q) => q.pts.map((p) => p.v)), lo = Math.min(...vs), hi = Math.max(...vs), sc = own ? niceScale(lo, hi, 4) : niceScaleN(lo, hi, 4);
+      group.forEach((q) => { q.y = (v) => yAt((v - sc.lo) / (sc.hi - sc.lo)); });
+      sc.at = (v) => yAt((v - sc.lo) / (sc.hi - sc.lo));
+      return sc;
+    };
+    const text = (extra, str) => Object.assign(s('text', extra), { textContent: str });
+    if (empty) {
+      level.forEach((f) => svg.append(s('line', { class: f === 0 ? 'axisline' : 'gridline', x1: m.l, x2: W - m.r, y1: yAt(f), y2: yAt(f), style: 'stroke:var(--axis);stroke-opacity:.55' })));
+      svg.append(text({ x: (m.l + W - m.r) / 2, y: yAt(0.5), dy: '-0.4em', 'text-anchor': 'middle' }, 'Tick a stat in the list to plot it.'));
+    } else {
+      const sl = axisL.length ? fit(axisL, false) : null, sr = axisR.length ? fit(axisR, !sl) : null, base = sl || sr;
+      base.ticks.forEach((v) => {
+        svg.append(s('line', { class: v === base.lo ? 'axisline' : 'gridline', x1: m.l, x2: W - m.r, y1: base.at(v), y2: base.at(v) }));
+        if (sl) svg.append(text({ x: m.l - 8, y: base.at(v), dy: '0.32em', 'text-anchor': 'end' }, fmt(v, axisL[0].unit)));
+      });
+      if (sr) sr.ticks.forEach((v) => svg.append(s('line', { class: 'axisline', x1: W - m.r, x2: W - m.r + 4, y1: sr.at(v), y2: sr.at(v) }),
+        text({ x: W - m.r + 8, y: sr.at(v), dy: '0.32em', 'text-anchor': 'start' }, fmt(v, '%'))));
+    }
     // x labels: newest always shown; older ones only where they fit
-    const oneDay = pts.every((p) => sameDay(p.at, pts[0].at));
-    const room = oneDay ? 64 : 104, kept = [pts.length - 1];
-    if (pts.length > 1 && x(t1) - x(t0) >= room) kept.push(0);
-    for (let i = pts.length - 2; i > 0; i--) if (kept.every((j) => Math.abs(x(pts[j].t) - x(pts[i].t)) >= room)) kept.push(i);
+    const oneDay = ats.every((a) => sameDay(a, ats[0]));
+    const room = oneDay ? 64 : 104, kept = [times.length - 1];
+    if (times.length > 1 && x(t1) - x(t0) >= room) kept.push(0);
+    for (let i = times.length - 2; i > 0; i--) if (kept.every((j) => Math.abs(x(times[j]) - x(times[i])) >= room)) kept.push(i);
     kept.forEach((i) => {
-      const anchor = pts.length === 1 ? 'middle' : i === pts.length - 1 ? 'end' : i === 0 ? 'start' : 'middle';
-      svg.append(Object.assign(s('text', { x: x(pts[i].t), y: H - m.b + 18, 'text-anchor': anchor }), { textContent: oneDay ? clock(pts[i].at) : when(pts[i].at) }));
+      const anchor = times.length === 1 ? 'middle' : i === times.length - 1 ? 'end' : i === 0 ? 'start' : 'middle';
+      svg.append(text({ x: x(times[i]), y: H - m.b + 18, 'text-anchor': anchor }, oneDay ? clock(ats[i]) : when(ats[i])));
     });
-    if (pts.length > 1) svg.append(s('path', { class: 'line', d: pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('') }));
+    live.forEach((q) => {
+      if (q.pts.length > 1) svg.append(s('path', { class: 'line', style: `stroke:${q.style.colour};` + (q.style.dash ? `stroke-dasharray:${q.style.dash}` : ''),
+        d: q.pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${q.y(p.v).toFixed(1)}`).join('') }));
+    });
     const cross = s('line', { class: 'cross', y1: m.t, y2: H - m.b, visibility: 'hidden' });
     svg.append(cross);
-    const dots = pts.map((p) => s('circle', { class: 'dot', cx: x(p.t), cy: y(p.v), r: 5 }));
+    const multi = series.length > 1, r0 = multi ? 4 : 5;
+    const dots = live.flatMap((q) => q.pts.map((p) => Object.assign(s('circle', { class: 'dot', style: `fill:${q.style.colour}`, cx: x(p.t), cy: q.y(p.v), r: r0 }), { _t: p.t })));
     svg.append(...dots);
-    const last = pts[pts.length - 1];
-    svg.append(Object.assign(s('text', { class: 'endlabel', x: x(last.t) + 10, y: y(last.v), dy: '0.32em' }), { textContent: fmt(last.v, unit) }));
+    if (!multi && !empty && !axisR.length) {
+      const q = live[0], last = q.pts[q.pts.length - 1];
+      svg.append(text({ class: 'endlabel', x: x(last.t) + 10, y: q.y(last.v), dy: '0.32em' }, fmt(last.v, q.unit)));
+    }
     const hit = s('rect', { x: m.l - 10, y: m.t, width: W - m.l - m.r + 20, height: H - m.t - m.b, fill: 'transparent' });
     hit.addEventListener('pointermove', (ev) => {
       const box = svg.getBoundingClientRect(), mx = ((ev.clientX - box.left) / box.width) * W;
-      let best = 0; pts.forEach((p, i) => { if (Math.abs(x(p.t) - mx) < Math.abs(x(pts[best].t) - mx)) best = i; });
-      const p = pts[best];
-      cross.setAttribute('x1', x(p.t)); cross.setAttribute('x2', x(p.t)); cross.setAttribute('visibility', 'visible');
-      dots.forEach((d, i) => d.setAttribute('r', i === best ? 6.5 : 5));
-      showTip(`${when(p.at)} · ${label} ${fmt(p.v, unit)}`, ev.clientX, ev.clientY);
+      let best = 0; times.forEach((t, i) => { if (Math.abs(x(t) - mx) < Math.abs(x(times[best]) - mx)) best = i; });
+      const t = times[best];
+      cross.setAttribute('x1', x(t)); cross.setAttribute('x2', x(t)); cross.setAttribute('visibility', 'visible');
+      dots.forEach((d) => d.setAttribute('r', d._t === t ? r0 + 1.5 : r0));
+      if (!multi) { const p = live[0].pts.find((q) => q.t === t); showTip(`${when(ats[best])} · ${series[0].label} ${fmt(p.v, series[0].unit)}`, ev.clientX, ev.clientY); return; }
+      showTip(h('div', { class: 'hist-tip' }, h('div', { class: 'tt-title', text: when(ats[best]) }), series.map((q) => {
+        const p = q.pts.find((z) => z.t === t);
+        return h('div', { class: 'hist-tip-row' }, histSwatch(q.slot), h('span', { text: q.label }), h('b', { class: 'num', text: p ? fmt(p.v, q.unit) : '—' }));
+      })), ev.clientX, ev.clientY);
     });
-    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); dots.forEach((d) => d.setAttribute('r', 5)); hideTip(); });
-    svg.append(hit);
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); dots.forEach((d) => d.setAttribute('r', r0)); hideTip(); });
+    if (!empty) svg.append(hit);
     el.append(svg);
   }
 
+  /** Delete one earlier snapshot from the History table (its spreadsheet row; the app copies the spreadsheet first). */
+  async function deleteHistorySnapshot(x) {
+    const H = S.hist;
+    if (H.deleting) return;
+    H.deleting = true; render();
+    try {
+      const r = await host.call('deleteSnapshot', { takenAt: x.taken_at });
+      if (S.compare === x.taken_at) S.compare = null;
+      H.asking = null;
+      await reload();
+      toast('ok', `Snapshot of ${when(x.taken_at)} deleted`, r && r.backup ? `The spreadsheet was copied first: ${r.backup}` : '');
+    } catch (e) {
+      toast('err', 'Couldn’t delete the snapshot', String(e && e.message || e), 0);
+    } finally {
+      H.deleting = false; render();
+    }
+  }
+
   function pageHistory() {
-    const { snaps } = S.v;
-    const page = h('div', { class: 'page' });
-    const options = [
+    const { snaps } = S.v, H = S.hist;
+    const page = h('div', { class: 'page hist-page' });
+    const groups = [
       ['Stats', [...STATS.map(([k, label]) => [k, label, '', false]), ['max_hp', 'Max HP', '', false], ['max_mp', 'Max MP', '', false]]],
       ['Gear bonuses', COMBAT.map(([k, label, unit]) => [k, label, unit, true])],
     ];
-    const flat = options.flatMap(([, list]) => list);
-    let cur = flat.find(([k]) => k === S.hist.key) || flat.find(([k]) => k === 'lngr');
-    const field = cur[3] && digi() ? cur[0] + '_digi' : cur[0];
-    const label = cur[1] + (cur[3] ? (digi() ? ' (gear, digitalized)' : ' (gear)') : '');
-    const sel = h('select', { class: 'select', id: 'hist-stat', onchange: () => { S.hist.key = sel.value; store.set('hist', sel.value); render(); } },
-      options.map(([group, list]) => h('optgroup', { label: group }, list.map(([k, text]) => h('option', { value: k, selected: k === cur[0], text })))));
+    const flat = groups.flatMap(([, list]) => list);
+    H.keys = H.keys.filter((k) => flat.some(([f]) => f === k));
+    // every ticked stat keeps its colour while it stays ticked: the lowest free one when it is ticked
+    Object.keys(H.slot).forEach((k) => { if (!H.keys.includes(k)) delete H.slot[k]; });
+    H.keys.forEach((k) => { if (H.slot[k] === undefined) { const used = new Set(Object.values(H.slot)); let i = 0; while (used.has(i)) i++; H.slot[k] = i; } });
+    const gearLabel = digi() ? ' (gear, digitalized)' : ' (gear)';
+    const series = flat.filter(([k]) => H.keys.includes(k)).map(([k, label, unit, gear]) => {
+      const field = gear && digi() ? k + '_digi' : k;
+      return { key: k, field, label, unit, full: label + (gear ? gearLabel : ''), slot: H.slot[k], style: histStyle(H.slot[k]),
+        pts: snaps.map((r) => ({ t: date(r.taken_at).getTime(), v: num(r[field]), at: r.taken_at })).filter((p) => p.v !== null && !Number.isNaN(p.t)) };
+    }).sort((a, b) => a.slot - b.slot);
+    const multi = series.length > 1;
+    const latest = snaps[snaps.length - 1];
+
     page.append(pageHead('One point per snapshot, so gear swaps show up as steps.',
       host.native ? h('button', { type: 'button', class: 'btn', onclick: () => host.call('reveal', { what: 'csv' }) }, 'Show spreadsheet') : null));
 
-    const pts = snaps.map((r) => ({ t: date(r.taken_at).getTime(), v: num(r[field]), at: r.taken_at })).filter((p) => p.v !== null && !Number.isNaN(p.t));
+    // the list: one tickbox per stat, as tall as the graph (the card is two columns; the list fills the second and scrolls)
+    const list = h('div', { class: 'hist-pick-in' });
+    list.append(h('div', { class: 'hist-pick-head' }, h('span', { text: H.keys.length ? `${H.keys.length} on the graph` : 'Nothing on the graph' }),
+      H.keys.length ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { H.keys = []; H.top = 0; store.set('hist', ''); render(); } }, 'Clear') : null));
+    groups.forEach(([group, items]) => {
+      list.append(h('h3', { class: 'hist-group', text: group }));
+      items.forEach(([k, label, unit, gear]) => {
+        const on = H.keys.includes(k), v = latest ? num(latest[gear && digi() ? k + '_digi' : k]) : null;
+        list.append(h('label', { class: 'hist-opt' + (on ? ' on' : '') },
+          h('input', { type: 'checkbox', 'data-key': k, checked: on, style: on ? `accent-color:${histStyle(H.slot[k]).colour}` : null,
+            onchange: (ev) => {
+              H.keys = ev.target.checked ? [...H.keys, k] : H.keys.filter((x) => x !== k);
+              H.top = list.scrollTop; H.focus = k; store.set('hist', H.keys.join(',')); render();
+            } }),
+          h('span', { class: 'hist-label' }, h('span', { class: 'hist-name', text: label }), on ? histSwatch(H.slot[k]) : null),
+          h('span', { class: 'hist-val num', text: v === null ? '—' : fmt(v, unit) })));
+      });
+    });
     const chart = h('div', { class: 'chart' });
-    page.append(sect(label, null, h('label', { class: 'card-sub', for: 'hist-stat', style: 'display:inline-flex;align-items:center;gap:8px' }, 'Stat', sel),
-      h('section', { class: 'card' }, chart)));
-    requestAnimationFrame(() => drawHistory(chart, pts, cur[1], cur[2]));
+    page.append(sect(multi ? 'Selected stats' : series.length ? series[0].full : 'History', null, null,
+      h('div', { class: 'hist-row' }, h('section', { class: 'card' }, chart), h('section', { class: 'card hist-pick', role: 'group', 'aria-label': 'Stats on the graph' }, list))));
+    requestAnimationFrame(() => {
+      drawHistory(chart, series, snaps.map((r) => ({ t: date(r.taken_at).getTime(), at: r.taken_at })).filter((p) => !Number.isNaN(p.t)));
+      list.scrollTop = H.top || 0;
+      if (H.focus) { const el = list.querySelector(`input[data-key="${CSS.escape(H.focus)}"]`); if (el) el.focus({ preventScroll: true }); H.focus = null; }
+    });
+    // two kinds of stat ticked: say which axis is which
+    if (series.some((q) => q.unit === '%') && series.some((q) => q.unit !== '%')) page.append(h('p', { class: 'note', text: 'Stats counted in percent (chance, damage dealt, speed...) use the right axis; the others (stats, HP, critical...) use the left one. Each axis fits the lines on it.' }));
 
+    // the table: every snapshot, newest first; one column per stat on the graph
     const desc = snaps.slice().reverse();
-    page.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'tbl-scroll' }, h('table', { class: 'tbl' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Snapshot' }), h('th', { scope: 'col', text: 'Stats read' }), h('th', { scope: 'col', class: 'num', text: 'Level' }),
-        h('th', { scope: 'col', class: 'num', text: 'Max HP' }), h('th', { scope: 'col', class: 'num', text: cur[1] }), h('th', { scope: 'col', class: 'num', text: 'Change' }))),
+    const head = (text, cls) => h('th', { scope: 'col', class: cls, text });
+    const th = [head('Snapshot'), head('Stats read'), head('Level', 'num'), head('Max HP', 'num')];
+    series.forEach((q) => { th.push(h('th', { scope: 'col', class: 'num' }, multi ? [histSwatch(q.slot), ' '] : null, q.label)); if (!multi) th.push(head('Change', 'num')); });
+    th.push(h('th', { scope: 'col', class: 'hist-act' }, h('span', { class: 'sr-only', text: 'Delete' })));
+    page.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'tbl-scroll' }, h('table', { class: 'tbl hist-tbl' },
+      h('thead', null, h('tr', null, th)),
       h('tbody', null, desc.map((r, i) => {
-        const prev = desc[i + 1], a = prev ? num(prev[field]) : null, b = num(r[field]);
-        const d = a !== null && b !== null ? round2(b - a) : null;
-        const good = d !== null && (lowIsGood(cur[1]) ? d < 0 : d > 0);
-        return h('tr', null,
+        const prev = desc[i + 1], tds = [
           h('td', null, when(r.taken_at), i === 0 ? h('span', { class: 'tag', style: 'margin-left:8px', text: 'Latest' }) : null),
           h('td', { class: 'dim', text: isTrue(r.stats_live) ? 'Live' : `Saved, from ${sameDay(r.stats_from, r.taken_at) ? clock(r.stats_from) : when(r.stats_from)}` }),
-          h('td', { class: 'num', text: fmt(r.level) }), h('td', { class: 'num', text: fmt(r.max_hp) }),
-          h('td', { class: 'num emph', text: fmt(b, cur[2]) }),
-          h('td', { class: 'num' }, d ? h('span', { class: 'delta ' + (good ? 'good' : 'bad'), text: (d > 0 ? '▲ ' : '▼ ') + fmt(d, cur[2], true) }) : h('span', { class: 'zero', text: d === 0 ? 'same' : '—' })));
+          h('td', { class: 'num', text: fmt(r.level) }), h('td', { class: 'num', text: fmt(r.max_hp) })];
+        series.forEach((q) => {
+          const a = prev ? num(prev[q.field]) : null, b = num(r[q.field]);
+          const d = a !== null && b !== null ? round2(b - a) : null;
+          const good = d !== null && (lowIsGood(q.label) ? d < 0 : d > 0);
+          const delta = d ? h('span', { class: 'delta ' + (good ? 'good' : 'bad'), text: (d > 0 ? '▲ ' : '▼ ') + fmt(d, q.unit, true) }) : h('span', { class: 'zero', text: d === 0 ? 'same' : '—' });
+          if (multi) tds.push(h('td', { class: 'num' }, h('span', { class: 'emph', text: fmt(b, q.unit) }), h('span', { class: 'hist-delta' }, delta)));
+          else tds.push(h('td', { class: 'num emph', text: fmt(b, q.unit) }), h('td', { class: 'num' }, delta));
+        });
+        // the latest can't be deleted (every page shows it); an earlier one asks first, in its own row
+        const ask = H.asking === r.taken_at;
+        tds.push(h('td', { class: 'hist-act' }, i === 0 ? null : ask
+          ? h('span', { class: 'hist-ask' }, h('span', { class: 'dim', text: 'Delete this snapshot?' }),
+            h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'The spreadsheet is copied first', disabled: H.deleting ? '' : null, onclick: () => deleteHistorySnapshot(r) }, H.deleting ? 'Deleting…' : 'Delete'),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-sm', disabled: H.deleting ? '' : null, onclick: () => { H.asking = null; render(); } }, 'Keep'))
+          : h('button', { type: 'button', class: 'btn btn-ghost btn-square btn-sm', 'aria-label': `Delete the snapshot of ${when(r.taken_at)}`, 'data-tip': 'Delete this snapshot. The spreadsheet is copied first.',
+            onclick: () => { H.asking = r.taken_at; render(); } }, icon('trash'))));
+        return h('tr', { class: ask ? 'hist-asking' : null }, tds);
       }))))));
     page.append(h('p', { class: 'note', text: `${snaps.length} snapshot${snaps.length === 1 ? '' : 's'}. Gear bonus columns started with the second snapshot, so the first one has no value for them.` }));
     return page;
