@@ -135,6 +135,10 @@ pub struct CompDemon {
     pub skills: Vec<i32>,
     /// The 8 Demon Force stack slots (DevilBoostExtraData stack ids, 0 = empty), for the planner's Demon Force bar.
     pub force_stack_ids: Vec<i32>,
+    /// The demon's own numbers as its status window showed them when it was last read: Max HP, Max MP, then the 12
+    /// stats (STR..LUCK, CLS-R, LNG-R, Spell, Support, P.Def, M.Def). None when the game only listed the demon.
+    /// For the Overview's partner card (a demon user's view).
+    pub stats: Option<Vec<i32>>,
     /// The 4 demon equipment slots (Epitaph Parts item ids, 0 = empty), for the planners' equipment bars.
     pub equipment_ids: Vec<i32>,
 }
@@ -148,6 +152,7 @@ impl CompDemon {
             "icon": self.icon, "offer": self.offer.as_ref().map(DemonOffer::to_value), "unlock": self.unlock.as_ref().map(DemonUnlock::to_value),
             "loaded": self.loaded, "summoned": self.summoned, "inComp": self.in_comp,
             "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots, "skills": self.skills, "forceStackIds": self.force_stack_ids, "equipmentIds": self.equipment_ids,
+            "stats": self.stats,
         })
     }
 }
@@ -652,6 +657,8 @@ impl Pipeline {
                 skills: d.skills.clone(),
                 force_stack_ids: d.force_stack.clone().unwrap_or_default(),
                 equipment_ids: d.equipment.clone().unwrap_or_default(),
+                stats: (d.loaded() && d.live_value.len() >= 21)
+                    .then(|| [d.max_hp, d.max_mp].into_iter().chain([0usize, 1, 2, 3, 4, 5, 12, 13, 14, 15, 19, 20].into_iter().map(|i| d.live_value[i])).collect()),
             });
         }
         // OrderByDescending(Current).ThenByDescending(InComp != false).ThenByDescending(Level).ThenBy(Name): stable
