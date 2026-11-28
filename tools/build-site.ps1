@@ -25,13 +25,17 @@ foreach ($f in $files) {
   $copied++
 }
 
-# The website marker (app.js: WEB).
+# The website marker (app.js: WEB), and no search engine or AI crawler may list or keep the site: the robots tag here,
+# the same as a header on every file (_headers, Cloudflare Pages), and robots.txt asking every crawler to stay out.
+$noIndex = 'noindex, nofollow, noarchive, nosnippet, noimageindex'
 $index = Join-Path $dest 'index.html'
 $html = [IO.File]::ReadAllText($index)
 $charset = '<meta charset="utf-8">'
 if (-not $html.Contains($charset)) { throw "index.html has no $charset line to put the website marker after." }
-$html = $html.Replace($charset, $charset + "`r`n  <meta name=`"babel-mode`" content=`"web`">")
+$html = $html.Replace($charset, $charset + "`r`n  <meta name=`"babel-mode`" content=`"web`">`r`n  <meta name=`"robots`" content=`"$noIndex`">")
 [IO.File]::WriteAllText($index, $html)
+[IO.File]::WriteAllText((Join-Path $dest '_headers'), "/*`n  X-Robots-Tag: $noIndex`n")
+[IO.File]::WriteAllText((Join-Path $dest 'robots.txt'), "# BABEL's website is not for search engines or AI crawlers.`nUser-agent: *`nDisallow: /`n")
 
 # Check again before anything goes online.
 $bad = @(Get-ChildItem -Recurse -File $dest | Where-Object { $_.Name -like '*.local.json' -or $_.FullName -match '-icons[\\/]' -or $_.Name -like '*.key' })
