@@ -377,6 +377,7 @@ html.vt-view::view-transition-old(ov-partner), html.vt-view::view-transition-new
 html.vt-view::view-transition-old(ov-sheet), html.vt-view::view-transition-new(ov-sheet) { width: 100%; height: 100%; object-fit: none; object-position: left top; overflow: clip; }
 html.vt-view::view-transition-group(ov-partner) { border-radius: 12px; overflow: clip; }
 .over-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.over-top-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .du-card { display: grid; gap: 10px; align-content: start; padding-top: 14px; }
 .gear-pc:hover { border-color: var(--border-strong); background: var(--hover); }
 .gear-pc:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
@@ -829,6 +830,19 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 
 /* Send feedback */
 .dlg.dlg-feedback { width: min(560px, calc(100vw - 32px)); }
+/* Publish build (Community Builds) */
+.dlg.dlg-publish { width: min(560px, calc(100vw - 32px)); }
+.dlg.dlg-publish.pub-wide { width: min(880px, calc(100vw - 32px)); }   /* "A demon": the digitalize picker's list */
+.dlg-publish .dlg-body > *, .pub-what > * { min-width: 0; }            /* nothing in it may push it wider than the dialog */
+.pub-pick .sim-options { height: min(36vh, 340px); }
+.pub-pick .toolbar { width: 100%; }
+.pub-pick .sim-opt-lines.zero { display: none; }   /* "what it gives can't be worked out": about digitalizing, not publishing */
+.pub-what { display: grid; gap: 6px; }
+.pub-what:empty { display: none; }
+.pub-list { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: 13px; color: var(--text-2); }
+.pub-raw summary { cursor: pointer; font-size: 12px; color: var(--text-2); }
+.pub-raw pre { margin: 6px 0 0; max-height: 220px; overflow: auto; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: 11px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.input.pub-note { height: auto; min-height: 72px; padding: 8px 10px; resize: vertical; font: inherit; line-height: 1.45; }
 .fb-fields, .fb-done { display: grid; gap: 16px; }
 .fb-fields[hidden], .fb-done[hidden] { display: none; }
 .field-opt { font-weight: 400; color: var(--text-3); }

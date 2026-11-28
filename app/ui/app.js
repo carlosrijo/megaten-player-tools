@@ -159,6 +159,7 @@
     // ?update=nosig (out, but not installable from inside), ?update=fail (GitHub can't be reached), ?updated=0.9.0
     // (just updated). Installing runs a pretend download, then says the preview can't install.
     const fakeUpd = { phase: 'idle' };
+    const fakePub = { player: null, demons: {}, name: '' };   // Community Builds: what was "published" from this preview
     const fake = { active: 'Rubito', scanned: false, clients: [], characters: [{ name: 'Rubito', hasData: true, inGame: false, folder: '', level: 0 }] };
     // ?char=<name>: start as another saved character; only their levels (data\characters\<name>\expertise-ranks.json) load
     if (Q.get('char') && Q.get('char') !== 'Rubito') {
@@ -259,6 +260,35 @@
               // the saved demon's own numbers as its offer, so its card looks as in the app (the others have none here)
               offer: name === cur && S.data && S.data.digitalize ? (({ rate, alignment, stats, skills }) => ({ rate, alignment, stats, skills, combat: {} }))(S.data.digitalize) : null }))
             .filter((d) => !fakeGone.has('demon:' + d.key));
+        }
+        // Community Builds: the builds the gallery's tests use (gallery-worker\test\builds.json) stand in for the
+        // reader's; what was published is kept in this page only (the app keeps it in the character's folder)
+        if (cmd === 'communityDemons') return (await this.call('compDemons', { cached: true })).filter((d) => d.loaded !== false && d.type)
+          .map(({ key, name, type, level, race, summoned, current, inComp, icon }) => ({ key, name, type, level, race, summoned, current, inComp, icon }));
+        if (cmd === 'communityBuild') {
+          await wait(300);
+          const cases = await get('../../gallery-worker/test/builds.json', null);
+          if (!cases) throw Object.assign(new Error('This browser preview has no stand-in build (gallery-worker\\test\\builds.json).'), { kind: 'user' });
+          if (!args || !args.demon) {
+            const { about, ...b } = cases.good.player;
+            if (args && typeof args.digi === 'string') {   // another digitalize demon with it ('' = none)
+              const g = args.digi && (await this.call('compDemons', { cached: true })).find((x) => x.key === args.digi);
+              b.digitalize = g ? { ...cases.good.demon.demon, type: g.type, level: g.level } : null;
+            }
+            return { build: b };
+          }
+          const d = (await this.call('compDemons', { cached: true })).find((x) => x.key === args.demon);
+          if (!d) throw Object.assign(new Error('That demon isn’t in your demon list any more. Open the COMP and try again.'), { kind: 'user' });
+          const { about, ...b } = cases.good.demon;
+          return { build: { ...b, demon: { ...b.demon, type: d.type, level: d.level } } };
+        }
+        if (cmd === 'communityPublished') return fakePub;
+        if (cmd === 'communitySavePublished') {
+          const slot = args.demon ? null : 'player';
+          const e = args.id ? { id: args.id, secret: args.secret, published: new Date().toISOString().slice(0, 16), ...(args.type ? { type: args.type, level: args.level } : {}) } : null;
+          if (slot) fakePub.player = e; else if (e) fakePub.demons[args.demon] = e; else delete fakePub.demons[args.demon];
+          if (args.name) fakePub.name = args.name;
+          return fakePub;
         }
         // Deleting here only hides it in this preview (until the page is reloaded): the files are the app's to change
         if (cmd === 'forgetDemon') {
@@ -1702,9 +1732,11 @@
       h('span', { class: 'srow-value', text: fmt(e.total) }));
     // a row of its own above everything: the Player / Demon user switch on the left (over your picture), Export build
     // on the right (over the demon's picture)
-    page.append(h('div', { class: 'over-top' }, viewSwitch(),
+    page.append(h('div', { class: 'over-top' }, viewSwitch(), h('div', { class: 'over-top-actions' },
       S.meta.character ? h('button', { type: 'button', class: 'btn btn-primary btn-sm', 'data-tip': 'A code of what you wear and your expertise ranks, for another player to import into their Build Planner',
-        onclick: (ev) => exportCurrentBuild(ev.currentTarget) }, icon('share'), 'Export build') : null));
+        onclick: (ev) => exportCurrentBuild(ev.currentTarget) }, icon('share'), 'Export build') : null,
+      S.meta.character && !WEB ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'Put your build, or one of your demons, in Community Builds on the BABEL website for everyone to see',
+        onclick: () => openPublish(demonUser() ? 'demon' : 'player') }, icon('podium'), 'Publish build') : null)));
     // A demon user's head: the partner card sits beside you and takes most of the row; of your own stats only the
     // ones that matter then are kept (HP, MP and VIT: the user's list).
     const du = demonUser();
@@ -5723,16 +5755,22 @@
   //   remove(o)         -> a function that takes the demon off the list (then the list is read again), or null: a
   //                     trash button on its row, clicked twice ("Remove?")
   async function demonPick(cfg) {
-    const list = $('#sim-pick-list'), tools = $('#sim-pick-tools'), preview = $('#sim-pick-preview');
+    // cfg.into { list, tools, preview }: the same list drawn inside another dialog (Publish build) instead of its own;
+    // picking then leaves it open. cfg.into.done() stops it (the other dialog closed or moved on).
+    const into = cfg.into;
+    const list = into ? into.list : $('#sim-pick-list'), tools = into ? into.tools : $('#sim-pick-tools'), preview = into ? into.preview : $('#sim-pick-preview');
     const note = (text) => h('p', { class: 'note', style: 'padding:12px', text });
-    simDlg.classList.add('sim-dpick');
-    $('#sim-pick-title').textContent = cfg.title;
-    $('#sim-pick-sub').textContent = cfg.sub;
+    if (!into) {
+      simDlg.classList.add('sim-dpick');
+      $('#sim-pick-title').textContent = cfg.title;
+      $('#sim-pick-sub').textContent = cfg.sub;
+    }
     tools.replaceChildren(); preview.replaceChildren();
     list.replaceChildren(note('Reading your demons and your demon builds…'));
-    if (!simDlg.open) simDlg.showModal();
+    if (!into && !simDlg.open) simDlg.showModal();
     let alive = true, timer = null, look = 0;
-    simPickDone = () => { alive = false; clearTimeout(timer); simDlg.classList.remove('sim-dpick'); };
+    const done = () => { alive = false; clearTimeout(timer); if (!into) simDlg.classList.remove('sim-dpick'); };
+    if (into) into.done = done; else simPickDone = done;
     let got = await cfg.load();
     if (!alive) return;
 
@@ -5762,7 +5800,7 @@
       const c = COMBAT.find(([, l]) => words.every((w) => l.toLowerCase().includes(w)));
       return c ? { label: c[1], of: (O) => (n0(O.combat && O.combat[c[0]]) ? n0(O.combat[c[0]]) * (/^taken_|cooldown/.test(c[0]) ? -1 : 1) : null) } : null;
     };
-    const choose = (o) => { simDlg.close(); cfg.choose(o); };
+    const choose = (o) => { if (!into) simDlg.close(); cfg.choose(o); if (into && alive) draw(); };
     // the Character Planner: what picking the highlighted one would do, the build with that demon against the build now
     const showPreview = (o) => {
       if (!cfg.previewRes) return;
@@ -5887,8 +5925,10 @@
     st.active = at < 0 ? 0 : at;
     draw();
     const cur = list.querySelector('.sim-opt[aria-selected="true"]');
-    if (cur) cur.scrollIntoView({ block: 'nearest' });
-    input.focus();
+    // (inside another dialog: only the list scrolls to it, not the dialog, and the focus stays where that dialog put it)
+    if (cur && into) list.scrollTop = cur.offsetTop - list.offsetTop - (list.clientHeight - cur.offsetHeight) / 2;
+    else if (cur) cur.scrollIntoView({ block: 'nearest' });
+    if (!into) input.focus();
   }
   /** The Character Planner's demon band: the base's COMP demons and the demon builds, digitalizing the build in the editor. */
   async function simDemonPick() {
@@ -11094,6 +11134,263 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   }));
   $('#open-settings').addEventListener('click', () => { S.alignNote = ''; fillSettings(); fillAbout(); fillUpdates(); dlg.showModal(); });
   dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
+
+  // ---------- Community Builds: Publish build ----------
+  // The Overview's "Publish build" sends the character's build, or one demon's, to the gallery (gallery-worker\, a
+  // Cloudflare Worker with a database), and the website's Community Builds pages show it. The reader makes the build
+  // (communityBuild: ids and numbers only, checked before it leaves; imagine::build::community), the page adds what the
+  // player typed and posts it. The gallery answers with an id and a secret; the reader keeps both in the character's
+  // folder (communitySavePublished), and only with that secret can the build be changed or taken down. The browser
+  // preview never publishes: a stand-in gallery in the page answers instead (?gallery=live sends to the real one).
+  const GALLERY_URL = 'https://babel-gallery.babel-feedback.workers.dev';
+  const pubDlg = $('#publish');
+  const pub = { kind: 'player', demon: '', demons: null, saved: null, build: null, busy: false, seq: 0, entry: null, entryKey: '', digi: null };   // digi: a character build's digitalize demon (null: the character's own, '': none)
+  const fakeGallery = new Map();   // the browser preview's stand-in: id -> { secret, build }
+  /** One call to the gallery: { status, data }. Throws only when it can't be reached. */
+  async function galleryCall(method, path, body, secret) {
+    if (!host.native && Q.get('gallery') !== 'live') {
+      await new Promise((r) => setTimeout(r, 400));
+      const m = /^\/builds\/([A-Za-z0-9]{10})$/.exec(path);
+      if (method === 'POST') {
+        const id = Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-5).padStart(5, '0');
+        const s = 'preview-secret-' + id + '-0123456789';
+        fakeGallery.set(id, { secret: s, build: body });
+        return { status: 201, data: { ok: true, id, secret: s } };
+      }
+      const e = m && fakeGallery.get(m[1]);
+      if (!e) return { status: 404, data: { ok: false, error: 'That build is not in the gallery (any more).' } };
+      if (method === 'GET') return { status: 200, data: { ok: true, id: m[1], build: e.build } };
+      if (secret !== e.secret) return { status: 403, data: { ok: false, error: 'Only the BABEL that published this build can change it.' } };
+      if (method === 'PUT') { e.build = body; return { status: 200, data: { ok: true, id: m[1] } }; }
+      fakeGallery.delete(m[1]);
+      return { status: 200, data: { ok: true } };
+    }
+    const headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
+    if (secret) headers.Authorization = 'Bearer ' + secret;
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
+    try {
+      const r = await fetch(GALLERY_URL + path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal, cache: 'no-store' });
+      return { status: r.status, data: await r.json().catch(() => ({ ok: false, error: `The gallery answered ${r.status}.` })) };
+    } finally { clearTimeout(timer); }
+  }
+  const galleryOffline = (e) => e && (e.name === 'AbortError' || e instanceof TypeError);
+  const pubSay = (t) => { $('#pub-error').textContent = t || ''; };
+
+  /** This character's saved entry for what is picked, with the key it is saved under: the player build, or the demon's
+   *  (by its key; else, when the demon levelled up and has a new key, the one published build of that kind of demon). */
+  function pubEntry() {
+    const saved = pub.saved || { player: null, demons: {} };
+    if (pub.kind === 'player') return { key: '', entry: saved.player || null };
+    if (!pub.demon) return { key: '', entry: null };
+    const demons = saved.demons || {};
+    if (demons[pub.demon]) return { key: pub.demon, entry: demons[pub.demon] };
+    const d = (pub.demons || []).find((x) => x.key === pub.demon);
+    const same = d ? Object.entries(demons).filter(([, e]) => e.type === d.type) : [];
+    return same.length === 1 ? { key: same[0][0], entry: same[0][1] } : { key: '', entry: null };
+  }
+
+  // The demon list is the digitalize demon picker's (demonPick), drawn inside this dialog: only the demons that can be
+  // published (their details were read).
+  const pubPick = { list: $('#pub-demons'), tools: $('#pub-demons-tools'), preview: $('#pub-demons-preview'), done: null };
+  const pubIsPublished = (o) => { const saved = (pub.saved && pub.saved.demons) || {}; return !!saved[o.key] || Object.values(saved).some((e) => e.type === o.type); };
+  // For a character build the same list picks its digitalize demon (or No demon): it starts on the character's own.
+  const pubDigiKey = (ok) => (pub.digi !== null ? pub.digi : ((S.demons || []).find((d) => d.current && ok.has(d.key)) || {}).key || '');
+  function pubDrawDemons() {
+    if (pubPick.done) { pubPick.done(); pubPick.done = null; }
+    const player = pub.kind === 'player';
+    $('#pub-demon-label').textContent = player ? 'Digitalize demon that goes with the build' : 'Which demon';
+    // the rows' Demon Force, equipment and rank radar come from the Demon Planner's tables: load them, and draw the
+    // list again once they are in
+    if (S.rbp.state !== 'ready') {
+      loadRebirth();
+      const again = () => {
+        if (S.rbp.state === 'loading') { setTimeout(again, 150); return; }
+        if (S.rbp.state === 'ready' && pubDlg.open) pubDrawDemons();
+      };
+      setTimeout(again, 150);
+    }
+    const ok = new Set((pub.demons || []).map((d) => d.key));
+    const load = async () => {
+      if (!S.demons) { try { S.demons = await host.call('compDemons', { cached: true }); } catch (e) { S.demons = []; } }
+      return { mine: (S.demons || []).filter((d) => ok.has(d.key)), plans: [], skillIcons: S.meta.skillIcons || null };
+    };
+    if (player) {
+      demonPick({
+        into: pubPick, plans: false, none: true, load,
+        noneLine: 'The build without a digitalize demon.',
+        noMine: 'No demon to go with it yet. Summon one, or open its status window in the COMP, then take a snapshot.',
+        current: (o) => ((o.none ? pubDigiKey(ok) === '' : o.key === pubDigiKey(ok)) ? 'Picked' : null),
+        choose: (o) => {
+          const key = o.none ? '' : o.key;
+          if (key === pubDigiKey(ok)) return;
+          pub.digi = key;
+          pubLoad();
+        },
+      });
+      return;
+    }
+    demonPick({
+      into: pubPick, plans: false, none: false, load,
+      noMine: 'No demon to publish yet. Summon one, or open its status window in the COMP, then take a snapshot.',
+      current: (o) => (o.key === pub.demon ? (pubIsPublished(o) ? 'Picked · published' : 'Picked') : null),
+      choose: (o) => {
+        if (o.key === pub.demon) return;
+        pub.demon = o.key;
+        $('#pub-title').value = ''; $('#pub-note').value = '';
+        pubLoad();
+      },
+    });
+  }
+
+  /** What goes out, in words, and the exact text sent under it. */
+  function pubDrawWhat() {
+    const b = pub.build, what = $('#pub-what');
+    if (!b) { what.replaceChildren(); return; }
+    const demonName = (t) => ((pub.demons || []).find((d) => d.type === t) || {}).name || 'a demon';
+    const lines = b.kind === 'player' ? [
+      `Level ${b.level} · ${b.alignment.charAt(0) + b.alignment.slice(1).toLowerCase()}, Max HP ${fmt(b.maxHp)}, Max MP ${fmt(b.maxMp)} and your 12 stats`,
+      `${b.gear.length} worn pieces, with their crystals, fusion bonuses and mods`,
+      `Your points in ${b.expertise.length} expertises, and the ${b.toggles.length} switch skills that are on`,
+      b.digitalize ? `Your digitalize demon: ${demonName(b.digitalize.type)} Lv ${b.digitalize.level}` : 'No digitalize demon',
+      b.partner ? `Your summoned demon: ${demonName(b.partner.type)} Lv ${b.partner.level}` : null,
+    ] : [
+      `${demonName(b.demon.type)} Lv ${b.demon.level}: its stats, Max HP and MP, and its ${b.demon.skills.filter(Boolean).length} skills`,
+      'Its rebirth ranks, Mitama, Demon Force stack and demon equipment',
+    ];
+    what.replaceChildren(h('span', { class: 'field-label', text: 'What goes out' }),
+      h('ul', { class: 'pub-list' }, lines.filter(Boolean).map((t) => h('li', { text: t }))),
+      h('p', { class: 'field-help', text: 'Only numbers: never your character’s name, effect text, or anything about this PC. The website names everything from its own files.' }),
+      h('details', { class: 'pub-raw' }, h('summary', { text: 'Exactly what is sent' }), h('pre', { text: pubJson(b) })));
+  }
+  /** JSON as sent, but readable: one field a line, and a list of plain values (or of short lists) on one line. */
+  function pubJson(v, pad = '') {
+    const flat = (x) => x === null || typeof x !== 'object' || (Array.isArray(x) && x.every((y) => y === null || typeof y !== 'object'));
+    if (flat(v)) return JSON.stringify(v).replace(/,/g, ', ');
+    if (Array.isArray(v)) {
+      if (v.every(flat)) return '[' + v.map((x) => pubJson(x)).join(', ') + ']';
+      return '[\n' + v.map((x) => pad + '  ' + pubJson(x, pad + '  ')).join(',\n') + '\n' + pad + ']';
+    }
+    return '{\n' + Object.entries(v).map(([k, x]) => `${pad}  ${JSON.stringify(k)}: ${pubJson(x, pad + '  ')}`).join(',\n') + '\n' + pad + '}';
+  }
+
+  function pubDraw() {
+    document.querySelectorAll('#pub-kind [data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === pub.kind)));
+    $('#pub-demon-field').hidden = false;   // a demon build's demon, or a character build's digitalize demon
+    pubDlg.classList.toggle('pub-wide', true);   // the demon list needs the room
+    const { entry } = pubEntry();
+    pub.entry = entry;
+    $('#pub-send').disabled = pub.busy || !pub.build;
+    if (!pub.busy) $('#pub-send').textContent = entry ? 'Update' : 'Publish';
+    $('#pub-remove').hidden = !entry;
+    $('#pub-remove').disabled = pub.busy;
+    const n = $('#pub-note').value.length;
+    $('#pub-count').textContent = n ? `${n} / 500` : '';
+    pubDrawWhat();
+  }
+
+  /** The build for what is picked (and, for one already published, its title and note as the gallery has them). */
+  async function pubLoad() {
+    const mine = ++pub.seq;
+    pub.build = null; pubSay(''); pubDraw();
+    if (pub.kind === 'demon' && !pub.demon) return;
+    $('#pub-what').replaceChildren(h('p', { class: 'note', text: 'Reading your build…' }));
+    try {
+      const r = await host.call('communityBuild', pub.kind === 'demon' ? { demon: pub.demon } : pub.digi === null ? {} : { digi: pub.digi });
+      if (mine !== pub.seq) return;
+      pub.build = r && r.build;
+    } catch (e) {
+      if (mine !== pub.seq) return;
+      $('#pub-what').replaceChildren();
+      pubSay(String((e && e.message) || e));
+    }
+    pubDraw();
+    const { entry } = pubEntry();
+    if (entry) {
+      try {
+        const r = await galleryCall('GET', '/builds/' + entry.id);
+        if (mine !== pub.seq) return;
+        const a = r.data && r.data.build && r.data.build.about;
+        if (a) { $('#pub-title').value = a.title || ''; $('#pub-note').value = a.note || ''; if (a.name) $('#pub-name').value = a.name; pubDraw(); }
+      } catch (e) { /* offline: what is typed stays */ }
+    }
+  }
+
+  async function openPublish(kind) {
+    pub.kind = kind || 'player'; pub.busy = false; pub.digi = null;
+    pubSay('');
+    $('#pub-title').value = ''; $('#pub-note').value = '';
+    pubDlg.showModal();
+    try { pub.saved = await host.call('communityPublished'); } catch (e) { pub.saved = { player: null, demons: {}, name: '' }; }
+    if (!$('#pub-name').value) $('#pub-name').value = (pub.saved && pub.saved.name) || '';
+    try { pub.demons = await host.call('communityDemons'); } catch (e) { pub.demons = []; }
+    if (pub.kind === 'demon' && !pub.demon) pub.demon = ((pub.demons || []).find((d) => d.summoned) || (pub.demons || [])[0] || {}).key || '';
+    pubDrawDemons();
+    await pubLoad();
+    $('#pub-name').focus();
+  }
+
+  async function pubRemember(key, id, secret) {
+    const d = pub.kind === 'demon' ? pub.build.demon : null;
+    pub.saved = await host.call('communitySavePublished', { demon: pub.kind === 'demon' ? pub.demon : undefined, id, secret,
+      type: d ? d.type : undefined, level: d ? d.level : undefined, name: $('#pub-name').value.trim() });
+    // a demon that levelled up: its build is now saved under its new key
+    if (pub.kind === 'demon' && key && key !== pub.demon) pub.saved = await host.call('communitySavePublished', { demon: key });
+  }
+
+  $('#pub-form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (pub.busy || !pub.build) return;
+    const name = $('#pub-name').value.trim();
+    if (!name) { pubSay('Type a display name: the gallery shows it with the build.'); $('#pub-name').focus(); return; }
+    const body = { ...pub.build, about: { name, title: $('#pub-title').value.trim(), note: $('#pub-note').value.trim().replace(/\r\n?/g, '\n') } };
+    const { key, entry } = pubEntry();
+    pub.busy = true; pubSay(''); $('#pub-send').textContent = entry ? 'Updating…' : 'Publishing…'; pubDraw();
+    try {
+      let r = entry ? await galleryCall('PUT', '/builds/' + entry.id, body, entry.secret) : null;
+      if (r && r.status === 404) r = null;   // taken down meanwhile: publish it again as a new one
+      if (r && !r.data.ok) throw new Error(r.data.error || `The gallery answered ${r.status}.`);
+      if (!r) {
+        r = await galleryCall('POST', '/builds', body);
+        if (!r.data.ok) throw new Error(r.data.error || `The gallery answered ${r.status}.`);
+        await pubRemember(key, r.data.id, r.data.secret);
+      } else await pubRemember(key, entry.id, entry.secret);
+      toast('ok', entry ? 'Build updated' : 'Build published', host.native ? 'It’s in Community Builds on the BABEL website.' : 'Browser preview: nothing was sent; a stand-in gallery answered.');
+      pubDlg.close();
+    } catch (e) {
+      pubSay(galleryOffline(e) ? 'Couldn’t reach the gallery. Check your internet connection and try again.' : String((e && e.message) || e));
+    } finally { pub.busy = false; pubDraw(); }
+  });
+
+  $('#pub-remove').addEventListener('click', async () => {
+    const { key, entry } = pubEntry();
+    if (!entry || pub.busy) return;
+    if (!confirm('Take this build out of Community Builds? It can’t be brought back, but you can publish it again.')) return;
+    pub.busy = true; pubSay(''); pubDraw();
+    try {
+      const r = await galleryCall('DELETE', '/builds/' + entry.id, null, entry.secret);
+      if (!r.data.ok && r.status !== 404) throw new Error(r.data.error || `The gallery answered ${r.status}.`);
+      pub.saved = await host.call('communitySavePublished', { demon: pub.kind === 'demon' ? key : undefined });
+      toast('ok', 'Build taken down', 'It’s no longer in Community Builds.');
+      $('#pub-title').value = ''; $('#pub-note').value = '';
+      pubDrawDemons();
+    } catch (e) {
+      pubSay(galleryOffline(e) ? 'Couldn’t reach the gallery. Check your internet connection and try again.' : String((e && e.message) || e));
+    } finally { pub.busy = false; pubDraw(); }
+  });
+
+  document.querySelectorAll('#pub-kind [data-kind]').forEach((b) => b.addEventListener('click', () => {
+    if (pub.kind === b.dataset.kind) return;
+    pub.kind = b.dataset.kind;
+    if (pub.kind === 'demon' && !pub.demon) pub.demon = ((pub.demons || []).find((d) => d.summoned) || (pub.demons || [])[0] || {}).key || '';
+    $('#pub-title').value = ''; $('#pub-note').value = '';
+    pubDrawDemons(); pubLoad();
+  }));
+  $('#pub-note').addEventListener('input', pubDraw);
+  $('#pub-close').addEventListener('click', () => pubDlg.close());
+  $('#pub-cancel').addEventListener('click', () => pubDlg.close());
+  pubDlg.addEventListener('click', (ev) => { if (ev.target === pubDlg) pubDlg.close(); });
+  pubDlg.addEventListener('close', () => { if (pubPick.done) { pubPick.done(); pubPick.done = null; } });
 
   // ---------- Send feedback ----------
   // The form posts to the feedback service (feedback-worker\, a Cloudflare Worker), which opens a public GitHub issue as

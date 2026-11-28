@@ -53,7 +53,9 @@ const MAX_TOGGLES: usize = 64;
 /// The player build of the character `pipe` works on: its last snapshot, the gear and expertise the Build Planner
 /// starts from, the switch skills that are on, the summoned demon and the digitalize demon (each only when its details
 /// were read). From saved files only: no snapshot, and none of the character's data is written.
-pub fn player_build(pipe: &Pipeline, name: &str) -> Result<Value> {
+/// `digi`: the digitalize demon that goes with the build. None = the character's own (the saved one), Some("") = no
+/// demon, Some(key) = that demon of the list (one whose details were read).
+pub fn player_build(pipe: &Pipeline, name: &str, digi: Option<&str>) -> Result<Value> {
     let store = pipe.store();
     let snaps = json::load(store.dash_dir().join("snapshots.json")).map_err(|_| no_snapshot())?;
     let last = json::arr(Some(&snaps))
@@ -96,7 +98,14 @@ pub fn player_build(pipe: &Pipeline, name: &str) -> Result<Value> {
 
     let demons = pipe.comp_demons(name, false)?;
     let partner = demons.iter().find(|d| d.summoned).and_then(demon_value);
-    let digitalize = demons.iter().find(|d| d.current).and_then(demon_value);
+    let digitalize = match digi {
+        None => demons.iter().find(|d| d.current).and_then(demon_value),
+        Some("") => None,
+        Some(key) => {
+            let d = demons.iter().find(|d| d.key == key).ok_or_else(|| user_error("That demon isn't in your demon list any more. Pick another one."))?;
+            Some(demon_value(d).ok_or_else(|| user_error(format!("BABEL hasn't seen {}'s details yet. Summon it, or open its status window in the COMP, then try again.", d.name)))?)
+        }
+    };
 
     let level = json::int(start.at("meta").at("level"));
     let out = json!({
@@ -182,6 +191,84 @@ fn is_minute(t: &str) -> bool {
             13 => *c == b':',
             _ => c.is_ascii_digit(),
         })
+}
+
+// ---------- what this character published ----------
+//
+// community.json in the character's folder: { player: entry | null, demons: { <demon key>: entry }, name }, entry =
+// { id, secret, published, type?, level? }. `name` is the display name last used. The secret is what the gallery
+// gave when the build was first published: only with it can the build be changed or taken down, so it stays on this
+// PC (never in a log or the support bundle).
+
+/// What this character published, as saved (an empty record when nothing was).
+pub fn published(store: &crate::data::store::Store) -> Value {
+    let v = json::load(store.community_path()).unwrap_or(Value::Null);
+    let player = v.get("player").filter(|e| entry_ok(e)).cloned().unwrap_or(Value::Null);
+    let demons: Map<String, Value> = match v.get("demons") {
+        Some(Value::Object(m)) => m.iter().filter(|(k, e)| k.len() <= 200 && entry_ok(e)).map(|(k, e)| (k.clone(), e.clone())).collect(),
+        _ => Map::new(),
+    };
+    let name = v.get("name").and_then(Value::as_str).filter(|s| text(&json!(s), MAX_NAME, false, "").is_ok()).unwrap_or("");
+    json!({ "player": player, "demons": demons, "name": name })
+}
+
+fn entry_ok(e: &Value) -> bool {
+    e.get("id").and_then(Value::as_str).is_some_and(is_build_id) && e.get("secret").and_then(Value::as_str).is_some_and(is_secret)
+}
+
+/// A gallery build id: 10 letters and digits.
+pub fn is_build_id(s: &str) -> bool {
+    s.len() == 10 && s.bytes().all(|b| b.is_ascii_alphanumeric())
+}
+
+fn is_secret(s: &str) -> bool {
+    (20..=100).contains(&s.len()) && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+}
+
+/// Note a build the gallery took (`secret` None: an update of one already saved, which keeps its secret), or with
+/// `id` None forget it (taken down). `demon` = the demon's key for a demon build, None for the player build.
+/// `name`: the display name used, kept for next time.
+pub fn save_published(store: &crate::data::store::Store, demon: Option<&str>, id: Option<&str>, secret: Option<&str>, info: Option<(i32, i32)>, name: Option<&str>) -> Result<Value> {
+    let mut all = published(store);
+    let slot = match demon {
+        None => &mut all["player"],
+        Some(k) => {
+            if k.is_empty() || k.len() > 200 {
+                return Err(user_error("That isn't a demon of your list."));
+            }
+            all["demons"].as_object_mut().expect("an object").entry(k.to_string()).or_insert(Value::Null)
+        }
+    };
+    match id {
+        None => *slot = Value::Null,
+        Some(id) => {
+            if !is_build_id(id) {
+                return Err(user_error("The gallery answered with an id BABEL doesn't know."));
+            }
+            let secret = match secret {
+                Some(s) if is_secret(s) => s.to_string(),
+                Some(_) => return Err(user_error("The gallery answered with a secret BABEL doesn't know.")),
+                None => match slot.get("id").and_then(Value::as_str) == Some(id) {
+                    true => slot["secret"].as_str().unwrap_or_default().to_string(),
+                    false => return Err(user_error("That build isn't one this character published.")),
+                },
+            };
+            let mut e = json!({ "id": id, "secret": secret, "published": chrono::Local::now().format("%Y-%m-%dT%H:%M").to_string() });
+            if let Some((t, l)) = info {
+                e["type"] = json!(t);
+                e["level"] = json!(l);
+            }
+            *slot = e;
+        }
+    }
+    if let Some(n) = name.filter(|n| text(&json!(n), MAX_NAME, false, "").is_ok()) {
+        all["name"] = json!(n);
+    }
+    if let Value::Object(m) = &mut all["demons"] {
+        m.retain(|_, e| !e.is_null());
+    }
+    json::write_atomic(store.community_path(), serde_json::to_string_pretty(&all)?)?;
+    Ok(all)
 }
 
 // ---------- the gate ----------
@@ -492,6 +579,32 @@ mod tests {
             }
             assert!(check(&v).is_err(), "not refused: {}", b["why"]);
         }
+    }
+
+    #[test]
+    fn published_builds_are_kept_per_character() {
+        let dir = std::env::temp_dir().join(format!("imagine-community-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let store = crate::data::store::Store::new(&dir);
+        assert_eq!(published(&store), json!({ "player": null, "demons": {}, "name": "" }));
+        let secret = "s".repeat(43);
+        save_published(&store, None, Some("AbCdEf1234"), Some(&secret), None, Some("Rubito")).unwrap();
+        save_published(&store, Some("10041:Alilat:93"), Some("ZzZzZz9876"), Some(&secret), Some((10041, 93)), None).unwrap();
+        let p = published(&store);
+        assert_eq!(p["player"]["id"], "AbCdEf1234");
+        assert_eq!(p["demons"]["10041:Alilat:93"]["type"], 10041);
+        assert_eq!(p["name"], "Rubito");
+        // an update keeps the secret; another id without one is refused
+        save_published(&store, None, Some("AbCdEf1234"), None, None, None).unwrap();
+        assert_eq!(published(&store)["player"]["secret"], secret.as_str());
+        assert!(save_published(&store, None, Some("Other12345"), None, None, None).is_err());
+        assert!(save_published(&store, None, Some("../../x"), Some(&secret), None, None).is_err());
+        assert!(save_published(&store, None, Some("AbCdEf1234"), Some("short"), None, None).is_err());
+        // taken down
+        save_published(&store, Some("10041:Alilat:93"), None, None, None, None).unwrap();
+        assert_eq!(published(&store)["demons"], json!({}));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

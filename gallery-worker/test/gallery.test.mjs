@@ -173,6 +173,27 @@ test('reports: one per person, a few hide the build, the developer shows it agai
   assert.equal((await call('GET', `/builds/${id}`)).status, 404);
 });
 
+test('a list is kept a little while, and dropped when this instance changes something', async () => {
+  const { env, call } = service();
+  let reads = 0;
+  const prepare = env.DB.prepare;
+  env.DB.prepare = (sql) => {
+    if (sql.startsWith('SELECT id, kind, name')) reads++;
+    return prepare(sql);
+  };
+  await call('GET', '/builds?kind=demon');
+  await call('GET', '/builds?kind=demon');
+  assert.equal(reads, 1, 'the second list came from the kept copy');
+  const { id } = (await call('POST', '/builds', { body: good('demon') })).data;
+  const after = await call('GET', '/builds?kind=demon');
+  assert.equal(reads, 2);
+  assert.deepEqual(after.data.builds.map((b) => b.id), [id]);
+  // a turned-down request changes nothing, so the copy stays
+  await call('POST', '/builds', { body: 'not json' });
+  await call('GET', '/builds?kind=demon');
+  assert.equal(reads, 2);
+});
+
 test('not for search engines', async () => {
   const { call } = service();
   assert.equal((await call('GET', '/builds?kind=player')).headers.get('X-Robots-Tag'), 'noindex, nofollow');

@@ -54,6 +54,8 @@ export default {
       console.error(e && e.stack ? e.stack : String(e));
       return reply(500, { ok: false, error: 'Something went wrong in the gallery. Try again in a minute.' });
     });
+    // anything that went through may have changed a list (a new build, a hidden one, a new title)
+    if (request.method !== 'GET' && res.status < 400) forget(env);
     // reading is open to every page; sending only to the app's page (and the website, for reports) or no browser
     const h = new Headers(res.headers);
     const reading = request.method === 'GET';
@@ -113,13 +115,29 @@ async function route(request, env, origin) {
 
 // ---------- reading ----------
 
+// A list reads every visible build of its kind, and the free plan allows 5 million rows read a day: so each Worker
+// instance keeps the answer for LIST_SECONDS (one read per instance and kind in that time, not one per visitor). A
+// change made through this instance drops its copy at once; other instances catch up within LIST_SECONDS.
+export const LIST_SECONDS = 30;
+const lists = new WeakMap();   // env.DB -> Map(kind -> { at, text })
+
+function forget(env) {
+  lists.delete(env.DB);
+}
+
 async function list(env, kind) {
   if (kind !== 'player' && kind !== 'demon') return reply(400, { ok: false, error: 'Ask for kind=player or kind=demon.' });
+  const headers = { 'Cache-Control': `public, max-age=${LIST_SECONDS}` };
+  const kept = lists.get(env.DB)?.get(kind);
+  if (kept && Date.now() - kept.at < LIST_SECONDS * 1000) return reply(200, JSON.parse(kept.text), headers);
   const { results } = await env.DB.prepare(
     'SELECT id, kind, name, title, level, created, updated, facets FROM builds WHERE kind = ? AND hidden = 0 ORDER BY updated DESC LIMIT ?',
   ).bind(kind, MAX_BUILDS).all();
   const builds = results.map((r) => ({ ...r, created: iso(r.created), updated: iso(r.updated), facets: JSON.parse(r.facets) }));
-  return reply(200, { ok: true, builds }, { 'Cache-Control': 'public, max-age=60' });
+  const data = { ok: true, builds };
+  if (!lists.has(env.DB)) lists.set(env.DB, new Map());
+  lists.get(env.DB).set(kind, { at: Date.now(), text: JSON.stringify(data) });
+  return reply(200, data, headers);
 }
 
 async function show(env, id) {

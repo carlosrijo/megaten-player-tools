@@ -15,7 +15,7 @@
 //!                                                               show the clan; set the quest/compendium counts for their bonuses
 //!   damage-log [--name N] [--watch SECONDS] [--raw]             the game's damage log (own and partner hits); --watch follows new hits
 //!   comp-demons [--name N] [--out file]                         the demon picker's list as JSON, from what was seen (no game, nothing written)
-//!   community-build [--name N] [--demon KEY | --demons] [--out f] a Community Builds build as published (the player's; --demon KEY one demon's; --demons lists the keys)
+//!   community-build [--name N] [--demon KEY | --demons | --digi KEY] [--out f] a Community Builds build as published (the player's, --digi: with that digitalize demon; --demon KEY one demon's; --demons lists the keys)
 //!
 //! Without --name, the character is read from the running client (or is the only one with saved data).
 //! Each character keeps its own folder and CSV, listed in data\characters.json.
@@ -406,7 +406,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
             } else {
                 let b = match get("demon") {
                     Some(key) => community::demon_build(pipe, &t.name, key)?,
-                    None => community::player_build(pipe, &t.name)?,
+                    None => community::player_build(pipe, &t.name, get("digi"))?,
                 };
                 serde_json::to_string_pretty(&b)?
             };

@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8">
   <!-- What the page may load and run: its own files and nothing else. No script written into the page runs (so text
-       that ever got shown as markup by mistake still could not run), nothing is fetched from the internet (the one
-       address the page may send to is the feedback service, FEEDBACK_URL in app.js, when the player presses Send), and
+       that ever got shown as markup by mistake still could not run), nothing is fetched from the internet (the only
+       addresses the page may send to are the feedback service, FEEDBACK_URL in app.js, when the player presses Send,
+       and the Community Builds gallery, GALLERY_URL, when the player publishes a build), and
        the page can't be sent anywhere else. Pictures also come from the app's data folder (data.imagine.app is that
        folder, not a website) and from pictures made in the page itself (data:, blob:). -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://data.imagine.app; connect-src 'self' https://data.imagine.app https://babel-feedback.babel-feedback.workers.dev; font-src 'self'; media-src 'self' https://data.imagine.app; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://data.imagine.app; connect-src 'self' https://data.imagine.app https://babel-feedback.babel-feedback.workers.dev https://babel-gallery.babel-feedback.workers.dev; font-src 'self'; media-src 'self' https://data.imagine.app; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BABEL</title>
   <script src="theme.js"></script>
@@ -235,6 +236,53 @@
       </div>
 
       <div id="fb-done" class="fb-done" role="status" hidden></div>
+    </form>
+  </dialog>
+
+  <!-- Publish build: app.js "Community Builds" posts a build to the gallery (gallery-worker\) for the website to show -->
+  <dialog class="dlg dlg-publish" id="publish" aria-labelledby="publish-title">
+    <form class="dlg-body" id="pub-form" novalidate>
+      <div class="dlg-head">
+        <h2 id="publish-title">Publish to Community Builds</h2>
+        <button type="button" class="btn btn-ghost btn-square" id="pub-close" aria-label="Close"><span data-icon="x" aria-hidden="true"></span></button>
+      </div>
+      <div class="field">
+        <span class="field-label" id="pub-kind-label">What to publish</span>
+        <div class="seg" id="pub-kind" role="group" aria-labelledby="pub-kind-label">
+          <button type="button" data-kind="player" aria-pressed="true">Your character</button>
+          <button type="button" data-kind="demon" aria-pressed="false">A demon</button>
+        </div>
+      </div>
+      <!-- the digitalize demon picker's list (app.js demonPick, drawn in here) -->
+      <div class="field sim-pick pub-pick" id="pub-demon-field" hidden>
+        <span class="field-label" id="pub-demon-label">Which demon</span>
+        <div class="toolbar" id="pub-demons-tools"></div>
+        <div class="sim-options" id="pub-demons" role="listbox" aria-labelledby="pub-demon-label"></div>
+        <div class="sim-preview" id="pub-demons-preview" hidden></div>
+        <span class="field-help">Only demons BABEL has seen up close are listed: summon one, or open its status window in the COMP, then take a snapshot.</span>
+      </div>
+      <div class="pub-what" id="pub-what" role="status"></div>
+      <label class="field">
+        <span class="field-label">Display name</span>
+        <input class="input" id="pub-name" maxlength="24" autocomplete="off" spellcheck="false" placeholder="How the gallery names you">
+        <span class="field-help">Shown with the build. It doesn’t have to be your character’s name.</span>
+      </label>
+      <label class="field">
+        <span class="field-label">Title <span class="field-opt">(optional)</span></span>
+        <input class="input" id="pub-title" maxlength="60" autocomplete="off" placeholder="A few words, like “Gun build for Babel”">
+      </label>
+      <label class="field">
+        <span class="field-label">Note <span class="field-opt">(optional)</span></span>
+        <textarea class="input pub-note" id="pub-note" maxlength="500" rows="3" placeholder="How you play it, what you’d change…"></textarea>
+        <span class="field-help pub-count" id="pub-count"></span>
+      </label>
+      <div class="notice"><span data-icon="info" aria-hidden="true"></span><div>Anyone can see published builds on the BABEL website. You can update yours or take it down here at any time.</div></div>
+      <div class="field-row">
+        <button type="submit" class="btn btn-primary" id="pub-send">Publish</button>
+        <button type="button" class="btn btn-ghost" id="pub-remove" hidden>Take it down</button>
+        <button type="button" class="btn" id="pub-cancel">Cancel</button>
+        <span class="field-help fb-error" id="pub-error" role="alert"></span>
+      </div>
     </form>
   </dialog>
 
