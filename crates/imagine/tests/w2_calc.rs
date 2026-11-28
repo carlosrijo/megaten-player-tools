@@ -230,12 +230,17 @@ fn summoned_partner_effects_reach_the_summoner() {
     };
     assert_eq!(show("Long-Range"), vec!["60|false|always|self|Alilat (summoned)|Demon Force"]);
     // her Demon Force rows carry the item their stack entry is drawn with (DevilBoostExtraData itemID: 10283 -> 38209, 10118 -> 21838)
-    assert!(fx.iter().filter(|e| e.cond_note.starts_with("Demon Force")).all(|e| e.item_id > 0 && e.skill_id == 0 && e.picture.is_empty()));
+    assert!(fx.iter().filter(|e| e.cond_note.starts_with("Demon Force") && e.target == "self").all(|e| e.item_id > 0 && e.skill_id == 0 && e.picture.is_empty()));
     assert_eq!(fx.iter().find(|e| e.tokusei == 130199).map(|e| e.item_id), Some(38209));
     assert_eq!(fx.iter().find(|e| e.tokusei == 130138).map(|e| e.item_id), Some(21838));
-    // everything is the character's own and tagged as the partner's; nothing aimed at the demon itself (the 421xxx reflects) is here
-    assert!(!fx.is_empty() && fx.iter().all(|e| e.target == "self" && e.source == "summoned" && e.item == "Alilat (summoned)"));
-    assert!(fx.iter().all(|e| ![421354, 421356, 421358, 421360, 360254, 730059].contains(&e.tokusei)), "{:?}", fx.iter().map(|e| e.tokusei).collect::<Vec<_>>());
+    // everything is tagged as the partner's; what is aimed at the demon itself (the 421xxx reflects) is the partner's own, never the character's
+    assert!(!fx.is_empty() && fx.iter().all(|e| (e.target == "self" || e.target == "partner") && e.source == "summoned" && e.item == "Alilat (summoned)"));
+    assert!(fx.iter().filter(|e| e.target == "self").all(|e| ![421354, 421356, 421358, 421360, 360254, 730059].contains(&e.tokusei)), "{:?}", fx.iter().map(|e| e.tokusei).collect::<Vec<_>>());
+    // a worn epitaph's skill is the demon's own: Epitaph Parts [Pursuit Essence] (item 36342, skill 26162, tokusei 880076
+    // PURSUIT_RATE 20, no TargetType) adds Pursuit chance +20% to the partner, not to the character
+    let epi = calc.summoner_effects(&imagine::game::DemonRecord { equipment: Some(vec![36342, 0, 0, 0]), ..demon.clone() }, false).unwrap();
+    let pursuit: Vec<String> = epi.iter().filter(|e| e.tokusei == 880076).map(|e| format!("{}|{}|{}|{}", e.value.unwrap_or(0.0), e.pct, e.target, e.item_id)).collect();
+    assert_eq!(pursuit, vec!["20|true|partner|36342"]);
     // no force stack, no Long-Range +60
     let bare = calc.summoner_effects(&imagine::game::DemonRecord { force_stack: None, ..demon.clone() }, false).unwrap();
     assert!(bare.iter().all(|e| e.label != "Long-Range" || e.value != Some(60.0)));

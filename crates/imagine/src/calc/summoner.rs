@@ -8,7 +8,8 @@
 //! equipment's skill in place of the slot's trait (`DemonState::GetAllSkills`), and its compendium bonuses
 //! (those are in `character_extras`). So with Alilat out, the game adds her force stack's "LNG-R +60" to the character.
 //!
-//! Counted here: SUMMONER-targeted tokusei of those parts, whatever they do (stats, damage, cost changes). Not counted:
+//! Counted here: SUMMONER-targeted tokusei of those parts, whatever they do (stats, damage, cost changes), and the
+//! SELF-targeted ones as the partner's own (an epitaph's "Pursuit chance +20%" is the demon's). Not counted:
 //! PARTY-targeted ones (they need the character to be in a party, which the reader can't see), switch skills (which
 //! switches are on isn't read), and status effects. While the character is digitalized there is no partner, so none of
 //! this applies then (the page leaves it out of the digitalized totals); `Digitalize::compute` keeps its own rule for
@@ -26,6 +27,8 @@ use crate::game::DemonRecord;
 /// The digitalize window's picture for the Mitama set boost (the one the Digitalize page shows beside that boost): it stands
 /// in for the summoned demon's Mitama set rows.
 const MITAMA_PICTURE: &str = "digitalize_mitamaicon";
+/// The digitalize window's Features boost picture: it stands in for a feature (trait), which has none of its own.
+const FEATURE_PICTURE: &str = "digitalize_featureicon";
 
 /// What stands for a summoned demon's bonus line on the page: a skill and an item (a worn equipment's Epitaph Parts, or the
 /// item a Demon Force stack entry is drawn with; their picture is used when the skill has none) or a client interface picture.
@@ -40,10 +43,11 @@ pub fn source_name(d: &DemonRecord) -> String {
 }
 
 impl Digitalize {
-    /// The effects the demon `d` (the summoned partner) gives its summoner: counted ones are "always" (cond), the rest
-    /// "situational" (a requirement the reader can't decide) or "inactive". Every effect is the character's own
-    /// (`target` "self"), tagged `source` "summoned" and `item` [`source_name`]; its `cond_note` starts with where on
-    /// the demon it comes from ("Demon Force", "passive Life Surge", ...).
+    /// The effects the demon `d` (the summoned partner) gives its summoner (`target` "self"), and what its own skills,
+    /// equipment, Demon Force and Mitama sets give the demon itself (`target` "partner": the partner's totals). Counted
+    /// ones are "always" (cond), the rest "situational" (a requirement the reader can't decide) or "inactive". Every
+    /// effect is tagged `source` "summoned" and `item` [`source_name`]; its `cond_note` starts with where on the demon it
+    /// comes from ("Demon Force", "passive Life Surge", ...).
     /// `mitama_boost`: the character has MITAMA_SET_BOOST (boosted Mitama set values).
     pub fn summoner_effects(&self, d: &DemonRecord, mitama_boost: bool) -> Result<Vec<Effect>> {
         let data = &*self.data;
@@ -105,18 +109,27 @@ impl Digitalize {
         }
 
         for (tid, from, pic) in found {
-            // only the ones the server aims at the summoner (a tokusei the data lacks can't be told)
-            if !data.tokusei_full(tid)?.is_some_and(|def| def.target == "SUMMONER") {
-                continue;
-            }
+            // the ones the server aims at the summoner go to the character; the ones aimed at the demon itself (TargetType
+            // SELF, the default: an epitaph's "Pursuit chance +20%") are the partner's own; the rest (PARTY, ...) aren't
+            // counted. A tokusei the data lacks can't be told.
+            let Some(def) = data.tokusei_full(tid)? else { continue };
+            let target = match def.target.as_str() {
+                "SUMMONER" => "self",
+                "SELF" => "partner",
+                _ => continue,
+            };
             for mut e in self.fx.tokusei(tid, "summoned", &item)? {
-                e.target = "self".into();
+                e.target = target.into();
                 e.source = "summoned".into();
                 e.item = item.clone();
                 match pic {
                     Pic::Skill(skill_id, item_id) => {
                         e.skill_id = skill_id;
                         e.item_id = item_id;
+                        // a feature has no picture of its own: the digitalize window's Features boost picture stands in
+                        if from.starts_with("trait ") {
+                            e.picture = FEATURE_PICTURE.to_string();
+                        }
                     }
                     Pic::Client(name) => e.picture = name.to_string(),
                 }

@@ -415,7 +415,7 @@ impl Dashboard {
             let mut o = if s.fusion {
                 obj(json!({
                     "row": format!("set-{si}"), "kind": "set", "slot": "Fusion set",
-                    "item": format!("{} ({}, fusion set {})", s.pieces.replace(", ", " + "), s.worn, s.set_id), "shown_as": s.pieces, "tarot": Value::Null,
+                    "item": format!("{} ({}, fusion set {})", s.name, s.worn, s.set_id), "shown_as": s.pieces, "tarot": Value::Null,
                 }))
             } else {
                 obj(json!({
@@ -1140,6 +1140,9 @@ impl Dashboard {
                     "quest".into()
                 } else if p.kind == "expertise" && p.from.contains("(Demonic Compendium") {
                     "compendium".into()
+                } else if p.kind == "summoned" && p.target != "self" {
+                    // what the summoned demon's own skills / equipment give the demon itself (in the partner's total)
+                    "own".into()
                 } else if p.kind == "expertise" || p.kind == "demon" || p.kind == "summoned" || p.kind == "stats" {
                     p.kind.clone()
                 } else if src.to_uppercase().starts_with("SET: ") {
@@ -1224,10 +1227,33 @@ impl Dashboard {
                 // A summoned demon's Demon Force entry or epitaph is an item (the Demon Soul it is drawn with, the Epitaph Parts it is made from):
                 // its name goes after a Demon Force note and heads the icon's tooltip ("item_name")
                 let item_name = if p.kind == "summoned" && p.item_id > 0 { data.item_name(p.item_id)? } else { None };
-                let note = match &item_name {
+                let mut note = match &item_name {
                     Some(n) if p.note == "Demon Force" => format!("{} · {n}", p.note),
                     _ => p.note.clone(),
                 };
+                // The partner's own part is named by what gives it (the note starts with where on the demon it comes from:
+                // "equipment Pursuit Essence", "trait Mystic Torrent", "passive Life Surge", "Demon Force", "Mitama set Saki"):
+                // the Epitaph Parts item, the feature or skill, the Demon Force item; its kind says which of these it is.
+                let mut src = src;
+                if kind == "own" {
+                    let (head, rest) = p.note.split_once("; ").unwrap_or((p.note.as_str(), ""));
+                    let (k, name) = if let Some(n) = head.strip_prefix("equipment ") {
+                        ("epitaph", item_name.clone().unwrap_or_else(|| n.to_string()))
+                    } else if let Some(n) = head.strip_prefix("trait ") {
+                        ("feature", n.to_string())
+                    } else if let Some(n) = head.strip_prefix("passive ") {
+                        ("skill", n.to_string())
+                    } else if head == "Demon Force" {
+                        ("force", item_name.clone().unwrap_or_else(|| "Demon Force".to_string()))
+                    } else if head.starts_with("Mitama set ") {
+                        ("mitama set", head.to_string())
+                    } else {
+                        ("own", src.clone())
+                    };
+                    kind = k.to_string();
+                    src = name;
+                    note = rest.to_string();
+                }
                 let mut part = obj(json!({
                     "source": src, "kind": kind, "value": fmt::round(p.value, 2), "digi": p.cond == "digitalized", "note": note, "icon": icon,
                     "tip": if p.skill_id > 0 { data.skill_text(p.skill_id)? } else { None }, // the game's description, for the hover tooltip
