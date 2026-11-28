@@ -386,11 +386,18 @@ fn gear_database_matches_the_csharp_file() {
     // needed): "Crystallize <demon>" from EnchantData (362 lines) and "Craft" from SynthesisData (332 lines, with the
     // materials, the crafting skill and the recipe): +95,676 bytes, only in "get". (A Crystallize line's special
     // fusions come from fusion-data.json beside the output, which this temporary output has not: no change here.)
-    assert!(text.starts_with(r#"{"generatedAt":""#));
-    let body = &text[r#"{"generatedAt":"2026-11-24""#.len()..];
-    assert_eq!((text.len(), fnv(body.as_bytes())), (6663493, GEARDB_FNV));
+    // Since 2026-11-28 (BABEL's English for what the client has only in Japanese, and Demon Force in the Item Database),
+    // compared item by item with the 2026-11-27 night output: 3,828 names and 1,347 descriptions are English with the
+    // Japanese kept as "ja" / "descJa"; set partners, box contents and skill names in effect lines follow the same English;
+    // 84 sheet-only rows are gone because their sheet row now matches the item by its English name (18,047 -> 17,963);
+    // the 378 Demon Force materials carry "force"; and the file and some rows ("sources", "get", "sets") list their keys
+    // in another order ("note" now comes before "generatedAt"): 6,663,493 -> 7,105,797 bytes. The date is cut out wherever it sits.
+    let at = text.find(r#""generatedAt":""#).expect("the file says when it was made") + r#""generatedAt":""#.len();
+    let body = format!("{}{}", &text[..at], &text[at + "yyyy-mm-dd".len()..]);
+    assert_eq!((text.len(), fnv(body.as_bytes())), (7105797, GEARDB_FNV));
 }
 
 /// FNV-1a of the `geardb` output (the C# one, with all CorrectTbl lines in "stats", plus "mods", plus every non-gear item
-/// and the key items since the Item Database, plus the crystallize and craft lines) after its `{"generatedAt":"yyyy-mm-dd"` start.
-const GEARDB_FNV: u64 = 234467552842479108;
+/// and the key items since the Item Database, plus the crystallize and craft lines, plus BABEL's English and Demon Force)
+/// with the date of its "generatedAt" cut out.
+const GEARDB_FNV: u64 = 17023792217123397889;
