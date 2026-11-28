@@ -496,7 +496,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['dcm', 'DCM Locator', 'search'], ['rank', 'Demon Ranking', 'podium'],['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Demon Planner', 'horns'], ['sim', 'Character Planner', 'flask'], ['cbplayer', 'Player Builds', 'flask'], ['cbdemon', 'Demon Builds', 'horns']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['dcm', 'DCM Locator', 'search'], ['rank', 'Demon Ranking', 'podium'],['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Demon Planner', 'horns'], ['sim', 'Character Planner', 'flask'], ['cbdemon', 'Demon Builds', 'horns'], ['cbplayer', 'Character Builds', 'flask']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -836,7 +836,7 @@
     { id: 'dbs', title: 'Databases', ids: ['skills', 'ddb', 'geardb', 'quests', 'keys', 'dungeons'],
       short: (l) => (l.endsWith(' Database') ? l.slice(0, -' Database'.length) + 's' : l) },
     { id: 'planners', title: 'Planners', ids: ['fusion', 'dplan', 'rebirth', 'sim'], short: (l) => l.replace(/ Planner$/, '') },
-    { id: 'community', title: 'Community Builds', ids: ['cbplayer', 'cbdemon'], short: (l) => l.replace(/ Builds$/, '') },
+    { id: 'community', title: 'Community Builds', ids: ['cbdemon', 'cbplayer'], last: true, short: (l) => l.replace(/ Builds$/, '') },
   ];
   S.navOpen = {};
   const groupOf = (id) => NAV_GROUPS.find((g) => g.ids.includes(id));
@@ -863,7 +863,8 @@
     const entry = id === 'sim' ? [h('div', { class: 'nav-group' }, btn, simNavToggle), simNavBox] : id === 'rebirth' ? [h('div', { class: 'nav-group' }, btn, rbpNavToggle), rbpNavBox] : [btn];
     if (g) g.box.append(...entry); else looseTools.push(...entry);
   });
-  nav.append(...NAV_GROUPS.flatMap((g) => [g.head, g.box]), ...looseTools);
+  // (a group marked last, Community Builds, goes after the loose tools)
+  nav.append(...NAV_GROUPS.filter((g) => !g.last).flatMap((g) => [g.head, g.box]), ...looseTools, ...NAV_GROUPS.filter((g) => g.last).flatMap((g) => [g.head, g.box]));
   setTimeout(() => drawRbpNav(), 0);   // (the saved demon builds, once the page's code is all set up)
   function go(page) {
     if (S.page === page) return;
@@ -11143,7 +11144,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
 
   // ---------- Community Builds: the lists and one build (the website, and the app too) ----------
-  // Player Builds and Demon Builds read the gallery (gallery-worker\): a list of every build's summary, then one build
+  // Demon Builds and Character Builds read the gallery (gallery-worker\): a list of every build's summary, then one build
   // when it is opened. A build holds only ids and numbers (imagine::build::community); the names and pictures come from
   // the page's own public files: the Item Database (gear-db.json), the Demon Database and Demon Planner tables, the
   // Skill Database and community-names.json (expertises; the crystal each fusion comes from). Text a player typed (name, title, note) is only ever set as text.
@@ -11231,8 +11232,9 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   }
 
   const CB_GROUPS = {
-    player: [['weapon', 'Weapon'], ['digi', 'Digitalize demon'], ['band', 'Level']],
-    demon: [['race', 'Race'], ['demon', 'Demon'], ['mitama', 'Mitama'], ['band', 'Level']],
+    // only short, fixed lists: a demon or a race would be hundreds of chips (the search finds those)
+    player: [['weapon', 'Weapon'], ['band', 'Level']],
+    demon: [['mitama', 'Mitama']],
   };
   const CB_COLS = {
     player: [['name', 'Build'], ['level', 'Level'], ['weapon', 'Weapon'], ['digi', 'Digitalize demon'], ['exp', 'Main expertise'], ['updated', 'Updated']],
@@ -11316,7 +11318,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   /** One published build: who published it and their words, then the build. */
   function cbBuildPage(kind, L, page) {
     const id = L.open, got = S.cb.got.get(id);
-    const back = h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { L.open = null; cbSetHash(null); render(); } }, icon('back'), kind === 'player' ? 'All player builds' : 'All demon builds');
+    const back = h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { L.open = null; cbSetHash(null); render(); } }, icon('back'), kind === 'player' ? 'All character builds' : 'All demon builds');
     if (!got) cbFetch(id);
     if (!got || got.loading || got.error) {
       page.append(h('div', { class: 'over-top' }, back), h('p', { class: 'note', text: got && got.error ? got.error : 'Loading the build…' }));
