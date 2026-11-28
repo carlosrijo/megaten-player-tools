@@ -1162,14 +1162,14 @@ impl Expertise {
                             _ => "",
                         };
                         let actions: Vec<i32> = full.skill_conditions.iter().filter(|s| s.0.as_deref() == Some("ACTION_TYPE")).map(|s| s.1).collect();
-                        // "while tokusei N is active" (ACTIVE_TOKUSEI) names the skill that lists it. A switch skill decides by its state,
+                        // A linked condition ("while tokusei N applies") names the skill that lists it. A switch skill decides by its state,
                         // read from the game: on, the effect counts like an unconditional one; off, it is listed and not counted.
                         let needs = ActiveNeeds::of(data, &full.skill_conditions)?;
                         let dep_off = needs.switches.iter().any(|s| !c.active_toggles.contains(&s.0));
                         let situational = !full.conditions.is_empty()
                             || full.target_conditions
                             || needs.undecided()
-                            || full.skill_conditions.iter().any(|s| !matches!(s.0.as_deref(), Some("ACTION_TYPE") | Some("ACTIVE_TOKUSEI")));
+                            || full.skill_conditions.iter().any(|s| s.0.as_deref() != Some("ACTION_TYPE") && !crate::data::stat_labels::is_linked_condition(s.0.as_deref()));
                         let src = if full.from_client_text { " (from the client's text)" } else { "" };
                         let cond_txt = {
                             let base = condition_text(full.conditions.iter().map(|c| (c.r#type.clone().unwrap_or_default(), c.value)));

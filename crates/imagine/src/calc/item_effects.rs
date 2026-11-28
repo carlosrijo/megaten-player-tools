@@ -152,7 +152,7 @@ pub fn and_list(names: &[String]) -> String {
     }
 }
 
-/// What a tokusei's ACTIVE_TOKUSEI skill conditions ("tokusei N is active", NewMoon's own) depend on: each N is named by
+/// What a tokusei's linked skill conditions ([`stat_labels::linked_condition`]: "tokusei N applies") depend on: each N is named by
 /// the skill whose tokusei list holds it ([`GameData::tokusei_owner`]). A switch skill decides by its state (on or off,
 /// which only the caller can tell: the Bonuses and Expertise pages read it from the game); any other skill (a passive)
 /// is just named; a tokusei no skill lists is unknown.
@@ -162,16 +162,16 @@ pub struct ActiveNeeds {
     pub switches: Vec<(i32, String)>,
     /// Other skills the effect goes with, by name.
     pub skills: Vec<String>,
-    /// Some ACTIVE_TOKUSEI condition names no skill.
+    /// Some linked condition names no skill.
     pub unknown: bool,
 }
 
 impl ActiveNeeds {
-    /// The ACTIVE_TOKUSEI conditions among a tokusei's skill conditions, resolved to skills.
+    /// The linked conditions among a tokusei's skill conditions, resolved to skills.
     pub fn of(data: &GameData, skill_conditions: &[(Option<String>, i32)]) -> Result<ActiveNeeds> {
         let mut needs = ActiveNeeds::default();
         let names = data.skill_names()?;
-        for (_, tid) in skill_conditions.iter().filter(|s| s.0.as_deref() == Some("ACTIVE_TOKUSEI")) {
+        for (_, tid) in skill_conditions.iter().filter(|s| stat_labels::is_linked_condition(s.0.as_deref())) {
             let Some(owner) = data.tokusei_owner(*tid)? else {
                 needs.unknown = true;
                 continue;
@@ -213,7 +213,7 @@ impl ActiveNeeds {
             parts.push(format!("with {}", and_list(&self.skills)));
         }
         if self.unknown {
-            parts.push(stat_labels::sealed_skill_condition("ACTIVE_TOKUSEI", 0).unwrap_or_else(|| "while another effect is active".to_string()));
+            parts.push(stat_labels::linked_condition().and_then(|t| stat_labels::sealed_skill_condition(t, 0)).unwrap_or_else(|| "while another effect is active".to_string()));
         }
         parts.join(", ")
     }
@@ -691,7 +691,7 @@ impl ItemEffects {
         if !demon_names.is_empty() {
             other_skill.push(format!("vs {}", or_list(&demon_names)));
         }
-        // ACTIVE_TOKUSEI ("while tokusei N is active"): worded by the skill that lists it, a switch as "while Radiant Hands is on".
+        // A linked condition ("while tokusei N applies"): worded by the skill that lists it, a switch as "while Radiant Hands is on".
         // Gear can't tell whether the switch is on (the Expertise rows can), so the effect stays situational.
         let needs = ActiveNeeds::of(&self.data, &d.skill_conditions)?;
         if !needs.is_empty() {
@@ -701,7 +701,7 @@ impl ItemEffects {
         other_skill.extend(d
             .skill_conditions
             .iter()
-            .filter(|s| !matches!(s.0.as_deref(), Some("ACTION_TYPE") | Some("EXPLICIT_SKILL") | Some("DEMON_RACE") | Some("DEMON_TYPE") | Some("ACTIVE_TOKUSEI")))
+            .filter(|s| !matches!(s.0.as_deref(), Some("ACTION_TYPE") | Some("EXPLICIT_SKILL") | Some("DEMON_RACE") | Some("DEMON_TYPE")) && !stat_labels::is_linked_condition(s.0.as_deref()))
             .map(|s| match s.0.as_deref() {
                 // SkillManager.cpp: 0 = the target is of another faction, 1 = the same faction
                 Some("ENEMY_FACTION") => if s.1 == 1 { "on allies".to_string() } else { "on enemies".to_string() },
@@ -1246,10 +1246,14 @@ mod active_needs_tests {
     }
 
     /// The conditions are resolved through the skills that list the tokusei (public tables): Radiant Hands' 2100039 is a switch.
+    /// Skipped in a build without the sealed data (no condition type to look for).
     #[test]
     fn conditions_resolve_to_the_skills_that_list_them() {
+        let Some(linked) = stat_labels::linked_condition() else {
+            return;
+        };
         let d = GameData::with_paths(None, None);
-        let cond = |t: i32| (Some("ACTIVE_TOKUSEI".to_string()), t);
+        let cond = |t: i32| (Some(linked.to_string()), t);
         let needs = ActiveNeeds::of(&d, &[cond(2100039), (Some("EXPLICIT_SKILL".to_string()), 5001), cond(2100039)]).unwrap();
         assert_eq!(needs.switches, vec![(5485, "Radiant Hands".to_string())], "listed once; other conditions are not its business");
         assert!(needs.skills.is_empty() && !needs.unknown);
