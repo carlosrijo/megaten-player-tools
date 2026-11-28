@@ -1294,7 +1294,8 @@
     }
     // the series shown (the ones not picked are left out); a value past the rim is drawn at the rim
     const draw = { boost: 'circle', res: 'square', cap: null };
-    show.forEach((k) => {
+    // (drawn resistance first, then the cap, the boost last: the boost lies over the resistances, the user's call)
+    ['res', 'cap', 'boost'].filter((k) => show.includes(k)).forEach((k) => {
       const g = s('g', { class: `aff-s aff-${k}` });
       g.append(s('path', { class: 'aff-area', d: path(all.map((i) => at(i, val[k][i]))) }), s('path', { class: 'aff-line', d: path(all.map((i) => at(i, val[k][i]))) }));
       if (draw[k]) all.forEach((i) => {
