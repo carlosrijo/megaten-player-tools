@@ -1421,6 +1421,14 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
         *per_kind.entry(o.get("kind").and_then(Value::as_str).unwrap_or("").to_string()).or_default() += 1;
     }
 
+    // a Demon Force item: the effect it puts in a demon's force slot (the Demon Planner's lines), "force"; the game's
+    // own text gives none of it (Demon Soul [Satan]: "it is possible to grant this power to a demon")
+    let force = super::rebirth_planner::demon_force_texts(&data)?;
+    for o in items.iter_mut() {
+        if let Some(lines) = o.get("id").and_then(Value::as_i64).and_then(|id| force.get(&(id as i32))) {
+            o.insert("force".into(), json!(lines));
+        }
+    }
     let mut all: Vec<Value> = items.into_iter().map(Value::Object).collect();
     all.extend(sheet_only.into_iter().map(Value::Object));
     let key_count = key_items.len();

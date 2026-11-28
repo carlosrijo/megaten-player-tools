@@ -465,6 +465,29 @@ fn force_json(data: &GameData, item_name: &dyn Fn(i32) -> Result<String>) -> Res
     Ok(json!({ "max": MAX, "items": items, "slots": slots, "random": random }))
 }
 
+/// Each Demon Force item's effect as the client words it: item id -> the texts of its DevilBoostData extra's tokusei
+/// (the same lines the Demon Planner's Demon Force step shows; force_json). The Item Database lists them for the item.
+pub fn demon_force_texts(data: &GameData) -> Result<IndexMap<i32, Vec<String>>> {
+    let tokusei: IndexMap<i32, Vec<i32>> = rows("devil-boost-extra.tsv")?
+        .iter()
+        .map(|r| (int(&r[0]), r.get(3).map_or("", String::as_str).split(',').map(int).filter(|&x| x > 0).collect()))
+        .collect();
+    let mut res = IndexMap::new();
+    for r in rows("devil-boost-items.tsv")? {
+        let (item, stack) = (int(&r[0]), int(r.get(2).map_or("", String::as_str)));
+        let mut out = Vec::new();
+        for &tid in tokusei.get(&stack).map_or(&[][..], Vec::as_slice) {
+            if let Some(t) = data.tokusei_text(tid)? {
+                out.push(t.split_whitespace().collect::<Vec<_>>().join(" "));
+            }
+        }
+        if !out.is_empty() {
+            res.insert(item, out);
+        }
+    }
+    Ok(res)
+}
+
 /// Writes app\ui\rebirth-planner.json.
 pub fn build(data: &GameData, out_file: &Path) -> Result<()> {
     let mut v = planner_json(data)?;
