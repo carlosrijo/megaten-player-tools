@@ -550,3 +550,14 @@ fn a_skill_that_needs_a_switch_follows_its_state() {
     assert!(radiant["effects"].as_str().unwrap().contains("Cataclysmic Mind: Magic Damage +500% needs this on"));
     assert!(radiant["effects"].as_str().unwrap().starts_with("Toggle skill, switched off (not counted): "));
 }
+
+#[test]
+fn a_passive_with_no_stat_effect_is_still_passive() {
+    // "Mitama Demon Enhancement - Iron Man" (5133, MITAMA_SET_BOOST): passive in SkillData, but its effect is a server
+    // rule, so the passive effect table has no entry for it (the page called it an "Active skill").
+    let gd = GameData::with_paths(None, None);
+    assert!(gd.skill_is_passive(5133).unwrap());
+    assert!(gd.passives().unwrap().get("5133").is_none_or(|p| p.is_null()));
+    assert!(gd.skill_is_passive(5821).unwrap()); // Speed UP1: a passive with an effect
+    assert!(!gd.skill_is_passive(7).unwrap()); // category 1: an active skill
+}

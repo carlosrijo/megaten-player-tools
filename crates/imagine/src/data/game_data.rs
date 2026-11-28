@@ -1787,6 +1787,19 @@ impl GameData {
         once(&self.demons, DemonTables::new)
     }
 
+    /// Whether the game calls skill `id` passive. The skill's own category decides (SkillData mainCategory 0, in
+    /// skills-digitize.tsv: it has every skill); a switch skill has an effect table and counts as passive here as before.
+    /// A passive with no stat effect of its own ("Mitama Demon Enhancement - Iron Man", whose effect is a server rule)
+    /// is not in the passive effect table, so that table alone made it "active".
+    pub fn skill_is_passive(&self, id: i32) -> Result<bool> {
+        if let Some(&(cat, _)) = self.demons()?.skills.get(&id) {
+            if cat == 0 {
+                return Ok(true);
+            }
+        }
+        Ok(self.passives()?.get(&id.to_string()).is_some_and(|p| !p.is_null()))
+    }
+
     /// The tarot (`tarot` = true) or soul side of an enchant id, or `None`. From the client's own enchant table when
     /// available (reference\enchants-game.tsv), otherwise the website's enchants.json.
     pub fn enchant_effect(&self, id: i32, tarot: bool) -> Result<Option<&EnchantSide>> {

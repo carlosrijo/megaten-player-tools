@@ -754,14 +754,13 @@ impl Expertise {
     /// For the Overview's Expertise card and the Expertise page summary: every skill the reached ranks of each expertise (chains and regular) give, actives too (the
     /// passive rows of expertise.json leave actives out, as they add no stats). Written into expertise-ranks.json as
     /// "skills" [{id, name, icon, rank, active}] on each entry, so `rebuild` fills it without the game.
-    /// Active = not in the passive skill table (data.Passives). Also writes "max_class" on every entry.
+    /// Active = the skill's own category isn't passive (`GameData::skill_is_passive`). Also writes "max_class" on every entry.
     fn save_chain_skills(&self) -> Result<()> {
         let data = self.data();
         let mut doc = json::load(self.store().expertise_ranks_path())?;
         let learned = Expertise::learned_of(Some(&doc));
         let mut changed = false;
         let skill_names = data.skill_names()?;
-        let passives = data.passives()?;
         if let Some(Value::Array(entries)) = doc.get_mut("ranks") {
             for e in entries.iter_mut() {
                 if e.is_null() {
@@ -794,7 +793,7 @@ impl Expertise {
                             "name": skill_names.get(&sid).cloned().flatten().unwrap_or_else(|| format!("Skill {sid}")),
                             "icon": self.skill_icon(sid)?,
                             "rank": format!("Class {} Rank {}", en_rank / 10, en_rank % 10),
-                            "active": passives.get(&sid.to_string()).is_none_or(Value::is_null),
+                            "active": !data.skill_is_passive(sid)?,
                         }));
                     }
                 }

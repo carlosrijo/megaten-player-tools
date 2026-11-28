@@ -1066,7 +1066,7 @@ impl Simulator {
                 let mut sk: Vec<Row> = Vec::new();
                 for sid in skills {
                     let name = data.skill_names()?.get(sid).cloned().flatten().unwrap_or_else(|| "A skill the game data has no name for".to_string());
-                    let passive = data.passives()?.get(&sid.to_string()).is_some_and(|p| !p.is_null());
+                    let passive = data.skill_is_passive(*sid)?;
                     sk.push(obj(json!({ "name": name, "passive": passive })));
                 }
                 // a rank that lets the character learn only some of its skills says how many

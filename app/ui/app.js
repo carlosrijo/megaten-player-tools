@@ -504,7 +504,7 @@
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
     ['Partner', 'Partner', 'Your partner'], ['Only in some fights', 'Situational', 'Only in some fights · not added to the totals'],
   ];
-  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon', own: 'Its own', epitaph: 'Demon equipment', feature: 'Feature', skill: 'Its skill', force: 'Demon Force', 'mitama set': 'Mitama set', stats: 'Your stats' };
+  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon', own: 'Its own', epitaph: 'Demon equipment', feature: 'Feature', skill: 'Its skill', force: 'Demon Force', 'mitama set': 'Mitama', mitama: 'Mitama', stats: 'Your stats' };
   /** What the summoned partner's own skills, equipment and Demon Force give the partner itself (the bonus list's part kinds). */
   const OWN_KINDS = new Set(['epitaph', 'feature', 'skill', 'force', 'mitama set', 'own']);
   const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon', 'epitaph', 'feature', 'skill', 'force', 'mitama set', 'own'];
@@ -1522,7 +1522,7 @@
       const id = 'p:' + r.row, open = S.over.open === id, f = (v) => fmt(v, r.unit, true);
       const src = new Map();   // per kind of source, without what only counts while digitalized (no partner is out then)
       (Array.isArray(r.parts) ? r.parts : []).filter((p) => !isTrue(p.digi) && n0(p.value)).forEach((p) => {
-        const gear = GEAR_KINDS.has(p.kind), name = gear ? 'Gear' : p.kind === 'mitama' ? 'Its Mitamas' : KIND[p.kind] || 'Other';
+        const gear = GEAR_KINDS.has(p.kind), name = gear ? 'Gear' : p.kind === 'mitama' ? 'Mitama' : KIND[p.kind] || 'Other';
         const e = src.get(name) || { cls: gear ? 'sw-gear' : p.kind === 'expertise' || p.kind === 'clan' ? 'sw-exp' : p.kind === 'demon' || p.kind === 'summoned' || OWN_KINDS.has(p.kind) || p.kind === 'mitama' ? 'sw-demon' : 'sw-base', v: 0, from: [] };
         e.v = round2(e.v + n0(p.value)); e.from.push(p.source); src.set(name, e);
       });
@@ -1555,6 +1555,18 @@
    * expertise skill) and the random bonus each placed Mitama rolled. null for a demon that isn't fused, or while the
    * Demon Planner's tables load (the partner card draws the page again then).
    */
+  /**
+   * Whether the character has Iron Man (Mitama Demon Enhancement, which turns every Mitama set into its stronger form).
+   * A demon that says so itself (Community Builds: none) wins. Else what the game's learned skills said when last read
+   * (digitalize.json mitama_boost: skill 5133 itself, which the expertise rows don't list because the skill adds no
+   * stat), else an expertise row of that name.
+   */
+  function mitamaBoost(d, P) {
+    if (d && d.ironMan !== undefined) return !!d.ironMan;
+    const DG = S.data.digitalize;
+    if (DG && DG.mitama_boost !== undefined && DG.mitama_boost !== null) return isTrue(DG.mitama_boost);
+    return (S.data.expertise || []).some((r) => r.skill === P.mitama.boostName);
+  }
   /** A Mitama-fused partner as the Demon Planner models it (its runes, slots and sets as last read), or null. */
   function partnerMitamaModel(d) {
     const P = S.rbp.state === 'ready' ? S.rbp.P : null;
@@ -1562,7 +1574,7 @@
     const D = rbpDemonOf('comp', { ...d, equipment: Array.isArray(d.equipmentIds) ? d.equipmentIds : null }, null);
     if (!D || D.missing || !D.fused) return null;
     const M = rbpSlotsModel(P, rbpPlanFrom(null), D, D.ranks, D.mitamaRank);
-    return { P, D, M, L: D.level || 1, K: D.kind ? P.mitama.kinds[D.kind - 1] : null, boost: d.ironMan !== undefined ? !!d.ironMan : (S.data.expertise || []).some((r) => r.skill === P.mitama.boostName) };
+    return { P, D, M, L: D.level || 1, K: D.kind ? P.mitama.kinds[D.kind - 1] : null, boost: mitamaBoost(d, P) };
   }
   // A Mitama bonus's name (the game's table) as the bonus list names that line, where they differ
   const MT_BONUS_NAME = { 'close-range damage taken': 'Close-range damage taken', 'long-range damage taken': 'Long-range damage taken', 'magic damage taken': 'Spell damage taken',
@@ -1600,9 +1612,15 @@
     const out = base.map((r) => ({ ...r })), byName = new Map(out.map((r) => [String(r.bonus).trim().toLowerCase(), r]));
     mt.forEach(({ name, unit, value, source }) => {
       let r = byName.get(name.toLowerCase());
-      if (!r) { r = { row: 'mitama:' + name, group: 'Partner', bonus: name, unit, counted: true, gear: 0, total: 0, parts: [], mitamaOnly: true }; out.push(r); byName.set(name.toLowerCase(), r); }
+      if (!r) { r = { row: 'mitama:' + name, group: 'Partner', bonus: name, unit, counted: true, gear: 0, gear_digi: 0, expertise: 0, demon: 0, total: 0, total_digi: 0, parts: [], mitamaOnly: true }; out.push(r); byName.set(name.toLowerCase(), r); }
+      // (the Bonuses page has a column of its own for them, and they are in both totals: nobody is out while digitalized, but
+      // the Partner rows are what a summoned partner gets, as on the Overview)
       r.total = round2(n0(r.total) + value);
-      r.parts = [...(Array.isArray(r.parts) ? r.parts : []), { kind: 'mitama', source, value }];
+      if (r.total_digi !== undefined && r.total_digi !== null) r.total_digi = round2(n0(r.total_digi) + value);
+      r.mitama = round2(n0(r.mitama) + value);
+      // one line per source (the placed Mitamas' bonuses of one stat come as one line each)
+      const parts = Array.isArray(r.parts) ? r.parts : [], at = parts.findIndex((p) => p.kind === 'mitama' && p.source === source);
+      r.parts = at < 0 ? [...parts, { kind: 'mitama', source, value, icon: 'mitama' }] : parts.map((p, i) => (i === at ? { ...p, value: round2(n0(p.value) + value) } : p));
     });
     return out;
   }
@@ -2051,7 +2069,8 @@
       const piece = S.v.gearOf(p), crystal = piece && (p.kind === 'soul' ? piece.soul : p.kind === 'tarot' ? piece.tarot : null);
       // "demon": the demon's picture; "skill:<name>": the skill icon file of that name; else a picture in icons.json (compendium, clan, quest)
       const pic = String(p.icon || '');
-      const other = { icon: pic === 'demon' ? S.meta.demonPicture : pic.startsWith('skill:') ? (S.meta.skillIcons ? S.meta.skillIcons + pic.slice(6) + '.png' : null) : S.data.icons[pic] };
+      const other = pic === 'mitama' ? { icons: [0, 1, 2, 3].map((k) => S.data.icons[`kind${k}`]).filter(Boolean) }   // an orb of the four Mitamas
+        : { icon: pic === 'demon' ? S.meta.demonPicture : pic.startsWith('skill:') ? (S.meta.skillIcons ? S.meta.skillIcons + pic.slice(6) + '.png' : null) : S.data.icons[pic] };
       return h('li', null,
         // the worn piece's or set's icon; a skill's own icon (expertise, demon skills); the demon's picture for the rest it gives
         // hovering it shows a game-style tooltip
@@ -2068,9 +2087,25 @@
     // Rows that only the digitalize demon gives appear in the Digitalized view only.
     const demonOnly = (r) => (r.parts || []).length > 0 && r.parts.every((p) => p.kind === 'demon');
     const summonedOnly = (r) => (r.parts || []).length > 0 && r.parts.every((p) => p.kind === 'summoned' || OWN_KINDS.has(p.kind));   // nobody is out while digitalized
-    const all = S.data.bonuses.filter((r) => (digi() ? !summonedOnly(r) : !demonOnly(r)));
+    // The partner's rows with what its own Mitamas add (as on the Overview): they need the planner's tables, which load on first use
+    const partner = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+    if (partner && partner.mitama && partner.loaded !== false && !(S.rbp.state === 'ready' && S.ddb.state === 'ready') && !pageBonuses.waiting) {
+      pageBonuses.waiting = true;
+      loadRebirth();
+      let tries = 0;
+      const again = () => {
+        if ([S.rbp.state, S.ddb.state].some((x) => x === 'idle' || x === 'loading') && ++tries < 100) { setTimeout(again, 200); return; }
+        pageBonuses.waiting = false;
+        if (S.page === 'bonuses' && S.rbp.state === 'ready' && S.ddb.state === 'ready') render();
+      };
+      setTimeout(again, 200);
+    }
+    const rowsOf = [...S.data.bonuses.filter((r) => r.group !== 'Partner'), ...partnerRows(null)];
+    const hasMt = rowsOf.some((r) => r.mitama !== undefined);   // the partner's Mitama set bonuses are in its Passives column
+    const passives = (r) => round2(n0(r.expertise) + (r.group === 'Partner' ? n0(r.mitama) : 0));
+    const all = rowsOf.filter((r) => (digi() ? !summonedOnly(r) : !demonOnly(r)));
     const SM = digi() ? '' : summonedName();   // "Alilat (summoned)": a column of its own while a partner is out
-    const DG = S.data.digitalize, ncol = digi() || SM ? 5 : 4;
+    const DG = S.data.digitalize, ncol = 4 + (digi() ? 1 : 0) + (SM ? 1 : 0);
     const page = h('div', { class: 'page' });
     page.append(pageHead(digi() && DG ? `Everything your gear, expertise and ${DG.demon} (digitalized) give. Click a row to see where each part comes from.`
       : 'Everything your gear and expertise give. Click a row to see where each part comes from.'));
@@ -2112,7 +2147,7 @@
                 counted && fromStats ? h('span', { class: 'tag tag-off', style: 'margin-left:8px', 'data-tip': statsNote(r), text: `incl. ${fmt(fromStats, r.unit, true)} from your stats` }) : null,
                 counted ? capTag(n0(total), capOfBonus(r), r.unit, 'margin-left:8px') : null,
                 counted && toggleShare(r) ? h('span', { class: 'tag tag-off', style: 'margin-left:8px', 'data-tip': toggleShareText(r, 'this total'), text: `${fmt(toggleShare(r), r.unit, true)} from toggles` }) : null))),
-            cell(gear), cell(r.expertise), digi() ? cell(r.demon) : null, SM ? cell(r.summoned === undefined ? 0 : r.summoned) : null,
+            cell(gear), cell(passives(r)), digi() ? cell(r.demon) : null, SM ? cell(r.summoned === undefined ? 0 : r.summoned) : null,
             counted ? cell(total, 'emph')
               : h('td', { class: 'num zero', 'data-tip': 'Depends on the fight, so it is not added up', text: '—' }));
           body.append(tr);
@@ -2131,12 +2166,13 @@
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { S.bonus.open.clear(); draw(); } }, 'Collapse all')));
     page.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Bonus' }), h('th', { scope: 'col', class: 'num', text: 'Gear' }),
-        h('th', { scope: 'col', class: 'num', text: 'Expertise' }), digi() ? h('th', { scope: 'col', class: 'num', text: DG ? DG.demon : 'Demon' }) : null,
+        h('th', { scope: 'col', class: 'num', text: 'Passives', 'data-tip': 'What your passives give: expertise skills, digitalize levels, quest bonus, compendium, clan and other learned passives. On the Your partner rows it also has the partner’s Mitama bonuses.' }), digi() ? h('th', { scope: 'col', class: 'num', text: DG ? DG.demon : 'Demon' }) : null,
         SM ? h('th', { scope: 'col', class: 'num', text: SM, 'data-tip': 'Counts only while this demon is summoned beside you. It is left out of the digitalized totals.' }) : null,
         h('th', { scope: 'col', class: 'num', text: digi() ? 'Total, digitalized' : 'Total' }))), body)));
     page.append(h('p', { class: 'note', text: 'Gear includes tarot, soul fusions, mods, complete sets and appearance bonuses. For bonuses that only apply in some fights, the largest single value is shown.'
       + ' Cooldown and incantation totals also count what your stats take off: 2.5% per 10 VIT (cooldown) or INT (incantation), and 1.5% per 10 SPD for both. Cooldown stops at 95% off.'
-      + (SM ? ` ${SM.replace(/ \(summoned\)$/, '')}'s column counts only while ${SM.replace(/ \(summoned\)$/, '')} is summoned beside you; it is not in the digitalized totals.` : '') }));
+      + (SM ? ` ${SM.replace(/ \(summoned\)$/, '')}'s column counts only while ${SM.replace(/ \(summoned\)$/, '')} is summoned beside you; it is not in the digitalized totals.` : '')
+      + (hasMt ? ' The Your partner rows’ Passives column includes what the Mitamas on your summoned partner add to it' + (S.rbp.state === 'ready' && partner && partner.mitama && mitamaBoost(partner, S.rbp.P) ? ', with Iron Man’s stronger set bonuses.' : '.') : '') }));
     page.append(h('p', { class: 'note', text: togglesNote() }));
     drawChips(); draw();
     // Quest bonus and Demonic Compendium: what each step gives (their values are already in the rows above)
@@ -2580,7 +2616,7 @@
       const x = sklById(s.id), fx = String(s.effects || '').split('; ').filter(Boolean);
       const where = [s.expertise, s.rank ? String(s.rank).replace(/^Class (\d+) Rank (\d+)$/, '$1-$2') : null].filter(Boolean).join(' ');
       return h('div', { class: 'tt' },
-        tipHead(s.icon || !x ? skillIcon(s) : sklIcon(x), s.name || '—', [s.active ? 'Active skill' : 'Passive skill', where].filter(Boolean).join(' · ')),
+        tipHead(s.icon || !x ? skillIcon(s) : sklIcon(x), s.name || '—', [x && x.type === 'passive' || !s.active ? 'Passive skill' : 'Active skill', where].filter(Boolean).join(' · ')),
         ...(x && x.desc ? tipLines(x.desc) : fx.map((t) => h('div', { class: 'tt-line', text: t }))),
         s.off ? h('div', { class: 'tt-line tt-gap tt-why', text: 'Toggle switched off: its effects are not counted.' })
           : s.counted === false ? h('div', { class: 'tt-line tt-gap tt-why', text: 'Not counted.' }) : null);
