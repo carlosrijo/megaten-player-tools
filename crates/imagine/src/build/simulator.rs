@@ -56,12 +56,15 @@ use crate::text::{eq_ic, ic_key};
 use crate::{Result, user_error};
 
 use super::dashboard::{Dashboard, Part, fuse_stat_label};
-use super::digitalize_demon::DigitalizeSave;
+use super::digitalize_demon::{self, DigitalizeSave};
 use super::expertise::Expertise;
 use super::gear_db;
 use super::item_icons;
 use super::pipeline::{self, BlankSets};
 use super::share_code::{self, Piece, Shared};
+
+/// A build's demon key for a Demon Planner build: "plan:<the build's id>" (the page keeps those builds).
+pub const PLAN_KEY: &str = "plan:";
 
 /// `Simulator.ToJson(o)`: compact JSON, relaxed escaping.
 pub fn to_json(o: &Value) -> String {
@@ -211,8 +214,10 @@ struct State {
 struct Build {
     items: Items,
     points: IndexMap<i32, i32>,
-    /// The build's digitalize demon: None = the one saved for the character, "" = none, else the "type:name:level" of a COMP demon seen.
+    /// The build's digitalize demon: None = the one saved for the character, "" = none, else the "type:name:level" of a
+    /// COMP demon seen, or "plan:<id>" for a Demon Planner build (then `planned` is that demon as the build ends).
     demon: Option<String>,
+    planned: Option<DemonRecord>,
 }
 
 struct Computed {
@@ -374,7 +379,7 @@ impl Simulator {
         }
         b.sets_of = sets_of;
         // What the reading holds beyond the model of the build as read (kept as it is in every simulation)
-        let parts0 = self.compute(b, &Build { items: b.items.clone(), points: b.points.clone(), demon: None }, &b.totals)?.parts;
+        let parts0 = self.compute(b, &Build { items: b.items.clone(), points: b.points.clone(), demon: None, planned: None }, &b.totals)?.parts;
         let normal0 = sum_stats(&parts0, false);
         let zero = [0; 12];
         let core = model(b, &normal0, None, &zero, None);
@@ -514,7 +519,7 @@ impl Simulator {
 
     /// The page's build: { slots: [null | {id, basic, special, tarot, soul, fuse[3], mods[5]}] x 15, points: {expertise id: points} }.
     fn parse(&self, b: &Base, spec: Option<&Value>) -> Result<Build> {
-        let mut s = Build { items: b.items.clone(), points: b.points.clone(), demon: None };
+        let mut s = Build { items: b.items.clone(), points: b.points.clone(), demon: None, planned: None };
         if let Some(Value::Array(slots)) = spec.at("slots") {
             for k in 0..15 {
                 let n = slots.get(k).filter(|v| !v.is_null());
@@ -553,6 +558,10 @@ impl Simulator {
         }
         if let Some(d) = spec.at("demon") {
             s.demon = Some(json::str(Some(d)).unwrap_or_default());
+        }
+        // a Demon Planner build: the page sends the demon as it ends ("plannedDemon"); without it (the build was deleted) none
+        if s.demon.as_deref().is_some_and(|d| d.starts_with(PLAN_KEY)) {
+            s.planned = spec.at("plannedDemon").and_then(digitalize_demon::planned_demon);
         }
         Ok(s)
     }
@@ -716,6 +725,8 @@ impl Simulator {
         };
         let record: Option<&DemonRecord> = if saved {
             b.demon.as_ref().and_then(|d| d.demon.as_ref())
+        } else if s.demon.as_deref().is_some_and(|d| d.starts_with(PLAN_KEY)) {
+            s.planned.as_ref()
         } else {
             let want = s.demon.as_deref().unwrap_or("");
             if want.is_empty() {
@@ -1033,7 +1044,7 @@ impl Simulator {
         let mut st = lock(&self.state);
         let b = self.load(&mut st, args)?;
         let data = self.data();
-        let build = Build { items: b.items.clone(), points: b.points.clone(), demon: None };
+        let build = Build { items: b.items.clone(), points: b.points.clone(), demon: None, planned: None };
         let expertise_defs = data.expertises_client()?;
         let mut defs_src: Vec<&crate::data::game_data::ExpertiseDef> = expertise_defs.values().collect();
         defs_src.sort_by_key(|d| d.id);
@@ -1472,7 +1483,7 @@ impl Simulator {
     pub fn self_check(&self) -> Result<Vec<String>> {
         let mut st = lock(&self.state);
         let b = self.load(&mut st, None)?;
-        let res = Value::Object(self.result(&b, &Build { items: b.items.clone(), points: b.points.clone(), demon: None })?);
+        let res = Value::Object(self.result(&b, &Build { items: b.items.clone(), points: b.points.clone(), demon: None, planned: None })?);
         let mut diffs: Vec<String> = Vec::new();
         for i in 0..12 {
             let got = json::int(res.at("stats").at(STAT_KEYS[i]));

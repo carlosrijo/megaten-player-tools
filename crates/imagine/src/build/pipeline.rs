@@ -135,6 +135,8 @@ pub struct CompDemon {
     pub skills: Vec<i32>,
     /// The 8 Demon Force stack slots (DevilBoostExtraData stack ids, 0 = empty), for the planner's Demon Force bar.
     pub force_stack_ids: Vec<i32>,
+    /// The 4 demon equipment slots (Epitaph Parts item ids, 0 = empty), for the planners' equipment bars.
+    pub equipment_ids: Vec<i32>,
 }
 
 impl CompDemon {
@@ -145,7 +147,7 @@ impl CompDemon {
             "current": self.current, "inGame": self.in_game, "seenAt": self.seen_at, "forceStack": self.force_stack, "equipment": self.equipment,
             "icon": self.icon, "offer": self.offer.as_ref().map(DemonOffer::to_value), "unlock": self.unlock.as_ref().map(DemonUnlock::to_value),
             "loaded": self.loaded, "summoned": self.summoned, "inComp": self.in_comp,
-            "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots, "skills": self.skills, "forceStackIds": self.force_stack_ids,
+            "growthType": self.growth_type, "reunion": self.reunion, "mitamaType": self.mitama_type, "mitamaRank": self.mitama_rank, "mitamaSlots": self.mitama_slots, "skills": self.skills, "forceStackIds": self.force_stack_ids, "equipmentIds": self.equipment_ids,
         })
     }
 }
@@ -553,6 +555,27 @@ impl Pipeline {
         Ok(())
     }
 
+    /// The character's learned assists and Mitama boost as last read (else as saved with the digitalize demon): what a
+    /// demon's offer is worked out with, since they belong to the character, not the demon.
+    fn assists_now(&self) -> Result<(Option<Vec<i32>>, bool)> {
+        let store = self.store();
+        let saved_now = DigitalizeSave::load(store)?;
+        let prog = DigitalizeSave::load_progress(store);
+        let assists: Option<Vec<i32>> = prog.as_ref().and_then(|p| p.assists.clone()).or_else(|| saved_now.as_ref().and_then(|s| s.assists.clone()));
+        let boost = match &prog {
+            Some(p) => p.mitama_boost,
+            None => saved_now.as_ref().is_some_and(|s| s.mitama_boost),
+        };
+        Ok((assists, boost))
+    }
+
+    /// What digitalizing with each of these demons would give this character (the Demon Planner's builds as they end,
+    /// worked out by the page), as `comp_demons` gives it for the COMP demons. None for a type the tables don't have.
+    pub fn planned_offers(&self, demons: &[DemonRecord]) -> Result<Vec<Option<DemonOffer>>> {
+        let (assists, boost) = self.assists_now()?;
+        demons.iter().map(|d| self.dash.offer(d, assists.as_deref(), boost)).collect()
+    }
+
     fn list_demons(&self, name: Option<&str>, scan: bool, only_summoned_list: bool) -> Result<Vec<CompDemon>> {
         let store = self.store();
         let data = self.data();
@@ -595,13 +618,7 @@ impl Pipeline {
 
         let t = data.demons()?;
         // what each would give: with the assists and the Mitama boost last read (they belong to the character, not the demon)
-        let saved_now = DigitalizeSave::load(store)?;
-        let prog = DigitalizeSave::load_progress(store);
-        let assists: Option<Vec<i32>> = prog.as_ref().and_then(|p| p.assists.clone()).or_else(|| saved_now.as_ref().and_then(|s| s.assists.clone()));
-        let boost = match &prog {
-            Some(p) => p.mitama_boost,
-            None => saved_now.as_ref().is_some_and(|s| s.mitama_boost),
-        };
+        let (assists, boost) = self.assists_now()?;
         let race_levels = self.saved_race_levels()?;
         let mut list: Vec<CompDemon> = Vec::new();
         for (k, s) in seen.iter().filter(|(k, s)| !only_summoned_list || (s.demon.summoned() && !k.ends_with(SAVED_KEY))) {
@@ -634,6 +651,7 @@ impl Pipeline {
                 mitama_slots: d.mitama_reunion.iter().map(|&b| b as i32).collect(),
                 skills: d.skills.clone(),
                 force_stack_ids: d.force_stack.clone().unwrap_or_default(),
+                equipment_ids: d.equipment.clone().unwrap_or_default(),
             });
         }
         // OrderByDescending(Current).ThenByDescending(InComp != false).ThenByDescending(Level).ThenBy(Name): stable

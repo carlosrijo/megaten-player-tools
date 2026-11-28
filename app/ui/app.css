@@ -1409,11 +1409,34 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .sim-opt-lines .sim-hit { color: var(--text); font-weight: 600; }   /* the line the search found: the list is sorted by its number */
 .sim-opt-set .q-key { font-size: 12px; }
 .sim-more { justify-self: center; margin: 8px 0; }
+/* the demon picker in the same dialog: the demon's framed picture, its parts under headings, its skills as icons */
+.sim-opt.sim-dopt { grid-template-columns: 44px minmax(0, 1fr) 76px; align-items: start; }
+/* the rebirth ranks radar, small, in its own column at the end of the row */
+.sim-dradar { align-self: center; justify-self: end; display: grid; place-items: center; }
+.sim-dradar .rbp-radar { width: 72px; height: 72px; margin: 0; }
+.sim-dpic { align-self: start; }
+.sim-dhead { padding: 10px 10px 4px; }
+.sim-dhead:first-child { padding-top: 4px; }
+.sim-dskills { margin: 0; }
+/* skills, Demon Force and equipment in one line (wrapping whole bars when the dialog is narrow), a dot between */
+.sim-dbars { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin-top: 3px; }
+.sim-dbars > * { flex-wrap: nowrap; gap: 3px; width: auto; }
+.sim-dbars > * + * { position: relative; margin-left: 31px; }
+.sim-dbars > * + *::before { content: ""; position: absolute; left: -18px; top: 50%; width: 5px; height: 5px; margin-top: -2.5px; border-radius: 50%; background: var(--text-3); }
+.sim-dbars .skill-ico { width: 22px; height: 22px; }
+/* Import demon: "Load demons from the game" where the Character Planner has its numbers strip */
+.sim-dfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.sim-dcount { margin-left: 2px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.seg button[aria-pressed="true"] .sim-dcount { color: var(--text-2); }
 .sim-preview { display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start; gap: 6px; min-height: 52px; font-size: 12px; }
 .sim-preview-label { font-weight: 600; }
 .sim-chip { display: inline-flex; align-items: baseline; gap: 6px; height: 22px; line-height: 20px; padding: 0 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); white-space: nowrap; }
 .sim-chip b { font-variant-numeric: tabular-nums; }
 .sim-chip.good b { color: var(--good); } .sim-chip.bad b { color: var(--bad); }
+/* a chip still being worked out: an empty one of about a real chip's size, a soft light passing over it */
+.sim-chip-wait { box-sizing: border-box; background: linear-gradient(90deg, var(--surface-2) 0%, var(--hover) 50%, var(--surface-2) 100%) 0 0 / 300% 100%; animation: sim-wait 1s linear infinite; }
+@keyframes sim-wait { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+@media (prefers-reduced-motion: reduce) { .sim-chip-wait { animation: none; background: var(--surface-2); } }
 /* narrow window: what changed first, then the build, then the full stat sheet */
 @media (max-width: 1040px) {
   .sim-out { display: contents; }
@@ -1956,7 +1979,7 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 :root:not([data-theme="dark"]) .rbp-capbar i { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 75%, black), inset 0 3px 0 rgba(255, 255, 255, .6), inset 0 -3px 0 rgba(0, 0, 0, .28); }
 .rbp-namebtn { font: 600 15px/1.3 var(--font-display); margin: 0; padding: 6px 8px 6px 10px; border: 1px solid var(--border-strong); background: var(--surface); }
 .rbp-namebtn:hover { background: var(--surface-2); }
-#rbp-demons .dm-icon img, #rbp-import .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
+#rbp-demons .dm-icon img { width: 32px; height: 32px; display: block; border-radius: 6px; }
 /* the demon band as the Overview's: the inputs sit at the right of the band */
 .rbp-demon.demon-card { align-items: center; }
 .rbp-demon .rbp-inputs { align-self: center; }
@@ -2054,10 +2077,10 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 /* the runestone list scrolls past about eight rows, so the sticky cost card stays short */
 .rbp-needlist { max-height: 212px; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
 /* the same thin scrollbar as the Overview's demon picker (#demons .char-list) on the runestone list and the planner's own picker */
-.rbp-needlist::-webkit-scrollbar, #rbp-demons .char-list::-webkit-scrollbar, #rbp-import .char-list::-webkit-scrollbar { width: 8px; }
-.rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb, #rbp-import .char-list::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
+.rbp-needlist::-webkit-scrollbar, #rbp-demons .char-list::-webkit-scrollbar, .sim-dpick .sim-options::-webkit-scrollbar { width: 8px; }
+.rbp-needlist::-webkit-scrollbar-thumb, #rbp-demons .char-list::-webkit-scrollbar-thumb, .sim-dpick .sim-options::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
 .rbp-needlist { padding-right: 0; }
-#rbp-demons .menu-note:empty, #rbp-import .menu-note:empty { display: none; }   /* no note under the Any-demon list */
+#rbp-demons .menu-note:empty { display: none; }   /* no note under the Any-demon list */
 
 /* Dungeon Guides (Tools): per dungeon its outcomes, each with numbered steps (the Quest Guide's step list and lines) */
 .guide-tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
