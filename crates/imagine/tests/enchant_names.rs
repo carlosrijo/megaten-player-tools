@@ -70,6 +70,18 @@ fn every_soul_and_tarot_resolves_to_a_crystal_name() {
     let (mut before, mut after, mut before_ids, mut after_ids) = (0, 0, HashSet::new(), HashSet::new());
     let mut renamed: Vec<String> = Vec::new();
     let have_web = !web.enchants().unwrap().is_empty();
+    // BABEL's English for the crystals the client names only in Japanese (reference\item-names-en.tsv, third column): it
+    // wins over the website's name by choice, so those are expected to read differently from the website's
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../reference/item-names-en.tsv");
+    let translations: HashSet<String> = std::fs::read_to_string(&path)
+        .unwrap_or_default()
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+        .filter_map(|l| l.split('\t').nth(2))
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    let mut translated = 0;
     for &(id, tarot) in sides.keys() {
         // before: only the website's list named a crystal (and the gear row used it only when the tooltip was missing)
         let old = web.enchants().unwrap().get(&id).and_then(|e| e.crystal.clone()).filter(|c| !c.trim().is_empty());
@@ -86,12 +98,16 @@ fn every_soul_and_tarot_resolves_to_a_crystal_name() {
         if let (Some(old), Some(now)) = (&old, &now) {
             let letters = |s: &str| s.to_lowercase().chars().filter(|c| c.is_alphanumeric()).collect::<String>();
             if letters(old) != letters(now) {
-                renamed.push(format!("{id}: {old} -> {now}"));
+                if translations.contains(now) {
+                    translated += 1;
+                } else {
+                    renamed.push(format!("{id}: {old} -> {now}"));
+                }
             }
         }
     }
     // the client's name wins; it differs from the website's for a handful only (spelling: "Suiki" / "Suiki's Crystal", "Sword X" / "X of Sword")
-    eprintln!("names the client spells differently from the website: {renamed:?}");
+    eprintln!("names the client spells differently from the website: {renamed:?}; read from BABEL's English instead: {translated}");
     assert!(renamed.len() <= 10, "the client's crystals differ from the website's: {renamed:#?}");
     eprintln!(
         "enchant sides {} ({} ids): website list on this machine = {have_web}; falling back to an id before: {before} sides / {} ids; after: {after} sides / {} ids",
