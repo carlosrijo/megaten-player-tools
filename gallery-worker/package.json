@@ -1,0 +1,14 @@
+{
+  "name": "babel-gallery",
+  "private": true,
+  "description": "BABEL Community Builds: players publish builds from the app, the website lists them (Cloudflare Worker + D1)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

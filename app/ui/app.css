@@ -333,7 +333,7 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .page-head.du .partner-card { flex: 1 1 420px; min-width: 0; align-content: center; }
 .partner-top { display: grid; grid-template-columns: minmax(150px, max-content) minmax(0, 1fr); gap: 10px 18px; align-items: center; }
 .partner-who { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-auto-rows: 18px; gap: 2px 10px; align-items: center; }   /* five rows, as tall as the stats' five */
-.partner-who .demon-pic { grid-column: 1; grid-row: 1 / span 5; align-self: center; }
+.partner-who .demon-pic { grid-column: 1; grid-row: 1 / span 5; align-self: start; }   /* at the top of the card, level with its title */
 .partner-card .partner-who .demon-pic { border-color: transparent; box-shadow: none; }   /* no frame of its own here: the card carries the alignment colour */
 .partner-who > :not(.demon-pic) { grid-column: 2; min-width: 0; }
 .partner-who .list-head { padding: 0; margin: 0; }
@@ -377,6 +377,7 @@ html.vt-view::view-transition-old(ov-partner), html.vt-view::view-transition-new
 html.vt-view::view-transition-old(ov-sheet), html.vt-view::view-transition-new(ov-sheet) { width: 100%; height: 100%; object-fit: none; object-position: left top; overflow: clip; }
 html.vt-view::view-transition-group(ov-partner) { border-radius: 12px; overflow: clip; }
 .over-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.over-top-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .du-card { display: grid; gap: 10px; align-content: start; padding-top: 14px; }
 .gear-pc:hover { border-color: var(--border-strong); background: var(--hover); }
 .gear-pc:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
@@ -829,6 +830,72 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 
 /* Send feedback */
 .dlg.dlg-feedback { width: min(560px, calc(100vw - 32px)); }
+/* Community Builds: the lists and one build */
+.cb-chips { display: grid; gap: 8px; }
+.cb-chips .chips { align-items: center; }
+.cb-row { cursor: pointer; }
+.cb-row:hover td, .cb-row:focus-visible td { background: var(--hover); }
+.cb-demon { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cb-head { display: grid; gap: 4px; }
+.cb-title { margin: 0; font-size: 20px; }
+.cb-note { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 80ch; }
+.cb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+.cb-grid > * { min-width: 0; }
+.cb-lines { display: grid; gap: 6px; }
+.cb-line { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 13px; }
+.cb-report { min-width: 220px; }
+.pm-compact { gap: 10px; }   /* Community Builds: the Mitama section folded (the kinds, the fusion, the rune bars) */
+/* folded, the 12 runes in two columns (6 down each), the rune's name close to its bar */
+.pm-compact .pm-ranks { grid-template-rows: repeat(6, auto); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); column-gap: 28px; }
+.pm-compact .pm-rmini { grid-template-columns: 76px auto 18px minmax(0, 1fr); column-gap: 6px; }
+@media (max-width: 900px) { .pm-compact .pm-ranks { grid-template-rows: none; grid-auto-flow: row; } }
+.cb-card-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.cb-lines-cols { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); column-gap: 24px; row-gap: 6px; }
+/* (a picture box pulls itself into a table row with a negative margin: not in these lists, where they'd overlap) */
+.cb-lines .dcm-icon { margin: 0; width: 26px; height: 26px; }
+.cb-lines .dcm-icon img { width: 26px; height: 26px; }
+.cb-piece .card-head { align-items: center; gap: 10px; }
+.cb-piece .sim-cols + .sim-cols { margin-top: 12px; }
+.cb-piece-foot { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 12px; font-size: 13px; color: var(--text-2); }
+.cb-layout { margin-top: 4px; }
+/* the expertise bar, opened: every rank */
+.cb-exp-detail { grid-column: 1 / -1; display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+.cb-exp-detail .list-head { padding: 4px 0 0; }   /* flush with the list, not indented as in a menu */
+/* the ranks flow down columns (a taller one, with a long skill bar, doesn't leave a gap beside it) */
+.cb-exp-list { columns: 300px; column-gap: 32px; }
+.cb-exp-item { display: grid; gap: 6px; min-width: 0; break-inside: avoid; margin-bottom: 14px; }
+.cb-exp-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 45%) 40px; align-items: center; gap: 12px; font-size: 13px; }
+.cb-exp-row b { text-align: right; color: var(--exp, var(--text)); }
+.cb-exp-row .band-bar { grid-column: auto; height: 8px; border-radius: 4px; }   /* (a band's bar spans the whole row elsewhere) */
+.cb-exp-row .band-bar i { border-radius: 4px; }
+.cb-exp-skills { display: flex; flex-wrap: wrap; gap: 3px; }
+.cb-exp-skills .skill-ico.first { margin-left: 0; }
+.cb-exp-skills.none { font-size: 12px; color: var(--text-3); }
+.cb-exp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the character's picture: at the end of a card's name row, beside a build's title, in the Publish dialog */
+.cb-pic { flex: none; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; box-shadow: 0 0 0 2px var(--border-strong); margin-left: auto; }
+.cb-pic.align-law, .cb-pic.align-neutral, .cb-pic.align-chaos { box-shadow: 0 0 0 2px var(--align); }
+.cb-pic-big { width: 96px; height: 96px; border-radius: 12px; margin: 0; }
+.cb-head.with-pic { grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: start; }
+.cb-head-text { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.cb-head .who-line { align-items: flex-start; }
+.cb-head .cb-title { line-height: 1.2; }
+.cb-about { display: grid; gap: 4px; }
+.cb-about .cb-note { margin: 0; }
+#pub-pic-row img { width: 32px; height: 32px; margin-left: 4px; }
+/* Publish build (Community Builds) */
+.dlg.dlg-publish { width: min(560px, calc(100vw - 32px)); }
+.dlg.dlg-publish.pub-wide { width: min(880px, calc(100vw - 32px)); }   /* "A demon": the digitalize picker's list */
+.dlg-publish .dlg-body > *, .pub-what > * { min-width: 0; }            /* nothing in it may push it wider than the dialog */
+.pub-pick .sim-options { height: min(36vh, 340px); }
+.pub-pick .toolbar { width: 100%; }
+.pub-pick .sim-opt-lines.zero { display: none; }   /* "what it gives can't be worked out": about digitalizing, not publishing */
+.pub-what { display: grid; gap: 6px; }
+.pub-what:empty { display: none; }
+.pub-list { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: 13px; color: var(--text-2); }
+.pub-raw summary { cursor: pointer; font-size: 12px; color: var(--text-2); }
+.pub-raw pre { margin: 6px 0 0; max-height: 220px; overflow: auto; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: 11px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.input.pub-note { height: auto; min-height: 72px; padding: 8px 10px; resize: vertical; font: inherit; line-height: 1.45; }
 .fb-fields, .fb-done { display: grid; gap: 16px; }
 .fb-fields[hidden], .fb-done[hidden] { display: none; }
 .field-opt { font-weight: 400; color: var(--text-3); }

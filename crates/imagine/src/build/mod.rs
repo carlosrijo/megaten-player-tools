@@ -1,5 +1,6 @@
 //! Port of `src/Build/*.cs`: snapshot, page data, database builders.
 pub mod bundle;
+pub mod community;
 pub mod csv;
 pub mod dashboard;
 pub mod demon_db;

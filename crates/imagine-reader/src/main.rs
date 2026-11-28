@@ -15,6 +15,7 @@
 //!                                                               show the clan; set the quest/compendium counts for their bonuses
 //!   damage-log [--name N] [--watch SECONDS] [--raw]             the game's damage log (own and partner hits); --watch follows new hits
 //!   comp-demons [--name N] [--out file]                         the demon picker's list as JSON, from what was seen (no game, nothing written)
+//!   community-build [--name N] [--demon KEY | --demons | --digi KEY] [--out f] a Community Builds build as published (the player's, --digi: with that digitalize demon; --demon KEY one demon's; --demons lists the keys)
 //!
 //! Without --name, the character is read from the running client (or is the only one with saved data).
 //! Each character keeps its own folder and CSV, listed in data\characters.json.
@@ -29,7 +30,7 @@ use std::sync::Arc;
 
 use imagine::build::pipeline::{self, Pipeline, default_csv, default_name, find_data_dir};
 use imagine::build::snapshot::SnapshotResult;
-use imagine::build::{demon_db, demon_model, digi_planner, doctor, dungeons, gear_db, item_icons, preview_server, rebirth_planner, skill_db};
+use imagine::build::{community, demon_db, demon_model, digi_planner, doctor, dungeons, gear_db, item_icons, preview_server, rebirth_planner, skill_db};
 use imagine::calc::character_extras;
 use imagine::calc::character_hp_mp::{self, Calibration};
 use imagine::calc::digitalize::{Digitalize, MITAMA_NAMES, RUNE_NAMES, set_name};
@@ -351,7 +352,7 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
     }
     // The character a command works on, with its pipeline (the C# `name`, `csv` and `pipe`).
     let mut chosen: Option<(Target, Pipeline)> = None;
-    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "gear-names" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve" | "comp-demons") {
+    if matches!(cmd, "snapshot" | "rebuild" | "recalc" | "gear-names" | "sets" | "alignment" | "demon" | "expertise" | "toggles" | "extras" | "simulate" | "serve" | "comp-demons" | "community-build") {
         // Which character: --name, else the one logged in (snapshot, sets) or the only one with saved data (rebuild, recalc).
         // Each character has its own folder and CSV (data\characters.json). --data / --csv point somewhere else instead,
         // which is how tests run on copies.
@@ -393,7 +394,29 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
                 None => println!("{text}"),
             }
             Ok(0)
-        }        "rebuild" => {
+        }
+        "community-build" => {
+            // What "Publish build" sends to Community Builds (build::community): the player build, or with --demon KEY one
+            // demon's build; --demons lists the demons that can be published. From saved files only (no snapshot; none of the character's data is
+            // written).
+            let (t, pipe) = need(&chosen)?;
+            let text = if opts.contains_key("demons") {
+                let list = community::publishable_demons(pipe, &t.name)?;
+                list.iter().map(|d| format!("{}\t{} Lv {}{}", d.key, d.name, d.level, if d.summoned { " (summoned)" } else { "" })).collect::<Vec<_>>().join("\n")
+            } else {
+                let b = match get("demon") {
+                    Some(key) => community::demon_build(pipe, &t.name, key)?,
+                    None => community::player_build(pipe, &t.name, get("digi"))?,
+                };
+                serde_json::to_string_pretty(&b)?
+            };
+            match get("out") {
+                Some(f) => std::fs::write(f, text)?,
+                None => println!("{text}"),
+            }
+            Ok(0)
+        }
+        "rebuild" => {
             let (t, pipe) = need(&chosen)?;
             rebuild(t, pipe)?;
             Ok(0)

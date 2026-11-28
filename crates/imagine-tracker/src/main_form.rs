@@ -372,6 +372,56 @@ impl MainForm {
                 self.guarded(|| Ok(self.backend.comp_demons(e.name(), &dir, scan)?.to_string()))
             }
 
+            // ---- Community Builds (imagine::build::community): the page posts the build to the gallery itself ----
+            "communityBuild" => {
+                // the build as it would be published: { build } (the player's, or with `demon` that demon's). A player
+                // build's `digi`: the digitalize demon that goes with it (a key, "" for none; missing: the character's own)
+                let e = self.require_active("No character is selected yet.")?;
+                let demon = jsonx::str(args.get("demon"));
+                let digi = args.get("digi").and_then(Value::as_str).map(str::to_string);
+                // `picture` (a player build): the character's picture goes with it, as a small thumbnail
+                let with_picture = demon.is_none() && jsonx::truthy(args.get("picture"));
+                let dir = self.char_dir(&e);
+                self.guarded(|| {
+                    let mut build = self.backend.community_build(e.name(), &dir, demon.as_deref(), digi.as_deref())?;
+                    if with_picture {
+                        if let Some(p) = imagine::build::community::picture_thumbnail(&imagine::data::store::Store::new(&dir))? {
+                            build["picture"] = json!(p);
+                            imagine::build::community::check(&build).map_err(|why| anyhow::anyhow!("the build came out wrong ({why})"))?;
+                        }
+                    }
+                    Ok(json!({ "build": build }).to_string())
+                })
+            }
+
+            "communityDemons" => {
+                let e = self.require_active("No character is selected yet.")?;
+                let dir = self.char_dir(&e);
+                Ok(self.backend.community_demons(e.name(), &dir)?.to_string())
+            }
+
+            "communityPublished" => {
+                // what this character published: { player, demons: { key: entry }, name } (entries hold the secrets)
+                let e = self.require_active("No character is selected yet.")?;
+                Ok(imagine::build::community::published(&imagine::data::store::Store::new(self.char_dir(&e))).to_string())
+            }
+
+            "communitySavePublished" => {
+                // the gallery took a build (id, secret on the first publish) or took it down (no id)
+                let e = self.require_active("No character is selected yet.")?;
+                if self.no_writes() {
+                    return Err(user_error("Not saving during a capture run."));
+                }
+                let demon = jsonx::str(args.get("demon"));
+                let (id, secret, name) = (jsonx::str(args.get("id")), jsonx::str(args.get("secret")), jsonx::str(args.get("name")));
+                let info = match (args.get("type").and_then(Value::as_i64), args.get("level").and_then(Value::as_i64)) {
+                    (Some(t), Some(l)) => Some((t as i32, l as i32)),
+                    _ => None,
+                };
+                let store = imagine::data::store::Store::new(self.char_dir(&e));
+                Ok(imagine::build::community::save_published(&store, demon.as_deref(), id.as_deref(), secret.as_deref(), info, name.as_deref())?.to_string())
+            }
+
             "useDemon" => {
                 let e = self.require_active("No character is selected yet.")?;
                 if self.no_writes() {

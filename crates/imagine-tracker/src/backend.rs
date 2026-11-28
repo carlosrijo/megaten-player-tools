@@ -10,7 +10,7 @@
 
 use anyhow::Result;
 use imagine::build::pipeline::{self, Pipeline};
-use imagine::build::{demon_model, item_icons};
+use imagine::build::{community, demon_model, item_icons};
 use imagine::data::game_data::GameData;
 use imagine::game::SetRecord;
 use serde_json::{json, Value};
@@ -238,6 +238,27 @@ impl Backend {
     pub fn comp_demons(&self, name: &str, character_dir: &Path, scan: bool) -> Result<Value> {
         let list = self.pipe(character_dir).comp_demons(name, scan)?;
         Ok(Value::Array(list.iter().map(|d| d.to_value()).collect()))
+    }
+
+    /// Community Builds (imagine::build::community): the build "Publish build" sends, the player's (`demon` None) or one
+    /// demon's. From saved files only.
+    /// `digi` (a player build): its digitalize demon's key, "" for none, None for the character's own.
+    pub fn community_build(&self, name: &str, character_dir: &Path, demon: Option<&str>, digi: Option<&str>) -> Result<Value> {
+        let pipe = self.pipe(character_dir);
+        match demon {
+            Some(key) => community::demon_build(&pipe, name, key),
+            None => community::player_build(&pipe, name, digi),
+        }
+    }
+
+    /// The demons that can be published (their details were read), for the Publish dialog's list.
+    pub fn community_demons(&self, name: &str, character_dir: &Path) -> Result<Value> {
+        let list = community::publishable_demons(&self.pipe(character_dir), name)?;
+        Ok(Value::Array(
+            list.iter()
+                .map(|d| json!({ "key": d.key, "name": d.name, "type": d.r#type, "level": d.level, "race": d.race, "summoned": d.summoned, "current": d.current, "inComp": d.in_comp, "icon": d.icon }))
+                .collect(),
+        ))
     }
 
     /// C# `Pipe(e).UseDemon(e.Name, e.Csv, key, scan: false)` (src\Build\Pipeline.cs:305): the `DemonSwitch` record as camelCase JSON.

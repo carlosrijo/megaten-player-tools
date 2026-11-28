@@ -104,6 +104,14 @@ opens a GitHub issue as the "BABEL feedback" GitHub App (Issues only, this repo 
   `wrangler.example.toml` is its shape. A new setup: a Cloudflare account, `npx wrangler kv namespace create
   FEEDBACK_FILES`, a GitHub App with Issues read/write installed on this repo, then fill in the copy and deploy.
 
+### Community Builds
+
+Publish build (Overview) posts to a second Cloudflare Worker with a D1 database (`gallery-worker\`, free plan),
+https://babel-gallery.babel-feedback.workers.dev; the website reads its lists. `gallery-worker\README.md` has the setup,
+tests and admin calls (the admin key is in `.secrets\gallery-admin-key.txt`). Its `wrangler.toml` is git-ignored and
+kept in the main checkout only, like the feedback Worker's. The browser preview of the app never publishes: a stand-in
+gallery in the page answers (`?gallery=live` sends to the real one).
+
 ## Desktop app
 
 The program is written in Rust (`crates\`, a Cargo workspace). It needs Rust (rustup, stable, `x86_64-pc-windows-msvc`)
@@ -671,6 +679,24 @@ game or your saved data. It starts from your character as last read (take a snap
   into a path or a command, and importing only ever adds a build. The format is in
   `crates\imagine\src\build\share_code.rs`. The page also has a Content-Security-Policy (index.html): it runs only its
   own script files and loads nothing from the internet.
+- **Community Builds** (beta): **Publish build** beside Export build on Overview puts your build, or one of your
+  demons', in the gallery the BABEL website shows. The dialog lists what goes out (and the exact text sent): only
+  numbers (level, stats, the worn pieces with their crystals, fusions and mods, expertise points, the switch skills
+  that are on, the digitalize and summoned demon; for a demon: its stats, skills, rebirth ranks, Mitama, Demon Force
+  stack and equipment), with a display name, title and note you type: text only (no links or web addresses of any
+  protocol, no markup, no invisible characters; the dialog cleans the text, and BABEL and the gallery both refuse
+  anything else, the same rule: `community.rs` `clean_char` / `LINK_PATTERN`). Never the character's name, effect text or
+  anything about the PC. Only demons BABEL has seen up close (summoned, or their status window opened) can be
+  published. The gallery gives each build a secret that only your BABEL keeps (`community.json` in the character's
+  folder; not in support bundles): only with it can you update the build or take it down, from the same dialog.
+  Format and checks: `crates\imagine\src\build\community.rs`; the service: `gallery-worker\README.md`.
+- **Demon Builds / Character Builds** (sidebar, "Community Builds", at the end; in the app and on the website): every published build,
+  with chips (weapon and level; Mitama for demons), a search, sortable columns and pages. A
+  build opens with its stats, its digitalize (and summoned) demon drawn like the Overview's partner card, its gear with
+  crystals, fusion bonuses and mods, its expertise and switch skills; a demon build as the partner card. **Copy link**
+  (`#build=<id>` opens it), **Copy build code** (for the Character Planner's Import build) and **Report**. Names come
+  from the page's own files; `app\ui\community-names.json` (expertise names, which crystal a fusion comes from) is made
+  by `node tools\community-names.mjs` from `reference\`.
 - **Builds are independent of the character shown.** A new build starts empty ("No base"): its numbers are only what
   its pieces and expertise ranks give, for the level and alignment set under its name.
 - **Import base** (top right of a build): pick one of your characters and the build starts again from that
