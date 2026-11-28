@@ -32,3 +32,4 @@ CREATE TABLE IF NOT EXISTS reports (
   at     INTEGER NOT NULL,
   PRIMARY KEY (build, who)
 );
+CREATE INDEX IF NOT EXISTS reports_who ON reports (who, at);

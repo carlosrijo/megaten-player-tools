@@ -256,7 +256,7 @@ pub fn is_build_id(s: &str) -> bool {
     s.len() == 10 && s.bytes().all(|b| b.is_ascii_alphanumeric())
 }
 
-fn is_secret(s: &str) -> bool {
+pub fn is_secret(s: &str) -> bool {
     (20..=100).contains(&s.len()) && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
 }
 

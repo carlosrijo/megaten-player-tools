@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import worker from '../src/index.js';
-import { AUTO_HIDE, CREATES_PER_DAY, newId } from '../src/gallery.js';
+import { AUTO_HIDE, CREATES_PER_DAY, REPORTS_PER_DAY, addressOf, newId } from '../src/gallery.js';
 import { check, facets, isCode } from '../src/build.js';
 import { fakeD1 } from './fake-d1.mjs';
 
@@ -82,10 +82,10 @@ function service() {
 
 test('publish, list, show, update, delete', async () => {
   const { call } = service();
-  const made = await call('POST', '/builds', { body: good('player'), origin: 'https://imagine.app' });
+  // BABEL sends it itself: no Origin
+  const made = await call('POST', '/builds', { body: good('player') });
   assert.equal(made.status, 201, JSON.stringify(made.data));
   assert.match(made.data.id, /^[A-Za-z0-9]{10}$/);
-  assert.equal(made.headers.get('Access-Control-Allow-Origin'), 'https://imagine.app');
   const { id, secret } = made.data;
 
   const list = await call('GET', '/builds?kind=player');
@@ -133,6 +133,17 @@ test('what is stored is the clean copy; bad builds and other pages are turned aw
   assert.equal((await call('OPTIONS', '/builds', { origin: 'https://evil.example' })).status, 403);
   assert.equal((await call('OPTIONS', '/builds', { origin: 'https://imagine.app' })).status, 204);
   assert.equal(env.DB.db.prepare('SELECT COUNT(*) AS n FROM builds').get().n, 0);
+  // BABEL 0.16's page: no new builds (it is told to update, and can read why), but its own builds it may still
+  // change and take down with their secrets
+  const old = await call('POST', '/builds', { body: good('demon'), origin: 'https://imagine.app' });
+  assert.equal(old.status, 403);
+  assert.match(old.data.error, /Update BABEL/);
+  assert.equal(old.headers.get('Access-Control-Allow-Origin'), 'https://imagine.app');
+  const mine = (await call('POST', '/builds', { body: good('demon') })).data;
+  assert.equal((await call('PUT', `/builds/${mine.id}`, { body: good('demon'), secret: mine.secret, origin: 'https://imagine.app' })).status, 200);
+  assert.equal((await call('POST', `/builds/${mine.id}/report`, { body: { reason: 'spam' }, origin: 'https://imagine.app' })).status, 403);
+  assert.equal((await call('DELETE', `/builds/${mine.id}`, { secret: mine.secret, origin: 'https://imagine.app' })).status, 200);
+  assert.equal(env.DB.db.prepare('SELECT COUNT(*) AS n FROM builds').get().n, 0);
   // the address is never stored as it is
   await call('POST', '/builds', { body: good('demon'), ip: '9.9.9.9' });
   const dump = JSON.stringify([env.DB.db.prepare('SELECT * FROM builds').all(), env.DB.db.prepare('SELECT * FROM creates').all()]);
@@ -144,6 +155,46 @@ test(`at most ${CREATES_PER_DAY} new builds a day from one address`, async () =>
   for (let i = 0; i < CREATES_PER_DAY; i++) assert.equal((await call('POST', '/builds', { body: good('demon') })).status, 201);
   assert.equal((await call('POST', '/builds', { body: good('demon') })).status, 429);
   assert.equal((await call('POST', '/builds', { body: good('demon'), ip: '5.6.7.8' })).status, 201);
+});
+
+test('an IPv6 connection counts as one address (its /64)', async () => {
+  const at = (ip) => addressOf(new Request('https://gallery.test/', { headers: { 'CF-Connecting-IP': ip } }));
+  assert.equal(at('2001:db8:1:2::1'), '2001:db8:1:2::/64');
+  assert.equal(at('2001:DB8:1:2:ffff:eeee:dddd:cccc'), '2001:db8:1:2::/64');
+  assert.equal(at('2001:0db8:0001:0002:0:0:0:9'), '2001:db8:1:2::/64');
+  assert.equal(at('2001:db8::1'), '2001:db8:0:0::/64');
+  assert.equal(at('::1'), '0:0:0:0::/64');
+  assert.equal(at('::ffff:1.2.3.4'), '1.2.3.4');
+  assert.equal(at('1.2.3.4'), '1.2.3.4');
+  assert.notEqual(at('2001:db8:1:2::1'), at('2001:db8:1:3::1'));
+
+  const { call } = service();
+  for (let i = 0; i < CREATES_PER_DAY; i++) assert.equal((await call('POST', '/builds', { body: good('demon'), ip: `2001:db8:1:2::${(i + 1).toString(16)}` })).status, 201);
+  assert.equal((await call('POST', '/builds', { body: good('demon'), ip: '2001:db8:1:2:abcd::1' })).status, 429);
+  assert.equal((await call('POST', '/builds', { body: good('demon'), ip: '2001:db8:1:3::1' })).status, 201);
+  // reports from one /64 count once
+  const { id } = (await call('POST', '/builds', { body: good('demon'), ip: '9.9.9.9' })).data;
+  for (let i = 1; i <= AUTO_HIDE + 2; i++) await call('POST', `/builds/${id}/report`, { body: { reason: 'spam' }, ip: `2001:db8:5:5::${i}` });
+  assert.equal((await call('GET', `/builds/${id}`)).status, 200);
+});
+
+test(`at most ${REPORTS_PER_DAY} reports a day from one address`, async () => {
+  const { call } = service();
+  const ids = [];
+  for (let i = 0; i <= REPORTS_PER_DAY; i++) ids.push((await call('POST', '/builds', { body: good('demon'), ip: `20.0.${i}.1` })).data.id);
+  for (let i = 0; i < REPORTS_PER_DAY; i++) assert.equal((await call('POST', `/builds/${ids[i]}/report`, { body: { reason: 'spam' }, ip: '30.0.0.1' })).status, 200);
+  assert.equal((await call('POST', `/builds/${ids[REPORTS_PER_DAY]}/report`, { body: { reason: 'spam' }, ip: '30.0.0.1' })).status, 429);
+  assert.equal((await call('POST', `/builds/${ids[REPORTS_PER_DAY]}/report`, { body: { reason: 'spam' }, ip: '30.0.0.2' })).status, 200);
+});
+
+test('reading has its own limit per address', async () => {
+  const { env, call } = service();
+  const seen = new Map();
+  env.READS = { limit: async ({ key }) => { seen.set(key, (seen.get(key) || 0) + 1); return { success: seen.get(key) <= 3 }; } };
+  for (let i = 0; i < 3; i++) assert.equal((await call('GET', '/builds?kind=demon', { ip: `2001:db8:7:7::${i + 1}` })).status, 200);
+  assert.equal((await call('GET', '/builds/AAAAAAAAAA', { ip: '2001:db8:7:7::99' })).status, 429);
+  assert.equal((await call('GET', '/builds?kind=demon', { ip: '40.0.0.1' })).status, 200);
+  assert.equal((await call('GET', '/robots.txt', { ip: '2001:db8:7:7::1' })).status, 200);
 });
 
 test('reports: one per person, a few hide the build, the developer shows it again', async () => {
@@ -192,6 +243,14 @@ test('a list is kept a little while, and dropped when this instance changes some
   await call('POST', '/builds', { body: 'not json' });
   await call('GET', '/builds?kind=demon');
   assert.equal(reads, 2);
+  // so does a report that doesn't hide the build, and the same report again
+  for (let i = 0; i < 3; i++) await call('POST', `/builds/${id}/report`, { body: { reason: 'spam' }, ip: '50.0.0.1' });
+  await call('GET', '/builds?kind=demon');
+  assert.equal(reads, 2);
+  // one that hides it takes it off the list at once
+  for (let i = 2; i <= AUTO_HIDE; i++) await call('POST', `/builds/${id}/report`, { body: { reason: 'spam' }, ip: `50.0.0.${i}` });
+  assert.equal((await call('GET', '/builds?kind=demon')).data.builds.length, 0);
+  assert.equal(reads, 3);
 });
 
 test('several builds at once, for one page of cards', async () => {

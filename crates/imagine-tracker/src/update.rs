@@ -553,7 +553,7 @@ pub fn restart_if_updated() {
 
 // ---------- HTTP (WinHTTP) ----------
 
-mod http {
+pub(crate) mod http {
     use anyhow::{anyhow, bail, Result};
     use std::ffi::c_void;
     use windows::core::{w, HSTRING, PCWSTR};
@@ -649,6 +649,44 @@ mod http {
                 progress(out.len() as u64, total);
             }
             Ok(out)
+        }
+    }
+
+    /// `method` `url` with `headers` ("Name: value" lines) and `body`, not following redirects: (status, answer), for any
+    /// status. Fails when it can't be reached or the answer is more than `max` bytes. No Origin is sent.
+    pub fn send(method: &str, url: &str, headers: &[String], body: Option<&[u8]>, max: usize) -> Result<(u32, Vec<u8>)> {
+        let (secure, host, port, path) = split(url)?;
+        let agent = HSTRING::from(format!("BABEL/{}", super::running_version()));
+        unsafe {
+            let s = open(WinHttpOpen(&agent, WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, PCWSTR::null(), PCWSTR::null(), 0), "WinHTTP")?;
+            WinHttpSetTimeouts(s.0, 15_000, 15_000, 20_000, 20_000)?;
+            let c = open(WinHttpConnect(s.0, &HSTRING::from(host), port, 0), "connect")?;
+            let flags = if secure { WINHTTP_FLAG_SECURE } else { WINHTTP_OPEN_REQUEST_FLAGS(0) };
+            let r = open(WinHttpOpenRequest(c.0, &HSTRING::from(method), &HSTRING::from(path), PCWSTR::null(), PCWSTR::null(), std::ptr::null(), flags), "request")?;
+            WinHttpSetOption(Some(r.0 as *const c_void), WINHTTP_OPTION_REDIRECT_POLICY, Some(&WINHTTP_OPTION_REDIRECT_POLICY_NEVER.to_ne_bytes()))?;
+            let lines: Vec<u16> = headers.iter().map(|h| format!("{h}\r\n")).collect::<String>().encode_utf16().collect();
+            let body = body.unwrap_or_default();
+            let len = u32::try_from(body.len()).map_err(|_| anyhow!("too much to send"))?;
+            let data = if body.is_empty() { None } else { Some(body.as_ptr() as *const c_void) };
+            WinHttpSendRequest(r.0, if lines.is_empty() { None } else { Some(&lines) }, data, len, len, 0)?;
+            WinHttpReceiveResponse(r.0, std::ptr::null_mut())?;
+            let mut status: u32 = 0;
+            let mut n = 4u32;
+            WinHttpQueryHeaders(r.0, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, PCWSTR::null(), Some(&mut status as *mut u32 as *mut c_void), &mut n, std::ptr::null_mut())?;
+            let mut out = Vec::new();
+            let mut buf = vec![0u8; 16 * 1024];
+            loop {
+                let mut got = 0u32;
+                WinHttpReadData(r.0, buf.as_mut_ptr() as *mut c_void, buf.len() as u32, &mut got)?;
+                if got == 0 {
+                    break;
+                }
+                out.extend_from_slice(&buf[..got as usize]);
+                if out.len() > max {
+                    bail!("the answer is bigger than expected");
+                }
+            }
+            Ok((status, out))
         }
     }
 
