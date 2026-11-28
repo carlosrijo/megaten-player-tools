@@ -1721,6 +1721,8 @@ button.tag.ft-refold:focus-visible { outline: 2px solid var(--focus); outline-of
 .ft-panel .card-head { align-items: center; }
 .ft-panel .fus-rcard.ft-cur { border-color: color-mix(in srgb, var(--focus) 55%, var(--border)); }
 .ft-way-src { font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.ft-panel .fus-rcard.ft-pick { cursor: pointer; }
+.ft-panel .fus-rcard.ft-pick:hover { border-color: var(--border-strong); background: linear-gradient(var(--hover), var(--hover)), var(--surface-2); }
 .ft-use, .ft-inuse, .ft-lost { margin-top: auto; align-self: flex-start; }
 .fus-rcard > .fus-plugin + .ft-use, .fus-rcard > .fus-plugin + .ft-inuse, .fus-rcard > .fus-plugin + .ft-lost { margin-top: 4px; }
 .ft-inuse { display: inline-flex; align-items: center; gap: 5px; height: 28px; font-size: 12px; font-weight: 600; color: var(--text-2); }
