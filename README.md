@@ -687,6 +687,13 @@ game or your saved data. It starts from your character as last read (take a snap
   published. The gallery gives each build a secret that only your BABEL keeps (`community.json` in the character's
   folder; not in support bundles): only with it can you update the build or take it down, from the same dialog.
   Format and checks: `crates\imagine\src\build\community.rs`; the service: `gallery-worker\README.md`.
+- **Player Builds / Demon Builds** (sidebar, "Community Builds"; in the app and on the website): every published build,
+  with chips (weapon, digitalize demon, level; race, demon, Mitama, level), a search, sortable columns and pages. A
+  build opens with its stats, its digitalize (and summoned) demon drawn like the Overview's partner card, its gear with
+  crystals, fusion bonuses and mods, its expertise and switch skills; a demon build as the partner card. **Copy link**
+  (`#build=<id>` opens it), **Copy build code** (for the Character Planner's Import build) and **Report**. Names come
+  from the page's own files; `app\ui\community-names.json` (expertise names, which crystal a fusion comes from) is made
+  by `node tools\community-names.mjs` from `reference\`.
 - **Builds are independent of the character shown.** A new build starts empty ("No base"): its numbers are only what
   its pieces and expertise ranks give, for the level and alignment set under its name.
 - **Import base** (top right of a build): pick one of your characters and the build starts again from that

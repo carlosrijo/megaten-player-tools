@@ -830,6 +830,20 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 
 /* Send feedback */
 .dlg.dlg-feedback { width: min(560px, calc(100vw - 32px)); }
+/* Community Builds: the lists and one build */
+.cb-chips { display: grid; gap: 8px; }
+.cb-chips .chips { align-items: center; }
+.cb-row { cursor: pointer; }
+.cb-row:hover td, .cb-row:focus-visible td { background: var(--hover); }
+.cb-demon { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cb-head { display: grid; gap: 4px; }
+.cb-title { margin: 0; font-size: 20px; }
+.cb-note { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 80ch; }
+.cb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+.cb-grid > * { min-width: 0; }
+.cb-lines { display: grid; gap: 6px; }
+.cb-line { display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 13px; }
+.cb-report { min-width: 220px; }
 /* Publish build (Community Builds) */
 .dlg.dlg-publish { width: min(560px, calc(100vw - 32px)); }
 .dlg.dlg-publish.pub-wide { width: min(880px, calc(100vw - 32px)); }   /* "A demon": the digitalize picker's list */

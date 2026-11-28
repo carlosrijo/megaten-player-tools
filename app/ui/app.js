@@ -11,6 +11,9 @@
   const WEB = !(window.chrome && window.chrome.webview) && (!!$('meta[name="babel-mode"][content="web"]') || Q.get('web') === '1');
   if (WEB) document.documentElement.classList.add('web');
   const RELEASES_URL = 'https://github.com/carlosrijo/megaten-player-tools/releases/latest';
+  // Community Builds: the gallery players publish to (gallery-worker), and the website that shows it (a build's link)
+  const GALLERY_URL = 'https://babel-gallery.babel-feedback.workers.dev';
+  const SITE_URL = 'https://babel-7vg.pages.dev/';
 
   // ---------- small helpers ----------
   const ICONS = {
@@ -493,7 +496,7 @@
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
-  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['dcm', 'DCM Locator', 'search'], ['rank', 'Demon Ranking', 'podium'],['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Demon Planner', 'horns'], ['sim', 'Character Planner', 'flask']];
+  const TOOLS = [['skills', 'Skill Database', 'bolt'], ['ddb', 'Demon Database', 'horns'], ['geardb', 'Item Database', 'shield'], ['quests', 'Quest Database', 'book'], ['keys', 'Key Items', 'key'], ['dcm', 'DCM Locator', 'search'], ['rank', 'Demon Ranking', 'podium'],['dungeons', 'Dungeon Database', 'gate'], ['guides', 'Dungeon Guides', 'map'], ['tracker', 'Quest Tracker', 'flag'], ['fusion', 'Fusion Planner', 'fuse'], ['dplan', 'Digitalize Planner', 'route'], ['rebirth', 'Demon Planner', 'horns'], ['sim', 'Character Planner', 'flask'], ['cbplayer', 'Player Builds', 'flask'], ['cbdemon', 'Demon Builds', 'horns']];
   const isTool = (page) => TOOLS.some((t) => t[0] === page);
   const BONUS_GROUPS = [
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
@@ -833,6 +836,7 @@
     { id: 'dbs', title: 'Databases', ids: ['skills', 'ddb', 'geardb', 'quests', 'keys', 'dungeons'],
       short: (l) => (l.endsWith(' Database') ? l.slice(0, -' Database'.length) + 's' : l) },
     { id: 'planners', title: 'Planners', ids: ['fusion', 'dplan', 'rebirth', 'sim'], short: (l) => l.replace(/ Planner$/, '') },
+    { id: 'community', title: 'Community Builds', ids: ['cbplayer', 'cbdemon'], short: (l) => l.replace(/ Builds$/, '') },
   ];
   S.navOpen = {};
   const groupOf = (id) => NAV_GROUPS.find((g) => g.ids.includes(id));
@@ -1644,11 +1648,13 @@
     return sect('Mitama', sub, null, h('div', { class: 'card pm-card' },
       h('div', { class: 'pm-cols' }, h('div', { class: 'pm-left' }, caps, fusedLine, rows), gives)));
   }
-  function partnerCard() {
-    const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
-    if (!d) return h('section', { class: 'card partner-card none', 'aria-label': 'Your partner' }, h('h3', { class: 'band-title', text: 'Your partner' }),
-      h('p', { class: 'note', text: 'No demon was summoned when the game was last read. Summon your partner and take a snapshot, or load your demons from the game in the demon list.' }));
-    const tag = h('span', { class: 'tag tag-demon', tabindex: 0, text: 'Summoned', 'data-tip': 'Your summoned demon' + (d.seenAt ? ` when the game was last read (${when(d.seenAt)})` : '') + '. A snapshot reads it again.' });
+  /** `given` { d, title, tag }: another demon to draw the same way (Community Builds: a published one), with its own title. */
+  function partnerCard(given) {
+    const d = given ? given.d : S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
+    const title = given ? given.title : 'Your partner';
+    if (!d) return h('section', { class: 'card partner-card none', 'aria-label': title }, h('h3', { class: 'band-title', text: title }),
+      h('p', { class: 'note', text: given ? 'None.' : 'No demon was summoned when the game was last read. Summon your partner and take a snapshot, or load your demons from the game in the demon list.' }));
+    const tag = given ? given.tag || null : h('span', { class: 'tag tag-demon', tabindex: 0, text: 'Summoned', 'data-tip': 'Your summoned demon' + (d.seenAt ? ` when the game was last read (${when(d.seenAt)})` : '') + '. A snapshot reads it again.' });
     // Who it is, in five rows as tall as the five rows of its stats: the title, the name, level and race, alignment,
     // Mitama (each on a row of its own: the user's layout). The picture, framed in its alignment, spans them.
     const A = d.offer && d.offer.alignment;
@@ -1656,7 +1662,7 @@
     if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
     mitamaMark(pic, d.mitama);
     const who = h('div', { class: 'partner-who' }, pic,
-      h('h3', { class: 'list-head', text: 'Your partner' }),
+      h('h3', { class: 'list-head', text: title }),
       h('span', { class: 'dgt-name-line' }, h('span', { class: 'dgt-name', text: d.name }), tag),
       h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race].filter(Boolean).join(' · ') }),
       h('span', { class: 'dgt-line', text: A ? alignName(A) : 'Alignment not read' }),
@@ -1687,12 +1693,13 @@
           const busy = [S.rbp.state, S.ddb.state, S.skl.state].some((x) => x === 'idle' || x === 'loading');
           if (busy && ++tries < 100) { setTimeout(again, 200); return; }
           partnerCard.waiting = false;
-          if (S.page === 'overview' && S.rbp.state === 'ready' && S.ddb.state === 'ready') { if (demonUser()) render(); else refreshSummoned(); }   // (the whole page: the affinity card reads the Demon Database too)
+          if (given) { if (S.rbp.state === 'ready' && S.ddb.state === 'ready') render(); }   // (Community Builds: the open build, drawn again)
+          else if (S.page === 'overview' && S.rbp.state === 'ready' && S.ddb.state === 'ready') { if (demonUser()) render(); else refreshSummoned(); }   // (the whole page: the affinity card reads the Demon Database too)
         };
         setTimeout(again, 200);
       }
     }
-    return h('section', { class: 'card partner-card ' + alignClass(A), 'aria-label': 'Your partner' },
+    return h('section', { class: 'card partner-card ' + alignClass(A), 'aria-label': title },
       h('div', { class: 'partner-top' }, who, bars),
       build ? h('div', { class: 'partner-build' }, build) : null);
   }
@@ -10471,7 +10478,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     return box;
   }
 
-  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, guides: pageGuides, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
+  const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, guides: pageGuides, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills, cbplayer: pageCb, cbdemon: pageCb };
   // On the website: the character pages, and the tools that need the reader or the game, point to the desktop app.
   const DESKTOP_TOOLS = new Set(['tracker', 'sim']);
   function needsBabel() {
@@ -11135,6 +11142,257 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   $('#open-settings').addEventListener('click', () => { S.alignNote = ''; fillSettings(); fillAbout(); fillUpdates(); dlg.showModal(); });
   dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
 
+  // ---------- Community Builds: the lists and one build (the website, and the app too) ----------
+  // Player Builds and Demon Builds read the gallery (gallery-worker\): a list of every build's summary, then one build
+  // when it is opened. A build holds only ids and numbers (imagine::build::community); the names and pictures come from
+  // the page's own public files: the Item Database (gear-db.json), the Demon Database and Demon Planner tables, the
+  // Skill Database and community-names.json (expertises; the crystal each fusion comes from). Text a player typed (name, title, note) is only ever set as text.
+  const CB_KIND = { cbplayer: 'player', cbdemon: 'demon' };
+  const cbList = () => ({ state: 'idle', list: null, error: '', f: {}, q: '', sort: 'updated', dir: -1, pg: 0, open: null });
+  S.cb = { player: cbList(), demon: cbList(), got: new Map(), exp: null, crystals: null, expState: 'idle', items: null, itemsOf: null, skills: null, skillsOf: null };
+  function cbLoad(kind, fresh) {
+    const L = S.cb[kind];
+    if (L.state === 'loading' || (L.state === 'ready' && !fresh)) return;
+    L.state = 'loading'; L.error = '';
+    if (fresh) render();
+    galleryCall('GET', `/builds?kind=${kind}`).then((r) => {
+      if (r.data && r.data.ok) { L.list = r.data.builds || []; L.state = 'ready'; } else { L.state = 'failed'; L.error = (r.data && r.data.error) || ''; }
+    }).catch(() => { L.state = 'failed'; L.error = ''; }).then(() => { if (CB_KIND[S.page] === kind) render(); });
+  }
+  function cbFetch(id) {
+    const had = S.cb.got.get(id);
+    if (had && !had.error) return Promise.resolve();
+    S.cb.got.set(id, { loading: true });
+    return galleryCall('GET', '/builds/' + id).then((r) => {
+      S.cb.got.set(id, r.data && r.data.ok ? { build: r.data.build, created: r.data.created, updated: r.data.updated }
+        : { error: (r.data && r.data.error) || 'That build is not in the gallery (any more).' });
+    }).catch(() => { S.cb.got.set(id, { error: 'The gallery couldn’t be reached. Check your internet connection, then try again.' }); })
+      .then(() => { if (CB_KIND[S.page]) render(); });
+  }
+  /** A build's link (#build=<id>): opens that build, on the website or in the app. */
+  async function cbFromLink() {
+    const m = /(?:^#|&)build=([A-Za-z0-9]{10})/.exec(location.hash);
+    if (!m) return;
+    await cbFetch(m[1]);
+    const got = S.cb.got.get(m[1]), kind = got && got.build && got.build.kind === 'demon' ? 'demon' : 'player';
+    S.cb[kind].open = m[1];
+    remember(); S.page = kind === 'demon' ? 'cbdemon' : 'cbplayer'; render();
+  }
+  const cbSetHash = (id) => { try { history.replaceState(null, '', id ? '#build=' + id : location.pathname + location.search); } catch (e) { /* only the address bar */ } };
+
+  // the names: loaded once, and the page drawn again when they are in
+  function cbLoadNames() {
+    loadGearDb(); loadRebirth(); loadSkillData();
+    if (S.cb.expState === 'idle') {
+      S.cb.expState = 'loading';
+      fetch('community-names.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+        S.cb.exp = new Map(((d && d.expertises) || []).map(([id, name, max, chain]) => [id, { name, max, chain }]));
+        S.cb.crystals = new Map(Object.entries((d && d.crystals) || {}).map(([e, i]) => [Number(e), i]));
+        S.cb.expState = d ? 'ready' : 'failed';
+      });
+    }
+    const busy = () => [S.gdb.state, S.ddb.state, S.rbp.state, S.skl.state, S.cb.expState].some((x) => x === 'idle' || x === 'loading');
+    if (busy() && !cbLoadNames.waiting) {
+      cbLoadNames.waiting = true;
+      let tries = 0;
+      const again = () => {
+        if (busy() && ++tries < 150) { setTimeout(again, 200); return; }
+        cbLoadNames.waiting = false;
+        if (CB_KIND[S.page]) render();
+      };
+      setTimeout(again, 200);
+    }
+  }
+  function cbItem(id) {
+    if (!S.gdb.data || !id) return null;
+    if (S.cb.itemsOf !== S.gdb.data) { S.cb.items = new Map(S.gdb.data.items.filter((it) => it.id && !it.keyItem).map((it) => [it.id, it])); S.cb.itemsOf = S.gdb.data; }
+    return S.cb.items.get(id) || null;
+  }
+  function cbSkill(id) {
+    if (!S.skl.data) return null;
+    if (S.cb.skillsOf !== S.skl.data) { S.cb.skills = new Map(S.skl.data.skills.map((x) => [x.id, x])); S.cb.skillsOf = S.skl.data; }
+    return S.cb.skills.get(id) || null;
+  }
+  const cbDemonX = (type) => (type && S.ddb.data ? (rbpResolve({ type }) || {}).x || null : null);
+  const cbDemonName = (type) => { const x = cbDemonX(type); return x ? x.name : S.ddb.state === 'ready' ? 'A demon the game data has no name for' : '…'; };
+  const cbItemName = (id) => { const it = cbItem(id); return it ? it.name : S.gdb.state === 'ready' ? 'An item the game data has no name for' : '…'; };
+  // a fusion's enchant id -> its crystal's name (the Item Database's)
+  const cbCrystal = (e) => (S.cb.crystals && S.cb.crystals.get(e) ? cbItemName(S.cb.crystals.get(e)) : S.cb.expState === 'loading' ? '…' : 'A crystal the game data has no name for');
+  const cbExpName = (id) => (S.cb.exp && S.cb.exp.get(id) ? S.cb.exp.get(id).name : S.cb.expState === 'loading' ? '…' : 'An expertise the game data has no name for');
+  const cbRank = (pts) => `Class ${Math.floor(pts / 100000)} · Rank ${Math.floor((pts % 100000) / 10000)}`;
+  const cbBand = (lv) => (lv >= 99 ? '99' : lv >= 90 ? '90–98' : lv >= 80 ? '80–89' : lv >= 60 ? '60–79' : 'Below 60');
+  const cbMitama = (t) => (t ? RBP_KINDS[t - 1] || 'Mitama' : '');
+  /** A published demon as the partner card draws one (a COMP demon's fields, named from the Demon Database). */
+  function cbDemon(x) {
+    if (!x) return null;
+    const X = cbDemonX(x.type);
+    return { ...x, key: 'cb', name: X ? X.name : cbDemonName(x.type), race: X ? X.race : '', icon: X && X.icon ? X.icon : null, mitama: cbMitama(x.mitamaType),
+      loaded: true, offer: X && X.align ? { alignment: String(X.align).toUpperCase() } : null };
+  }
+
+  const CB_GROUPS = {
+    player: [['weapon', 'Weapon'], ['digi', 'Digitalize demon'], ['band', 'Level']],
+    demon: [['race', 'Race'], ['demon', 'Demon'], ['mitama', 'Mitama'], ['band', 'Level']],
+  };
+  const CB_COLS = {
+    player: [['name', 'Build'], ['level', 'Level'], ['weapon', 'Weapon'], ['digi', 'Digitalize demon'], ['exp', 'Main expertise'], ['updated', 'Updated']],
+    demon: [['demon', 'Demon'], ['level', 'Level'], ['race', 'Race'], ['mitama', 'Mitama'], ['name', 'Published by'], ['updated', 'Updated']],
+  };
+  function cbRows(kind, list) {
+    return list.map((s) => {
+      const f = s.facets || {}, base = { s, id: s.id, name: s.name, title: s.title || '', level: s.level, updated: s.updated || '', band: cbBand(s.level) };
+      if (kind === 'player') {
+        const w = cbItem(f.weapon);
+        return { ...base, weapon: w ? w.class || w.name : f.weapon ? cbItemName(f.weapon) : 'No weapon', weaponName: w ? w.name : '',
+          digi: f.digitalize ? cbDemonName(f.digitalize) : 'No demon', exp: (f.expertise || []).map(cbExpName).join(', ') };
+      }
+      const X = cbDemonX(f.type);
+      return { ...base, demon: X ? X.name : cbDemonName(f.type), race: X ? X.race : '', mitama: cbMitama(f.mitama) || 'No Mitama', icon: X ? X.icon : null };
+    });
+  }
+
+  function pageCb() {
+    const kind = CB_KIND[S.page], L = S.cb[kind], page = h('div', { class: 'page page-dcm' });
+    cbLoadNames();
+    if (L.open) return cbBuildPage(kind, L, page);
+    cbLoad(kind);
+    page.append(pageHead(kind === 'player'
+      ? 'Builds players published from BABEL: what they wear, their expertise and the demon they digitalize with. Click one to see it.'
+      : 'Demons players published from BABEL: their stats, skills, rebirth ranks, Mitama, Demon Force and equipment. Click one to see it.',
+    h('button', { type: 'button', class: 'btn btn-sm', disabled: L.state === 'loading' ? true : null, onclick: () => cbLoad(kind, true) }, 'Refresh')));
+    if (L.state !== 'ready') {
+      page.append(h('p', { class: 'note', text: L.state === 'failed' ? `The gallery couldn’t be reached${L.error ? ` (${L.error})` : ''}. Check your internet connection, then press Refresh.` : 'Loading the builds…' }));
+      return page;
+    }
+    const rows = cbRows(kind, L.list), groups = CB_GROUPS[kind];
+    if (!rows.length) {
+      page.append(h('div', { class: 'notice' }, icon('info'), h('div', null, h('b', { text: 'No builds yet. ' }),
+        WEB ? 'Players publish them from BABEL, the desktop app: Overview, then Publish build.' : 'Publish yours from Overview: Publish build.')));
+      return page;
+    }
+    const words = () => L.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const hay = (r) => [r.name, r.title, r.weapon, r.weaponName, r.digi, r.exp, r.demon, r.race, r.mitama].filter(Boolean).join(' ').toLowerCase();
+    const pass = (r, skip) => groups.every(([g]) => g === skip || !L.f[g] || r[g] === L.f[g]) && words().every((w) => hay(r).includes(w));
+    const chipBox = h('div', { class: 'cb-chips' }), body = h('tbody'), head = h('tr'), pager = h('nav', { class: 'pager', 'aria-label': 'Pages' });
+    const chip = (on, label, n, onclick) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(on), onclick }, label, h('span', { class: 'count', text: n }));
+    const drawChips = () => chipBox.replaceChildren(...groups.map(([g, label]) => {
+      const vals = [...new Set(rows.map((r) => r[g]).filter(Boolean))].sort((a, b) => (g === 'band' ? b.localeCompare(a, undefined, { numeric: true }) : a.localeCompare(b)));
+      if (vals.length < 2 && !L.f[g]) return null;
+      return h('div', { class: 'chips', role: 'group', 'aria-label': `Filter by ${label.toLowerCase()}` }, h('span', { class: 'gdb-flabel', text: label }),
+        chip(!L.f[g], 'All', rows.filter((r) => pass(r, g)).length, () => { delete L.f[g]; L.pg = 0; drawChips(); draw(); }),
+        vals.map((v) => chip(L.f[g] === v, g === 'band' ? `Lv ${v}` : v, rows.filter((r) => pass(r, g) && r[g] === v).length, () => { L.f[g] = v; L.pg = 0; drawChips(); draw(); })));
+    }).filter(Boolean));
+    const cell = (r, k) => {
+      if (k === 'name' && kind === 'player') return h('td', null, h('b', { text: r.title || `${r.name}’s build` }), h('div', { class: 'note', text: `by ${r.name}` }));
+      if (k === 'demon') return h('td', null, h('div', { class: 'cb-demon' }, ddbImg(r.icon, 28), h('div', null, h('b', { text: r.demon }), r.title ? h('div', { class: 'note', text: r.title }) : null)));
+      if (k === 'level') return h('td', { class: 'num', text: String(r.level) });
+      if (k === 'updated') return h('td', { class: 'note', text: r.updated ? ago(r.updated) || when(r.updated) : '' });
+      if (k === 'weapon') return h('td', { 'data-tip': r.weaponName || null, text: r.weapon });
+      return h('td', { text: r[k] || '' });
+    };
+    const sortVal = (r) => (L.sort === 'level' ? r.level : L.sort === 'updated' ? r.updated : String(r[L.sort === 'name' && kind === 'player' ? 'title' : L.sort] || r.name || '').toLowerCase());
+    const draw = () => {
+      const shown = rows.filter((r) => pass(r)).sort((a, b) => { const x = sortVal(a), y = sortVal(b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * L.dir; });
+      const pg = pageOf(L, shown);
+      body.replaceChildren(...(pg.rows.length ? pg.rows.map((r) => h('tr', { class: 'cb-row', tabindex: 0, onclick: () => cbOpen(kind, r.id), onkeydown: (ev) => { if (ev.key === 'Enter') cbOpen(kind, r.id); } },
+        CB_COLS[kind].map(([k]) => cell(r, k))))
+        : [h('tr', null, h('td', { colspan: CB_COLS[kind].length, class: 'empty-row', text: 'No build matches.' }))]));
+      drawPager(pager, L, shown.length, pg, draw, () => body.closest('table'), 'builds');
+    };
+    const drawHead = () => head.replaceChildren(...CB_COLS[kind].map(([k, label]) => { const on = L.sort === k;
+      return h('th', { scope: 'col', class: k === 'level' ? 'num' : null, 'aria-sort': on ? (L.dir === 1 ? 'ascending' : 'descending') : null },
+        h('button', { type: 'button', class: 'th-btn', 'data-tip': `Sort by ${label.toLowerCase()}${on ? ' the other way' : ''}.`,
+          onclick: () => { if (on) L.dir = -L.dir; else { L.sort = k; L.dir = k === 'level' || k === 'updated' ? -1 : 1; } L.pg = 0; drawHead(); draw(); } },
+          h('span', { text: label }), on ? h('span', { class: 'sort-mark', text: L.dir === 1 ? '▲' : '▼' }) : null)); }));
+    page.append(h('div', { class: 'toolbar' }, searchBox(L.q, kind === 'player' ? 'Search a name, weapon, demon or expertise' : 'Search a demon, race or name', (v) => { L.q = v; L.pg = 0; drawChips(); draw(); })),
+      chipBox, h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cb-tbl' }, h('thead', null, head), body)), pager);
+    drawChips(); drawHead(); draw();
+    return page;
+  }
+  function cbOpen(kind, id) {
+    S.cb[kind].open = id; cbSetHash(id); cbFetch(id); render(); $('#main').scrollTop = 0;
+  }
+
+  /** One published build: who published it and their words, then the build. */
+  function cbBuildPage(kind, L, page) {
+    const id = L.open, got = S.cb.got.get(id);
+    const back = h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { L.open = null; cbSetHash(null); render(); } }, icon('back'), kind === 'player' ? 'All player builds' : 'All demon builds');
+    if (!got) cbFetch(id);
+    if (!got || got.loading || got.error) {
+      page.append(h('div', { class: 'over-top' }, back), h('p', { class: 'note', text: got && got.error ? got.error : 'Loading the build…' }));
+      return page;
+    }
+    const b = got.build, a = b.about || { name: '', title: '', note: '' };
+    const link = SITE_URL + '#build=' + id;
+    const copyBtn = (label, text, done, tip) => h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': tip,
+      onclick: async () => { if (await copyText(text)) toast('ok', done, ''); else toast('info', 'Copy it by hand', text, 15000); } }, icon('copy'), label);
+    // reporting: what is wrong with it, from a small menu under the button
+    const menuId = 'cb-report-' + id;
+    const reportBtn = h('button', { type: 'button', class: 'btn btn-sm btn-ghost', popovertarget: menuId, 'data-tip': 'Tell the gallery something is wrong with this build' }, icon('alert'), 'Report');
+    const menu = h('div', { class: 'menu cb-report', id: menuId, popover: 'auto', 'aria-label': 'Report this build',
+      ontoggle: (ev) => { if (ev.newState !== 'open') return; const r = reportBtn.getBoundingClientRect(); menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px'; menu.style.top = (r.bottom + 6) + 'px'; } },
+      h('p', { class: 'field-help menu-note', text: 'What is wrong with it?' }),
+      [['spam', 'Spam, or a joke'], ['rude', 'Rude or hurtful'], ['fake', 'Made up, not a real build'], ['other', 'Something else']].map(([reason, label]) =>
+        h('button', { type: 'button', class: 'char', onclick: async () => {
+          menu.hidePopover();
+          try {
+            const r = await galleryCall('POST', `/builds/${id}/report`, { reason });
+            if (!r.data.ok) throw new Error(r.data.error || `The gallery answered ${r.status}.`);
+            toast('ok', 'Thanks, it’s reported', 'BABEL’s developer will look at it.');
+          } catch (e) { toast('err', 'Couldn’t report it', galleryOffline(e) ? 'The gallery couldn’t be reached.' : String((e && e.message) || e)); }
+        } }, h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: label })))));
+    page.append(h('div', { class: 'over-top' }, back, h('div', { class: 'over-top-actions' },
+      copyBtn('Copy link', link, 'Link copied', 'A link to this build, to share'),
+      kind === 'player' ? copyBtn('Copy build code', b.code, 'Build code copied', 'Paste it in BABEL’s Character Planner (Import build) to try this gear and expertise on your own character') : null,
+      reportBtn, menu)));
+    const demonName = kind === 'demon' ? cbDemonName(b.demon.type) : '';
+    page.append(h('div', { class: 'cb-head' },
+      h('h2', { class: 'cb-title', text: a.title || (kind === 'player' ? `${a.name}’s build` : `${a.name}’s ${demonName}`) }),
+      h('p', { class: 'page-who', text: [`by ${a.name}`, kind === 'player' ? `Level ${b.level} · ${alignName(b.alignment)}` : `${demonName} Lv ${b.demon.level}`,
+        got.updated ? `updated ${ago(got.updated) || when(got.updated)}` : null].filter(Boolean).join(' · ') }),
+      a.note ? h('p', { class: 'cb-note', text: a.note }) : null,
+      h('p', { class: 'field-help', text: `Read from the game by BABEL${b.takenAt || b.seenAt ? ' on ' + when(b.takenAt || b.seenAt) : ''}. Anyone can publish, so this is what they sent, not something BABEL can vouch for.` })));
+    if (kind === 'demon') {
+      page.append(partnerCard({ d: cbDemon(b.demon), title: 'Demon' }));
+      return page;
+    }
+    // a player build: stats, the demons that go with it, gear, expertise, switch skills
+    const rows = [['HP', b.maxHp, 0, 'hpmp'], ['MP', b.maxMp, 0, 'hpmp'], ...STATS.map(([k, label], i) => [label, n0((b.stats[k] || [])[0]), n0((b.stats[k] || [])[1]), i < 6 ? 'base' : i < 10 ? 'atk' : 'def'])];
+    const gmax = {};
+    rows.forEach(([, base, bonus, g]) => { gmax[g] = Math.max(gmax[g] || 1, base + bonus); });
+    const bar = (cls, v, g) => (v > 0 ? h('i', { class: cls, style: `width:${(v / gmax[g]) * 100}%` }) : null);
+    const stats = h('section', { class: 'card cb-card', 'aria-label': 'Stats' }, h('div', { class: 'band-head' }, h('h3', { class: 'band-title', text: 'Stats' }), legend(['sw-base', 'Base'], ['sw-bonus', 'Bonus'])),
+      h('div', { class: 'dg-bars who-stats' }, rows.map(([label, base, bonus, g]) => h('div', { class: 'srow dg-row', tabindex: 0,
+        'data-tip': g === 'hpmp' ? `Max ${label} ${fmt(base)}` : `${label} ${fmt(base + bonus)} = base ${fmt(base)} + bonus ${fmt(bonus)}` },
+        h('span', { class: 'srow-label', text: label === 'Support' ? 'Supp' : label }),
+        h('div', { class: 'strack' }, bar('base', base, g), bar('bonus', bonus, g)),
+        h('span', { class: 'srow-value', text: fmt(base + bonus) })))),
+      b.statsLive ? null : h('p', { class: 'note', text: 'These stats were kept from an earlier reading.' }));
+    page.append(stats, partnerCard({ d: cbDemon(b.digitalize), title: 'Digitalize demon' }));
+    if (b.partner) page.append(partnerCard({ d: cbDemon(b.partner), title: 'Summoned demon' }));
+    const fuse = (p) => (p.fuse.some(Boolean) ? p.fuse.map((v) => `+${v}`).join(' / ') : '');
+    page.append(sect('Gear', `${b.gear.length} pieces${b.gearPartial ? ' (some without their mods and fusions: the game hadn’t shown them)' : ''}`, null,
+      h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cb-gear' },
+        h('thead', null, h('tr', null, ['Slot', 'Piece', 'Tarot', 'Soul', 'Fusion bonuses', 'Mods'].map((t) => h('th', { scope: 'col', text: t })))),
+        h('tbody', null, b.gear.map((p) => {
+          const it = cbItem(p.id);
+          const from = [p.basic !== p.id ? `features of ${cbItemName(p.basic)}` : null, p.special !== p.id ? `characteristics of ${cbItemName(p.special)}` : null].filter(Boolean);
+          return h('tr', null, h('td', { class: 'note', text: it ? it.slot || '' : '' }),
+            h('td', null, h('div', { class: 'cb-demon' }, ddbImg(it && it.icon, 28, 'dcm-icon gdb-icon'), h('div', null, h('b', { text: cbItemName(p.id) }), from.length ? h('div', { class: 'note', text: 'With the ' + from.join(' and the ') }) : null))),
+            h('td', { text: p.tarot ? cbCrystal(p.tarot) : '' }), h('td', { text: p.soul ? cbCrystal(p.soul) : '' }),
+            h('td', { class: 'note', text: fuse(p) }), h('td', { class: 'num', text: String(p.mods.filter(Boolean).length || '') }));
+        }))))));
+    const exps = [...b.expertise].sort((x, y) => y[1] - x[1]);
+    const toggles = b.toggles.map((sid) => cbSkill(sid) || { id: sid, name: S.skl.state === 'ready' ? 'A skill the game data has no name for' : '…' });
+    page.append(h('div', { class: 'cb-grid' },
+      sect('Expertise', `${exps.length} raised`, null, h('section', { class: 'card cb-card' }, h('div', { class: 'cb-lines' }, exps.map(([eid, pts]) => h('div', { class: 'cb-line' },
+        h('span', { text: cbExpName(eid) }), h('span', { class: 'note', text: cbRank(pts) })))))),
+      sect('Switch skills', `${toggles.length} on`, null, h('section', { class: 'card cb-card' }, toggles.length ? h('div', { class: 'cb-lines' }, toggles.map((x) => h('div', { class: 'cb-line' },
+        h('span', { class: 'cb-demon' }, ddbImg(x.icon, 22, 'dcm-icon'), h('span', { text: x.name })))))
+        : h('p', { class: 'note', text: 'None on.' })))));
+    return page;
+  }
+
   // ---------- Community Builds: Publish build ----------
   // The Overview's "Publish build" sends the character's build, or one demon's, to the gallery (gallery-worker\, a
   // Cloudflare Worker with a database), and the website's Community Builds pages show it. The reader makes the build
@@ -11142,26 +11400,54 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   // player typed and posts it. The gallery answers with an id and a secret; the reader keeps both in the character's
   // folder (communitySavePublished), and only with that secret can the build be changed or taken down. The browser
   // preview never publishes: a stand-in gallery in the page answers instead (?gallery=live sends to the real one).
-  const GALLERY_URL = 'https://babel-gallery.babel-feedback.workers.dev';
   const pubDlg = $('#publish');
   const pub = { kind: 'player', demon: '', demons: null, saved: null, build: null, busy: false, seq: 0, entry: null, entryKey: '', digi: null };   // digi: a character build's digitalize demon (null: the character's own, '': none)
-  const fakeGallery = new Map();   // the browser preview's stand-in: id -> { secret, build }
+  // The browser preview's stand-in gallery (never the website, never the app): id -> { secret, build, created, updated },
+  // with a few sample builds (the gallery's test builds, gallery-worker\test\builds.json) so the lists have something.
+  const fakeGallery = new Map();
+  let fakeSeeded = null;
+  const fakeId = () => (Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-5)).padEnd(10, '0').slice(0, 10).replace(/[^a-z0-9]/g, '0');
+  function fakeSeed() {
+    return (fakeSeeded = fakeSeeded || fetch('../../gallery-worker/test/builds.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((c) => {
+      if (!c) return;
+      const at = (days) => new Date(Date.now() - days * 864e5).toISOString().slice(0, 16) + 'Z';
+      const add = (build, days) => fakeGallery.set(fakeId(), { secret: 'sample', build, created: at(days + 3), updated: at(days) });
+      add(c.good.player, 1);
+      add({ ...c.good.player, level: 88, alignment: 'LAW', digitalize: null, about: { name: 'Nobitta', title: 'Budget Law build', note: '' } }, 5);
+      add({ ...c.good.player, alignment: 'CHAOS', digitalize: { ...c.good.demon.demon, type: 22, level: 92 }, about: { name: 'Accsquad', title: '', note: 'Still farming the last pieces.' } }, 12);
+      add(c.good.demon, 2);
+      add({ ...c.good.demon, demon: { ...c.good.demon.demon, type: 22, level: 92, mitamaType: 0 }, about: { name: 'Nobitta', title: 'Tanky Seraph', note: '' } }, 8);
+    }));
+  }
+  /** What a list shows of a build (the gallery works it out the same way: gallery-worker\src\build.js facets). */
+  function cbFacets(b) {
+    if (b.kind === 'demon') return { type: b.demon.type, mitama: b.demon.mitamaType };
+    return { weapon: (b.gear.find((p) => p.slot === 0) || {}).id || null, partner: b.partner ? b.partner.type : null, digitalize: b.digitalize ? b.digitalize.type : null,
+      expertise: [...b.expertise].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, 3).map((e) => e[0]) };
+  }
   /** One call to the gallery: { status, data }. Throws only when it can't be reached. */
   async function galleryCall(method, path, body, secret) {
-    if (!host.native && Q.get('gallery') !== 'live') {
-      await new Promise((r) => setTimeout(r, 400));
+    if (!host.native && !WEB && Q.get('gallery') !== 'live') {
+      await fakeSeed();
+      await new Promise((r) => setTimeout(r, 300));
+      const list = /^\/builds\?kind=(player|demon)/.exec(path);
+      if (list) {
+        const builds = [...fakeGallery].filter(([, e]) => e.build.kind === list[1]).map(([id, e]) => ({ id, kind: e.build.kind, name: e.build.about.name, title: e.build.about.title,
+          level: e.build.kind === 'demon' ? e.build.demon.level : e.build.level, created: e.created, updated: e.updated, facets: cbFacets(e.build) }));
+        return { status: 200, data: { ok: true, builds: builds.sort((a, b) => b.updated.localeCompare(a.updated)) } };
+      }
+      if (/\/report$/.test(path)) return { status: 200, data: { ok: true } };
       const m = /^\/builds\/([A-Za-z0-9]{10})$/.exec(path);
       if (method === 'POST') {
-        const id = Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-5).padStart(5, '0');
-        const s = 'preview-secret-' + id + '-0123456789';
-        fakeGallery.set(id, { secret: s, build: body });
+        const id = fakeId(), s = 'preview-secret-' + id + '-0123456789', now = new Date().toISOString().slice(0, 16) + 'Z';
+        fakeGallery.set(id, { secret: s, build: body, created: now, updated: now });
         return { status: 201, data: { ok: true, id, secret: s } };
       }
       const e = m && fakeGallery.get(m[1]);
       if (!e) return { status: 404, data: { ok: false, error: 'That build is not in the gallery (any more).' } };
-      if (method === 'GET') return { status: 200, data: { ok: true, id: m[1], build: e.build } };
+      if (method === 'GET') return { status: 200, data: { ok: true, id: m[1], kind: e.build.kind, created: e.created, updated: e.updated, build: e.build } };
       if (secret !== e.secret) return { status: 403, data: { ok: false, error: 'Only the BABEL that published this build can change it.' } };
-      if (method === 'PUT') { e.build = body; return { status: 200, data: { ok: true, id: m[1] } }; }
+      if (method === 'PUT') { e.build = body; e.updated = new Date().toISOString().slice(0, 16) + 'Z'; return { status: 200, data: { ok: true, id: m[1] } }; }
       fakeGallery.delete(m[1]);
       return { status: 200, data: { ok: true } };
     }
@@ -11355,6 +11641,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
         if (!r.data.ok) throw new Error(r.data.error || `The gallery answered ${r.status}.`);
         await pubRemember(key, r.data.id, r.data.secret);
       } else await pubRemember(key, entry.id, entry.secret);
+      S.cb[pub.kind].state = 'idle';   // the Community Builds list reads it again
+      S.cb.got.clear();
       toast('ok', entry ? 'Build updated' : 'Build published', host.native ? 'It’s in Community Builds on the BABEL website.' : 'Browser preview: nothing was sent; a stand-in gallery answered.');
       pubDlg.close();
     } catch (e) {
@@ -11896,6 +12184,8 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       $('#main').replaceChildren(h('div', { class: 'page' }, h('div', { class: 'notice notice-warn' }, icon('alert'), h('div', null, h('b', { text: 'Couldn\u2019t load the saved data. ' }), String(e && e.message || e)))));
     }
     window.__babel = { S, takeSnapshot, assistant: A, host };   // for checking the page from DevTools (and for scripted runs: tours)
+    cbFromLink();   // a Community Builds link (#build=<id>): that build
+    window.addEventListener('hashchange', cbFromLink);
     // The saved data is on screen; now see who is in game. One character: show it. Several: ask.
     if (host.native || Q.has('clients')) { await scanClients(); await settle(true); }
     if (assistantWanted()) {
