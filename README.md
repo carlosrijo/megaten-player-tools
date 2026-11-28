@@ -406,8 +406,11 @@ NewMoon may have changed. Not checked in game yet. The page data is `app\ui\digi
 Under **Tools** in the left bar. Plan a demon's rebirths and its Mitama before you spend anything:
 
 - **The demon**: any demon from the Demon Database that the game can Mitama-fuse and that you can get some way (a
-  contract, a fusion, a DCM, an exchange or a gift; fresh: no ranks), or **My COMP**: one of your own demons as BABEL
-  last read it, with its real rebirth ranks, Mitama and slots. Set the level the stats are shown at (93 by default) and
+  contract, a fusion, a DCM, an exchange or a gift; fresh: no ranks), or one of your own demons from **Import demon**
+  as BABEL last read it, with its real rebirth ranks, Mitama and slots, skills, Demon Force and equipment. Import
+  demon opens the same demon dialog as the Character Planner's demon (search, chips with counts, each demon's stats,
+  effects, skills, Demon Force, equipment and rebirth ranks), with "Load demons from the game" at the bottom; its
+  "From Demon Planner" part opens one of your saved demon builds. Set the level the stats are shown at (93 by default) and
   your XP bonus from gear and incense (it lowers the apples). The runes wear the game's own glyphs and the Mitamas
   their own pictures, cut from your game folder like the other pages' pictures.
 - **Rebirths before the Mitama fusion** (step 3): one row per rune under a header that names every column, like the
@@ -637,9 +640,20 @@ game or your saved data. It starts from your character as last read (take a snap
   character's gear and expertise as last read; its numbers are then that character's, and every change is shown
   against them. Nothing of the character is changed. "Undo import" brings back what the build had; "No base" in the
   same list goes back to an empty build.
-- **Normal or digitalized**: under a build's name, a demon band like the Overview's. Its picker lists the demons of
-  the build's base (the imported character's COMP demons as last seen, whoever the app is showing) and "No demon".
+- **Normal or digitalized**: under a build's name, a demon band like the Overview's. Clicking the demon's name opens
+  a picker like the gear picker: a search (a demon, race, skill or effect; searching a stat such as SPD or an effect
+  such as movement speed puts the demons that give the most of it first), chips with counts (All, My demons, From
+  Demon Planner), "No demon", and for each demon its stats share, the stats and effects it gives, and in one line its
+  skills, its Demon Force stack (8 slots; striped ones its form doesn't open) and its equipment (4 Epitaph Parts); at
+  the end of the row, a small radar of its rebirth ranks (a demon build: before and after its Mitama fusion). The
+  strip under the list shows what picking the highlighted demon would change; arrows and Enter work from the search.
   The demon is part of the build: picking one changes nothing for the character, and it is saved with the build.
+  The picker has two parts: **My demons** (the build's base's COMP demons as last seen, whoever the app is showing)
+  and **My demons** (those COMP demons) and **From Demon Planner** (your saved Demon Planner
+  builds, each as the demon the plan ends as: its form, level, rebirth ranks, Mitama and set boosts, skill bar,
+  equipment and Demon Force). A Mitama the plan only adds counts for the sets, not for its random slot bonus (the game
+  rolls that). A Character Planner build follows the demon build: change it in the Demon Planner and the numbers
+  change here too; delete it and the build is no longer digitalized ("A deleted demon build").
 - A stat that moved is tinted green (better) or red (worse).
 
 The numbers come from the same calculation as the rest of the app. Stats start from the game's own numbers and move by

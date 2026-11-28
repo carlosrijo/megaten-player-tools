@@ -185,7 +185,7 @@ impl Digitalize {
         let shown: Vec<i32> = (0..48).filter(|&i| d.mitama_sets_shown.get(i as usize).copied().unwrap_or(false)).collect();
         let mut mine: Vec<i32> = sets.iter().map(|x| x.id).filter(|&id| id < 48).collect();
         mine.sort();
-        if d.mitama_type > 0 && shown != mine {
+        if d.mitama_type > 0 && d.planned.is_none() && shown != mine {   // (a planned demon has no client to agree with)
             let j = |v: &[i32]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",");
             res.notes.push(format!("Mitama sets: the client shows [{}], the server rule gives [{}].", j(&shown), j(&mine)));
         }
@@ -516,8 +516,10 @@ fn mitama_stats(s: &mut [i32], d: &DemonRecord, t: &DemonTables, mode: i32, incl
             i += 2;
         }
     }
-    for &b in &d.mitama_reunion {
-        if b != 0 {
+    for (i, &b) in d.mitama_reunion.iter().enumerate() {
+        // a Mitama only planned (Demon Planner): its random bonus is not known yet, so it adds nothing
+        let planned = d.planned.as_ref().is_some_and(|p| p.get(i).copied().unwrap_or(false));
+        if b != 0 && !planned {
             if let Some(&rb) = t.reunion_bonus.get(&(b as i32)) {
                 if rb.1 != 0 {
                     add.push(rb);

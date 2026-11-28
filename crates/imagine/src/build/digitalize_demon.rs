@@ -174,6 +174,45 @@ pub fn demon_from_value(v: &Value) -> Option<DemonRecord> {
         force_values: opt_int_list(v.at("ForceValues")),
         force_stack: opt_int_list(v.at("ForceStack")),
         equipment: opt_int_list(v.at("Equipment")),
+        planned: None,
+    })
+}
+
+/// A demon as a Demon Planner build ends (the page works it out from the saved build: app.js `rbpRecord`): { name,
+/// type, level, growthType, reunion[12], mitamaType, mitamaRank, mitamaSlots[96], planned[96], skills[8],
+/// equipment[4], forceStack[8] }. Enough for `Digitalize::compute`; nothing of it comes from the game. None unless it
+/// is an object with a demon type.
+pub fn planned_demon(v: &Value) -> Option<DemonRecord> {
+    if !v.is_object() {
+        return None;
+    }
+    let ty = json::int(v.at("type"));
+    if ty <= 0 {
+        return None;
+    }
+    let ints = |k: &str, len: usize, lo: i32, hi: i32| -> Vec<i32> {
+        let mut out: Vec<i32> = int_list(v.at(k)).into_iter().take(len).map(|x| x.clamp(lo, hi)).collect();
+        out.resize(len, 0);
+        out
+    };
+    let skills = ints("skills", 8, 0, i32::MAX);
+    let mut planned: Vec<bool> = json::arr(v.at("planned")).take(96).map(|x| x.as_bool().unwrap_or(false)).collect();
+    planned.resize(96, false);
+    Some(DemonRecord {
+        name: json::str(v.at("name")).unwrap_or_default().chars().take(60).collect(),
+        r#type: ty,
+        level: json::int(v.at("level")).clamp(1, 99),
+        growth_type: json::int(v.at("growthType")).max(0),
+        reunion: ints("reunion", 12, 0, 9),
+        mitama_type: json::int(v.at("mitamaType")).clamp(0, 4),
+        mitama_rank: json::int(v.at("mitamaRank")).clamp(0, 12),
+        mitama_reunion: ints("mitamaSlots", 96, 0, 127).into_iter().map(|x| x as u8).collect(),
+        acquired: skills.iter().copied().filter(|&x| x > 0).collect(),
+        skills,
+        equipment: Some(ints("equipment", 4, 0, i32::MAX)),
+        force_stack: Some(ints("forceStack", 8, 0, i32::MAX)),
+        planned: Some(planned),
+        ..Default::default()
     })
 }
 
@@ -410,6 +449,7 @@ mod tests {
             force_values: Some(vec![0; 20]),
             force_stack: None,
             equipment: Some(vec![0; 4]),
+            planned: None,
         }
     }
 
@@ -421,6 +461,21 @@ mod tests {
         assert!(p.contains(r#""MitamaReunion":"AAECA/o=","MitamaSetsShown":[false,true],"#));
         assert!(p.contains(r#""ForceStack":null,"Equipment":[0,0,0,0],"Summoned":false,"Loaded":true},"Assists":[5,8],"MitamaBoost":true}"#));
         assert_eq!(DigitalizeSave::unpack(&p), Some(s));
+    }
+
+    #[test]
+    fn planned_demon_reads_the_page_record() {
+        let v = json!({ "name": "Specter", "type": 10336, "level": 120, "growthType": 86, "reunion": [9, 3, -2],
+            "mitamaType": 2, "mitamaRank": 40, "mitamaSlots": [1, 32, 300], "planned": [false, true], "skills": [7, 0, 109], "equipment": [5] });
+        let d = planned_demon(&v).unwrap();
+        assert_eq!((d.r#type, d.level, d.growth_type, d.mitama_type, d.mitama_rank), (10336, 99, 86, 2, 12));
+        assert_eq!(d.reunion, [9, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!((d.mitama_reunion.len(), d.mitama_reunion[0], d.mitama_reunion[1], d.mitama_reunion[2]), (96, 1, 32, 127));
+        assert_eq!(d.planned.as_ref().map(|p| (p.len(), p[0], p[1], p[2])), Some((96, false, true, false)));
+        assert_eq!((d.skills.len(), d.acquired.clone()), (8, vec![7, 109]));
+        assert_eq!((d.equipment, d.force_stack), (Some(vec![5, 0, 0, 0]), Some(vec![0; 8])));
+        assert_eq!(planned_demon(&json!({ "name": "No type" })), None);
+        assert_eq!(planned_demon(&json!([1, 2])), None);
     }
 
     #[test]
