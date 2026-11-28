@@ -597,6 +597,7 @@ pub fn demon_from_json(d: &Value) -> DemonRecord {
         force_values: int_arr(d.at("ForceValues")),
         force_stack: int_arr(d.at("ForceStack")),
         equipment: int_arr(d.at("Equipment")),
+        planned: None,
     }
 }
 

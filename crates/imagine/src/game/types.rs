@@ -111,6 +111,10 @@ pub struct DemonRecord {
     pub force_stack: Option<Vec<i32>>,
     /// demon equipment: item type per trait slot 0-3 (0 = empty)
     pub equipment: Option<Vec<i32>>,
+    /// A demon planned in the Demon Planner, not read from the game: one flag per Mitama slot of `mitama_reunion`,
+    /// true where a Mitama is planned (its kind counts for the sets; its random slot bonus is not known, so it adds
+    /// nothing). None for a demon read from the game. Never saved.
+    pub planned: Option<Vec<bool>>,
 }
 
 impl DemonRecord {

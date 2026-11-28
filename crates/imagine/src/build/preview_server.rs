@@ -75,11 +75,23 @@ pub fn sim_command(
     let owner = owner.unwrap_or(default_base);
     Ok(Some(match cmd {
         // the base character's COMP demons as last seen (what its demon picker lists; the game is not looked at), each
-        // with what digitalizing with it gives: a build's demon is picked from these
+        // with what digitalizing with it gives: a build's demon is picked from these. "planned" ([{ key, demon }]: the
+        // Demon Planner's builds as they end, worked out by the page) comes back as [{ key, offer }] for the same base.
         "simDemons" => {
             let demons = if who.is_empty() { Value::Null } else { Value::Array(pipe_of(&who)?.comp_demons(&who, false)?.iter().map(|d| d.to_value()).collect()) };
             let icons = if who.is_empty() { None } else { skill_icons_of.and_then(|f| f(&who)) };
-            to_json(&json!({ "demons": demons, "skillIcons": icons }))
+            let asked: Vec<(String, crate::game::DemonRecord)> = json::arr(args.at("planned"))
+                .take(200)
+                .filter_map(|p| Some((json::str(p.at("key"))?, super::digitalize_demon::planned_demon(p.at("demon")?)?)))
+                .collect();
+            let planned = if who.is_empty() || asked.is_empty() {
+                Value::Array(Vec::new())
+            } else {
+                let records: Vec<crate::game::DemonRecord> = asked.iter().map(|(_, d)| d.clone()).collect();
+                let offers = pipe_of(&who)?.planned_offers(&records)?;
+                Value::Array(asked.iter().zip(offers).map(|((key, _), o)| json!({ "key": key, "offer": o.as_ref().map(|o| o.to_value()) })).collect())
+            };
+            to_json(&json!({ "demons": demons, "skillIcons": icons, "planned": planned }))
         }
         "simInit" => pipe_of(&who)?.sim.init(args)?,
         "simulate" => pipe_of(&who)?.sim.run(args)?,

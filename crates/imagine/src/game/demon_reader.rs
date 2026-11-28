@@ -220,6 +220,7 @@ fn parse(mem: &GameMemory, addr: i64, flags: i32, s: &[u8], k: &[u8], d: &[u8]) 
                 })
                 .collect(),
         ),
+        planned: None,
     })
 }
 
