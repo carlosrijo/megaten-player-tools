@@ -2600,24 +2600,19 @@
     svg.append(s('line', { x1: 1, x2: 19, y1: 4, y2: 4, style: `stroke:${st.colour};stroke-width:2.5;stroke-linecap:round;` + (st.dash ? `stroke-dasharray:${st.dash}` : '') }));
     return svg;
   }
-  /** Axis with about `count` intervals, its own nice step (a second axis that need not share gridlines). */
-  function niceScale(min, max, count) {
+  /** Value axis for values between min and max: the finest nice step (1, 2, 2.5 or 5 times a power of ten) that needs no more than
+   * `most` intervals, so the top is never far above the highest value (232% gets 0..250, not 0..400). */
+  function niceScale(min, max, most) {
     if (min === max) { const pad = Math.abs(min) * 0.1 || 1; min -= pad; max += pad; }
-    const raw = (max - min) / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
-    const step = (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * mag;
-    const lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step, ticks = [];
-    for (let v = lo; v <= hi + step / 2; v += step) ticks.push(Number(v.toFixed(8)));
-    return { lo, hi, ticks };
-  }
-  /** Axis for values between `min` and `max` with exactly `n` intervals (so a second axis can share the same gridlines). */
-  function niceScaleN(min, max, n) {
-    if (min === max) { const pad = Math.abs(min) * 0.1 || 1; min -= pad; max += pad; }
-    const mag = Math.pow(10, Math.floor(Math.log10((max - min) / n)));
-    for (let k = 0; k < 60; k++) {
-      const step = [1, 2, 2.5, 5][k % 4] * mag * Math.pow(10, Math.floor(k / 4)), lo = Math.floor(min / step + 1e-9) * step;
-      if (lo + n * step >= max - step * 1e-9) return { lo, hi: lo + n * step, ticks: Array.from({ length: n + 1 }, (_, i) => Number((lo + i * step).toFixed(8))) };
+    const mag = Math.pow(10, Math.floor(Math.log10((max - min) / most)));
+    for (let k = 0; k < 80; k++) {
+      const step = [1, 2, 2.5, 5][k % 4] * mag * Math.pow(10, Math.floor(k / 4)), lo = Math.floor(min / step + 1e-9) * step, hi = Math.ceil(max / step - 1e-9) * step;
+      if ((hi - lo) / step <= most + 1e-9) {
+        const ticks = []; for (let i = 0; lo + i * step <= hi + step / 2; i++) ticks.push(Number((lo + i * step).toFixed(8)));
+        return { lo, hi, ticks };
+      }
     }
-    return { lo: min, hi: max, ticks: Array.from({ length: n + 1 }, (_, i) => min + ((max - min) * i) / n) };
+    return { lo: min, hi: max, ticks: [min, max] };
   }
   /** `series`: [{ label, unit, style, pts: [{ t, v, at }] }], one per ticked stat. Two graphs laid over each other, sharing the
    *  time axis: the absolutes (stats, HP, critical...) with their value axis on the left, which also draws the gridlines, and
@@ -2639,9 +2634,9 @@
     const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': empty ? 'Empty graph' : `${series.map((q) => q.label).join(', ')} across ${times.length} snapshots` });
     const yAt = (frac) => H - m.b - frac * (H - m.t - m.b);
     const level = [0, 0.25, 0.5, 0.75, 1];
-    // the left graph's axis has 4 intervals; the right one has its own steps (and, with no left graph, the same 4 so the gridlines fit it)
-    const fit = (group, own) => {
-      const vs = group.flatMap((q) => q.pts.map((p) => p.v)), lo = Math.min(...vs), hi = Math.max(...vs), sc = own ? niceScale(lo, hi, 4) : niceScaleN(lo, hi, 4);
+    // each graph's axis has its own steps (at most 6 intervals); the left one draws the gridlines, or the right one when there is no left
+    const fit = (group) => {
+      const vs = group.flatMap((q) => q.pts.map((p) => p.v)), lo = Math.min(...vs), hi = Math.max(...vs), sc = niceScale(lo, hi, 6);
       group.forEach((q) => { q.y = (v) => yAt((v - sc.lo) / (sc.hi - sc.lo)); });
       sc.at = (v) => yAt((v - sc.lo) / (sc.hi - sc.lo));
       return sc;
@@ -2651,7 +2646,7 @@
       level.forEach((f) => svg.append(s('line', { class: f === 0 ? 'axisline' : 'gridline', x1: m.l, x2: W - m.r, y1: yAt(f), y2: yAt(f), style: 'stroke:var(--axis);stroke-opacity:.55' })));
       svg.append(text({ x: (m.l + W - m.r) / 2, y: yAt(0.5), dy: '-0.4em', 'text-anchor': 'middle' }, 'Tick a stat in the list to plot it.'));
     } else {
-      const sl = axisL.length ? fit(axisL, false) : null, sr = axisR.length ? fit(axisR, !sl) : null, base = sl || sr;
+      const sl = axisL.length ? fit(axisL) : null, sr = axisR.length ? fit(axisR) : null, base = sl || sr;
       base.ticks.forEach((v) => {
         svg.append(s('line', { class: v === base.lo ? 'axisline' : 'gridline', x1: m.l, x2: W - m.r, y1: base.at(v), y2: base.at(v) }));
         if (sl) svg.append(text({ x: m.l - 8, y: base.at(v), dy: '0.32em', 'text-anchor': 'end' }, fmt(v, axisL[0].unit)));
