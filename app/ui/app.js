@@ -568,10 +568,10 @@
       char: '', level: 0, align: 'NEUTRAL', inits: new Map(), bases: new Map(), useSeq: 0,
       demon: '',   // the build's digitalize demon: one of its base's COMP demons ("type:name"), or '' = not digitalized
       saveState: '', storeTimer: null, naming: false, confirmDel: false, navOpen: store.get('sim-nav') !== '0' },
-    exp: { q: '', closed: new Set(), view: store.get('exp-view') === 'plan' ? 'plan' : 'mine' },   // view: 'mine' (as read) or 'plan' (the planner)
+    exp: { q: '', closed: new Set(), open: new Set(), view: store.get('exp-view') === 'plan' ? 'plan' : 'mine' },   // view: 'mine' (as read) or 'plan' (the planner)
     // Expertise page planner: whose plan, the character as read (init), the planned points and cap, its result (cur), the open rows
     xp: { who: '', state: 'idle', error: '', init: null, cur: null, points: null, cap: null, demon: '', open: new Set(), seq: 0, loadSeq: 0, timer: null, working: false, redraw: null },
-    dg: { q: '', closed: new Set() },
+    dg: { q: '', closed: new Set(), open: new Set() },
     extra: { q: '', closed: new Set() },   // Bonuses: the quest bonus and compendium groups that are closed   // Digitalize: the search and the closed races
     hist: { keys: (store.get('hist') ?? 'lngr').split(',').filter(Boolean), slot: {}, asking: null, deleting: false, top: 0, focus: null },   // the stats ticked on the History graph (the old value was one key)
   };
@@ -2462,9 +2462,14 @@
     }
     return box;
   };
-  /** The searchable, collapsible list of passives, one group per expertise (or race). `st` keeps the search and the closed groups. */
+  /**
+   * The searchable, collapsible list of passives, one group per expertise (or race). `st` keeps the search and which groups
+   * are closed (`st.closed`), or, with `o.startClosed`, which are open (`st.open`): every group starts collapsed.
+   */
   function passiveList(page, rows, st, o) {
     const names = []; rows.forEach((r) => { if (!names.includes(r.expertise)) names.push(r.expertise); });
+    const isOpen = (n) => (o.startClosed ? st.open.has(n) : !st.closed.has(n));
+    const setOpen = (n, on) => { const set = o.startClosed ? st.open : st.closed; if (on === !!o.startClosed) set.add(n); else set.delete(n); };
     const listHost = h('div');
     const draw = () => {
       listHost.replaceChildren();
@@ -2477,7 +2482,7 @@
         shown++;
         const rk = S.v.ranks.get(name);
         const anyCounted = mine.some((r) => isTrue(r.counted));
-        const det = h('details', { class: 'exp-group', open: q ? true : !st.closed.has(name) },
+        const det = h('details', { class: 'exp-group', open: q ? true : isOpen(name) },
           h('summary', null, h('span', { class: 'chev' }, icon('chevron')), h('span', { class: 'exp-name', text: o.title ? o.title(name) : name }),
             h('span', { class: 'exp-meta', text: [rk ? `Class ${rk.class}, rank ${rk.rank}` : null,
               /^(Quest bonus|Demonic Compendium)/.test(name) ? (anyCounted ? (mine.length === 1 ? '1 bonus' : `${mine.length} bonuses`) : null)
@@ -2496,7 +2501,7 @@
           h('div', { class: 'exp-body' }, hit.map((r) => h('div', { class: 'passive' + (isTrue(r.counted) ? '' : ' off') },
             h('span', { class: 'rank', 'data-tip': o.rankTip, text: r.rank || '' }), h('span', { class: 'skill' }, o.noIcons ? null : skillIcon(r), h('span', { text: r.skill || '—' })),
             h('span', { class: 'fx' }, String(r.effects || '').split('; ').filter(Boolean).map((t) => h('span', { text: t })))))));
-        det.addEventListener('toggle', () => { if (q) return; if (det.open) st.closed.delete(name); else st.closed.add(name); });
+        det.addEventListener('toggle', () => { if (q) return; setOpen(name, det.open); });
         listHost.append(det);
       });
       if (!shown) listHost.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty-row', text: q ? `Nothing matches “${st.q.trim()}”.` : o.empty })));
@@ -2504,8 +2509,8 @@
     page.append(h('div', { class: 'sect', id: o.id || null }, h('div', { class: 'toolbar' },
       h('h2', { class: 'section-title', text: o.heading }), h('span', { class: 'toolbar-spacer' }),
       o.search ? searchBox(st.q, o.search, (v) => { st.q = v; draw(); }) : null,
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { st.closed.clear(); draw(); } }, 'Expand all'),
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => st.closed.add(n)); draw(); } }, 'Collapse all')), listHost));
+      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => setOpen(n, true)); draw(); } }, 'Expand all'),
+      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { names.forEach((n) => setOpen(n, false)); draw(); } }, 'Collapse all')), listHost));
     draw();
   }
 
@@ -2785,7 +2790,7 @@
     const totals = S.data.bonuses.filter((r) => isTrue(r.counted)).map((r) => [r, round2(n0(r.expertise) - shareOf(r, ['dlevel', 'quest', 'compendium']))]).filter(([, v]) => v);
     page.append(sect('What expertise adds in total', `${rows.filter((r) => isTrue(r.counted)).length} passives counted`, null,
       totalsCard(null, null, totals, 'No expertise bonuses counted yet.')));
-    passiveList(page, rows, S.exp, { id: 'exp-list', richTips: true, heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
+    passiveList(page, rows, S.exp, { id: 'exp-list', startClosed: true, richTips: true, heading: 'Every passive', search: 'Search an expertise, passive or effect', rankTip: 'The rank that unlocks this passive', empty: 'No expertise read yet. Take a snapshot.' });
     return page;
   }
 
@@ -2931,7 +2936,7 @@
       totalsCard(null, null, totals, 'No Digitalization Level bonuses counted yet.',
         'These passives are always on, digitalized or not, so they count in both views. What the demon itself adds only counts in the Digitalized view.')));
     const race = (name) => name.replace(/^Digitalize: /, '');
-    passiveList(page, rows, S.dg, { heading: 'Unlocked Digitalization passives', search: 'Search a race, passive or effect', rankTip: 'The Digitalization Level that teaches this passive',
+    passiveList(page, rows, S.dg, { startClosed: true, heading: 'Unlocked Digitalization passives', search: 'Search a race, passive or effect', rankTip: 'The Digitalization Level that teaches this passive',
       empty: 'No Digitalization Levels read yet. Take a snapshot.', title: race,
       tag: (name) => (DG && DG.race && race(name).toLowerCase() === String(DG.race).toLowerCase() ? h('span', { class: 'tag tag-demon', 'data-tip': `${DG.demon} is of this race`, text: DG.demon }) : null) });
     return page;
@@ -10508,7 +10513,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     S.state = await host.call('selectCharacter', { name });
     try { Object.assign(S.settings, await host.call('getSettings')); } catch (e) { /* keep */ }
     // what was open or picked belongs to the other character
-    S.compare = null; S.over.open = null; S.over.allChanges = false; S.demons = null; S.bonus.open.clear(); S.bonus.q = ''; S.exp.closed.clear(); S.exp.q = ''; S.dg.closed.clear(); S.dg.q = ''; S.gear.sel = null; S.gear.sort = null; S.alignNote = '';
+    S.compare = null; S.over.open = null; S.over.allChanges = false; S.demons = null; S.bonus.open.clear(); S.bonus.q = ''; S.exp.closed.clear(); S.exp.open.clear(); S.exp.q = ''; S.dg.closed.clear(); S.dg.open.clear(); S.dg.q = ''; S.gear.sel = null; S.gear.sort = null; S.alignNote = '';
     await reload();
     $('#main').scrollTop = 0;
   }
