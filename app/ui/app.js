@@ -1677,8 +1677,8 @@
     if (d.icon) pic.append(h('img', { src: d.icon, alt: '' }));
     mitamaMark(pic, d.mitama);
     const who = h('div', { class: 'partner-who' }, pic,
-      h('h3', { class: 'list-head', text: title }),
-      h('span', { class: 'dgt-name-line' }, h('span', { class: 'dgt-name', text: d.name }), tag),
+      h('span', { class: 'dgt-name-line' }, h('h3', { class: 'list-head', text: title }), tag),   // (the tag sits beside the title)
+      h('span', { class: 'dgt-name-line' }, h('span', { class: 'dgt-name', text: d.name })),
       h('span', { class: 'dgt-line', text: [`Lv ${d.level}`, d.race].filter(Boolean).join(' · ') }),
       h('span', { class: 'dgt-line', text: A ? alignName(A) : 'Alignment not read' }),
       h('span', { class: 'dgt-line', text: d.mitama ? `${d.mitama} Mitama · rank ${n0(d.mitamaRank)}` : 'No Mitama',   // as the planner's tag words it
