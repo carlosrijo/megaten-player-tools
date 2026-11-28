@@ -7089,6 +7089,11 @@
     const ph = 'Add a goal: search a boost, a race to unlock or a demon to digitalize, e.g. Intelligence, Limit Break, Seraphim, Pixie';
     const input = h('input', { class: 'input', type: 'search', placeholder: ph, 'aria-label': ph, spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
     const menu = h('div', { class: 'fus-menu dpl-menu', role: 'listbox', 'aria-multiselectable': 'true', hidden: true });
+    // the same clear button as the demon picker's (in place of the field's tiny built-in x): it empties the search and
+    // keeps the list open, since goals are picked several in a row
+    const clear = h('button', { type: 'button', class: 'fus-clear', 'aria-label': 'Clear the search', 'data-tip': 'Clear', hidden: true,
+      onmousedown: (ev) => ev.preventDefault(),
+      onclick: () => { input.value = ''; clear.hidden = true; at = 0; menu.scrollTop = 0; input.focus(); open(); } }, icon('x'));
     let hits = [], at = 0;
     const draw = () => {
       costAll();
@@ -7131,7 +7136,7 @@
     // the arrow keys stop at the last one you can pick (the ones you have are listed after them)
     const lastPickable = () => Math.max(0, hits.findIndex((x) => x.have) < 0 ? hits.length - 1 : hits.findIndex((x) => x.have) - 1);
     input.addEventListener('focus', open);
-    input.addEventListener('input', () => { at = 0; menu.scrollTop = 0; open(); });
+    input.addEventListener('input', () => { at = 0; menu.scrollTop = 0; clear.hidden = !input.value; open(); });
     input.addEventListener('blur', close);
     input.addEventListener('keydown', (ev) => {
       if (ev.key === 'ArrowDown') { ev.preventDefault(); if (menu.hidden) open(); else { at = Math.min(at + 1, lastPickable()); draw(); } }
@@ -7139,7 +7144,7 @@
       else if (ev.key === 'Enter') { if (!menu.hidden && hits[at]) { ev.preventDefault(); pick(hits[at]); } }
       else if (ev.key === 'Escape') { if (!menu.hidden) { ev.stopPropagation(); close(); } }
     });
-    wrap.append(h('div', { class: 'search' }, icon('search'), input), menu);
+    wrap.append(h('div', { class: 'search has-clear' }, icon('search'), input, clear), menu);
     return wrap;
   }
 
@@ -10685,9 +10690,14 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
       // a demon picked by hand stands there from now on: it no longer follows the summoned demon
       const pick = (d) => { close(); input.value = d.name; input.blur(); store.set('assistant-follow', 'off'); fillAssistant(); switchAssistant(d); };
-      input.addEventListener('focus', () => { input.select(); open(); });
-      input.addEventListener('input', () => { at = 0; open(); });
-      input.addEventListener('blur', () => { close(); input.value = assistantName(); });
+      // the same clear button as the other demon pickers': there while the field is being typed in (away from it the
+      // field shows the demon's name again, and there is nothing to clear)
+      const clear = h('button', { type: 'button', class: 'fus-clear', 'aria-label': 'Clear the search', 'data-tip': 'Clear', hidden: true,
+        onmousedown: (ev) => ev.preventDefault(),
+        onclick: () => { input.value = ''; clear.hidden = true; at = 0; input.focus(); open(); } }, icon('x'));
+      input.addEventListener('focus', () => { input.select(); clear.hidden = !input.value; open(); });
+      input.addEventListener('input', () => { at = 0; clear.hidden = !input.value; open(); });
+      input.addEventListener('blur', () => { close(); input.value = assistantName(); clear.hidden = true; });
       input.addEventListener('keydown', (ev) => {
         if (ev.key === 'ArrowDown') { ev.preventDefault(); if (menu.hidden) open(); else { at = Math.min(at + 1, hits.length - 1); draw(); } }
         else if (ev.key === 'ArrowUp') { ev.preventDefault(); at = Math.max(at - 1, 0); draw(); }
@@ -10700,7 +10710,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       AP.follow.addEventListener('change', () => { store.set('assistant-follow', AP.follow.checked ? 'on' : 'off'); fillAssistant(); if (AP.follow.checked) followSummoned(true); });
       AP.label = h('span', { class: 'field-help' });
       box.append(h('label', { class: 'switch-row' }, h('span', { text: 'Same as my summoned demon' }), AP.follow),
-        AP.label, h('div', { class: 'fus-combo' }, h('div', { class: 'search' }, icon('search'), input), menu));
+        AP.label, h('div', { class: 'fus-combo' }, h('div', { class: 'search has-clear' }, icon('search'), input, clear), menu));
     }
     AP.follow.checked = following();
     AP.label.textContent = following() ? 'Or pick one yourself (it then stops following your summoned demon)' : 'Which demon stands there';

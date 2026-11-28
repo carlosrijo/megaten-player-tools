@@ -1527,8 +1527,8 @@ body.has-assistant .toast:last-child::after { content: ""; position: absolute; r
 .fus-add:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .fus-combo { position: relative; min-width: 0; }
 .fus-combo .search { max-width: none; }
-/* the demon picker's own clear button: as tall as the field and 30px wide, so it is easy to hit (the field's built-in x
-   is hidden there; the other pickers of this kind keep theirs) */
+/* a picker's own clear button: as tall as the field and 30px wide, so it is easy to hit (the field's tiny built-in x is
+   hidden). On every picker of this kind: the Fusion Planner's demons, the Digitalize Planner's goals, the assistant's demon */
 .fus-combo .search.has-clear .input { padding-right: 34px; }
 .fus-combo .search.has-clear .input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
 .fus-clear { all: unset; box-sizing: border-box; position: absolute; top: 2px; right: 2px; bottom: 2px; width: 30px; display: grid; place-items: center; border-radius: 6px; color: var(--text-3); cursor: pointer; }
