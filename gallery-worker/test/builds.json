@@ -1,0 +1,1007 @@
+{
+ "note": "Cases both gates run: crates/imagine/src/build/community.rs (Rust tests) and src/build.js (node --test). good: builds that pass as they are; bad: a good build with the value at path (a JSON pointer) set to to, which must be refused. Rubito is the website demo character.",
+ "good": {
+  "player": {
+   "v": 1,
+   "kind": "player",
+   "takenAt": "2026-11-28T11:43",
+   "level": 95,
+   "alignment": "NEUTRAL",
+   "maxHp": 709,
+   "maxMp": 265,
+   "statsLive": true,
+   "stats": {
+    "str": [
+     1,
+     109
+    ],
+    "mag": [
+     1,
+     70
+    ],
+    "vit": [
+     1,
+     66
+    ],
+    "int": [
+     82,
+     66
+    ],
+    "spd": [
+     99,
+     166
+    ],
+    "luck": [
+     53,
+     34
+    ],
+    "clsr": [
+     64,
+     62
+    ],
+    "lngr": [
+     187,
+     718
+    ],
+    "spell": [
+     90,
+     132
+    ],
+    "support": [
+     128,
+     45
+    ],
+    "pdef": [
+     67,
+     7
+    ],
+    "mdef": [
+     74,
+     16
+    ]
+   },
+   "gear": [
+    {
+     "slot": 0,
+     "id": 2625,
+     "basic": 2625,
+     "special": 2616,
+     "tarot": 64,
+     "soul": 3105,
+     "fuse": [
+      50,
+      50,
+      50
+     ],
+     "mods": [
+      20,
+      15,
+      200,
+      319,
+      321
+     ]
+    },
+    {
+     "slot": 1,
+     "id": 2729,
+     "basic": 2729,
+     "special": 2729,
+     "tarot": 0,
+     "soul": 0,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 2,
+     "id": 22160,
+     "basic": 22104,
+     "special": 22112,
+     "tarot": 64,
+     "soul": 302,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 3,
+     "id": 22628,
+     "basic": 22606,
+     "special": 22614,
+     "tarot": 64,
+     "soul": 111,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 4,
+     "id": 25262,
+     "basic": 25245,
+     "special": 4889,
+     "tarot": 64,
+     "soul": 37,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 5,
+     "id": 33320,
+     "basic": 33356,
+     "special": 33292,
+     "tarot": 0,
+     "soul": 0,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 6,
+     "id": 32204,
+     "basic": 32253,
+     "special": 32272,
+     "tarot": 64,
+     "soul": 112,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 7,
+     "id": 48002,
+     "basic": 48038,
+     "special": 23887,
+     "tarot": 64,
+     "soul": 158,
+     "fuse": [
+      50,
+      50,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 8,
+     "id": 35149,
+     "basic": 35185,
+     "special": 35199,
+     "tarot": 64,
+     "soul": 115,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 9,
+     "id": 35603,
+     "basic": 35603,
+     "special": 5835,
+     "tarot": 64,
+     "soul": 216,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 10,
+     "id": 37286,
+     "basic": 37252,
+     "special": 37238,
+     "tarot": 64,
+     "soul": 38,
+     "fuse": [
+      1,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 11,
+     "id": 25599,
+     "basic": 25562,
+     "special": 25613,
+     "tarot": 0,
+     "soul": 287,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 12,
+     "id": 24359,
+     "basic": 24273,
+     "special": 24263,
+     "tarot": 64,
+     "soul": 846,
+     "fuse": [
+      50,
+      50,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 13,
+     "id": 26474,
+     "basic": 26462,
+     "special": 26398,
+     "tarot": 559,
+     "soul": 106,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "slot": 14,
+     "id": 32723,
+     "basic": 32653,
+     "special": 32743,
+     "tarot": 64,
+     "soul": 811,
+     "fuse": [
+      0,
+      0,
+      0
+     ],
+     "mods": [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "gearPartial": false,
+   "expertise": [
+    [
+     3,
+     900000
+    ],
+    [
+     4,
+     1000000
+    ],
+    [
+     11,
+     200000
+    ],
+    [
+     18,
+     700000
+    ],
+    [
+     19,
+     200000
+    ],
+    [
+     20,
+     100000
+    ],
+    [
+     23,
+     1000000
+    ],
+    [
+     34,
+     900000
+    ],
+    [
+     35,
+     900000
+    ],
+    [
+     36,
+     500000
+    ]
+   ],
+   "cap": 6400000,
+   "toggles": [
+    5450,
+    5451,
+    5452,
+    5453,
+    5454,
+    5455,
+    5456,
+    5457,
+    5458,
+    5459,
+    5460,
+    5461,
+    5462,
+    5535,
+    5536,
+    5538,
+    5539,
+    5594,
+    160736,
+    160737,
+    160743,
+    160769,
+    160782,
+    170042
+   ],
+   "code": "BABEL1-CoW-WGoAP_-BSDCNEDGEMyMjKKB6ZCn6oIFVOArSBG8i_RAqXAsMgrDdECjeDFXCFifKaIElCCKCJA3AfcwjESIogUcAu4IiQxeMtECk9MjIAESmkSCMlECjmEWJ2OiPogU2AkaYiGRfogSaAgAAGP_IkhxUfBfJyVZL-iBdOmRkABnaguSXsX0agf9MkWKKIFysKB7QTkFyhLGJyhSKL8iLaR7SSyA",
+   "partner": null,
+   "digitalize": {
+    "type": 11030,
+    "level": 90,
+    "growthType": 86,
+    "reunion": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "mitamaType": 1,
+    "mitamaRank": 0,
+    "mitamaSlots": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "skills": [
+     15,
+     5013,
+     251,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "forceStackIds": [
+     1084,
+     4,
+     5,
+     419,
+     820,
+     463,
+     427,
+     2057
+    ],
+    "equipmentIds": [
+     0,
+     0,
+     0,
+     36244
+    ],
+    "stats": [
+     548,
+     273,
+     115,
+     101,
+     35,
+     48,
+     44,
+     48,
+     123,
+     74,
+     88,
+     49,
+     33,
+     40
+    ]
+   },
+   "about": {
+    "name": "Rubito",
+    "title": "Gun build",
+    "note": "Shot and Rapid.\nTwo lines."
+   }
+  },
+  "demon": {
+   "v": 1,
+   "kind": "demon",
+   "seenAt": "2026-11-28T11:43",
+   "demon": {
+    "type": 10041,
+    "level": 93,
+    "growthType": 212,
+    "reunion": [
+     4,
+     1,
+     4,
+     4,
+     4,
+     0,
+     4,
+     1,
+     4,
+     4,
+     0,
+     7
+    ],
+    "mitamaType": 2,
+    "mitamaRank": 0,
+    "mitamaSlots": [
+     39,
+     46,
+     36,
+     43,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     48,
+     34,
+     34,
+     36,
+     0,
+     0,
+     0,
+     0,
+     100,
+     108,
+     111,
+     112,
+     0,
+     0,
+     0,
+     0,
+     12,
+     16,
+     16,
+     70,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     109,
+     111,
+     104,
+     67,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     8,
+     14,
+     13,
+     38,
+     0,
+     0,
+     0,
+     0,
+     38,
+     33,
+     33,
+     65,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "skills": [
+     5306,
+     5011,
+     4,
+     962,
+     961,
+     960,
+     958,
+     956
+    ],
+    "forceStackIds": [
+     10144,
+     10269,
+     1298,
+     10271,
+     10283,
+     10272,
+     10118,
+     10270
+    ],
+    "equipmentIds": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "stats": [
+     2813,
+     1265,
+     143,
+     198,
+     117,
+     142,
+     124,
+     97,
+     144,
+     130,
+     176,
+     150,
+     77,
+     45
+    ]
+   },
+   "about": {
+    "name": "Rubito",
+    "title": "Alilat",
+    "note": ""
+   }
+  }
+ },
+ "bad": [
+  {
+   "why": "a path",
+   "base": "player",
+   "path": "/dataDir",
+   "to": "C:UsersAdmindata"
+  },
+  {
+   "why": "the character name",
+   "base": "player",
+   "path": "/character",
+   "to": "Rubito"
+  },
+  {
+   "why": "effect text on a piece",
+   "base": "player",
+   "path": "/gear/0/effects",
+   "to": [
+    "Critical +30"
+   ]
+  },
+  {
+   "why": "a total",
+   "base": "player",
+   "path": "/stats/crit",
+   "to": [
+    0,
+    5
+   ]
+  },
+  {
+   "why": "a demon name",
+   "base": "player",
+   "path": "/digitalize/name",
+   "to": "Shikigami"
+  },
+  {
+   "why": "a level as text",
+   "base": "player",
+   "path": "/level",
+   "to": "95"
+  },
+  {
+   "why": "level 100",
+   "base": "player",
+   "path": "/level",
+   "to": 100
+  },
+  {
+   "why": "a fraction",
+   "base": "player",
+   "path": "/maxHp",
+   "to": 709.5
+  },
+  {
+   "why": "a toggle as text",
+   "base": "player",
+   "path": "/toggles",
+   "to": [
+    "Shot Booster"
+   ]
+  },
+  {
+   "why": "three mods",
+   "base": "player",
+   "path": "/gear/0/mods",
+   "to": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "why": "fusion bonus over MAX",
+   "base": "player",
+   "path": "/gear/0/fuse",
+   "to": [
+    51,
+    0,
+    0
+   ]
+  },
+  {
+   "why": "two pieces in one slot",
+   "base": "player",
+   "path": "/gear/1/slot",
+   "to": 0
+  },
+  {
+   "why": "expertises out of order",
+   "base": "player",
+   "path": "/expertise",
+   "to": [
+    [
+     4,
+     10
+    ],
+    [
+     3,
+     10
+    ]
+   ]
+  },
+  {
+   "why": "no points",
+   "base": "player",
+   "path": "/expertise",
+   "to": [
+    [
+     3,
+     0
+    ]
+   ]
+  },
+  {
+   "why": "another alignment",
+   "base": "player",
+   "path": "/alignment",
+   "to": "EVIL"
+  },
+  {
+   "why": "a word for a time",
+   "base": "player",
+   "path": "/takenAt",
+   "to": "yesterday"
+  },
+  {
+   "why": "seconds in a time",
+   "base": "player",
+   "path": "/takenAt",
+   "to": "2026-11-28T11:43:53"
+  },
+  {
+   "why": "not a code",
+   "base": "player",
+   "path": "/code",
+   "to": "BABEL1-not a code"
+  },
+  {
+   "why": "a code with a wrong checksum",
+   "base": "player",
+   "path": "/code",
+   "to": "BABEL1-AAAAWGoAP_-BSDCNEDGEMyMjKKB6ZCn6oIFVOArSBG8i_RAqXAsMgrDdECjeDFXCFifKaIElCCKCJA3AfcwjESIogUcAu4IiQxeMtECk9MjIAESmkSCMlECjmEWJ2OiPogU2AkaYiGRfogSaAgAAGP_IkhxUfBfJyVZL-iBdOmRkABnaguSXsX0agf9MkWKKIFysKB7QTkFyhLGJyhSKL8iLaR7SSyA"
+  },
+  {
+   "why": "a long display name",
+   "base": "player",
+   "path": "/about/name",
+   "to": "xxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+   "why": "a blank display name",
+   "base": "player",
+   "path": "/about/name",
+   "to": "   "
+  },
+  {
+   "why": "a line break in the name",
+   "base": "player",
+   "path": "/about/name",
+   "to": "a\nb"
+  },
+  {
+   "why": "a text-direction mark",
+   "base": "player",
+   "path": "/about/title",
+   "to": "a‮b"
+  },
+  {
+   "why": "a tab in the note",
+   "base": "player",
+   "path": "/about/note",
+   "to": "a\tb"
+  },
+  {
+   "why": "a link field in about",
+   "base": "player",
+   "path": "/about/link",
+   "to": "https://example.com"
+  },
+  {
+   "why": "a long note",
+   "base": "player",
+   "path": "/about/note",
+   "to": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+  },
+  {
+   "why": "seven demon skills",
+   "base": "demon",
+   "path": "/demon/skills",
+   "to": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ]
+  },
+  {
+   "why": "a demon type 0",
+   "base": "demon",
+   "path": "/demon/type",
+   "to": 0
+  },
+  {
+   "why": "a Mitama type 17",
+   "base": "demon",
+   "path": "/demon/mitamaType",
+   "to": 17
+  },
+  {
+   "why": "a demon field more",
+   "base": "demon",
+   "path": "/demon/familiarity",
+   "to": 5
+  },
+  {
+   "why": "version 2",
+   "base": "demon",
+   "path": "/v",
+   "to": 2
+  },
+  {
+   "why": "another kind",
+   "base": "demon",
+   "path": "/kind",
+   "to": "item"
+  }
+ ]
+}

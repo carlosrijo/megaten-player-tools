@@ -309,7 +309,11 @@ fn about(o: &Map<String, Value>) -> Check {
     keys(a, &["name", "title", "note"], &[], "about")?;
     text(&a["name"], MAX_NAME, false, "the display name")?;
     text(&a["title"], MAX_TITLE, false, "the title")?;
-    text(&a["note"], MAX_NOTE, true, "the note")
+    text(&a["note"], MAX_NOTE, true, "the note")?;
+    if a["name"].as_str().is_some_and(|s| s.trim().is_empty()) {
+        return Err("the display name is empty".into());
+    }
+    Ok(())
 }
 
 fn object<'a>(v: &'a Value, what: &str) -> std::result::Result<&'a Map<String, Value>, String> {
@@ -463,6 +467,31 @@ mod tests {
         let mut paths: Vec<&str> = found.iter().map(|(p, _)| p.as_str()).collect();
         paths.sort_unstable();
         assert_eq!(paths, [".alignment", ".code", ".kind", ".takenAt"]);
+    }
+
+    /// The cases the gallery Worker's gate runs too (gallery-worker\test\builds.json), so the two gates stay the same.
+    #[test]
+    fn the_workers_cases() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../gallery-worker/test/builds.json");
+        let cases: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        for kind in ["player", "demon"] {
+            assert_eq!(check(&cases["good"][kind]), Ok(()), "{kind}");
+        }
+        let bad = cases["bad"].as_array().unwrap();
+        assert!(bad.len() > 20);
+        for b in bad {
+            let mut v = cases["good"][b["base"].as_str().unwrap()].clone();
+            let pointer = b["path"].as_str().unwrap();
+            let (parent, last) = pointer.rsplit_once('/').unwrap();
+            match v.pointer_mut(parent).unwrap() {
+                Value::Object(o) => {
+                    o.insert(last.to_string(), b["to"].clone());
+                }
+                Value::Array(a) => a[last.parse::<usize>().unwrap()] = b["to"].clone(),
+                _ => panic!("{pointer}"),
+            }
+            assert!(check(&v).is_err(), "not refused: {}", b["why"]);
+        }
     }
 
     #[test]

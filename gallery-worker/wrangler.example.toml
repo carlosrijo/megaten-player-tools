@@ -1,0 +1,25 @@
+# Community Builds: BABEL's "Publish build" posts here, the website's Community Builds pages read from here.
+# Cloudflare Workers free plan + D1 (no card). The real wrangler.toml sits beside this file in the main checkout and is
+# git-ignored (the account's ids); setting it up from nothing: README.md in this folder.
+name = "babel-gallery"   # with the account's workers.dev subdomain, the address in app.js GALLERY_URL: never rename
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[vars]
+# the website's address(es), comma-separated; its preview addresses (<x>.babel-7vg.pages.dev) count too
+SITE_ORIGINS = "https://babel-7vg.pages.dev"
+
+# Secrets (npx wrangler secret put <name>): ADMIN_KEY (the developer's key for /admin, kept in .secrets\) and IP_SALT
+# (any long random text: the key of the address hash).
+
+# Made with: npx wrangler d1 create babel-gallery (it prints the id); tables: schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "babel-gallery"
+database_id = "<d1 database id>"
+
+# At most 10 publishes, changes, deletes or reports a minute from one address (the Workers rate limiting binding).
+[[ratelimits]]
+name = "PER_IP"
+namespace_id = "1002"
+simple = { limit = 10, period = 60 }
