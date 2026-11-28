@@ -6,6 +6,12 @@ and BABEL, the desktop app that shows them.
 It only ever opens the game process with read access (`PROCESS_QUERY_INFORMATION | PROCESS_VM_READ`):
 it never writes to the game or changes anything.
 
+## On the web
+
+The databases and planners also open in the browser, with nothing to install: **https://babel-7vg.pages.dev/**.
+Your own character's pages, the Quest Tracker and the Character Planner need the desktop app. Each release updates the
+site (`tools\build-site.ps1`, the `website` job in `.github\workflows\release.yml`).
+
 ## Download (portable, nothing to install)
 
 Get `BABEL.exe` from the [latest release](https://github.com/carlosrijo/megaten-player-tools/releases/latest),
