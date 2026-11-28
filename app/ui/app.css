@@ -338,11 +338,19 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 .partner-who > :not(.demon-pic) { grid-column: 2; min-width: 0; }
 .partner-who .list-head { padding: 0; margin: 0; }
 .partner-top { align-items: start; }
+.partner-who .tag { height: 13px; padding: 0 4px; font-size: 9px; }   /* the "Summoned" chip beside the title: smaller than the usual chip */
+/* the partner's stats: the bar runs under its number (they share one cell, so a long number never pushes into the label),
+   and the digits carry a halo in the card's colour, which keeps them legible over the bar */
+.partner-card .dg-row { grid-template-columns: 40px minmax(0, 1fr); }
+.page-head-text > .dg-bars.who-stats .dg-row { grid-template-columns: 38px minmax(0, 1fr); }   /* your own stats under your name: the same */
+.page-head.du .page-head-text > .dg-bars.who-stats .dg-row { grid-template-columns: 26px minmax(0, 1fr); }
+.partner-card .dg-row .strack, .partner-card .dg-row .srow-value, .page-head-text > .dg-bars.who-stats .dg-row .strack, .page-head-text > .dg-bars.who-stats .dg-row .srow-value { grid-column: 2; grid-row: 1; }
+.partner-card .dg-row .srow-value, .page-head-text > .dg-bars.who-stats .dg-row .srow-value { justify-self: end; position: relative; text-shadow: 0 0 2px var(--surface), 0 0 2px var(--surface), 0 0 3px var(--surface), 1px 0 var(--surface), -1px 0 var(--surface), 0 1px var(--surface), 0 -1px var(--surface); }
 .partner-who .dg-tile > .dgt-line { display: none; }   /* what digitalizing with it would give: not a partner's business */
 .partner-who .dg-skill-icons { display: none; }   /* its skills are the Skills bar below */
 .partner-card[class*="align-"] { border-color: color-mix(in srgb, var(--align) 70%, transparent); }   /* framed in the demon's alignment colour, as its picture (pink only while the alignment isn't known) */
 /* two columns: who, stats and the line of bars on the left; the rebirths radar in a column of its own on the right, as tall as the card */
-.partner-card { grid-template-columns: minmax(0, 1fr) auto; column-gap: 32px; }
+.partner-card { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; }   /* stats to the rebirth radar */
 .partner-card.none { grid-template-columns: minmax(0, 1fr); }
 .partner-top { grid-column: 1; }
 .partner-build, .partner-build .rbp-minibars { display: contents; }
