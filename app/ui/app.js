@@ -6,6 +6,11 @@
   const SVG = 'http://www.w3.org/2000/svg';
   const Q = new URLSearchParams(location.search);
   const $ = (sel, root) => (root || document).querySelector(sel);
+  // The website (tools\build-site.ps1 marks its copy of index.html): no reader, game or files behind the page. The pages
+  // about the game work; the character pages and the tools that need the reader say so. ?web=1 tries it in the preview.
+  const WEB = !(window.chrome && window.chrome.webview) && (!!$('meta[name="babel-mode"][content="web"]') || Q.get('web') === '1');
+  if (WEB) document.documentElement.classList.add('web');
+  const RELEASES_URL = 'https://github.com/carlosrijo/megaten-player-tools/releases/latest';
 
   // ---------- small helpers ----------
   const ICONS = {
@@ -123,6 +128,23 @@
         if (m.ok) p.resolve(m.result); else p.reject(Object.assign(new Error(m.error || 'Something went wrong.'), { kind: m.kind }));
       });
       return { native: true, call: (cmd, args) => new Promise((resolve, reject) => { const id = ++seq; pending.set(id, { resolve, reject }); wv.postMessage({ id, cmd, args: args || {} }); }) };
+    }
+    // The website: no character, no game; the theme is kept in the browser. Anything else needs the desktop app.
+    if (WEB) {
+      const settings = { theme: store.get('theme') || 'system' };
+      const answers = {
+        state: () => ({ active: null, scanned: true, clients: [], characters: [] }),
+        load: () => ({ snapshots: [], gear: [], expertise: [], bonuses: [], ranks: null, digitalize: null, icons: {}, unlocks: [], summoned: null, meta: {} }),
+        status: () => ({ gameRunning: false, busy: false, clientsChanged: false }),
+        getSettings: () => ({ ...settings }),
+        saveSettings: (a) => { if (a && a.theme) { settings.theme = a.theme; store.set('theme', a.theme); } return { ...settings }; },
+        updateCheck: () => ({ enabled: true, off: true }),
+        menuIcons: () => ({}), log: () => true, ready: () => true, questProgress: () => null, summonedDemon: () => null, assistant: () => null,
+      };
+      return { native: false, web: true, async call(cmd, args) {
+        if (answers[cmd]) return answers[cmd](args);
+        throw Object.assign(new Error('This needs BABEL, the desktop app, on your PC.'), { kind: 'user' });
+      } };
     }
     // Stand-in for a plain browser: ?empty=1 (first run), ?snap=fail, ?clients=0|1|2 (how many characters are in game)
     const get = (p, dflt) => fetch(p).then((r) => (r.ok ? r.json() : dflt)).catch(() => dflt);
@@ -500,7 +522,7 @@
     data: null, meta: {}, v: null,
     settings: { character: 'Rubito', csv: '', theme: 'system', dataDir: '' },
     mode: Q.get('mode') || store.get('mode') || 'normal',
-    page: Q.get('page') || 'overview',   // always opens on Overview (the last page is not remembered)
+    page: Q.get('page') || (WEB ? 'skills' : 'overview'),   // always opens on Overview (the last page is not remembered); the website on the Skill Database
     busy: false, scanning: false, lastScan: 0,
     state: { active: null, scanned: false, clients: [], characters: [] },   // who is in game, whose data is shown
     compare: null,
@@ -10272,11 +10294,23 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   }
 
   const RENDER = { tracker: pageTracker, sim: pageSim, overview: pageOverview, bonuses: pageBonuses, gear: pageGear, expertise: pageExpertise, digitalize: pageDigitalize, history: pageHistory, dcm: pageDcm, quests: pageQuests, keys: pageKeys, geardb: pageGearDb, dungeons: pageDungeons, guides: pageGuides, fusion: pageFusion, dplan: pageDigiPlan, rebirth: pageRebirth, ddb: pageDemonDb, rank: pageRank, skills: pageSkills };
+  // On the website: the character pages, and the tools that need the reader or the game, point to the desktop app.
+  const DESKTOP_TOOLS = new Set(['tracker', 'sim']);
+  function needsBabel() {
+    const name = pageName(S.page);
+    const what = isTool(S.page) ? (S.page === 'tracker' ? 'follows your quests in the running game' : 'works out your builds with BABEL’s own calculation')
+      : 'shows your own character, read from the running game';
+    return h('div', { class: 'page' }, h('div', { class: 'empty' },
+      h('h2', { class: 'empty-title', text: `${name} needs BABEL` }),
+      h('p', { class: 'page-sub', text: `This page ${what}. That needs BABEL, the desktop app, on your PC. The databases and the other planners work right here.` }),
+      h('a', { class: 'btn btn-primary', href: RELEASES_URL, target: '_blank', rel: 'noopener' }, 'Download BABEL')));
+  }
   function render() {
     renderChrome();
     const main = $('#main'), top = main.scrollTop;
     hideTip();
-    main.replaceChildren(isTool(S.page) || (S.v && S.v.latest) ? RENDER[S.page]() : firstRun());
+    main.replaceChildren(WEB && (!isTool(S.page) || DESKTOP_TOOLS.has(S.page)) ? needsBabel()
+      : isTool(S.page) || (S.v && S.v.latest) ? RENDER[S.page]() : firstRun());
     main.scrollTop = top;
   }
   let resizeTimer = null;
@@ -10624,7 +10658,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   // where it is installed). On or off is a preference of this window; ?assistant=0 leaves it out for one run and
   // ?assistant=1 puts it in (the app's --capture runs leave it out unless asked).
   const A = { el: $('#assistant'), view: null, state: 'off', note: null, swap: 0 };   // state: off | loading | on | missing | failed
-  const assistantWanted = () => Q.get('assistant') !== '0' && (Q.get('assistant') === '1' || store.get('assistant') !== 'off');
+  const assistantWanted = () => !WEB && Q.get('assistant') !== '0' && (Q.get('assistant') === '1' || store.get('assistant') !== 'off');
   // The picker (feature "assistant-picker"): another demon stands there instead, its model read from the game's files
   // when it is picked and kept in memory only. Without the feature it is always Black Frost.
   const PICKER = feature('assistant-picker');
@@ -11411,7 +11445,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   // keyboard
   document.addEventListener('keydown', (ev) => {
     if (document.querySelector('dialog[open], [popover]:popover-open')) return;   // any dialog (settings, characters, picture) or the demon dropdown
-    if (ev.key === 'F5') { ev.preventDefault(); takeSnapshot(); return; }
+    if (ev.key === 'F5' && !WEB) { ev.preventDefault(); takeSnapshot(); return; }
     if (ev.ctrlKey && !ev.shiftKey && !ev.altKey && ev.key >= '1' && ev.key <= String(PAGES.length)) { ev.preventDefault(); go(PAGES[Number(ev.key) - 1][0]); return; }
     if (ev.altKey && !ev.ctrlKey && !ev.shiftKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) { ev.preventDefault(); step(ev.key === 'ArrowLeft' ? -1 : 1); return; }
     if (ev.key === 'BrowserBack' || ev.key === 'BrowserForward') { ev.preventDefault(); step(ev.key === 'BrowserBack' ? -1 : 1); return; }

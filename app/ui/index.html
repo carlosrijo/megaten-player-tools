@@ -18,7 +18,7 @@
     <header class="top">
       <div class="who">
         <img class="logo" src="icon.png" alt="" width="34" height="34">
-        <button type="button" class="who-btn" id="who-btn" data-tip="Characters: switch, or see who is in game">
+        <button type="button" class="who-btn" id="who-btn" data-desktop data-tip="Characters: switch, or see who is in game">
           <img class="who-pic" id="who-pic" alt="" hidden>
           <span class="who-text">
             <span class="who-name" id="who-name">—</span>
@@ -37,14 +37,14 @@
         </button>
       </div>
       <div class="top-actions">
-        <span class="game" id="game" tabindex="0" hidden><i class="game-dot" aria-hidden="true"></i><span id="game-text"></span></span>
-        <button type="button" class="btn btn-primary" id="snap" data-tip="Read the game now (F5). Read-only.">
+        <span class="game" id="game" tabindex="0" hidden data-desktop><i class="game-dot" aria-hidden="true"></i><span id="game-text"></span></span>
+        <button type="button" class="btn btn-primary" id="snap" data-desktop data-tip="Read the game now (F5). Read-only.">
           <span class="btn-icon" data-icon="camera" aria-hidden="true"></span><span id="snap-label">Take snapshot</span>
         </button>
-        <button type="button" class="btn btn-ghost btn-square" id="snap-help" aria-label="Before a snapshot" data-tip="What to open in game before a snapshot">
+        <button type="button" class="btn btn-ghost btn-square" id="snap-help" data-desktop aria-label="Before a snapshot" data-tip="What to open in game before a snapshot">
           <span data-icon="info" aria-hidden="true"></span>
         </button>
-        <button type="button" class="btn btn-ghost btn-square" id="open-feedback" aria-label="Send feedback" data-tip="Send feedback: a bug, an idea or a question">
+        <button type="button" class="btn btn-ghost btn-square" id="open-feedback" data-desktop aria-label="Send feedback" data-tip="Send feedback: a bug, an idea or a question">
           <span data-icon="chat" aria-hidden="true"></span>
         </button>
         <button type="button" class="btn btn-ghost btn-square" id="open-settings" aria-label="Settings" data-tip="Settings">
@@ -85,7 +85,7 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" data-desktop>
         <span class="field-label">Assistant</span>
         <label class="switch-row">
           <span id="assistant-switch-label">Show Black Frost in the corner</span>
@@ -95,7 +95,7 @@
         <span class="field-help" id="assistant-help" role="status"></span>
       </div>
 
-      <div class="field">
+      <div class="field" data-desktop>
         <span class="field-label">Character</span>
         <div class="field-row" style="align-items:center">
           <span class="path" id="set-character" style="width:auto;min-width:140px">—</span>
@@ -105,7 +105,7 @@
         <span class="field-help">Read from the game by itself. Each character keeps its own snapshots and spreadsheet.</span>
       </div>
 
-      <div class="field">
+      <div class="field" data-desktop>
         <span class="field-label" id="align-label">This character's alignment</span>
         <div class="seg" id="alignment" role="group" aria-labelledby="align-label">
           <button type="button" data-align="LAW">Law</button>
@@ -115,7 +115,7 @@
         <span class="field-help" id="align-help" role="status"></span>
       </div>
 
-      <div class="field">
+      <div class="field" data-desktop>
         <span class="field-label">This character's spreadsheet (CSV)</span>
         <div class="path" id="set-csv">—</div>
         <div class="field-row">
@@ -125,13 +125,13 @@
         <span class="field-help">Every snapshot adds one row to this file.</span>
       </div>
 
-      <div class="field">
+      <div class="field" data-desktop>
         <span class="field-label">Saved data</span>
         <div class="path" id="set-data">—</div>
         <div class="field-row"><button type="button" class="btn" id="data-show">Open folder</button></div>
       </div>
 
-      <div class="field" id="updates">
+      <div class="field" id="updates" data-desktop>
         <span class="field-label">Updates</span>
         <span class="field-help" id="upd-status" role="status" aria-live="polite">Not checked yet.</span>
         <progress id="upd-progress" class="upd-progress" max="1" value="0" hidden></progress>
@@ -146,7 +146,7 @@
         <span class="field-help">BABEL only installs a version after you click Update. Before it does, it checks that the download is signed by BABEL’s release build. Your data folder stays as it is.</span>
       </div>
 
-      <div class="field">
+      <div class="field" data-desktop>
         <span class="field-label">About this version</span>
         <dl class="about" id="about-block"><dt>Version</dt><dd>—</dd></dl>
         <div class="field-row">
@@ -154,7 +154,7 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" data-desktop>
         <span class="field-label">When something goes wrong</span>
         <div class="field-row field-wrap">
           <button type="button" class="btn" id="doctor-run">Check my setup</button>
@@ -170,7 +170,7 @@
         <div class="checks" id="doctor-out" role="status" aria-live="polite" hidden></div>
       </div>
 
-      <p class="dlg-note"><span data-icon="shield" aria-hidden="true"></span>This app only reads the game's memory. It never writes to the game or changes anything in it.</p>
+      <p class="dlg-note" data-desktop><span data-icon="shield" aria-hidden="true"></span>This app only reads the game's memory. It never writes to the game or changes anything in it.</p>
     </form>
   </dialog>
 

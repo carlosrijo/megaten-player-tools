@@ -46,6 +46,7 @@ dist-symbols/
 !/tools/publish-portable.ps1
 !/tools/rebuild-app.ps1
 !/tools/refresh-bundled-data.ps1
+!/tools/build-site.ps1
 /reference/clientdata-scripts/*.ps1
 
 # private keys: the feedback GitHub App's key stays in .secrets\ (never in git; feedback-worker\set-key.ps1 loads it into Cloudflare)
@@ -54,3 +55,5 @@ dist-symbols/
 
 # Made locally with the sealed data (reference\sealed\README.md); never committed
 /app/ui/*.local.json
+# the website, made by toolsuild-site.ps1
+/site/
