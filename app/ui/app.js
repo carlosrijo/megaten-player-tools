@@ -459,7 +459,7 @@
     return kinds.length ? kinds.join(' + ') : 'Expertise';
   };
   /** "Alilat (summoned)": the summoned demon's name as its bonus parts carry it (empty when it gives nothing). */
-  const summonedName = () => { for (const r of (S.data.bonuses || [])) { const p = (r.parts || []).find((x) => x.kind === 'summoned'); if (p) return String(p.source); } return ''; };
+  const summonedName = () => { for (const r of (S.data.bonuses || [])) { const p = (r.parts || []).find((x) => x.kind === 'summoned' || OWN_KINDS.has(x.kind)); if (p) return String(p.source); } return ''; };
   const TOP_CHANGES = 5;   // the Overview lists this many changes until "Show all"
   const PAGES = [['overview', 'Overview', 'grid'], ['bonuses', 'Bonuses', 'list'], ['gear', 'Gear', 'shield'], ['expertise', 'Expertise', 'star'], ['digitalize', 'Digitalize', 'bolt'], ['history', 'History', 'chart']];
   // Tools: pages about the game itself, not about the character (they work before the first snapshot too).
@@ -469,8 +469,10 @@
     ['Combat', 'Combat', 'You · combat'], ['Stats', 'Stats', 'You · stats'], ['Affinity', 'Affinity', 'You · affinity'], ['Other', 'Other', 'You · other'],
     ['Partner', 'Partner', 'Your partner'], ['Only in some fights', 'Situational', 'Only in some fights · not added to the totals'],
   ];
-  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon', stats: 'Your stats' };
-  const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon'];
+  const KIND = { item: 'Item', mod: 'Mod', tarot: 'Tarot', soul: 'Soul fusion', appearance: 'Appearance', set: 'Set bonus', 'fusion set': 'Fusion set', expertise: 'Expertise', clan: 'Clan bonuses', dlevel: 'Digitalize level', quest: 'Quest bonus', compendium: 'Compendium', demon: 'Digitalize demon', summoned: 'Summoned demon', own: 'Its own', epitaph: 'Demon equipment', feature: 'Feature', skill: 'Its skill', force: 'Demon Force', 'mitama set': 'Mitama set', stats: 'Your stats' };
+  /** What the summoned partner's own skills, equipment and Demon Force give the partner itself (the bonus list's part kinds). */
+  const OWN_KINDS = new Set(['epitaph', 'feature', 'skill', 'force', 'mitama set', 'own']);
+  const KIND_ORDER = ['item', 'mod', 'tarot', 'soul', 'appearance', 'set', 'fusion set', 'expertise', 'clan', 'dlevel', 'quest', 'compendium', 'demon', 'epitaph', 'feature', 'skill', 'force', 'mitama set', 'own'];
   const lowIsGood = (name) => /taken|cooldown|cast time|incantation|cost/i.test(name);
 
   // Stats that give nothing past a ceiling (from the user, 2026-11-23). The ceiling applies to the whole value
@@ -1482,7 +1484,7 @@
       const src = new Map();   // per kind of source, without what only counts while digitalized (no partner is out then)
       (Array.isArray(r.parts) ? r.parts : []).filter((p) => !isTrue(p.digi) && n0(p.value)).forEach((p) => {
         const gear = GEAR_KINDS.has(p.kind), name = gear ? 'Gear' : p.kind === 'mitama' ? 'Its Mitamas' : KIND[p.kind] || 'Other';
-        const e = src.get(name) || { cls: gear ? 'sw-gear' : p.kind === 'expertise' || p.kind === 'clan' ? 'sw-exp' : p.kind === 'demon' || p.kind === 'summoned' || p.kind === 'mitama' ? 'sw-demon' : 'sw-base', v: 0, from: [] };
+        const e = src.get(name) || { cls: gear ? 'sw-gear' : p.kind === 'expertise' || p.kind === 'clan' ? 'sw-exp' : p.kind === 'demon' || p.kind === 'summoned' || OWN_KINDS.has(p.kind) || p.kind === 'mitama' ? 'sw-demon' : 'sw-base', v: 0, from: [] };
         e.v = round2(e.v + n0(p.value)); e.from.push(p.source); src.set(name, e);
       });
       if (!src.size) return plain(label, f(r.total), n0(r.total) < 0 && !lowIsGood(r.bonus));
@@ -1783,10 +1785,10 @@
     if (demonUser()) {
       const d = S.demons ? S.demons.find((x) => x.summoned) : S.data.summoned;
       const mt = d && d.loaded !== false ? partnerMitama(d) : null;
-      page.append(sect('Key stats and affinities', digi() ? 'Your partner’s. Nobody is out while digitalized: this is what a summoned partner gets' : d ? `${d.name}’s, from you${mt ? ' and its Mitamas' : ''}` : 'Your partner’s. No demon was summoned when the game was last read', null,
+      page.append(sect('Key stats and affinities', digi() ? 'Your partner’s. Nobody is out while digitalized: this is what a summoned partner gets' : d ? `${d.name}’s, from you${mt ? ', its Mitamas' : ''} and its own skills` : 'Your partner’s. No demon was summoned when the game was last read', null,
         h('div', { class: 'over-grid' }, h('div', { class: 'over-left' }, partnerSheet()), affinityCard(partnerAffinity()))));
       if (mt) page.append(mt);
-      page.append(h('p', { class: 'note', text: (mt ? 'Its Mitamas are included (marked as its own). ' : '') + 'Not included: your partner’s own bonuses from its skills, buffs, and bonuses that only count in some fights (those are on the Bonuses page). Your own key stats and affinities are in the Player view.' }));
+      page.append(h('p', { class: 'note', text: 'Its own skills, features, demon equipment and Demon Force are included' + (mt ? ', and its Mitamas' : '') + '. Not included: switch skills, buffs, and bonuses that only count in some fights (those are on the Bonuses page). Your own key stats and affinities are in the Player view.' }));
       return page;
     }    const sheet = h('section', { class: 'card sheet', 'aria-label': 'Key stats' }, h('div', { class: 'sheet-cols' }, SHEET.map((col) => h('div', { class: 'sheet-col' }, col.map(sheetGroup)))));
 
@@ -2013,7 +2015,7 @@
   function pageBonuses() {
     // Rows that only the digitalize demon gives appear in the Digitalized view only.
     const demonOnly = (r) => (r.parts || []).length > 0 && r.parts.every((p) => p.kind === 'demon');
-    const summonedOnly = (r) => (r.parts || []).length > 0 && r.parts.every((p) => p.kind === 'summoned');   // nobody is out while digitalized
+    const summonedOnly = (r) => (r.parts || []).length > 0 && r.parts.every((p) => p.kind === 'summoned' || OWN_KINDS.has(p.kind));   // nobody is out while digitalized
     const all = S.data.bonuses.filter((r) => (digi() ? !summonedOnly(r) : !demonOnly(r)));
     const SM = digi() ? '' : summonedName();   // "Alilat (summoned)": a column of its own while a partner is out
     const DG = S.data.digitalize, ncol = digi() || SM ? 5 : 4;

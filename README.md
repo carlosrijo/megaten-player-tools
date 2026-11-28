@@ -164,7 +164,8 @@ the picture). The menu paths show the game's own menu pictures, cut from the cli
   no cap bars, the partner's caps aren't known), then what you add to its stats and the rest; and the affinity
   card as the partner's (boost and cap: what you give it; resistance: its own from the Demon Database, as a demon
   of its kind has it, plus what you give it). A Mitama-fused partner's Mitamas count too, as its own ("Its Mitamas"):
-  the rank bonus, the sets that are on and the placed Mitamas' bonuses. Its Demon Force and skills are not included.
+  the rank bonus, the sets that are on and the placed Mitamas' bonuses. So do its own skills, Demon Force and worn
+  epitaphs where they boost the demon itself (each named by what gives it: "Demon equipment · Epitaph Parts [Pursuit Essence]" adds its Pursuit chance).
   Under them, **Mitama** (a fused partner only), as the Demon Planner's "What it takes": its Mitamas of each kind
   against what its Mitama rank allows (12 + rank), what it was fused with and its Mitama rank, a row per rune with
   its slots coloured by Mitama, its rank and bonus, and beside them the rank bonus (from rank 3), the sets that are on

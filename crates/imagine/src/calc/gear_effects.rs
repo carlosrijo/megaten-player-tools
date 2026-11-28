@@ -40,6 +40,48 @@ pub struct SetReport {
     pub effects: Vec<Effect>,
     /// The item ids of a set's pieces, in the set's order; for a fusion set, its enchant ids (empty for sets read from tooltip text).
     pub piece_ids: Vec<i32>,
+    /// A fusion set's name ([`fusion_set_name`]); empty for gear sets.
+    pub name: String,
+}
+
+/// What players call a fusion set. The Soul Stone sets the game names in the stones' own texts (EnchantData soul
+/// descriptions: "With all 12 Lunar Calendar Soul Stone:", "... the Soul Stones of the Great Winter Triangle ...",
+/// the enclosures' 紫微垣 / 太微垣 / 天市垣, which the stones' names translate) go by that name; the others by their
+/// crystals, without the "Soul Stone: " every stone's name starts with ("Mercury + Venus + Earth").
+pub fn fusion_set_name(set_id: i32, crystals: &[String]) -> String {
+    let named = match set_id {
+        29 => Some("12 Zodiac Signs"),
+        30 => Some("13 Zodiac Signs"), // the 12 and the Serpent Holder
+        31 => Some("Great Winter Triangle"),
+        32 => Some("Winter Diamond"),
+        33 => Some("Summer Triangle"),
+        34 => Some("Spring Diamond"),
+        35 => Some("Great Square of Pegasus"),
+        49 => Some("Purple Forbidden Enclosure"),
+        50 => Some("Supreme Palace Enclosure"),
+        51 => Some("Heavenly Market Enclosure"),
+        52 => Some("Lunar Calendar"),
+        _ => None,
+    };
+    // (a set id the table gives another set one day keeps the name only while its first stone still matches)
+    let first = crystals.first().map(String::as_str).unwrap_or("");
+    let fits = match set_id {
+        29 | 30 => first.contains("The Ram"),
+        31 => first.contains("Sirius"),
+        32 => first.contains("Pollux"),
+        33 => first.contains("Deneb"),
+        34 => first.contains("Arcturus"),
+        35 => first.contains("Markab"),
+        49 => first.contains("Purple"),
+        50 => first.contains("Supreme Palace"),
+        51 => first.contains("Heavenly Mkt"),
+        52 => first.contains("Mutsuki"),
+        _ => false,
+    };
+    match named {
+        Some(n) if fits => n.to_string(),
+        _ => crystals.iter().map(|c| c.strip_prefix("Soul Stone: ").unwrap_or(c)).collect::<Vec<_>>().join(" + "),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -263,9 +305,11 @@ impl GearEffects {
             for &e in &s.effects {
                 names.push(self.data.enchant_name(e)?);
             }
-            let label = format!("Fusion set: {} (fusion set {})", names.join(" + "), s.id);
+            let name = fusion_set_name(s.id, &names);
+            let label = format!("Fusion set: {name} (fusion set {})", s.id);
             let mut r = SetReport {
                 set_id: s.id,
+                name,
                 pieces: names.join(", "),
                 worn: format!("{have}/{}", s.effects.len()),
                 active: have == s.effects.len(),
@@ -497,6 +541,18 @@ impl GearEffects {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fusion_set_names() {
+        let v = |xs: &[&str]| xs.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert_eq!(fusion_set_name(52, &v(&["Soul Stone: Mutsuki (January)", "Soul Stone: Kisaragi (February)"])), "Lunar Calendar");
+        assert_eq!(fusion_set_name(31, &v(&["Soul Stone: Sirius", "Soul Stone: Betelgeuse", "Soul Stone: Procyon"])), "Great Winter Triangle");
+        // unnamed sets: their stones without the "Soul Stone: " prefix; crystals as they are
+        assert_eq!(fusion_set_name(37, &v(&["Soul Stone: Earth", "Soul Stone: Moon"])), "Earth + Moon");
+        assert_eq!(fusion_set_name(12, &v(&["Cerberus'", "Orthrus'"])), "Cerberus' + Orthrus'");
+        // an id whose stones no longer match keeps the plain list
+        assert_eq!(fusion_set_name(52, &v(&["Soul Stone: Earth"])), "Earth");
+    }
 
     #[test]
     fn pct_correct_ids() {

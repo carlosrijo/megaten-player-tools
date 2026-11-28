@@ -994,7 +994,7 @@ impl Simulator {
         let mut sets: Vec<Row> = Vec::new();
         for x in worn_sets {
             sets.push(obj(json!({
-                "kind": if x.fusion { "fusion" } else { "set" }, "name": RE_SEX_MARKS.replace_all(&x.pieces, ""), "worn": x.worn, "active": x.active,
+                "kind": if x.fusion { "fusion" } else { "set" }, "name": if x.fusion { x.name.clone() } else { RE_SEX_MARKS.replace_all(&x.pieces, "").into_owned() }, "worn": x.worn, "active": x.active,
                 "lines": rows_value(self.lines(&x.effects)?),
                 // a gear set's pieces as pictures, in the set's order (a fusion set is made of crystals: none here)
                 "icons": if x.fusion { Vec::new() } else { x.piece_ids.iter().filter(|&&p| p > 0).map(|&p| self.icon(p)).collect::<Result<Vec<_>>>()? },
