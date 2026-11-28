@@ -5,7 +5,10 @@
 #
 # What goes online: only the files git tracks in app\ui, without the game art made locally (*-icons) and anything made
 # with the sealed data (*.local.json). The copy of index.html is marked as the website, so app.js runs in web mode (WEB).
-param([string]$Out = 'site')
+#
+# The game's pictures (*-icons) live elsewhere (tools\publish-icons.ps1): _redirects sends those paths there, and the
+# page's Content-Security-Policy allows pictures from it.
+param([string]$Out = 'site', [string]$IconsUrl = 'https://babel-icons.babel-feedback.workers.dev')
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
@@ -33,12 +36,17 @@ $html = [IO.File]::ReadAllText($index)
 $charset = '<meta charset="utf-8">'
 if (-not $html.Contains($charset)) { throw "index.html has no $charset line to put the website marker after." }
 $html = $html.Replace($charset, $charset + "`r`n  <meta name=`"babel-mode`" content=`"web`">`r`n  <meta name=`"robots`" content=`"$noIndex`">")
+$imgSrc = "img-src 'self' data: blob:"
+if (-not $html.Contains($imgSrc)) { throw "index.html's Content-Security-Policy has no `"$imgSrc`" to add the pictures' address to." }
+$html = $html.Replace($imgSrc, "$imgSrc $IconsUrl")
+$iconFolders = 'dcm-icons', 'demon-db-icons', 'dungeon-icons', 'gear-db-icons', 'skill-db-icons'
+[IO.File]::WriteAllText((Join-Path $dest '_redirects'), (($iconFolders | ForEach-Object { "/$_/* $IconsUrl/$_/:splat 302" }) -join "`n") + "`n")
 [IO.File]::WriteAllText($index, $html)
 [IO.File]::WriteAllText((Join-Path $dest '_headers'), "/*`n  X-Robots-Tag: $noIndex`n")
 [IO.File]::WriteAllText((Join-Path $dest 'robots.txt'), "# BABEL's website is not for search engines or AI crawlers.`nUser-agent: *`nDisallow: /`n")
 
 # Check again before anything goes online.
-$bad = @(Get-ChildItem -Recurse -File $dest | Where-Object { $_.Name -like '*.local.json' -or $_.FullName -match '-icons[\\/]' -or $_.Name -like '*.key' })
+$bad = @(Get-ChildItem -Recurse -File $dest | Where-Object { $_.Name -like '*.local.json' -or $_.FullName.Substring($dest.Length) -match '-icons[\\/]' -or $_.Name -like '*.key' })
 if ($bad) { throw "Not for the website: $($bad.FullName -join ', ')" }
 $sealed = @(Get-ChildItem -Recurse -File $dest -Include *.json, *.xml, *.tsv | Where-Object { Select-String -LiteralPath $_.FullName -Pattern 'name="Tokusei"' -SimpleMatch -Quiet })
 if ($sealed) { throw "Tokusei XML in: $($sealed.FullName -join ', ')" }
