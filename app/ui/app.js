@@ -511,7 +511,11 @@
     gdb: { q: '', kind: 'all', cls: 'all', known: true, gender: '', align: '', src: [], range: '', aff: [], maxLv: '', sort: 'name', dir: 1, fopen: false, open: new Set(), pg: 0, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
-    fus: { state: 'idle', eng: null, view: store.get('fus-view') === 'reverse' ? 'reverse' : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30 },
+    fus: { state: 'idle', eng: null, view: ['reverse', 'tree'].includes(store.get('fus-view')) ? store.get('fus-view') : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30, sort: store.get('fus-sort') === 'level' ? 'level' : 'ease',
+      // the Fusion tree: the demon wanted (undefined until the saved one is looked up), what it may start from, the demons the player has,
+      // the way picked for a demon (by demon id), the clicked demon (its place in the tree) and the folded repeats opened
+      tree: { target: undefined, pg: store.get('fus-tree-pg') !== '0', events: store.get('fus-tree-events') === '1', zoom: [0.75, 0.5].includes(Number(store.get('fus-tree-zoom'))) ? Number(store.get('fus-tree-zoom')) : 1, sel: null, over: new Map(), open: new Set(),
+        have: (() => { try { const v = JSON.parse(store.get('fus-have') || '[]'); return new Set(Array.isArray(v) ? v.filter((x) => Number.isInteger(x)) : []); } catch (e) { return new Set(); } })() } },
     rbp: { state: 'idle', P: null, src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), compKey: store.get('rbp-comp') || null, compSnap: (() => { try { const v = JSON.parse(store.get('rbp-snap') || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } })(), comp: null, compState: 'idle', plan: null, openSteps: false,
       view: 'home', id: null, name: '', builds: null, naming: false, confirmDel: false, saveState: '', navOpen: store.get('rbp-nav') !== '0' },   // view: the page of builds ('home') or the planner ('edit'), for the saved build `id` (null: the unsaved plan)   // Rebirth Planner: the plan is rbpPlan() (kept in storage)
     dun: { q: '', kind: 'all', open: new Set(), mob: new Set(), data: null, state: 'idle',   // Dungeon Database: opened places, opened enemies
@@ -4201,7 +4205,7 @@
         x.hay = [x.name, x.race, x.align, ...x.traits.concat(x.mt ? x.mt.traits : []).map((t) => sk(t).name), ...x.skills.map(([id]) => sk(id).name),
           ...[x.tarot, x.soul].filter(Boolean).flatMap((e) => [e.name, ...e.lines]), ...x.contract.map((c) => c.zone), x.variantOf || '', ...(x.get || []).map((g) => g.text)].join(' ').toLowerCase();
       });
-      if (S.page === 'ddb' || S.page === 'skills' || S.page === 'rank' || S.page === 'rebirth') render();
+      if (S.page === 'ddb' || S.page === 'skills' || S.page === 'rank' || S.page === 'rebirth' || S.page === 'fusion') render();   // the Fusion Planner's tree: where demons can be contracted
     });
     loadDcm();   // a demon's DCM, when there is one, links to the DCM Locator
   }
@@ -7195,6 +7199,191 @@
     return { F, demons, pickable, targets, canMake, byId, fuse, recipes, raceName, pool, ranges, built: () => !!two, build: buildAll, isElemental: (d) => d.race === ELEMENTAL_RACE };
   }
 
+  /**
+   * The easiest way to make every demon from scratch ("Fusion tree"). A demon you can simply go and get is a start: one
+   * a spawn lets you contract all year, or one a Summon PG gives when an NPC trades that PG outside events (demon-db.json:
+   * `contract`, `get`). Everything else is fused from those, and the planner keeps, per demon, the way whose starts are
+   * the easiest: every start has a price (below), a fusion adds 1, a plugin a little more, and the lowest total wins.
+   * Levels are free: a demon can be raised to any level with Magical Golden Apples, so a pair works when SOME levels at or
+   * above their base levels give the result (the lowest such levels are the ones shown). Every way is checked with the
+   * engine's own fuse() before it is kept. Normal tri-fusions are left out (every race the chart's demons belong to can be
+   * made from two demons); special fusions of three are in.
+   *   opt: { pg, events, have: Set of demon ids the player already has }
+   */
+  function fusionPlanner(E, db, opt) {
+    const F = E.F, o = opt || {}, have = o.have || new Set();
+    const ELEMENTAL_RACE = 55, MITAMA_RACE = 57, STEP = 1, RAISE = 0.005;
+    const dbById = new Map(db.demons.map((x) => [x.id, x])), dbByKey = new Map(db.demons.map((x) => [`${x.name}|${x.race}|${x.level}`, x]));
+    /** The Demon Database's entry for one of the engine's demons (its id, or the one the database merged it into). */
+    const dbOf = (d) => dbById.get(d.id) || dbByKey.get(`${d.name}|${d.raceName}|${d.lvl}`) || null;
+    const isEvent = (text) => /\bevent\b/i.test(text);
+    /** How to get a demon without fusing it, or null: { kind: 'have' | 'contract' | 'pg', cost, ... }. */
+    function sourceOf(d) {
+      if (have.has(d.id)) return { kind: 'have', cost: 0.1 };
+      const x = dbOf(d);
+      if (!x) return null;
+      let best = null;
+      const take = (s) => { if (!best || s.cost < best.cost) best = s; };
+      // a contract: the open world before a dungeon, a low level before a high one, any moon before a moon phase, and
+      // the plain demon before a version of it (Accomplished, Deformed, Inexperienced ...: its own, rarer spawn)
+      x.contract.forEach((c) => { if (!c.season || o.events) take({ kind: 'contract', cost: (c.field ? 1 : 1.5) + c.min / 200 + (c.moon ? 0.25 : 0) + (x.variant ? 0.4 : 0) + (c.season ? 1 : 0), place: c, places: x.contract }); });
+      // a Summon PG (or voucher) an NPC trades: all year unless the line names an event
+      (x.get || []).filter((g) => g.kind === 'Exchange item' && g.from && g.from.length).forEach((g) => {
+        const npc = g.from.filter((f) => /^NPC exchange/.test(f) && !isEvent(f));
+        if (npc.length && o.pg !== false) take({ kind: 'pg', cost: 1.5, text: g.text, from: npc, note: g.note || null });
+        else if (o.events) take({ kind: 'pg', cost: 2.5, text: g.text, from: g.from, note: g.note || null, event: true });
+      });
+      return best;
+    }
+
+    const all = E.pickable, way = new Map(), costOf = (d) => { const w = way.get(d.id); return w ? w.cost : Infinity; };
+    const src = new Map();
+    all.forEach((d) => { const s = sourceOf(d); if (s) { src.set(d.id, s); way.set(d.id, { kind: s.kind, cost: s.cost, parts: [], src: s }); } });
+    // the demons of each race that can be had so far, easiest first (rebuilt each round)
+    let byRace = new Map(), byBase = new Map();
+    function index() {
+      byRace = new Map(); byBase = new Map();
+      all.forEach((d) => {
+        if (!way.has(d.id)) return;
+        if (!byRace.has(d.race)) byRace.set(d.race, []); byRace.get(d.race).push(d);
+        if (!byBase.has(d.base)) byBase.set(d.base, []); byBase.get(d.base).push(d);
+      });
+      const easy = (a, b) => costOf(a) - costOf(b) || a.lvl - b.lvl || a.id - b.id;
+      byRace.forEach((l) => l.sort(easy)); byBase.forEach((l) => l.sort(easy));
+    }
+    const raceIds = F.raceOrder;
+    const mapRace = (a, b) => { const i = raceIds.indexOf(a), j = raceIds.indexOf(b); return i < 0 || j < 0 ? null : F.raceMap[i][j]; };
+    // which race pairs make each race (a pair once, unless the chart gives the two orders different results)
+    const pairsFor = new Map();
+    raceIds.forEach((ra, i) => raceIds.forEach((rb, j) => {
+      const r = F.raceMap[i][j];
+      if (!r || ra === rb || (j < i && F.raceMap[j][i] === r)) return;
+      if (!pairsFor.has(r)) pairsFor.set(r, []); pairsFor.get(r).push([ra, rb]);
+    }));
+    const sameFor = new Map();   // elemental id -> the races two demons of which make it
+    raceIds.forEach((r) => { const k = mapRace(r, r); if (k && F.elementals[k - 1]) { const id = F.elementals[k - 1]; if (!sameFor.has(id)) sameFor.set(id, []); sameFor.get(id).push(r); } });
+    const specialsFor = new Map();
+    F.specials.forEach((sp) => { if (!specialsFor.has(sp.result)) specialsFor.set(sp.result, []); specialsFor.get(sp.result).push(sp); });
+    const pluginCost = (sp) => { if (!sp.plugin) return 0; const p = F.plugins[String(sp.plugin)]; return p && p.how ? 2 : 6; };
+    /** The lowest levels, each at or above the demon's base level, that add up to `sum` (the lowest demon is raised first). */
+    function levelsFor(ds, sum) {
+      const l = ds.map((d) => d.lvl);
+      let need = sum - l.reduce((s2, v) => s2 + v, 0);
+      while (need > 0) {
+        let k = -1;
+        l.forEach((v, j) => { if (v < 99 && (k < 0 || v < l[k])) k = j; });
+        if (k < 0) return null;
+        l[k]++; need--;
+      }
+      return l;
+    }
+    const check = (parts, T, test) => { const r = E.fuse(parts, { log: false }); return r.id === T.id && test(r); };
+
+    /**
+     * The ways to make T from demons that can be had so far. `under`: only ways cheaper than this (the search stops
+     * early); `every`: the best way of each kind and race pair, for the list of other ways (else only the best one).
+     */
+    function waysOf(T, under, every) {
+      const out = [];
+      let cap = under === undefined ? Infinity : under;
+      const keep = (w) => { out.push(w); if (!every && w.cost < cap) cap = w.cost; };
+      const list = E.ranges.get(T.race), at = list ? list.indexOf(T) : -1;
+      // special fusions: fixed demons (or any version of them, when the recipe allows it)
+      (specialsFor.get(T.id) || []).forEach((sp) => {
+        const opts = [];
+        for (const [sid, variant] of sp.src) {
+          const sd = E.byId.get(sid), c = variant ? (sd ? byBase.get(sd.base) : null) : (way.has(sid) && sd && !sd.mitamaFused ? [sd] : null);
+          if (!c || !c.length) return;
+          opts.push(c.slice(0, 3));
+        }
+        // the easiest version of each demon; when the game makes something else of those, the next easiest
+        let best = null;
+        const tryAll = (k, picked) => {
+          if (k < opts.length) { opts[k].forEach((d) => tryAll(k + 1, picked.concat(d))); return; }
+          const cost = picked.reduce((s2, d) => s2 + costOf(d), 0) + STEP + pluginCost(sp);
+          if (cost >= (best ? best.cost : cap)) return;
+          const parts = picked.map((d, i) => ({ d, lvl: d.lvl, exact: !sp.src[i][1] }));
+          if (check(parts, T, (r) => r.special === sp)) best = { kind: 'special', cost, parts, sp };
+        };
+        tryAll(0, []);
+        if (best) keep(best);
+      });
+      // two demons of the same race make an elemental
+      (sameFor.get(T.id) || []).forEach((r) => {
+        const c = (byRace.get(r) || []).slice(0, 4);
+        let best = null;
+        for (let i = 0; i < c.length; i++) for (let j = i; j < c.length; j++) {
+          const cost = costOf(c[i]) + costOf(c[j]) + STEP;
+          if (cost >= (every ? (best ? best.cost : Infinity) : cap)) continue;
+          const parts = [{ d: c[i], lvl: c[i].lvl }, { d: c[j], lvl: c[j].lvl }];
+          if (check(parts, T, (x) => !x.special)) { best = { kind: 'same', cost, parts }; if (!every) cap = cost; }
+        }
+        if (best) keep(best);
+      });
+      // two different elementals make a Mitama
+      if (T.race === MITAMA_RACE) F.elementals.forEach((e1, i) => F.elementals.forEach((e2, j) => {
+        if (j <= i || F.mitamas[F.elemMitama[i][j]] !== T.id) return;
+        const a = E.byId.get(e1), b = E.byId.get(e2), cost = costOf(a) + costOf(b) + STEP;
+        const parts = [{ d: a, lvl: a.lvl }, { d: b, lvl: b.lvl }];
+        if (cost < cap && check(parts, T, (x) => !x.special)) keep({ kind: 'mitama', cost, parts });
+      }));
+      if (at < 0) return out.sort((x, y) => x.cost - y.cost);
+      // an elemental moves the demon next to it in its race one rank up or down
+      const ri = raceIds.indexOf(T.race);
+      if (ri >= 0) F.elementals.forEach((eid, ei) => {
+        const dir = F.elemAdjust[ri][ei], near = dir === 1 ? list[at - 1] : dir ? list[at + 1] : null;
+        const e = (byBase.get(eid) || []).find((d) => d.race === ELEMENTAL_RACE), other = near && (byBase.get(near.id) || []).find((d) => d.race === T.race);
+        if (!e || !other) return;
+        const cost = costOf(e) + costOf(other) + STEP, parts = [{ d: other, lvl: other.lvl }, { d: e, lvl: e.lvl }];
+        if (cost < cap && check(parts, T, (x) => !x.special && x.elemental === dir)) keep({ kind: 'rank', cost, parts, dir });
+      });
+      // two races the chart turns into T's race, at levels that land on T: above the demon below it in its race, and not
+      // past T (the race's highest demon has no upper limit)
+      const top = at === list.length - 1, minSum = at > 0 ? 2 * list[at - 1].lvl : 0, maxSum = top ? 198 : 2 * T.lvl - 1;
+      if (minSum <= maxSum) (pairsFor.get(T.race) || []).forEach(([ra, rb]) => {
+        const A = byRace.get(ra), B = byRace.get(rb);
+        if (!A || !B) return;
+        let best = null, lim = every ? Infinity : cap;
+        for (const a of A) {
+          const ca = costOf(a);
+          if (ca + costOf(B[0]) + STEP >= lim) break;
+          for (const b of B) {
+            const base = ca + costOf(b) + STEP;
+            if (base >= lim) break;
+            if (a.lvl + b.lvl > maxSum) continue;
+            const sum = Math.max(a.lvl + b.lvl, minSum), cost = base + RAISE * (sum - a.lvl - b.lvl);
+            if (cost >= lim) continue;
+            const lv = levelsFor([a, b], sum);
+            if (!lv) continue;
+            const parts = [{ d: a, lvl: lv[0] }, { d: b, lvl: lv[1] }];
+            if (check(parts, T, (x) => !x.special && !x.elemental)) { best = { kind: 'two', cost, parts }; lim = cost; }
+          }
+        }
+        if (best) { keep(best); }
+      });
+      return out.sort((x, y) => x.cost - y.cost);
+    }
+
+    // relax until nothing gets easier: a way only uses demons that are easier than what it makes, so this ends
+    const targets = all.filter((d) => E.ranges.has(d.race) && E.ranges.get(d.race).includes(d) || sameFor.has(d.id) || d.race === MITAMA_RACE || specialsFor.has(d.id));
+    for (let round = 0, changed = true; changed && round < 40; round++) {
+      changed = false;
+      index();
+      targets.forEach((T) => {
+        const now = costOf(T), w = waysOf(T, now)[0];
+        if (w && w.cost < now - 1e-9) { way.set(T.id, w); changed = true; }
+      });
+    }
+    index();
+    /** Every way to get T, easiest first: its own source (contract, PG, "have it") and the best fusion of each kind. */
+    function ways(T) {
+      const s = src.get(T.id), out = waysOf(T, undefined, true).filter((w) => w.parts.every((p) => p.d.id !== T.id));
+      if (s) out.push({ kind: s.kind, cost: s.cost, parts: [], src: s });
+      return out.sort((x, y) => x.cost - y.cost);
+    }
+    return { way: (d) => way.get(d.id) || null, cost: costOf, ways, source: (d) => src.get(d.id) || null, dbOf, makeable: () => all.filter((d) => way.has(d.id)) };
+  }
+
   /** A demon picker: a search field that lists matching demons under it (arrow keys, Enter, Esc). */
   function demonCombo(E, current, placeholder, onPick, list) {
     const wrap = h('div', { class: 'fus-combo' });
@@ -7275,15 +7464,15 @@
   function pageFusion() {
     const U = S.fus, page = h('div', { class: 'page page-fusion' });
     loadFusion();
-    page.append(pageHead('Pick two or three demons to see what they make, or pick the demon you want to see every way to make it.',
+    page.append(pageHead('Pick two or three demons to see what they make, pick the demon you want to see every way to make it, or get the whole tree to it from demons you can contract.',
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Planner' },
-        [['forward', 'Fuse demons'], ['reverse', 'Find a recipe']].map(([id, label]) =>
+        [['forward', 'Fuse demons'], ['reverse', 'Find a recipe'], ['tree', 'Fusion tree']].map(([id, label]) =>
         h('button', { type: 'button', 'aria-pressed': String(U.view === id), onclick: () => { U.view = id; store.set('fus-view', id); render(); } }, label)))));
     if (U.state !== 'ready') {
       page.append(h('p', { class: 'note', text: U.state === 'failed' ? 'The fusion data could not be loaded (fusion-data.json is missing beside the page).' : 'Loading the fusion data…' }));
       return page;
     }
-    page.append(U.view === 'reverse' ? fusionReverse(U.eng) : fusionForward(U.eng));
+    page.append(U.view === 'tree' ? fusionTree(U.eng) : U.view === 'reverse' ? fusionReverse(U.eng) : fusionForward(U.eng));
     page.append(h('p', { class: 'note fus-foot', text: 'Demons, levels, races and special fusions: the IMAGINE client. The race chart and the tri-fusion and elemental rules: the server’s fusion code, which IMAGINE may have changed. Checked in game: two two-demon fusions (one the community chart lacks), a tri-fusion and the refusal of Mitama-fused demons, all as the planner says. Special fusions and elemental rank changes are not checked yet.' }));
     return page;
   }
@@ -7347,14 +7536,22 @@
     // an ingredient can be clicked to plan it only when some fusion makes it
     const plan0 = (d) => { if (U.target) U.trail.push(U.target); U.target = d; U.shown2 = 30; U.shown3 = 30; render(); };
     const chip = (d, tag) => demonChip(E, d, undefined, E.canMake(d) ? plan0 : null, tag);
+    // which demons can simply be had (the Fusion tree's starts), once the demon list is there: recipes with those come first
+    loadDemonDb();
+    const P0 = S.ddb.state === 'ready' ? fusPlans(E).P0 : null;
+    const startTag = (d) => { const w = P0 && P0.way(d); return w && !w.parts.length ? h('span', { class: 'tag tag-digi', 'data-tip': ftSource(w.src), text: w.kind === 'pg' ? 'PG' : ftKind(w) }) : null; };
+    const ease = (r) => r.reduce((s2, d) => s2 + P0.cost(d), 0), lvSum = (r) => r.reduce((s2, d) => s2 + d.lvl, 0);
     const top = h('div', { class: 'toolbar' }, demonCombo(E, U.target, 'Which demon do you want?', (d) => { U.target = d; U.trail = []; U.shown2 = 30; U.shown3 = 30; render(); }, E.targets()));
     box.append(top);
     if (U.trail.length) box.append(h('nav', { class: 'fus-trail', 'aria-label': 'Planned before' }, h('span', { class: 'src-count', style: 'margin-left:0', text: 'Back to:' }),
       U.trail.map((d, i) => h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { U.target = d; U.trail = U.trail.slice(0, i); render(); } }, d.label))));
     const T = U.target;
-    if (!T) { box.append(h('p', { class: 'note', text: 'Pick a demon to see every special fusion, two-demon fusion and tri-fusion that makes it, cheapest first. Click a demon in a recipe to see how to make that one too.' })); return box; }
-    box.append(h('div', { class: 'fus-out fus-target' }, demonPic(E, T, true), h('div', null, h('div', { class: 'fus-out-name', text: T.label }), h('div', { class: 'card-sub', text: `${T.raceName} · base level ${T.lvl}` }))));
+    if (!T) { box.append(h('p', { class: 'note', text: 'Pick a demon to see every special fusion, two-demon fusion and tri-fusion that makes it, the ones from demons that are easy to get first. Click a demon in a recipe to see how to make that one too.' })); return box; }
+    box.append(h('div', { class: 'ft-top' }, h('div', { class: 'fus-out' }, demonPic(E, T, true), h('div', null, h('div', { class: 'fus-out-name', text: T.label }), h('div', { class: 'card-sub', text: `${T.raceName} · base level ${T.lvl}` }))),
+      P0 && P0.way(T) ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'The whole way to it from demons you can contract, easiest first', onclick: () => { Object.assign(U.tree, { target: T, sel: null, open: new Set() }); store.set('fus-tree-target', String(T.id)); U.view = 'tree'; store.set('fus-view', 'tree'); render(); } }, 'Show the whole tree') : null));
     const R = E.recipes(T);
+    const byEase = P0 && U.sort !== 'level';
+    if (byEase) [R.two, R.three].forEach((l) => l.sort((x, y) => ease(x) - ease(y) || lvSum(x) - lvSum(y)));
     let q = '';
     const hasQ = (r) => !q || r.some((d) => d.label.toLowerCase().includes(q) || d.raceName.toLowerCase().includes(q));
     const elemTag = (r) => {
@@ -7369,7 +7566,7 @@
       h('div', { class: 'fus-rcard-head' }, head || null, h('span', { class: 'src-count fus-sum', 'data-tip': 'The ingredients’ base levels added up', text: `Σ ${parts.reduce((s2, p) => s2 + p.d.lvl, 0)}` })),
       parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, chip(p.d, p.tag)]),
       foot || null);
-    const recipeRow = (r) => rcard(r.map((d) => ({ d })), elemTag(r));
+    const recipeRow = (r) => rcard(r.map((d) => ({ d, tag: startTag(d) })), elemTag(r));
     const section = (title, sub, rows, key) => {
       const list = rows.filter(hasQ), shown = U[key] || 30;
       const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, title, h('span', { class: 'src-count', text: q ? `${list.length} of ${rows.length}` : `${rows.length}` })), sub ? h('span', { class: 'card-sub', text: sub }) : null));
@@ -7399,10 +7596,235 @@
         section('Tri-fusion (three demons)', '', R.three, 'shown3'));
     };
     if (R.two.length || R.three.length) {
-      box.append(h('div', { class: 'toolbar' }, searchBox(U.with || '', 'Only recipes with this demon or race', (v) => { U.with = v; U.shown2 = 30; U.shown3 = 30; drawLists(); })), lists);
+      box.append(h('div', { class: 'toolbar' }, searchBox(U.with || '', 'Only recipes with this demon or race', (v) => { U.with = v; U.shown2 = 30; U.shown3 = 30; drawLists(); }),
+        P0 ? [h('span', { class: 'q-key', text: 'Sort' }), h('div', { class: 'chips', role: 'group', 'aria-label': 'Order of the recipes' },
+          [['ease', 'Easiest to get first', 'Recipes from demons you can contract, or get from a Summon PG, come first; then the ones whose demons take the fewest fusions'], ['level', 'Lowest levels first', 'The ingredients’ base levels added up, lowest first']].map(([id, label, tip]) =>
+            h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String((U.sort === 'level') === (id === 'level')), 'data-tip': tip, onclick: () => { U.sort = id; store.set('fus-sort', id); U.shown2 = 30; U.shown3 = 30; render(); } }, label)))] : null), lists);
       drawLists();
     }
-    box.append(h('p', { class: 'note', text: 'Recipes use the demons the race chart can make, at their base levels; a demon that has levelled up can give a higher result. Special fusions are listed whatever the levels. Mitama-fused demons are left out: the game won’t fuse them.' }));
+    box.append(h('p', { class: 'note', text: 'Recipes use the demons the race chart can make, at their base levels; a demon that has levelled up can give a higher result. “Contract” and “PG” mark a demon you can simply go and get; the Fusion tree shows the whole way from such demons. Special fusions are listed whatever the levels. Mitama-fused demons are left out: the game won’t fuse them.' }));
+    return box;
+  }
+
+  // ---- Fusion tree: the whole way to a demon from scratch (fusionPlanner), as a pyramid ----
+  const FT_KIND = { two: 'Fuse two', special: 'Special fusion', same: 'Same race', mitama: 'Two elementals', contract: 'Contract', pg: 'Summon PG', have: 'You have it' };
+  const ftKind = (w) => (w.kind === 'rank' ? (w.dir === 1 ? 'Rank up' : 'Rank down') : FT_KIND[w.kind] || '');
+  const ftSig = (w) => (w ? `${w.kind}:${w.parts.map((p) => `${p.d.id}@${p.lvl}`).join('+')}` : '');
+  /** Where a start comes from, in a line: the contract place, the PG, or "you have it". */
+  const ftSource = (s) => (s.kind === 'have' ? 'You already have it' : s.kind === 'contract' ? `Contract in ${s.place.zone} · ${ddbLv(s.place)}` : s.text.replace(/^Use /, ''));
+  const ftPlural = (n, one, many) => `${fmt(n)} ${n === 1 ? one : many || one + 's'}`;
+
+  /** The Fusion tree's two plans, worked out once per choice of starts: P with the demons the player says they have, P0
+   *  without them (a demon they have covers one place in the tree; another one of it is planned from scratch). */
+  function fusPlans(E) {
+    const U = S.fus, V = U.tree, key = `${V.pg}|${V.events}|${[...V.have].sort((a, b) => a - b).join(',')}`;
+    if (U.planKey !== key) {
+      U.plan0 = fusionPlanner(E, S.ddb.data, { pg: V.pg, events: V.events });
+      U.plan = V.have.size ? fusionPlanner(E, S.ddb.data, { pg: V.pg, events: V.events, have: V.have }) : U.plan0;
+      U.planKey = key;
+    }
+    return { P: U.plan, P0: U.plan0 };
+  }
+
+  function fusionTree(E) {
+    const U = S.fus, V = U.tree, box = h('div', { class: 'fus-body' });
+    loadDemonDb();
+    if (S.ddb.state !== 'ready') {
+      box.append(h('p', { class: 'note', text: S.ddb.state === 'failed' ? 'The demon list could not be loaded (demon-db.json is missing beside the page): the tree needs it to know where demons can be contracted.' : 'Loading the demons…' }));
+      return box;
+    }
+    if (V.target === undefined) { const id = num(store.get('fus-tree-target')); V.target = (id && E.byId.get(id)) || null; }
+    const plan = () => fusPlans(E).P;
+    let centred = false;
+    const draw = () => {
+      const old = box.querySelector('.ftree'), sx = old ? old.scrollLeft : 0, sy = old ? old.scrollTop : 0;
+      const P = plan(), P0 = U.plan0, T = V.target, kids = [];
+      const chip = (on, label, tip, fn) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(on), 'data-tip': tip, onclick: fn }, label);
+      kids.push(h('div', { class: 'toolbar' },
+        demonCombo(E, T, 'Which demon do you want?', (d) => { V.target = d; V.sel = null; V.open = new Set(); centred = false; store.set('fus-tree-target', d ? String(d.id) : ''); draw(); }, P.makeable()),
+        h('span', { class: 'q-key', text: 'Start from' }),
+        h('div', { class: 'chips', role: 'group', 'aria-label': 'Demons the tree may start from' },
+          h('span', { class: 'chip-btn ft-fixed', 'data-tip': 'Demons a spawn lets you contract all year: always used', text: 'Contracts' }),
+          chip(V.pg, 'Summon PG demons', 'Demons a Summon PG gives, when an NPC trades that PG outside events', () => { V.pg = !V.pg; store.set('fus-tree-pg', V.pg ? '1' : '0'); draw(); }),
+          chip(V.events, 'Event demons', 'Demons only an event gives: seasonal spawns, and PGs from event rewards or event exchanges', () => { V.events = !V.events; store.set('fus-tree-events', V.events ? '1' : '0'); draw(); }))));
+      const done = () => {
+        box.replaceChildren(...kids);
+        const el = box.querySelector('.ftree');
+        if (!el) return;
+        el.scrollLeft = sx; el.scrollTop = sy;
+        if (!centred) requestAnimationFrame(() => { if (el.scrollWidth > el.clientWidth) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2; centred = el.isConnected; });
+        // drag the tree to move around in it (a drag is not a click on the demon under it)
+        let from = null, moved = false;
+        el.addEventListener('pointerdown', (ev) => { if (ev.button === 0) { from = { x: ev.clientX, y: ev.clientY, l: el.scrollLeft, t: el.scrollTop }; moved = false; } });
+        el.addEventListener('pointermove', (ev) => {
+          if (!from || !(ev.buttons & 1)) { from = null; return; }
+          const dx = ev.clientX - from.x, dy = ev.clientY - from.y;
+          if (!moved && Math.abs(dx) + Math.abs(dy) < 6) return;
+          moved = true; el.classList.add('dragging'); el.scrollLeft = from.l - dx; el.scrollTop = from.t - dy;
+        });
+        const end = () => { from = null; el.classList.remove('dragging'); };
+        el.addEventListener('pointerup', end); el.addEventListener('pointerleave', end);
+        el.addEventListener('click', (ev) => { if (moved) { ev.stopPropagation(); ev.preventDefault(); moved = false; } }, true);
+      };
+      if (!T) {
+        kids.push(h('p', { class: 'note', text: 'Pick a demon to get the whole way to it from scratch: which demons to contract (or get from a Summon PG), what to fuse in which order, and the levels to raise them to. At every step the tree takes the demons that are easiest to get.' }));
+        return done();
+      }
+      if (!P.way(T)) {
+        kids.push(h('p', { class: 'notice' }, icon('info'), h('span', { text: `Nothing you can contract or get from a Summon PG leads to ${T.label} with these choices. Switch on “Summon PG demons” or “Event demons” above, or it only comes from a quest, an event or a gift.` })));
+        return done();
+      }
+
+      // the tree: every demon made the planner's way, or the way picked for it here (V.over, by demon). A way that is no
+      // longer possible is dropped; a demon met again inside its own tree is made the planner's way from there down
+      const usable = (Q, d, w) => (w.parts.length ? w.parts.every((p) => Q.way(p.d)) && w : (() => { const s = Q.source(d); return s && s.kind === w.kind ? { kind: s.kind, cost: s.cost, parts: [], src: s } : null; })());
+      const byPath = new Map(), used = new Set();
+      let count = 0;
+      const build = (Q, d, need, path, anc, free) => {
+        const ov = !free && V.over.get(d.id);
+        let w = (ov && usable(Q, d, ov)) || Q.way(d);
+        // the one the player has is used once; another one is made from scratch, when it can be
+        if (w.kind === 'have') { if (used.has(d.id) && P0.way(d)) { Q = P0; w = (ov && usable(Q, d, ov)) || Q.way(d); } else used.add(d.id); }
+        const n = { d, need: need > d.lvl ? need : 0, w, path, Q, kids: [], picked: ftSig(w) !== ftSig(Q.way(d)) };
+        byPath.set(path, n);
+        if (w.parts.length && ++count < 500) { const a2 = new Set(anc).add(d.id); n.kids = w.parts.map((p, i) => build(Q, p.d, p.lvl, `${path}.${i}`, a2, free || a2.has(p.d.id))); }
+        return n;
+      };
+      const root = build(P, T, 0, '0', new Set(), false);
+      // a demon you simply go and get has no tree: open its details (where to get it, and the ways to fuse it instead)
+      if (!root.kids.length && V.shownFor !== T.id) V.sel = '0';
+      V.shownFor = T.id;
+
+      // what the whole tree needs: the starts (by demon and level to raise it to), the fusions in order, the plugins
+      const starts = new Map(), steps = new Map(), plugins = new Map();
+      let fusions = 0;
+      (function walk(n) {
+        n.kids.forEach(walk);
+        if (!n.kids.length) { const k = `${n.d.id}|${n.need}`, s = starts.get(k); if (s) s.n++; else starts.set(k, { n: 1, node: n }); return; }
+        fusions++;
+        const k = `${n.d.id}|${ftSig(n.w)}`, s = steps.get(k);
+        if (s) s.n++; else steps.set(k, { n: 1, node: n });
+        if (n.w.sp && n.w.sp.plugin) plugins.set(n.w.sp.plugin, n.w.sp);
+      })(root);
+      const startList = [...starts.values()].sort((a, b) => a.node.w.kind.localeCompare(b.node.w.kind) || a.node.d.label.localeCompare(b.node.d.label) || a.node.need - b.node.need);
+      const toGet = startList.reduce((s2, x) => s2 + (x.node.w.kind === 'have' ? 0 : x.n), 0), owned = startList.reduce((s2, x) => s2 + (x.node.w.kind === 'have' ? x.n : 0), 0);
+
+      const mini = (d, lvl) => h('span', { class: 'ft-mini' }, demonPic(E, d), h('span', { class: 'ft-mini-name', text: d.label }), lvl ? h('span', { class: 'ft-mini-lv', text: `Lv ${lvl}` }) : null);
+      kids.push(h('div', { class: 'ft-top' },
+        h('div', { class: 'fus-out' }, demonPic(E, T, true), h('div', null, h('div', { class: 'fus-out-name', text: T.label }), h('div', { class: 'card-sub', text: `${T.raceName} · base level ${T.lvl}` }))),
+        h('div', { class: 'ft-counts' },
+          fusions ? h('span', { class: 'ft-count' }, h('b', { text: fmt(fusions) }), fusions === 1 ? ' fusion' : ' fusions') : null,
+          toGet ? h('span', { class: 'ft-count' }, h('b', { text: fmt(toGet) }), toGet === 1 ? ' demon to get' : ' demons to get') : null,
+          owned ? h('span', { class: 'ft-count' }, h('b', { text: fmt(owned) }), ' you have') : null,
+          plugins.size ? h('span', { class: 'ft-count' }, h('b', { text: fmt(plugins.size) }), plugins.size === 1 ? ' plugin' : ' plugins') : null)));
+
+      // what to get first: made here, shown last (a big tree's list is long, and the tree is what the page is for)
+      const sourceTip = (s) => () => h('div', null,
+        s.kind === 'contract' ? [h('b', { text: 'Where it can be contracted' }), h('ul', { class: 'fus-tip-ways' }, s.places.filter((c) => !c.season || V.events).map((c) => h('li', { text: `${c.zone} · ${ddbLv(c)}${c.moon ? ` · ${ddbMoon(c.moon)}` : ''}${c.season ? ` · ${c.season} event` : ''}` })))]
+          : s.kind === 'pg' ? [h('b', { text: s.from.length > 1 ? 'The item comes from any one of these' : 'Where the item comes from' }), h('ul', { class: 'fus-tip-ways' }, s.from.map((f) => h('li', { text: f }))), s.note ? h('div', { text: s.note }) : null]
+            : h('span', { text: 'You marked it as a demon you already have. Click it in the tree to change that.' }));
+      const gather = h('ul', { class: 'ft-gather' }, startList.map(({ n, node }) => {
+        const s = node.w.src;
+        return withTip(h('li', { class: 'ft-get' + (s.kind === 'have' ? ' have' : ''), tabindex: '0' }, demonPic(E, node.d),
+          h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: `${n > 1 ? `${n} × ` : ''}${node.d.label}` }), h('span', { class: 'fus-chip-sub', text: s.kind === 'have' && n > 1 ? `You have one: the tree needs ${n}` : `${ftSource(s)}${s.kind === 'pg' && s.from[0] ? ` · ${s.from[0]}` : ''}` })),
+          node.need ? h('span', { class: 'tag ft-raise', 'data-tip': `It comes at level ${node.d.lvl}: raise it to ${node.need} before fusing it (Magical Golden Apples)`, text: `Raise to Lv ${node.need}` }) : null), sourceTip(s));
+      }));
+      const gatherCard = root.kids.length ? h('section', { class: 'card fus-sec' },
+        h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, 'Get these first', h('span', { class: 'src-count', text: String(startList.reduce((s2, x) => s2 + x.n, 0)) })), h('span', { class: 'card-sub', text: 'The easiest demons that lead there. Hover one for every place.' })),
+        gather, [...plugins.values()].map((sp) => pluginLine(E, sp))) : null;
+
+      // 1. the pyramid. A demon made the same way as one already drawn is folded: its ingredients are the same, so it
+      // only gets a small card with their pictures (the one highest up, then leftmost, is the one drawn in full)
+      const drawn = new Set(), foldedAt = new Set(), openedAt = new Set();
+      for (let row = [root]; row.length;) {
+        const next = [];
+        row.forEach((n) => {
+          if (!n.kids.length) return;
+          if (drawn.has(n.d.id) && !V.open.has(n.path)) { foldedAt.add(n.path); return; }
+          if (drawn.has(n.d.id)) openedAt.add(n.path);
+          drawn.add(n.d.id); next.push(...n.kids);
+        });
+        row = next;
+      }
+      const nodeEl = (n) => {
+        const w = n.w, start = !w.parts.length, folded = foldedAt.has(n.path);
+        const btn = h('button', { type: 'button', class: 'ft-node' + (start ? ' start' : '') + (w.kind === 'have' ? ' have' : '') + (V.sel === n.path ? ' on' : ''), 'aria-pressed': String(V.sel === n.path),
+          'data-tip': `${n.d.label}: ${start ? ftSource(w.src) : w.parts.map((p) => `${p.d.label} (Lv ${p.lvl})`).join(' + ')}. Click for other ways.`,
+          onclick: () => { V.sel = V.sel === n.path ? null : n.path; draw(); if (V.sel) { const p = box.querySelector('.ft-panel'); if (p) p.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } } },
+          demonPic(E, n.d), h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: n.d.label }), h('span', { class: 'fus-chip-sub', text: `Lv ${n.d.lvl} · ${ftKind(w)}` })));
+        const marks = [n.need ? h('span', { class: 'tag ft-raise', 'data-tip': `Raise it to level ${n.need} before this fusion (it starts at ${n.d.lvl})`, text: `Raise to Lv ${n.need}` }) : null,
+          w.sp && w.sp.plugin ? h('span', { class: 'tag tag-warn', 'data-tip': 'This special fusion needs a plugin (a key item): see “Get these first”', text: 'Plugin' }) : null,
+          n.picked ? h('span', { class: 'tag tag-off', 'data-tip': 'You picked this way; the tree’s own choice was another', text: 'Your pick' }) : null,
+          openedAt.has(n.path) ? h('button', { type: 'button', class: 'tag ft-refold', 'data-tip': `Made the same way as the other ${n.d.label}: fold this one again`, onclick: () => { V.open.delete(n.path); draw(); } }, 'Fold') : null].filter(Boolean);
+        const li = h('li', null, btn, marks.length ? h('span', { class: 'ft-marks' }, marks) : null);
+        // folded: a compact card with only the pictures of what it is fused from (a purple ring = a demon to get)
+        if (folded) li.append(h('button', { type: 'button', class: 'ft-fold', 'aria-label': `Same as the other ${n.d.label}: ${n.kids.map((k) => k.d.label).join(' + ')}. Show them here too.`,
+          'data-tip': `Same as the other ${n.d.label}: ${n.kids.map((k) => `${k.d.label} (Lv ${k.need || k.d.lvl})`).join(' + ')}. Click to show them here too.`, onclick: () => { V.open.add(n.path); draw(); } },
+          n.kids.map((k, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, h('span', { class: 'ft-orb' + (k.kids.length ? '' : ' start') }, demonPic(E, k.d))])));
+        else if (n.kids.length) li.append(h('ul', null, n.kids.map(nodeEl)));
+        return li;
+      };
+      kids.push(h('section', { class: 'card fus-sec' },
+        h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Fusion tree' }), h('span', { class: 'card-sub' }, h('span', { class: 'ft-key' }), 'fuse', h('span', { class: 'ft-key start' }), 'get it')),
+        h('div', { class: 'ftree', tabindex: '0', role: 'group', 'aria-label': `How to make ${T.label}` }, h('div', { class: 'ftree-in' }, h('ul', { style: `zoom:${V.zoom}` }, nodeEl(root)))),
+        h('div', { class: 'toolbar ft-zoom' }, h('span', { class: 'q-key', text: 'Size' }),
+          h('div', { class: 'seg', role: 'group', 'aria-label': 'Size of the tree' }, [1, 0.75, 0.5].map((z) => h('button', { type: 'button', 'aria-pressed': String(V.zoom === z), onclick: () => { V.zoom = z; store.set('fus-tree-zoom', String(z)); centred = false; draw(); } }, `${z * 100}%`))),
+          h('span', { class: 'note', text: 'Drag the tree to move around in it.' }))));
+
+      // the clicked demon: how it is made here, and every other way, easiest first
+      const sel = V.sel && byPath.get(V.sel);
+      if (sel) {
+        const d = sel.d, w = sel.w, Q = sel.Q, has = V.have.has(d.id), own = Q.way(d);
+        const total = new Map(), fusionsOf = (x) => { if (!total.has(x.id)) { const y = Q.way(x); total.set(x.id, y && y.parts.length ? 1 + y.parts.reduce((s2, p) => s2 + fusionsOf(p.d), 0) : 0); } return total.get(x.id); };
+        const pick = (way) => { if (ftSig(way) === ftSig(own)) V.over.delete(d.id); else V.over.set(d.id, way); V.open = new Set(); draw(); };
+        const panel = h('section', { class: 'card fus-sec ft-panel' });
+        panel.append(h('div', { class: 'card-head' },
+          h('div', { class: 'fus-out' }, demonPic(E, d, true), h('div', null, h('div', { class: 'fus-out-name', text: d.label }), h('div', { class: 'card-sub', text: `${d.raceName} · base level ${d.lvl}` }))),
+          h('div', { class: 'toolbar' },
+            V.over.has(d.id) ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { V.over.delete(d.id); V.open = new Set(); draw(); } }, 'Back to the easiest way') : null,
+            h('button', { type: 'button', class: 'btn btn-sm', 'aria-pressed': String(has), 'data-tip': has ? 'Plan it again from scratch' : 'The tree stops here for one of them, and uses it where that makes things easier',
+              onclick: () => { if (has) V.have.delete(d.id); else { V.have.add(d.id); V.over.delete(d.id); } store.set('fus-have', JSON.stringify([...V.have])); V.open = new Set(); draw(); } }, has ? 'I don’t have it after all' : 'I already have it'),
+            h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'aria-label': 'Close', onclick: () => { V.sel = null; draw(); } }, 'Close'))));
+        const lines = [];
+        if (w.kind === 'have') lines.push('You marked it as a demon you already have, so the tree stops here.');
+        else if (w.kind === 'contract') lines.push(`Contract it: ${w.src.places.filter((c) => !c.season || V.events).map((c) => `${c.zone} (${ddbLv(c)}${c.moon ? `, ${ddbMoon(c.moon)}` : ''}${c.season ? `, ${c.season} event` : ''})`).join(' · ')}.`);
+        else if (w.kind === 'pg') { lines.push(`${w.src.text}.`); lines.push(`${w.src.from.length > 1 ? 'The item comes from any one of these: ' : 'The item: '}${w.src.from.join(' · ')}.`); if (w.src.note) lines.push(w.src.note); }
+        else { lines.push(`In this tree: ${w.parts.map((p) => `${p.d.label} (level ${p.lvl})`).join(' + ')}.`); E.fuse(w.parts.map((p) => ({ d: p.d, lvl: p.lvl }))).how.forEach((t) => lines.push(t)); }
+        if (sel.need) lines.push(`It comes at level ${d.lvl}: raise it to level ${sel.need} before the fusion above it (Magical Golden Apples).`);
+        panel.append(h('ul', { class: 'fus-how' }, lines.map((t) => h('li', { text: t }))));
+        if (w.sp) panel.append(pluginLine(E, w.sp));
+        const ways = Q.ways(d);
+        if (ways.length > 1 || (ways.length && ftSig(ways[0]) !== ftSig(w))) {
+          panel.append(h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, 'Every way to get it', h('span', { class: 'src-count', text: String(ways.length) })), h('span', { class: 'card-sub', text: 'Easiest first: the best pair of each two races, each special fusion, and getting it directly.' })));
+          panel.append(h('ul', { class: 'fus-recipes' }, ways.map((way) => {
+            const cur = ftSig(way) === ftSig(w), n = way.parts.length ? 1 + way.parts.reduce((s2, p) => s2 + fusionsOf(p.d), 0) : 0;
+            return h('li', { class: 'fus-rcard' + (cur ? ' ft-cur' : '') },
+              h('div', { class: 'fus-rcard-head' }, h('span', { class: 'tag' + (way.parts.length ? '' : ' tag-digi'), text: ftKind(way) }),
+                h('span', { class: 'src-count fus-sum', 'data-tip': 'Fusions in all, counting the ones that make its demons', text: n ? ftPlural(n, 'fusion') : 'No fusion' })),
+              way.parts.length ? way.parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, demonChip(E, p.d, p.lvl, null, Q.way(p.d).parts.length ? null : h('span', { class: 'tag tag-digi', 'data-tip': ftSource(Q.way(p.d).src), text: ftKind(Q.way(p.d)) }))])
+                : h('div', { class: 'ft-way-src', text: `${ftSource(way.src)}${way.src.kind === 'pg' && way.src.from[0] ? ` · ${way.src.from[0]}` : ''}` }),
+              pluginNote(E, way.sp),
+              cur ? h('span', { class: 'ft-inuse' }, icon('check'), 'In the tree') : h('button', { type: 'button', class: 'btn btn-sm ft-use', onclick: () => pick(way) }, 'Use this way'));
+          })));
+        }
+        kids.push(panel);
+      }
+
+      // 2. the fusions, in the order to do them (ingredients first)
+      if (fusions) kids.push(h('section', { class: 'card fus-sec' },
+        h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, 'Fusions in order', h('span', { class: 'src-count', text: String(fusions) })), h('span', { class: 'card-sub', text: 'Each demon is at the level shown when it goes in' })),
+        h('ol', { class: 'ft-steps' }, [...steps.values()].map(({ n, node }) => h('li', null,
+          node.w.parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, mini(p.d, p.lvl)]),
+          h('span', { class: 'ft-arrow', 'aria-label': 'makes', text: '→' }), mini(node.d),
+          n > 1 ? h('span', { class: 'tag', 'data-tip': `The tree needs ${n} of them: do this fusion ${n} times`, text: `× ${n}` }) : null,
+          node.w.kind !== 'two' ? h('span', { class: 'tag' + (node.w.kind === 'special' ? ' tag-digi' : ''), text: ftKind(node.w) }) : null,
+          node.w.sp && node.w.sp.plugin ? h('span', { class: 'tag tag-warn', text: (E.F.plugins[String(node.w.sp.plugin)] || {}).name || 'Plugin' }) : null)))));
+      // 3. what to get first, and the plugins
+      if (gatherCard) kids.push(gatherCard);
+      kids.push(h('p', { class: 'note', text: 'How the tree chooses: a demon you can contract in the open world is the easiest start, then one in a dungeon, a Summon PG an NPC trades, and a rarer version of a demon (Accomplished, Deformed, Inexperienced …); low levels before high ones. Fewer fusions win, and a plugin counts against a special fusion. Levels are free: it assumes you raise demons with Magical Golden Apples, and shows the lowest levels that work. A contracted or fused demon is taken at its base level. Normal tri-fusions are not used (two demons can make every race); special fusions of three are. Contract places and PG trades are the public server data, which NewMoon may have changed.' }));
+      done();
+    };
+    draw();
     return box;
   }
 

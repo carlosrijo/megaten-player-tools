@@ -324,21 +324,45 @@ them the list shows empty boxes.
 
 ### Tools: Fusion Planner
 
-Under **Tools** in the left bar. Two views:
+Under **Tools** in the left bar. Three views:
 
 - **Fuse demons**: pick two demons (or three for a tri-fusion) and see what they make, with why: the races, the
   fusion level worked out from their levels, elemental rank up or down, special fusions and the plugin they need. Each
   demon starts at its base level; type its real level, since the result depends on it.
 - **Find a recipe**: pick the demon you want and get every way to make it: special fusions, every
-  two-demon fusion and every tri-fusion, cheapest first (lowest levels added up), each as a card in an even grid. A special
-  fusion that needs a plugin says which key item; hover it for how to get it in game. Recipes with an elemental are marked
-  **Rank up** or **Rank down**. Click any demon in a recipe to see how to make that one too ("Back to" returns).
+  two-demon fusion and every tri-fusion, each as a card in an even grid. **Easiest to get first** (the default) puts the
+  recipes from demons you can simply go and get on top, and marks those demons **Contract** or **PG**; **Lowest levels
+  first** sorts by the levels added up. A special fusion that needs a plugin says which key item; hover it for how to get
+  it in game. Recipes with an elemental are marked **Rank up** or **Rank down**. Click any demon in a recipe to see how to
+  make that one too ("Back to" returns). **Show the whole tree** opens the demon in the Fusion tree.
+- **Fusion tree**: pick the demon you want and get the whole way to it from scratch, as a pyramid: the demon on top,
+  what it is fused from under it, down to demons you can simply go and get.
+  - **What it starts from**: demons you can contract all year, and demons a **Summon PG** gives when an NPC trades that
+    PG outside events (switch that off with its chip). **Event demons** (seasonal spawns, PGs from event rewards) are off
+    until you switch them on.
+  - **Easiest first**: at every step it takes the demons that are easiest to get: the open world before a dungeon, a
+    plain demon before a rarer version of it (Accomplished, Deformed, Inexperienced ...), low levels before high ones,
+    fewer fusions, and a special fusion without a plugin before one with.
+  - **Levels are free**: it assumes you raise demons with Magical Golden Apples, so a low demon can stand in for a high
+    one. Each demon that has to be raised says **Raise to Lv N** (the lowest level that works).
+  - Under the tree, **Fusions in order** lists each fusion, ingredients first. Last on the page, **Get these first**
+    lists every demon to get with how many, where (hover for every place) and the level to raise it to, and the plugins
+    the special fusions need.
+  - **Click a demon** in the tree for where to get it, why the fusion gives it, and every other way to get it (easiest
+    first): **Use this way** changes the tree, **Back to the easiest way** undoes it. **I already have it** stops the tree
+    there for one of them (it is remembered) and uses that demon where it helps.
+  - A demon made the same way twice is drawn in full once; the other gets a small card with only the pictures of what
+    it is fused from (hover it for the names, click it to show them in full there too, **Fold** to put it back). Big trees:
+    drag to move around, and pick 75% or 50%.
+  - Normal tri-fusions are not used (two demons can make every race); special fusions of three are.
 
 Mitama-fused demons are not in the lists: the game won't fuse them. **Find a recipe** only offers demons some fusion
 makes (417 of 850); the others come from quests, events or contracts.
 
 Demons, levels, races and special fusions are the IMAGINE client's. The race chart and the tri-fusion and elemental
 rules are the comp_hack server's fusion code, which IMAGINE may have changed. Checked in game (2026-11-23): two-demon fusions, a tri-fusion and the refusal of Mitama-fused demons, all as the planner says.
+The Fusion tree's contract places and PG trades are the Demon Database's (the public server data, which NewMoon may
+have changed); its trees are not checked in game yet.
 
 ### Tools: Digitalize Planner
 

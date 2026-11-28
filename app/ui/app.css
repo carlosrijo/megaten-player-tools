@@ -172,8 +172,13 @@ svg.icon { width: 18px; height: 18px; display: block; fill: none; stroke: curren
 /* The sidebar never grows past the window: the top bar and the snapshot block (.side-foot) stay put and only the list of
    sections scrolls (in a short window the Tools links and the snapshot line used to be cut off with no way to reach them). */
 .nav { display: grid; gap: 2px; align-content: start; flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-.nav::-webkit-scrollbar { width: 8px; }
-.nav::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
+/* Every scrollbar in the app is this thin one, first made for the left pane (repo rule, CLAUDE.md "Every scrollbar looks like the
+   left pane's"): the pages themselves, lists, popovers, dialogs, anything that scrolls either way. Nothing needs its own copy: the
+   per-list rules further down say the same and can go when their page is next worked on. Never set "scrollbar-width" or
+   "scrollbar-color" on an element: either one switches these rules off there and the system's bar comes back. */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 4px; background: var(--border-strong); background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
 .nav-item { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 8px; color: var(--text-2); cursor: pointer; position: relative; }
 .nav-item:hover { background: var(--hover); color: var(--text); }
 .nav-item[aria-current="page"] { background: var(--selected); color: var(--text); font-weight: 600; }
@@ -1485,6 +1490,84 @@ button.fus-chip:focus-visible { outline: 2px solid var(--focus); outline-offset:
 .tag.fus-down { border-color: transparent; color: var(--down); background: color-mix(in srgb, var(--down) 14%, transparent); }
 .tag.fus-same { border-style: dashed; }
 .fus-foot { margin-top: 4px; }
+/* Fusion tree: the whole way to a demon as a pyramid. A demon to get (contract, Summon PG) wears the app's purple tint;
+   a demon to fuse is a plain card. Lines are drawn by the list items (top half-borders that meet over each child). */
+.chip-btn.ft-fixed { cursor: default; background: var(--selected); border-color: transparent; color: var(--text); }
+.chip-btn.ft-fixed:hover { background: var(--selected); }
+.ft-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; }
+.ft-counts { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--text-2); font-size: 13px; }
+.ft-count b { color: var(--text); font-family: var(--font-display); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 2px; }
+.ft-gather { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 8px; }
+.ft-get { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 10px 5px 5px; border-radius: 8px; background: var(--selected); cursor: help; }
+.ft-get.have { background: none; border: 1px dashed var(--border-strong); }
+.ft-get .dcm-icon { margin: 0; }
+.ft-get .fus-chip-text { flex: 1; }
+.ft-get .fus-chip-sub { overflow: hidden; text-overflow: ellipsis; }
+.ft-get:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.tag.ft-raise { flex: none; border-color: transparent; background: var(--surface-2); color: var(--text); }
+.ft-key { display: inline-block; width: 10px; height: 10px; margin: 0 5px 0 0; border-radius: 3px; border: 1px solid var(--border-strong); background: var(--surface-2); vertical-align: -1px; }
+.ft-key.start { background: var(--selected); border-color: transparent; }
+.ft-key + .ft-key, .card-sub .ft-key:not(:first-child) { margin-left: 12px; }
+.ftree { overflow: auto; max-height: min(72vh, 760px); padding: 6px 0 10px; }
+.ftree:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ftree ul { position: relative; display: flex; justify-content: center; margin: 0; padding: 18px 0 0; list-style: none; }
+.ftree { cursor: grab; }
+.ftree.dragging { cursor: grabbing; user-select: none; }
+.ftree-in { display: flex; justify-content: center; width: max-content; min-width: 100%; }
+.ftree-in > ul { padding-top: 0; }
+.ft-zoom { margin-top: -4px; }
+.ftree li { position: relative; display: flex; flex-direction: column; align-items: center; padding: 18px 5px 0; }
+.ftree-in > ul > li { padding-top: 0; }
+.ftree li::before, .ftree li::after { content: ''; position: absolute; top: 0; right: 50%; width: 50%; height: 18px; border-top: 1px solid var(--border-strong); }
+.ftree li::after { right: auto; left: 50%; border-left: 1px solid var(--border-strong); }
+.ftree li:first-child::before, .ftree li:last-child::after { border-top: 0; }
+.ftree li:last-child::before { border-right: 1px solid var(--border-strong); border-top-right-radius: 7px; }
+.ftree li:last-child::after { border-left: 0; }
+.ftree li:first-child::after { border-top-left-radius: 7px; }
+.ftree-in > ul > li::before, .ftree-in > ul > li::after { display: none; }
+.ftree ul ul::before { content: ''; position: absolute; top: 0; left: 50%; height: 18px; border-left: 1px solid var(--border-strong); }
+.ft-node { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 164px; height: 42px; padding: 3px 9px 3px 6px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); cursor: pointer; }
+.ft-node.start { border-color: transparent; background: var(--selected); }
+.ft-node.have { background: none; border: 1px dashed var(--border-strong); }
+.ft-node:hover { box-shadow: 0 0 0 1px var(--border-strong); }
+.ft-node.on { box-shadow: 0 0 0 2px var(--focus); }
+.ft-node:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ft-node .dcm-icon { margin: 0; }
+.ft-node .fus-chip-text { flex: 1; }
+.ft-marks { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 164px; margin-top: 4px; }
+/* a demon made the same way as one already drawn: a compact card with only its ingredients' pictures, hanging from it by a short line */
+.ft-fold { all: unset; box-sizing: border-box; position: relative; display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; padding: 4px 7px; border-radius: 999px; border: 1px dashed var(--border-strong); background: var(--surface); cursor: pointer; }
+.ft-fold::before { content: ''; position: absolute; left: 50%; bottom: 100%; height: 12px; border-left: 1px dashed var(--border-strong); }
+.ft-marks + .ft-fold { margin-top: 8px; }
+.ft-marks + .ft-fold::before { height: 8px; }
+.ft-fold:hover { background: var(--hover); border-style: solid; }
+.ft-fold:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.ft-fold .fus-plus { font-size: 11px; line-height: 1; }
+.ft-orb { display: inline-grid; border-radius: 50%; padding: 1px; box-shadow: 0 0 0 1px var(--border-strong); }
+.ft-orb.start { box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 70%, transparent); }
+.ft-orb .dcm-icon { margin: 0; width: 22px; height: 22px; border-radius: 50%; }
+.ft-orb .dcm-icon img { width: 22px; height: 22px; }
+button.tag.ft-refold { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 999px; font-size: 11px; line-height: 1; border: 1px dashed var(--border-strong); color: var(--text-2); cursor: pointer; }
+button.tag.ft-refold:hover { color: var(--text); background: var(--hover); }
+button.tag.ft-refold:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.ft-panel { border-color: color-mix(in srgb, var(--focus) 55%, var(--border)); }
+.ft-panel .card-head { align-items: center; }
+.ft-panel .fus-rcard.ft-cur { border-color: color-mix(in srgb, var(--focus) 55%, var(--border)); }
+.ft-way-src { font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.ft-use, .ft-inuse { margin-top: auto; align-self: flex-start; }
+.fus-rcard > .fus-plugin + .ft-use, .fus-rcard > .fus-plugin + .ft-inuse { margin-top: 4px; }
+.ft-inuse { display: inline-flex; align-items: center; gap: 5px; height: 28px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+.ft-inuse svg.icon { width: 14px; height: 14px; }
+.ft-steps { margin: 0; padding: 0; list-style: none; counter-reset: ft; display: grid; gap: 4px; }
+.ft-steps li { counter-increment: ft; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 5px 8px; border-radius: 8px; font-size: 13px; }
+.ft-steps li:nth-child(odd) { background: var(--surface-2); }
+.ft-steps li::before { content: counter(ft); flex: none; width: 22px; color: var(--text-3); font-variant-numeric: tabular-nums; text-align: right; margin-right: 2px; }
+.ft-mini { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ft-mini .dcm-icon { margin: 0; width: 22px; height: 22px; }
+.ft-mini .dcm-icon img { width: 22px; height: 22px; }
+.ft-mini-name { font-weight: 600; }
+.ft-mini-lv { color: var(--text-2); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ft-arrow { color: var(--text-3); margin: 0 2px; }
 @media (max-width: 900px) { .fus-slots { grid-template-columns: minmax(0, 1fr); } .fus-slot, .fus-add { min-height: 0; } }
 /* Dungeon Database */
 .dun-detail { display: grid; gap: 8px; }
