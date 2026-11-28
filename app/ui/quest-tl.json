@@ -2,7 +2,7 @@
  "note": "BABEL's English for the Japanese left in quest-guide.json: names = item and valuable names inside a line (reference\\item-names-en.tsv, key-items.tsv), text = whole strings (dialogue answers, event names). The page greys every line it changes.",
  "names": {
   "原料タンク": "Material Tank",
-  "Epitaph Parts 【育成の果核】": "Epitaph Parts [Training Core]",
+  "Epitaph Parts 【育成の果核】": "Epitaph Parts [Growth Cortex]",
   "メシアンズレポートＮｏ．１": "Messian's Report No.1",
   "メシアンズレポートＮｏ．２": "Messian's Report No.2",
   "メシアンズレポートＮｏ．３": "Messian's Report No.3",

@@ -299,7 +299,8 @@ Items the game names only in Japanese (3,828 of them, and the key items without 
 English translation greyed out, with the Japanese small under it; the item's details say so. Search also finds the
 Japanese. Descriptions the game has only in Japanese (about 1,350 items, 840 skills) are translated the same way:
 greyed out, marked "(translated)", with the game's text in the tooltip. Other pages (skill barters, demon exchanges,
-dungeon drops) use the same English; the Dungeon Database greys
+dungeon drops, fusion plugins, the Demon Planner's parts and Demon Force lines) use the same English, as do
+the 167 statuses the game names only in Japanese; the Dungeon Database greys
 its translated drops too.
 
 - **Gear** (10,266 pieces) shows what it gives: stats, effects, appearance bonus, the sets it belongs to, mod slots,

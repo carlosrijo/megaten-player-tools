@@ -1894,3 +1894,27 @@ Baron Cimetiere's, who watches over life and death \nfrom birth until dying brea
 眩き後光。	A dazzling halo.
 ある神の力を模してつくられた\n非常に強固なる外套。\n\n分かたれた複数の物と合わせて\n身に纏う事により、\nそれぞれの力を強く引き出すと伝えられる。\n\n※戦闘時とスキル発動待ちの場合は、\n　通常速度に戻る。\n※装備すると、通常時の\n　待機モーションと移動モーション\n　及び、戦闘時の移動モーションが変化する。\n※他の、モーションが変わるアイテムを\n　同時に装備している場合、組み合わせによっては\n　このアイテムのモーションは適用されない。	An extremely sturdy cloak made in imitation of a god's power.\n\nIt is said that wearing it together with\nthe other separated pieces strongly draws out\neach one's power.\n\n*Returns to normal speed during battle\n and while waiting for a skill to activate.\n*Equipping it changes the idle motion and the\n movement motion, and the movement motion in battle.\n*If another item that changes motions is equipped\n at the same time, this item's motion may not\n apply, depending on the combination.
 螺鈿の細工が施された、虹色の輝きを宿す腕輪。\n去来する光の瞬きは人を魅了する。	A mother-of-pearl bracelet with a rainbow shine.\nThe twinkle of the coming and going light enchants people.
+旧・帝都地下鉄	Old Tokyo Metro
+STRが50 or above:	STR 50 or above:
+魔階トチョウ (DEVILSTORM)	TMG Building (!) (DEVILSTORM)
+Small 破壊 runestone: 霊鳥, 龍神	Small Destruction runestone: Avian, Dragon
+small 生命 runestone: 邪神, 死神, 鬼神	small Life runestone: Vile, Reaper, Guardian
+魔階シナガワ神殿騎士廟 (金)	Shinagawa Catacomb (!) (Gold)
+魔階カグラザカ朱雀洞 (金)	Kagurazaka Zhu Que Cavern (!) (Gold)
+御魂 drops	Mitama drops
+将門塚 chests	Masakado's Mound chests
+魔階ナカノ地下遺構	Nakano Underground Ruins (!)
+魔階ウエノ砂幻陵 (銀)	Ueno Mirage (!) (Silver)
+シンジュクドック（Ｂ１３Ｆ + Ｂ１４Ｆ） drops	Shinjuku Docks (B13F + B14F) drops
+な愁のオープス drops	OOPTH of Little Grief drops
+性別が女性の敵へ与える damage +15%	Damage dealt to female enemies +15%
+性別が女性の敵へ与える Mind Affinity +30%	Mind affinity vs female enemies +30%
+被Curative効果量 +10%	Curative received +10%
+自身または, 味方が引き起こした Reflect攻撃で 致死 damageを受けた際, 100% chance of surviving a lethal blow	When a reflected attack caused by you or an ally would deal lethal damage, 100% chance of surviving the lethal blow
+"Black Sun"で攻撃した際, 100% chance of , 敵がノックバックしない ※敵は"スキルのIncantation中断"及び "被 damage時の硬直"が発生する。 ※被 damage時の硬直中も攻撃のターゲットとなる。 ※敵が上記性能を Null化する性能を保持している 場合, 敵側の性能が優先される。 ※"VEＲSUS"においては, 敵は"スキルのIncantation中断"及び "被 damage時の硬直"が発生しない。	When attacking with "Black Sun": 100% chance the enemy is not knocked back. *The enemy still suffers "skill incantation interruption" and "hit stiffness". *It stays an attack target during hit stiffness. *If the enemy has an effect that nullifies this, the enemy's effect takes priority. *In "VERSUS", the enemy suffers no "skill incantation interruption" or "hit stiffness".
+Hold the status 'Mount Kurama Pass' (通行手形) and choose Train	Hold the status 'Mount Kurama Pass' and choose Train
+源義経の郎党の僧兵が持っていた薙刀のレプリカ。\n\n※装備すると、通常時の待機モーション\n　及び、戦闘時の待機モーションが変化する。\n※他の、モーションが変わるアイテムを\n　同時に装備している場合、組み合わせによっては\n　このアイテムのモーションは適用されない。	A replica of the naginata carried by a warrior monk of Minamoto no Yoshitsune's band.\n\n*When equipped, your idle motion\n in and out of battle changes.\n*When other items that change your motion\n are equipped too, this item's motion\n may not apply, depending on the combination.
+ストラディバリよりも赤みがかった、\n何か危険な雰囲気を持つヴァイオリン。	A violin redder than the Stradivari,\nwith a somehow dangerous air about it.
+修験十二道具、並びに十六道具が一つ。\nこの音を聞くものは煩悩を滅し悟りを得るという。	One of the twelve, and sixteen, tools of the ascetic.\nThose who hear its sound are said to cast off\ntheir earthly desires and reach enlightenment.
+法螺貝の形をしたＣＯＭＰ。\n吹きならすことで仲魔を召喚することができる。\n\n※パートナーを召喚する際に、\n　特殊なモーションを行う。\n※装備しても、見た目には反映されない。	A COMP shaped like a conch shell.\nBlowing it summons your demon.\n\n*Plays a special motion when\n you summon your partner.\n*Does not change your look when equipped.
+源義経の郎党の僧兵が持っていた七つの道具。\n七つ道具と言いつつ、六つしかない。\n残りの一つと同時に装着することで、\n更なる力を発揮する。	The seven tools carried by a warrior monk of Minamoto no Yoshitsune's band.\nThough called seven tools, there are only six.\nWorn together with the last one,\nthey show even greater power.

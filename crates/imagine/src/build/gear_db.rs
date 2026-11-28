@@ -1429,6 +1429,11 @@ pub fn build(data: Arc<GameData>, decoded: &str, sheet_tsv: Option<&str>, out_fi
     result.insert("generatedAt".into(), json!(chrono::Utc::now().format("%Y-%m-%d").to_string()));
     result.insert("note".into(), json!("Names, descriptions, stats, effects and sets: the IMAGINE client's current tables. Community notes: SnowSheet's gear reference for IMAGINE."));
     result.insert("items".into(), Value::Array(all));
+    // what is still Japanese inside the text (item names in a fusion plugin's "Hand over ...", a runestone's words, a
+    // status): BABEL's English (game_data::translate_json)
+    let mut result = Value::Object(result);
+    crate::data::game_data::translate_json(&mut result);
+    let Value::Object(result) = result else { unreachable!() };
     let out_path = Path::new(out_file);
     let full = std::path::absolute(out_path)?;
     if let Some(parent) = full.parent() {

@@ -3816,9 +3816,10 @@
         (d.everywhere || []).forEach(item);   // the game-wide drops every enemy that inherits drops can give
         d.dungeons.forEach((x, i) => {
           x.key = i;
-          (x.shared || []).forEach(item); (x.bossChest || []).forEach(item); (x.chests || []).forEach(item);
+          (x.shared || []).forEach(item); (x.bossChest || []).forEach(item); (x.chests || []).forEach(item); (x.rewards || []).forEach(item);
           x.mobs.forEach((e) => { e.mob = d.mobs[e.m]; (e.drops || []).forEach(item); e.hay = [e.mob.hay, e.where || '', ...(e.drops || []).map((g) => g.item)].join(' ').toLowerCase(); });
-          x.hay = [x.name, x.from || '', ...(x.shared || []).map((g) => g.item)].join(' ').toLowerCase();
+          // chests and scripted rewards too: "god's majesty" finds End of Days
+          x.hay = [x.name, x.from || '', ...[x.shared, x.bossChest, x.chests, x.rewards].flatMap((l) => (l || []).map((g) => g.item))].join(' ').toLowerCase();
           x.bosses = x.mobs.filter((e) => e.boss).length;
         });
       }
@@ -3893,18 +3894,20 @@
       dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => tip(l))));
     // the chests its events open: the boss chest at the end of a stage, and any others (a stage's events decide which)
     const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, ja: g.ja, dja: g.dja, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
-    const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest');
+    // and what its events give by script (x.rewards: End of Days' reward rolls), each with its chance per roll
+    const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest'), rewards = chestList(x.rewards, 'reward');
     // One short warning for all of it: the rates are the vanilla server data's, and a place whose enemies drop nothing
     // there (Dark Babel: IMAGINE sets those on its own server) says so. The game-wide drops any enemy anywhere can give
     // (d.everywhere) are left off the page: the user asked to ignore them.
-    if (loot.length || boss.length || other.length) box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null,
+    if (loot.length || boss.length || other.length || rewards.length) box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null,
       h('b', { text: 'Vanilla rates, not IMAGINE\'s. ' }),
       loot.length ? '' : 'No enemy drops here in the server data (IMAGINE keeps its own). ',
-      boss.length || other.length ? 'Each chest item rolls on its own.' : '')));
+      boss.length || other.length || rewards.length ? 'Each chest or reward item rolls on its own.' : '')));
     else box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null, h('b', { text: 'No drops here in the server data. ' }), 'IMAGINE keeps its own.')));
     if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }), strip(loot, dunLootTip)));
     if (boss.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'What the boss chest at the end of a stage can hold, over every stage of this place', text: `End chest · ${boss.length === 1 ? '1 item' : `${boss.length} items`}` }), strip(boss, dunLootTip)));
     if (other.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'Other chests the events here open', text: `Other chests · ${other.length === 1 ? '1 item' : `${other.length} items`}` }), strip(other, dunLootTip)));
+    if (rewards.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'Given by the events here by script, not from a chest or an enemy (a reward roll, such as at the end of a run): the chance of each roll', text: `Rewards · ${rewards.length === 1 ? '1 item' : `${rewards.length} items`}` }), strip(rewards, dunLootTip)));
     box.append(h('table', { class: 'tbl dun-mobs' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }),
         h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
@@ -3931,12 +3934,12 @@
   function dunLootTip(l) {
     const rows = l.from.slice().sort((a, b) => b.rate - a.rate);
     const shown = rows.slice(0, 10), more = rows.length - shown.length;
-    const inChest = rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest');
-    return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% ${inChest ? 'per chest' : 'per kill'}${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
+    const inChest = rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest'), reward = rows[0] && rows[0].who === 'reward';
+    return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% ${reward ? 'per roll' : inChest ? 'per chest' : 'per kill'}${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
       l.ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(l.ja, 'item') }) : null,
       ...tlTipLines(l.desc, l.dja),
-      h('div', { class: 'tt-sec', text: rows[0] && rows[0].who === 'all' ? 'Dropped by' : rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest') ? 'Found in' : 'Dropped here by' }),
-      shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who === 'all' ? 'Any enemy, in any place' : r.who === 'boss' ? 'The boss chest at the end of a stage' : r.who === 'chest' ? 'A chest the events here open' : r.who ?`${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
+      h('div', { class: 'tt-sec', text: rows[0] && rows[0].who === 'all' ? 'Dropped by' : reward ? 'Given by' : rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest') ? 'Found in' : 'Dropped here by' }),
+      shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who === 'all' ? 'Any enemy, in any place' : r.who === 'boss' ? 'The boss chest at the end of a stage' : r.who === 'chest' ? 'A chest the events here open' : r.who === 'reward' ? 'A reward roll of the events here' : r.who ?`${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
       more > 0 ? h('div', { class: 'tt-line', text: `and ${more} more` }) : null);
   }
   /**
@@ -8240,15 +8243,15 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   // parts BABEL last read on it.
   const RBP_EQ_SLOTS = 4;
   let rbpEqItems = null, rbpEqFrom = null;
-  /** The equipment items by id: { id, skill, name, skillName, desc, groups, hay }. */
+  /** The equipment items by id: { id, skill, name, skillName, desc, descJa (the game's Japanese when desc is BABEL's translation), groups, hay }. */
   function rbpEqById(P) {
     const E = P && P.equipment;
     if (!E) return null;
     if (rbpEqFrom !== E) {
-      rbpEqItems = new Map(E.items.map(([id, skill, name, skillName, desc]) => {
+      rbpEqItems = new Map(E.items.map(([id, skill, name, skillName, desc, descJa]) => {
         const rule = E.rules[String(skill)], groups = rule ? rule[1] : [];
         const gnames = groups.map((g) => E.groups[String(g)]).filter(Boolean);
-        return [id, { id, skill, name, skillName, desc: desc || '', groups, gnames, hay: [name, skillName, ...gnames, desc || ''].join(' ').toLowerCase() }];
+        return [id, { id, skill, name, skillName, desc: desc || '', descJa, groups, gnames, hay: [name, skillName, ...gnames, desc || ''].join(' ').toLowerCase() }];
       }));
       rbpEqFrom = E;
     }
@@ -8333,7 +8336,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
         onclick: (ev) => { rbpEqFor = ev.currentTarget; rbpEqSlot = i; } }, it ? (rbpEqPic(it.id, 40) || h('span', { class: 'rbp-skillpic rbp-skillnone', text: '?' })) : h('span', { class: 'rbp-skillpic rbp-skillnone rbp-plus', 'aria-hidden': 'true' }));   // the plus is drawn (not a "+" glyph, which sits low), so it is in the exact middle
       const feat = T ? h('span', { class: 'rbp-eqfeat' + (it ? ' covered' : ''), 'data-tip': T.desc || null, tabindex: T.desc ? 0 : null }, T.name) : h('span', { class: 'rbp-eqfeat none', text: 'no feature' });
       const text = it
-        ? h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }),
+        ? h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count' + (it.descJa ? ' tl-name' : ''), 'data-tip': it.descJa ? TL_DESC_TIP(it.descJa) : null, text: rbpEqText(it) }),
           T ? h('small', { class: 'rbp-skillfrom' }, 'in place of ', feat) : h('small', { class: 'rbp-skillfrom', text: 'in a slot with no feature' }), block ? h('small', { class: 'rbp-eqbad', text: block.fixed ? 'This feature can’t be covered' : `Can’t be worn with ${block.clash} (${block.group})` }) : null,
           h('small', { class: 'rbp-skillfrom got', text: rbpEqWhere(it.id) }))
         // the feature as it is: its name and the game's description of it (user, 2026-11-27: not just "its own feature")
@@ -8366,7 +8369,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     shown.forEach(({ it, block }) => items.push(h('button', { type: 'button', class: 'char' + (block ? ' rbp-eqoff' : ''), 'aria-disabled': block ? 'true' : null, 'aria-current': equip[rbpEqSlot] === it.id ? 'true' : null,
       'data-tip': block ? (block.fixed ? 'This slot’s feature can’t be covered' : `Can’t be worn with ${block.clash} in slot ${block.slot + 1}: both are ${block.group}`) : it.desc || null,
       onclick: () => { if (!block) pick(it.id); } },
-      h('span', { class: 'dm-icon rbp-dm-icon' }, rbpEqPic(it.id, 32)), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: it.name }), h('span', { class: 'char-line', text: rbpEqText(it) || it.skillName })),
+      h('span', { class: 'dm-icon rbp-dm-icon' }, rbpEqPic(it.id, 32)), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: it.name }), h('span', { class: 'char-line' + (it.descJa ? ' tl-name' : ''), text: rbpEqText(it) || it.skillName })),
       block ? h('span', { class: 'tag tag-off', text: block.fixed ? 'fixed feature' : `clashes · slot ${block.slot + 1}` }) : equip.includes(it.id) ? h('span', { class: 'tag', text: 'worn' }) : null)));
     list.replaceChildren(...items);
     const free = rows.filter((r) => !r.block).length;
@@ -9050,7 +9053,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       const parts = byId ? rbpEquip(plan, D, endFused).filter((id) => id && byId.has(id) && !worn.includes(id)).map((id) => byId.get(id)) : [];
       if (parts.length) gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'The Epitaph Parts planned in the equipment step that the demon does not wear yet, and where each comes from in the game (the Item Database has every way)', tabindex: 0, text: `Demon equipment to get · ${parts.length}` }),
         h('ul', { class: 'gdb-list rbp-skilllist rbp-skillcosts' }, parts.map((it) => h('li', { class: 'rbp-skillcost' },
-          h('div', { class: 'rbp-skillrow' }, h('span', { class: 'skill-ico' }, rbpEqPic(it.id, 24)), h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }))),
+          h('div', { class: 'rbp-skillrow' }, h('span', { class: 'skill-ico' }, rbpEqPic(it.id, 24)), h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count' + (it.descJa ? ' tl-name' : ''), 'data-tip': it.descJa ? TL_DESC_TIP(it.descJa) : null, text: rbpEqText(it) }))),
           h('div', { class: 'rbp-ways' }, h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-where', text: rbpEqWhere(it.id) }))))))));
     }
     // the Demon Force items to use: every slot the plan fills with an effect the demon doesn't have there yet, as item

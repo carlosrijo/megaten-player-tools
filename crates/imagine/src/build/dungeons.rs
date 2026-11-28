@@ -142,7 +142,51 @@ struct Loot {
     drop_set_ids: Vec<i32>,
     drops: Vec<Drop>,
     is_boss_box: bool,
+    /// a transform script makes the contents and its parameters do not list them
     made_by_script: bool,
+    /// what a transform script puts in it when its parameters list it (transforma_addItemDropRandom: one of the items)
+    script_drops: Vec<Drop>,
+}
+
+/// transforma_addItemDropRandom's parameters, (item, amount) pairs: one of them is given, each with 100 / n %.
+fn random_drops(ps: &[i32]) -> Vec<Drop> {
+    let n = ps.len() / 2;
+    ps.chunks_exact(2).filter(|p| p[0] > 0).map(|p| (p[0], 100.0 / n as f64, p[1].max(1))).collect()
+}
+
+/// The items an event gives by script with their chance, as tools\dcmexport reads them ("a reward roll"):
+/// action_flagRangeSet (params: [0] flag key, [1] values after the item per entry, [2] percent digits (0 = always), then
+/// entries (item, values..., [chance]); a roll succeeds with chance / (10 x 10^digits)), each with its flag key: only the
+/// keys an event turns into items count (`item_flag_keys`); and transforma_addItemDropRandom on any other action (one of
+/// the listed items, key 0). Also the flag keys this event turns into items (ActionAddRemoveItems with
+/// transforma_addItemFlagRange, its first parameter).
+fn script_rewards(ev: Node) -> (Vec<(i32, Drop)>, Vec<i32>) {
+    let (mut got, mut keys) = (Vec::new(), Vec::new());
+    for o in ev.descendants().filter(|x| x.is_element() && x.tag_name().name() == "object") {
+        let name = o.attribute("name").unwrap_or("");
+        let run = name == "ActionRunScript";
+        let script = m(Some(o), if run { "scriptID" } else { "transformScriptID" }).unwrap_or_default();
+        let ps = ints(mem(Some(o), if run { "params" } else { "transformScriptParams" }));
+        match script.as_str() {
+            "action_flagRangeSet" if run && ps.len() >= 4 => {
+                let digits = ps[2];
+                let size = (1 + ps[1] + i32::from(digits >= 1)).max(1) as usize;
+                let precision = 10.0 * 10f64.powi(digits);
+                let mut i = 3;
+                while i + size - 1 < ps.len() {
+                    let rate = if digits >= 1 { (f64::from(ps[i + size - 1]) / precision * 100.0).min(100.0) } else { 100.0 };
+                    if ps[i] > 0 && rate > 0.0 {
+                        got.push((ps[0], (ps[i], rate, 1)));
+                    }
+                    i += size;
+                }
+            }
+            "transforma_addItemFlagRange" if name == "ActionAddRemoveItems" && ps.first().is_some_and(|k| *k > 0) => keys.push(ps[0]),
+            "transforma_addItemDropRandom" if name != "ActionCreateLoot" => got.extend(random_drops(&ps).into_iter().map(|d| (0, d))),
+            _ => {}
+        }
+    }
+    (got, keys)
 }
 
 /// One area: a zone file, i.e. a zone (Zone) as one of its map variants (Id = the dynamic map). The difficulties of a
@@ -224,11 +268,14 @@ fn spawns_of(top: Node) -> Result<Vec<(i32, SpawnInfo)>> {
 fn loot_in(o: Node, loot: &mut Vec<Loot>) -> Vec<usize> {
     let mut res = Vec::new();
     for x in o.descendants().skip(1).filter(|x| x.is_element() && x.tag_name().name() == "object" && x.attribute("name") == Some("ActionCreateLoot")) {
+        let script = m(Some(x), "transformScriptID").unwrap_or_default();
+        let script_drops = if script == "transforma_addItemDropRandom" { random_drops(&ints(mem(Some(x), "transformScriptParams"))) } else { Vec::new() };
         loot.push(Loot {
             drop_set_ids: ints(mem(Some(x), "dropSetIDs")),
             drops: drops_of(mem(Some(x), "drops")),
             is_boss_box: m(Some(x), "isBossBox").as_deref() == Some("true"),
-            made_by_script: m(Some(x), "transformScriptID").is_some_and(|s| !s.is_empty()),
+            made_by_script: !script.is_empty() && script_drops.is_empty(),
+            script_drops,
         });
         res.push(loot.len() - 1);
     }
@@ -442,6 +489,9 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
     // the end-of-stage boss chest (isBossBox) and others. The seasonal partials\<event>\ are left out.
     let mut event_refs: HashMap<String, Vec<String>> = HashMap::new();
     let mut event_loot: HashMap<String, Vec<usize>> = HashMap::new();
+    // the items its scripts give (reward rolls), with the flag key each needs (0: none), and the keys turned into items
+    let mut event_rewards: HashMap<String, Vec<(i32, Drop)>> = HashMap::new();
+    let mut item_flag_keys: HashSet<i32> = HashSet::new();
     let event_dir = store.join("events");
     if event_dir.is_dir() {
         for f in xml::enumerate_xml_files(&event_dir, true)? {
@@ -456,30 +506,53 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
                 let refs: Vec<String> = leaves(ev).into_iter().filter(|v| seen.insert(v.clone())).collect();
                 event_refs.insert(eid.clone(), refs);
                 let l = loot_in(ev, &mut arenas.loot);
+                let (rewards, keys) = script_rewards(ev);
+                item_flag_keys.extend(keys);
+                if !rewards.is_empty() {
+                    event_rewards.insert(eid.clone(), rewards);
+                }
                 if !l.is_empty() {
                     event_loot.insert(eid, l);
                 }
             }
         }
     }
-    let chests_of = |a: &Area| -> Vec<usize> {
+    // every event an area reaches (its own and the ones they name), in the order found
+    let reached = |a: &Area| -> Vec<String> {
         let mut seen: HashSet<&str> = HashSet::new();
+        let mut order = Vec::new();
         let mut todo: Vec<&str> = a.refs.iter().map(String::as_str).filter(|r| event_refs.contains_key(*r)).collect();
-        let mut res = a.loot.clone();
         while let Some(e) = todo.pop() {
             if !seen.insert(e) {
                 continue;
             }
-            if let Some(l) = event_loot.get(e) {
-                res.extend(l.iter().copied());
-            }
+            order.push(e.to_string());
             for r in &event_refs[e] {
                 if event_refs.contains_key(r.as_str()) && !seen.contains(r.as_str()) {
                     todo.push(r.as_str());
                 }
             }
         }
+        order
+    };
+    let chests_of = |a: &Area| -> Vec<usize> {
+        let mut res = a.loot.clone();
+        for e in reached(a) {
+            if let Some(l) = event_loot.get(&e) {
+                res.extend(l.iter().copied());
+            }
+        }
         res
+    };
+    // what an area's events give by script: End of Days' reward rolls (Demon Souls, God's Majesty 0.1%...)
+    let rewards_of = |a: &Area| -> Vec<Drop> {
+        reached(a)
+            .iter()
+            .filter_map(|e| event_rewards.get(e))
+            .flatten()
+            .filter(|(key, _)| *key == 0 || item_flag_keys.contains(key))
+            .map(|(_, d)| *d)
+            .collect()
     };
 
     // ---- server: drop sets ----
@@ -754,6 +827,9 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
             .flat_map(|a| a.spawns.values())
             .flat_map(|&i| arenas.spawns[i].drops.iter().map(|d| d.0))
             .chain(drop_sets.values().flat_map(|l| l.iter().map(|d| d.0)))
+            // what chests list themselves or get by script, and the scripted rewards: their pictures and descriptions too
+            .chain(arenas.loot.iter().flat_map(|l| l.drops.iter().chain(l.script_drops.iter()).map(|d| d.0)))
+            .chain(event_rewards.values().flatten().map(|(_, d)| d.0))
             .collect();
         let text = xml::read_text(&item_file)?;
         let doc = xml::parse(&text)?;
@@ -874,7 +950,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
     };
 
     let mut out_list: Vec<(&'static str, String, Value)> = Vec::new();
-    let (mut mob_refs, mut chest_count, mut script_chests) = (0usize, 0usize, 0usize);
+    let (mut mob_refs, mut chest_count, mut script_chests, mut reward_count) = (0usize, 0usize, 0usize, 0usize);
     for dungeon in &dungeons {
         let (name, kind, from, ids) = (&dungeon.name, dungeon.kind, &dungeon.from, &dungeon.areas);
         let mut entries: IndexMap<String, Entry> = IndexMap::new();
@@ -1023,12 +1099,18 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
                     res.extend(drop_sets[x].iter().copied());
                 }
                 res.extend(loot.drops.iter().copied());
+                res.extend(loot.script_drops.iter().copied());
             }
             res
         };
         let boss_chest = drop_lines(chest_drops(chest_acts.iter().copied().filter(|&c| arenas.loot[c].is_boss_box).collect()), &mut item_table, &mut skill_icons, &mut item_ref)?;
         let chests = drop_lines(chest_drops(chest_acts.iter().copied().filter(|&c| !arenas.loot[c].is_boss_box).collect()), &mut item_table, &mut skill_icons, &mut item_ref)?;
         chest_count += chest_acts.len();
+        // the items its events give by script (reward rolls; each its chance per roll)
+        let mut seen_area = HashSet::new();
+        let reward_list: Vec<Drop> = ids.iter().filter(|z| seen_area.insert(**z)).flat_map(|z| rewards_of(&areas[z - 1])).collect();
+        reward_count += usize::from(!reward_list.is_empty());
+        let rewards = drop_lines(reward_list, &mut item_table, &mut skill_icons, &mut item_ref)?;
         script_chests += chest_acts.iter().filter(|&&c| arenas.loot[c].made_by_script).count();
         let min_l = list.iter().map(|x| mob_meta[&x.m].1).min().unwrap_or(0);
         let max_l = list.iter().map(|x| mob_meta[&x.m].1).max().unwrap_or(0);
@@ -1077,6 +1159,9 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
         if !chests.is_empty() {
             o.insert("chests".into(), Value::Array(chests));
         }
+        if !rewards.is_empty() {
+            o.insert("rewards".into(), Value::Array(rewards)); // given by its events' scripts: the chance per roll
+        }
         out_list.push((kind, name.clone(), Value::Object(o)));
     }
     out_list.sort_by(|a, b| {
@@ -1104,7 +1189,7 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, out_file: &Path, cli
     result.insert("everywhere".into(), Value::Array(everywhere));
     std::fs::write(out_file, json::serialize(&Value::Object(result), Escape::Relaxed, false))?;
     console::write_line(&format!(
-        "{} places with enemies that can't be contracted ({} dungeons), {} enemy kinds, {mob_refs} entries; {} of {} icons; {} dropped items, {item_pics} with a picture; {chest_count} chests ({script_chests} made by a script, contents not in the data). Wrote {} ({} KB).",
+        "{} places with enemies that can't be contracted ({} dungeons), {} enemy kinds, {mob_refs} entries; {} of {} icons; {} dropped items, {item_pics} with a picture; {chest_count} chests ({script_chests} made by a script, contents not in the data); {reward_count} places with scripted rewards. Wrote {} ({} KB).",
         out_list.len(),
         out_list.iter().filter(|x| x.0 == "Dungeon").count(),
         mobs.len(),

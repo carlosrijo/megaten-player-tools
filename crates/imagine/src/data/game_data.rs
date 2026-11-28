@@ -190,6 +190,93 @@ pub fn desc_en(text: &str) -> Option<String> {
     desc_translations().get(&desc_key(text)).cloned()
 }
 
+/// BABEL's English for the status names the client has only in Japanese (reference\status-names-en.tsv: id, the
+/// client's name, the English), loaded once.
+pub fn status_translations() -> &'static HashMap<i32, (String, String)> {
+    static T: LazyLock<HashMap<i32, (String, String)>> = LazyLock::new(|| name_translations("status-names-en.tsv").unwrap_or_default());
+    &T
+}
+
+/// Whether a text has Japanese in it (kana or kanji).
+pub fn has_japanese(s: &str) -> bool {
+    s.chars().any(|c| matches!(c as u32, 0x3040..=0x30FA | 0x30FC..=0x30FF | 0x3400..=0x4DBF | 0x4E00..=0x9FFF))
+}
+
+/// Japanese pieces inside English text with BABEL's English, longest first: every item name of item-names-en.tsv and
+/// status name of status-names-en.tsv ("Immune to 至福"), and the game terms of reference\text-en.tsv when it exists.
+fn text_fragments() -> &'static Vec<(String, String)> {
+    static T: LazyLock<Vec<(String, String)>> = LazyLock::new(|| {
+        let mut m: HashMap<String, String> = HashMap::new();
+        for (ja, en) in item_translations().values().chain(status_translations().values()) {
+            if ja.chars().count() >= 2 {
+                m.entry(ja.trim().to_string()).or_insert_with(|| en.clone());
+            }
+        }
+        for line in reference_lines("text-en.tsv").ok().flatten().unwrap_or_default() {
+            let p: Vec<&str> = line.split('\t').collect();
+            if !line.starts_with('#') && p.len() >= 2 && !p[0].is_empty() && !p[1].trim().is_empty() {
+                m.insert(p[0].to_string(), p[1].trim().to_string()); // the terms win over an item of the same name
+            }
+        }
+        let mut v: Vec<(String, String)> = m.into_iter().collect();
+        v.sort_by(|a, b| b.0.chars().count().cmp(&a.0.chars().count()).then_with(|| a.0.cmp(&b.0)));
+        v
+    });
+    &T
+}
+
+/// A text the pages show, with BABEL's English put in: the whole text when desc-en.tsv has it, else the game terms and
+/// item names inside it (text-en.tsv, item-names-en.tsv). `None` when nothing changed (no Japanese, or none known).
+pub fn english_text(s: &str) -> Option<String> {
+    if !has_japanese(s) {
+        return None;
+    }
+    if let Some(en) = desc_en(s) {
+        return Some(en);
+    }
+    let mut t = s.to_string();
+    for (ja, en) in text_fragments() {
+        if t.contains(ja.as_str()) {
+            t = t.replace(ja.as_str(), en);
+            if !has_japanese(&t) {
+                break;
+            }
+        }
+    }
+    (t != s).then_some(t)
+}
+
+/// [`english_text`] over every string of a page's data (object keys too), leaving the game's originals kept for the
+/// tooltips alone (`ja`, `jp`, `descJa`, `growthNamesJa`). Returns how many strings it changed.
+pub fn translate_json(v: &mut Value) -> usize {
+    const KEEP: [&str; 4] = ["ja", "jp", "descJa", "growthNamesJa"];
+    match v {
+        Value::String(s) => match english_text(s) {
+            Some(en) => {
+                *s = en;
+                1
+            }
+            None => 0,
+        },
+        Value::Array(a) => a.iter_mut().map(translate_json).sum(),
+        Value::Object(o) => {
+            let mut n = 0;
+            let keys: Vec<String> = o.keys().cloned().collect();
+            for k in keys {
+                if KEEP.contains(&k.as_str()) {
+                    continue;
+                }
+                let mut val = o.remove(&k).unwrap_or(Value::Null);
+                n += translate_json(&mut val);
+                let k2 = english_text(&k).inspect(|_| n += 1).unwrap_or(k);
+                o.insert(k2, val);
+            }
+            n
+        }
+        _ => 0,
+    }
+}
+
 /// The client's item table (reference\items-game.tsv) as lines, with BABEL's English in the name column where the
 /// client's name is Japanese: for builders that only need a readable name (barter costs, exchange items).
 pub fn items_game_lines_en() -> Result<Vec<String>> {
@@ -259,7 +346,8 @@ pub fn status_name(id: i32) -> Option<&'static str> {
                 }
                 let r: Vec<&str> = line.split('\t').collect();
                 if let (Some(id), Some(name)) = (r.first().and_then(|s| crate::fmt::parse_i32(s)), r.get(1).filter(|n| !n.trim().is_empty())) {
-                    m.insert(id, name.trim().to_string());
+                    // BABEL's English where the client names the status only in Japanese (status-names-en.tsv: 至福 Bliss)
+                    m.insert(id, translated_name(status_translations(), id, name).unwrap_or_else(|| name.trim().to_string()));
                 }
             }
             m

@@ -254,6 +254,18 @@ fn run(opts: &HashMap<String, String>) -> Result<i32> {
         digi_planner::build(&GameData::new(), Path::new(&out))?;
         return Ok(0);
     }
+    if cmd == "translate-json" {
+        // BABEL's English for the Japanese left in a page's data file made by another tool (fusion-data.json from
+        // tools\fusionexport, dcm-sources.json from tools\dcmexport): whole texts (desc-en.tsv), game terms (text-en.tsv)
+        // and item names (item-names-en.tsv) inside text. Rewrites the file in place.
+        //   translate-json --file <file>
+        let file = get("file").ok_or_else(|| user_error("translate-json needs --file <page data file>."))?;
+        let mut v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(file)?)?;
+        let n = imagine::data::game_data::translate_json(&mut v);
+        std::fs::write(file, imagine::data::json::serialize(&v, imagine::data::json::Escape::Relaxed, false))?;
+        println!("{n} strings put in English in {file}.");
+        return Ok(0);
+    }
     if cmd == "rebirthplanner" {
         // The Rebirth Planner page's data, from the reference tables (no game, no character).
         //   rebirthplanner [--out app\ui\rebirth-planner.json]

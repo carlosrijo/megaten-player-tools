@@ -826,7 +826,10 @@ pub fn build(data: &GameData, decoded: &Path, store: &Path, client_dir: Option<&
     result.insert("skills".into(), Value::Object(skills_seen.iter().map(|(k, v)| (k.to_string(), Value::Object(v.clone()))).collect()));
     result.insert("noIcon".into(), json!(if icon_dir.join("none.png").is_file() { "demon-db-icons/none.png" } else { "" }));
     result.insert("demons".into(), Value::Array(list.iter().cloned().map(Value::Object).collect()));
-    std::fs::write(out_file, json::serialize(&Value::Object(result), Escape::Relaxed, false))?;
+    // what is still Japanese inside the text (a soul's "STRが50 or above"): BABEL's English (game_data::translate_json)
+    let mut result = Value::Object(result);
+    crate::data::game_data::translate_json(&mut result);
+    std::fs::write(out_file, json::serialize(&result, Escape::Relaxed, false))?;
     let with_join = list.iter().filter(|x| x["contract"].as_array().is_some_and(|c| !c.is_empty())).count();
     console::write_line(&format!(
         "{} demons, {with_join} can be contracted somewhere, {} with a Mitama form, {} with a picture, {} skills. Written to {} ({} KB, {} ms)",
