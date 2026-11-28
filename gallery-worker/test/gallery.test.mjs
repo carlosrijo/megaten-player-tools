@@ -128,7 +128,7 @@ test('what is stored is the clean copy; bad builds and other pages are turned aw
   assert.match((await call('POST', '/builds', { body: noAbout })).data.error, /display name/);
   assert.equal((await call('POST', '/builds', { body: { ...good('demon'), pad: 'x'.repeat(50000) } })).status, 413);
   // only the app's page (or no browser) may publish: not the website, not another site
-  assert.equal((await call('POST', '/builds', { body: good('demon'), origin: 'https://babel-7vg.pages.dev' })).status, 403);
+  assert.equal((await call('POST', '/builds', { body: good('demon'), origin: 'https://shinbabel.pages.dev' })).status, 403);
   assert.equal((await call('POST', '/builds', { body: good('demon'), origin: 'https://evil.example' })).status, 403);
   assert.equal((await call('OPTIONS', '/builds', { origin: 'https://evil.example' })).status, 403);
   assert.equal((await call('OPTIONS', '/builds', { origin: 'https://imagine.app' })).status, 204);
@@ -152,10 +152,10 @@ test('reports: one per person, a few hide the build, the developer shows it agai
   assert.equal((await call('POST', `/builds/${id}/report`, { body: { reason: 'nope' } })).status, 400);
   assert.equal((await call('POST', `/builds/${id}/report`, { body: { reason: 'spam' }, origin: 'https://evil.example' })).status, 403);
   for (let i = 0; i < AUTO_HIDE - 1; i++) {
-    assert.equal((await call('POST', `/builds/${id}/report`, { body: { reason: 'rude' }, ip: '10.0.0.1', origin: 'https://babel-7vg.pages.dev' })).status, 200);
+    assert.equal((await call('POST', `/builds/${id}/report`, { body: { reason: 'rude' }, ip: '10.0.0.1', origin: 'https://shinbabel.pages.dev' })).status, 200);
   }
   assert.equal((await call('GET', `/builds/${id}`)).status, 200, 'the same person twice counts once');
-  for (let i = 2; i <= AUTO_HIDE; i++) await call('POST', `/builds/${id}/report`, { body: { reason: 'spam' }, ip: `10.0.0.${i}`, origin: 'https://x.babel-7vg.pages.dev' });
+  for (let i = 2; i <= AUTO_HIDE; i++) await call('POST', `/builds/${id}/report`, { body: { reason: 'spam' }, ip: `10.0.0.${i}`, origin: 'https://x.shinbabel.pages.dev' });
   assert.equal((await call('GET', `/builds/${id}`)).status, 404, 'hidden after enough reports');
   assert.equal((await call('GET', '/builds?kind=demon')).data.builds.length, 0);
 

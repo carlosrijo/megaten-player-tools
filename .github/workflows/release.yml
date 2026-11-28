@@ -180,4 +180,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'babel' }} --branch=${{ contains(github.ref_name, '-') && 'preview' || 'main' }} --commit-dirty=true
+          command: pages deploy site --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'shinbabel' }} --branch=${{ contains(github.ref_name, '-') && 'preview' || 'main' }} --commit-dirty=true

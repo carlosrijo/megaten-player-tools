@@ -6,8 +6,8 @@ main = "src/index.js"
 compatibility_date = "2026-11-01"
 
 [vars]
-# the website's address(es), comma-separated; its preview addresses (<x>.babel-7vg.pages.dev) count too
-SITE_ORIGINS = "https://babel-7vg.pages.dev"
+# the website's address(es), comma-separated; its preview addresses (<x>.shinbabel.pages.dev) count too
+SITE_ORIGINS = "https://shinbabel.pages.dev"
 
 # Secrets (npx wrangler secret put <name>): ADMIN_KEY (the developer's key for /admin, kept in .secrets\) and IP_SALT
 # (any long random text: the key of the address hash).

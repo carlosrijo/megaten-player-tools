@@ -8,7 +8,7 @@ it never writes to the game or changes anything.
 
 ## On the web
 
-The databases and planners also open in the browser, with nothing to install: **https://babel-7vg.pages.dev/**.
+The databases and planners also open in the browser, with nothing to install: **https://shinbabel.pages.dev/**.
 The character pages show a demo character (Rubito's latest snapshot) with a "Download BABEL" banner; the Quest Tracker
 and the Character Planner need the desktop app. Each release updates the site (`tools\build-site.ps1`, the `website`
 job in `.github\workflows\release.yml`). The game's pictures and the demo character aren't in git: `tools\publish-web-assets.ps1`

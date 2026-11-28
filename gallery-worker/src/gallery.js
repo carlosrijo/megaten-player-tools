@@ -32,7 +32,7 @@ const APP_ORIGIN = 'https://imagine.app';
 // Which browser pages may send: the app's page for publishing; the website too for reports. (Anyone can still call
 // without a browser; the checks, limits and secrets are what keep it in hand.)
 function siteOrigins(env) {
-  return String(env.SITE_ORIGINS || 'https://babel-7vg.pages.dev').split(',').map((s) => s.trim()).filter(Boolean);
+  return String(env.SITE_ORIGINS || 'https://shinbabel.pages.dev').split(',').map((s) => s.trim()).filter(Boolean);
 }
 function local(origin) {
   return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);

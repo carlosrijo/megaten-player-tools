@@ -13,7 +13,7 @@
   const RELEASES_URL = 'https://github.com/carlosrijo/megaten-player-tools/releases/latest';
   // Community Builds: the gallery players publish to (gallery-worker), and the website that shows it (a build's link)
   const GALLERY_URL = 'https://babel-gallery.babel-feedback.workers.dev';
-  const SITE_URL = 'https://babel-7vg.pages.dev/';
+  const SITE_URL = 'https://shinbabel.pages.dev/';
 
   // ---------- small helpers ----------
   const ICONS = {
