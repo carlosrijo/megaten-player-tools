@@ -561,3 +561,16 @@ fn a_passive_with_no_stat_effect_is_still_passive() {
     assert!(gd.skill_is_passive(5821).unwrap()); // Speed UP1: a passive with an effect
     assert!(!gd.skill_is_passive(7).unwrap()); // category 1: an active skill
 }
+
+/// The compendium mask's bits (shiftValues) become DCM item ids (entry ids) through reference\devil-book.tsv: Pixie's two
+/// bits (570 and 749, seen on Rubito 2026-11-28) are one entry, 10570; Tajikarao's bit 148 is entry 11236 (not 10148).
+#[test]
+fn compendium_bits_to_dcm_ids() {
+    use imagine::calc::character_extras as extras;
+    let shifts: indexmap::IndexSet<i32> = [570, 749, 148, 1815].into_iter().collect();
+    let mut got: Vec<i32> = extras::compendium_entries(&shifts).unwrap().unwrap().into_iter().collect();
+    got.sort();
+    assert_eq!(got, vec![10570, 11231, 11236]);
+    let all = extras::all_compendium_entries().unwrap().unwrap();
+    assert!(all.contains(&10001) && all.contains(&11231) && !all.contains(&570));
+}

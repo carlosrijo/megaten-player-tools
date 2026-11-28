@@ -63,6 +63,8 @@ pub struct MainForm {
     log_level: String,
     /// where the active character's progress object was found (client pid, address, when), for questProgress
     quest_at: Mutex<Option<(u32, i64, std::time::Instant)>>,
+    /// the same for dcmProgress: where the active character's progress and status objects were found
+    dcm_at: Mutex<Option<(u32, imagine::game::demon_reader::OwnAt, std::time::Instant)>>,
     /// new versions from the releases page (update.rs)
     updater: update::Updater,
 }
@@ -102,6 +104,7 @@ impl MainForm {
             page_log: support::PageLog::new(),
             last_bundle: Mutex::new(None),
             quest_at: Mutex::new(None),
+            dcm_at: Mutex::new(None),
             log_level: level_name,
             updater: update::Updater::new(scripted),
         })
@@ -236,6 +239,37 @@ impl MainForm {
         let completed = p.completed.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
         let flags = p.valuables.as_ref().map(|s| s.iter().copied().collect::<Vec<_>>());
         Ok(json!({ "active": active, "completed": completed, "flags": flags, "zone": p.zone }).to_string())
+    }
+
+    /// The active character's compendium and DCMs right now, read from its client (read-only): { registered: [entry
+    /// ids] (the Demonic Compendium's registered entries; an entry id is its DCM's item id), bag: [[DCM item id,
+    /// count]] or null when the bag couldn't be read }. Only DCMs are sent from the bag. "null" when it can't be told
+    /// (no character, its client isn't running, it isn't logged in, or reference\devil-book.tsv is missing). For the
+    /// DCM Tracker (page command dcmProgress), which asks every few seconds while it is open.
+    pub fn dcm_progress(&self) -> Result<String> {
+        use imagine::calc::character_extras as extras;
+        use imagine::game::demon_reader as dr;
+        let Some(name) = self.active_entry().and_then(|e| e.name.clone()) else { return Ok("null".to_string()) };
+        let proc = match imagine::game::client_reader::find_client(&name) {
+            Ok(p) => p,
+            Err(e) if imagine::error::is_user_error(&e) => return Ok("null".to_string()),
+            Err(e) => return Err(e),
+        };
+        let mem = imagine::memory::GameMemory::new(proc.id())?;
+        // as in quest_progress: the objects' addresses are kept for this client and looked up again each minute
+        let pid = proc.id();
+        let known = self.dcm_at.lock().unwrap().filter(|(p, _, t)| *p == pid && t.elapsed().as_secs() < 60).map(|(_, at, _)| at);
+        let mut st = known.and_then(|at| dr::read_dcm_state(&mem, at));
+        if st.is_none() {
+            let at = dr::find_own_at(&mem);
+            *self.dcm_at.lock().unwrap() = at.map(|a| (pid, a, std::time::Instant::now()));
+            st = at.and_then(|a| dr::read_dcm_state(&mem, a));
+        }
+        let Some(st) = st else { return Ok("null".to_string()) };
+        let Some(registered) = extras::compendium_entries(&st.book)? else { return Ok("null".to_string()) };
+        let all = extras::all_compendium_entries()?.unwrap_or_default();
+        let bag = st.bag.as_ref().map(|b| b.iter().filter(|(id, _)| all.contains(*id)).map(|(id, n)| json!([id, n])).collect::<Vec<_>>());
+        Ok(json!({ "registered": registered.iter().copied().collect::<Vec<_>>(), "bag": bag }).to_string())
     }
 
     fn active_entry(&self) -> Option<CharacterEntry> {
@@ -737,6 +771,8 @@ impl MainForm {
 
             // the Quest Tracker asks every few seconds while it is open, so it is logged quietly (see quest_progress)
             "questProgress" => self.quest_progress(),
+            // the DCM Tracker asks every few seconds while it is open, so it is logged quietly too
+            "dcmProgress" => self.dcm_progress(),
 
             "panel" => {
                 // { open }: show the quest panel (a small window over the game: panel.html) or hide it. It opens at the
@@ -1124,7 +1160,7 @@ fn log_command(cmd: &str, ms: u128, r: &std::thread::Result<Result<String>>) {
     if name == "log" {
         return;
     }
-    let quiet = matches!(name.as_str(), "status" | "summonedDemon" | "questProgress" | "updateStatus");
+    let quiet = matches!(name.as_str(), "status" | "summonedDemon" | "questProgress" | "dcmProgress" | "updateStatus");
     match r {
         Ok(Ok(_)) => log::write(if quiet { Level::Debug } else { Level::Info }, &format!("command {name}: ok ({ms} ms)")),
         Ok(Err(e)) if imagine::error::is_user_error(e) => log::write(Level::Info, &format!("command {name}: user error: {e} ({ms} ms)")),
