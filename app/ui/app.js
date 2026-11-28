@@ -515,10 +515,11 @@
     gdb: { q: '', kind: 'all', cls: 'all', known: true, gender: '', align: '', src: [], range: '', aff: [], maxLv: '', sort: 'name', dir: 1, fopen: false, open: new Set(), pg: 0, data: null, state: 'idle' },
     // Fusion Planner: the engine once loaded, which view, the picked demons (forward), the demon wanted and the ones planned before it (reverse)
     dpl: { state: 'idle', eng: null, from: store.get('dpl-from') === 'scratch' ? 'scratch' : 'mine', sel: null, goals: (() => { try { const g = JSON.parse(store.get('dpl-goals') || '[]'); return Array.isArray(g) ? g : []; } catch (e) { return []; } })() },
-    fus: { state: 'idle', eng: null, view: ['reverse', 'tree'].includes(store.get('fus-view')) ? store.get('fus-view') : 'forward', slots: [null, null, null], third: false, target: null, trail: [], with: '', shown2: 30, shown3: 30, sort: store.get('fus-sort') === 'level' ? 'level' : 'ease',
+    fus: { state: 'idle', eng: null, view: ['reverse', 'tree'].includes(store.get('fus-view')) ? 'tree' : 'forward', slots: [null, null, null], third: false,   // 'reverse' = the old "Find a recipe", now part of the tree
       // the Fusion tree: the demon wanted (undefined until the saved one is looked up), what it may start from, the demons the player has,
       // the way picked for a demon (by demon id), the clicked demon (its place in the tree) and the folded repeats opened
       tree: { target: undefined, pg: store.get('fus-tree-pg') !== '0', events: store.get('fus-tree-events') === '1', zoom: [0.75, 0.5].includes(Number(store.get('fus-tree-zoom'))) ? Number(store.get('fus-tree-zoom')) : 1, sel: null, over: new Map(), open: new Set(),
+        wq: '', wmode: 'best', wst: { pg: 0 },   // the clicked demon's list of ways: the search, which list (best | all), its page
         have: (() => { try { const v = JSON.parse(store.get('fus-have') || '[]'); return new Set(Array.isArray(v) ? v.filter((x) => Number.isInteger(x)) : []); } catch (e) { return new Set(); } })() } },
     rbp: { state: 'idle', P: null, src: store.get('rbp-src') === 'comp' ? 'comp' : 'db', demonId: num(store.get('rbp-demon')), compKey: store.get('rbp-comp') || null, compSnap: (() => { try { const v = JSON.parse(store.get('rbp-snap') || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } })(), comp: null, compState: 'idle', plan: null, openSteps: false,
       view: 'home', id: null, name: '', builds: null, naming: false, confirmDel: false, saveState: '', navOpen: store.get('rbp-nav') !== '0' },   // view: the page of builds ('home') or the planner ('edit'), for the saved build `id` (null: the unsaved plan)   // Rebirth Planner: the plan is rbpPlan() (kept in storage)
@@ -4471,7 +4472,7 @@
         row('Fusion', h('span', null, h('b', { text: 'Can be fused' }), h('span', { class: 'src-count', text: ways.join(' · ') }),
           cheap ? h('div', { class: 'note', text: `Cheapest at base levels: ${cheap.map((d) => `${d.label} (Lv ${d.lvl})`).join(' + ')}` }) : null),
           h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:10px', onclick: () => {
-            Object.assign(U, { view: 'reverse', target, trail: [], with: '', shown2: 30, shown3: 30 }); go('fusion'); } }, 'Open in Fusion Planner'));
+            fusOpenTree(target); go('fusion'); } }, 'Open in Fusion Planner'));
       }
       // each special fusion: its demons and the plugin it needs; then each plugin once, with the ways to get it
       const plugName = (sp) => { const p = E.F.plugins[String(sp.plugin)]; return p && p.name ? `Needs the key item “${p.name}”` : 'Needs a fusion plugin'; };
@@ -7742,9 +7743,10 @@
 
     /**
      * The ways to make T from demons that can be had so far. `under`: only ways cheaper than this (the search stops
-     * early); `every`: the best way of each kind and race pair, for the list of other ways (else only the best one).
+     * early); `every`: the best way of each kind and race pair, for the list of other ways (else only the best one);
+     * `must`: only ways with a demon this says yes to (the list narrowed to a demon or race the player typed).
      */
-    function waysOf(T, under, every) {
+    function waysOf(T, under, every, must) {
       const out = [];
       let cap = under === undefined ? Infinity : under;
       const keep = (w) => { out.push(w); if (!every && w.cost < cap) cap = w.cost; };
@@ -7755,12 +7757,13 @@
         for (const [sid, variant] of sp.src) {
           const sd = E.byId.get(sid), c = variant ? (sd ? byBase.get(sd.base) : null) : (way.has(sid) && sd && !sd.mitamaFused ? [sd] : null);
           if (!c || !c.length) return;
-          opts.push(c.slice(0, 3));
+          opts.push(must ? [...new Set(c.filter(must).slice(0, 3).concat(c.slice(0, 3)))] : c.slice(0, 3));
         }
         // the easiest version of each demon; when the game makes something else of those, the next easiest
         let best = null;
         const tryAll = (k, picked) => {
           if (k < opts.length) { opts[k].forEach((d) => tryAll(k + 1, picked.concat(d))); return; }
+          if (must && !picked.some(must)) return;
           const cost = picked.reduce((s2, d) => s2 + costOf(d), 0) + STEP + pluginCost(sp);
           if (cost >= (best ? best.cost : cap)) return;
           const parts = picked.map((d, i) => ({ d, lvl: d.lvl, exact: !sp.src[i][1] }));
@@ -7771,9 +7774,10 @@
       });
       // two demons of the same race make an elemental
       (sameFor.get(T.id) || []).forEach((r) => {
-        const c = (byRace.get(r) || []).slice(0, 4);
+        const c0 = byRace.get(r) || [], c = must ? [...new Set(c0.filter(must).slice(0, 3).concat(c0.slice(0, 4)))] : c0.slice(0, 4);
         let best = null;
         for (let i = 0; i < c.length; i++) for (let j = i; j < c.length; j++) {
+          if (must && !must(c[i]) && !must(c[j])) continue;
           const cost = costOf(c[i]) + costOf(c[j]) + STEP;
           if (cost >= (every ? (best ? best.cost : Infinity) : cap)) continue;
           const parts = [{ d: c[i], lvl: c[i].lvl }, { d: c[j], lvl: c[j].lvl }];
@@ -7786,6 +7790,7 @@
         if (j <= i || F.mitamas[F.elemMitama[i][j]] !== T.id) return;
         const a = E.byId.get(e1), b = E.byId.get(e2), cost = costOf(a) + costOf(b) + STEP;
         const parts = [{ d: a, lvl: a.lvl }, { d: b, lvl: b.lvl }];
+        if (must && !must(a) && !must(b)) return;
         if (cost < cap && check(parts, T, (x) => !x.special)) keep({ kind: 'mitama', cost, parts });
       }));
       if (at < 0) return out.sort((x, y) => x.cost - y.cost);
@@ -7793,8 +7798,9 @@
       const ri = raceIds.indexOf(T.race);
       if (ri >= 0) F.elementals.forEach((eid, ei) => {
         const dir = F.elemAdjust[ri][ei], near = dir === 1 ? list[at - 1] : dir ? list[at + 1] : null;
-        const e = (byBase.get(eid) || []).find((d) => d.race === ELEMENTAL_RACE), other = near && (byBase.get(near.id) || []).find((d) => d.race === T.race);
-        if (!e || !other) return;
+        const e = (byBase.get(eid) || []).find((d) => d.race === ELEMENTAL_RACE), others = near ? (byBase.get(near.id) || []).filter((d) => d.race === T.race) : [];
+        const other = (must && others.find(must)) || others[0];
+        if (!e || !other || (must && !must(e) && !must(other))) return;
         const cost = costOf(e) + costOf(other) + STEP, parts = [{ d: other, lvl: other.lvl }, { d: e, lvl: e.lvl }];
         if (cost < cap && check(parts, T, (x) => !x.special && x.elemental === dir)) keep({ kind: 'rank', cost, parts, dir });
       });
@@ -7811,7 +7817,7 @@
           for (const b of B) {
             const base = ca + costOf(b) + STEP;
             if (base >= lim) break;
-            if (a.lvl + b.lvl > maxSum) continue;
+            if (a.lvl + b.lvl > maxSum || (must && !must(a) && !must(b))) continue;
             const sum = Math.max(a.lvl + b.lvl, minSum), cost = base + RAISE * (sum - a.lvl - b.lvl);
             if (cost >= lim) continue;
             const lv = levelsFor([a, b], sum);
@@ -7836,13 +7842,18 @@
       });
     }
     index();
-    /** Every way to get T, easiest first: its own source (contract, PG, "have it") and the best fusion of each kind. */
-    function ways(T) {
-      const s = src.get(T.id), out = waysOf(T, undefined, true).filter((w) => w.parts.every((p) => p.d.id !== T.id));
-      if (s) out.push({ kind: s.kind, cost: s.cost, parts: [], src: s });
+    /** Every way to get T, easiest first: its own source (contract, PG, "have it") and the best fusion of each kind.
+     *  With `must`, only the fusions with a demon it says yes to (the best of each kind among those). */
+    function ways(T, must) {
+      const s = src.get(T.id), out = waysOf(T, undefined, true, must).filter((w) => w.parts.every((p) => p.d.id !== T.id));
+      if (s && !must) out.push({ kind: s.kind, cost: s.cost, parts: [], src: s });
       return out.sort((x, y) => x.cost - y.cost);
     }
-    return { way: (d) => way.get(d.id) || null, cost: costOf, ways, source: (d) => src.get(d.id) || null, dbOf, makeable: () => all.filter((d) => way.has(d.id)) };
+    // the demons the page lets you pick: the ones some fusion makes (also when no start leads to them). A demon that can
+    // only be contracted or bought as a PG is not offered: there is nothing to plan, and it still shows inside trees
+    const fusable = new Set([...targets.map((d) => d.id), ...F.triDark.map((r) => r[1]), ...F.triElemental.map((r) => r[5])]);
+    return { way: (d) => way.get(d.id) || null, cost: costOf, ways, source: (d) => src.get(d.id) || null, dbOf, makeable: () => all.filter((d) => way.has(d.id)),
+      fusable: (d) => fusable.has(d.id), listable: () => all.filter((d) => fusable.has(d.id)) };
   }
 
   /** A demon picker: a search field that lists matching demons under it (arrow keys, Enter, Esc). */
@@ -7850,6 +7861,11 @@
     const wrap = h('div', { class: 'fus-combo' });
     const input = h('input', { class: 'input', type: 'search', placeholder, value: current ? current.label : '', 'aria-label': placeholder, spellcheck: 'false', autocomplete: 'off', role: 'combobox', 'aria-expanded': 'false' });
     const menu = h('div', { class: 'fus-menu', role: 'listbox', hidden: true });
+    // its own clear button, in place of the search field's tiny built-in one: a full-height target that takes the pick
+    // away at once (mousedown is swallowed so the field keeps the focus and its blur doesn't put the name back)
+    const clear = h('button', { type: 'button', class: 'fus-clear', 'aria-label': 'Clear', 'data-tip': 'Clear', hidden: current ? null : true,
+      onmousedown: (ev) => ev.preventDefault(),
+      onclick: () => { input.value = ''; clear.hidden = true; if (current) { close(); onPick(null); } else { at = 0; input.focus(); open(); } } }, icon('x'));
     let hits = [], at = 0;
     const all = (list || E.pickable);
     const draw = () => {
@@ -7866,9 +7882,9 @@
     };
     const open = () => { menu.hidden = false; input.setAttribute('aria-expanded', 'true'); draw(); };
     const close = () => { menu.hidden = true; input.setAttribute('aria-expanded', 'false'); };
-    const pick = (d) => { close(); input.value = d.label; onPick(d); };
+    const pick = (d) => { close(); input.value = d.label; clear.hidden = false; onPick(d); };
     input.addEventListener('focus', () => { input.select(); open(); });
-    input.addEventListener('input', () => { at = 0; open(); });
+    input.addEventListener('input', () => { at = 0; clear.hidden = !input.value; open(); });
     input.addEventListener('blur', () => { close(); if (!input.value.trim() && current) onPick(null); else if (current) input.value = current.label; });
     input.addEventListener('keydown', (ev) => {
       if (ev.key === 'ArrowDown') { ev.preventDefault(); if (menu.hidden) open(); else { at = Math.min(at + 1, hits.length - 1); draw(); } }
@@ -7876,7 +7892,7 @@
       else if (ev.key === 'Enter') { if (!menu.hidden && hits[at]) { ev.preventDefault(); pick(hits[at]); } }
       else if (ev.key === 'Escape') { if (!menu.hidden) { ev.stopPropagation(); close(); } }
     });
-    wrap.append(h('div', { class: 'search' }, icon('search'), input), menu);
+    wrap.append(h('div', { class: 'search has-clear' }, icon('search'), input, clear), menu);
     return wrap;
   }
   function demonPic(E, d, big) {
@@ -7925,15 +7941,15 @@
   function pageFusion() {
     const U = S.fus, page = h('div', { class: 'page page-fusion' });
     loadFusion();
-    page.append(pageHead('Pick two or three demons to see what they make, pick the demon you want to see every way to make it, or get the whole tree to it from demons you can contract.',
+    page.append(pageHead('Pick two or three demons to see what they make, or pick the demon you want and get the whole tree to it from demons you can contract, with every other way to make it.',
       h('div', { class: 'seg', role: 'group', 'aria-label': 'Planner' },
-        [['forward', 'Fuse demons'], ['reverse', 'Find a recipe'], ['tree', 'Fusion tree']].map(([id, label]) =>
+        [['forward', 'Fuse demons'], ['tree', 'Fusion tree']].map(([id, label]) =>
         h('button', { type: 'button', 'aria-pressed': String(U.view === id), onclick: () => { U.view = id; store.set('fus-view', id); render(); } }, label)))));
     if (U.state !== 'ready') {
       page.append(h('p', { class: 'note', text: U.state === 'failed' ? 'The fusion data could not be loaded (fusion-data.json is missing beside the page).' : 'Loading the fusion data…' }));
       return page;
     }
-    page.append(U.view === 'tree' ? fusionTree(U.eng) : U.view === 'reverse' ? fusionReverse(U.eng) : fusionForward(U.eng));
+    page.append(U.view === 'tree' ? fusionTree(U.eng) : fusionForward(U.eng));
     page.append(h('p', { class: 'note fus-foot', text: 'Demons, levels, races and special fusions: the IMAGINE client. The race chart and the tri-fusion and elemental rules: the server’s fusion code, which IMAGINE may have changed. Checked in game: two two-demon fusions (one the community chart lacks), a tri-fusion and the refusal of Mitama-fused demons, all as the planner says. Special fusions and elemental rank changes are not checked yet.' }));
     return page;
   }
@@ -7951,7 +7967,7 @@
       card.append(h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: xs.length === 3 ? 'Tri-fusion result' : 'Fusion result' }),
         r.special ? h('span', { class: 'tag tag-digi', text: 'Special fusion' }) : r.elemental ? h('span', { class: 'tag ' + (r.elemental > 0 ? 'fus-up' : 'fus-down'), text: r.elemental > 0 ? 'Rank up' : 'Rank down' }) : null));
       if (d) card.append(h('div', { class: 'fus-out' }, demonPic(E, d, true), h('div', null, h('div', { class: 'fus-out-name', text: d.label }), h('div', { class: 'card-sub', text: `${d.raceName} · base level ${d.lvl}` })),
-        d.mitamaFused ? null : h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:auto', onclick: () => { U.view = 'reverse'; U.target = d; U.trail = []; render(); } }, 'Other ways to make it')));
+        d.mitamaFused ? null : h('button', { type: 'button', class: 'btn btn-sm', style: 'margin-left:auto', onclick: () => { fusOpenTree(d); render(); } }, 'Other ways to make it')));
       else card.append(h('p', { class: 'fus-none', text: 'Nothing: these demons can’t be fused together.' }));
       if (r.how.length) card.append(h('ul', { class: 'fus-how' }, r.how.map((t) => h('li', { text: t }))));
       if (r.special) {
@@ -7986,89 +8002,8 @@
     return box;
   }
 
-  function fusionReverse(E) {
-    const U = S.fus, box = h('div', { class: 'fus-body' });
-    if (!E.built()) {
-      // the list of demons to pick from needs every two- and three-demon fusion worked out once (about a million): say so, then do it
-      box.append(h('p', { class: 'note', role: 'status' }, h('span', { class: 'spin ink', style: 'margin-right:8px;vertical-align:-2px' }), 'Working out every fusion once (a second or two)…'));
-      setTimeout(() => { E.build(); if (S.page === 'fusion') render(); }, 30);
-      return box;
-    }
-    // an ingredient can be clicked to plan it only when some fusion makes it
-    const plan0 = (d) => { if (U.target) U.trail.push(U.target); U.target = d; U.shown2 = 30; U.shown3 = 30; render(); };
-    const chip = (d, tag) => demonChip(E, d, undefined, E.canMake(d) ? plan0 : null, tag);
-    // which demons can simply be had (the Fusion tree's starts), once the demon list is there: recipes with those come first
-    loadDemonDb();
-    const P0 = S.ddb.state === 'ready' ? fusPlans(E).P0 : null;
-    const startTag = (d) => { const w = P0 && P0.way(d); return w && !w.parts.length ? h('span', { class: 'tag tag-digi', 'data-tip': ftSource(w.src), text: w.kind === 'pg' ? 'PG' : ftKind(w) }) : null; };
-    const ease = (r) => r.reduce((s2, d) => s2 + P0.cost(d), 0), lvSum = (r) => r.reduce((s2, d) => s2 + d.lvl, 0);
-    const top = h('div', { class: 'toolbar' }, demonCombo(E, U.target, 'Which demon do you want?', (d) => { U.target = d; U.trail = []; U.shown2 = 30; U.shown3 = 30; render(); }, E.targets()));
-    box.append(top);
-    if (U.trail.length) box.append(h('nav', { class: 'fus-trail', 'aria-label': 'Planned before' }, h('span', { class: 'src-count', style: 'margin-left:0', text: 'Back to:' }),
-      U.trail.map((d, i) => h('button', { type: 'button', class: 'btn btn-ghost btn-sm', onclick: () => { U.target = d; U.trail = U.trail.slice(0, i); render(); } }, d.label))));
-    const T = U.target;
-    if (!T) { box.append(h('p', { class: 'note', text: 'Pick a demon to see every special fusion, two-demon fusion and tri-fusion that makes it, the ones from demons that are easy to get first. Click a demon in a recipe to see how to make that one too.' })); return box; }
-    box.append(h('div', { class: 'ft-top' }, h('div', { class: 'fus-out' }, demonPic(E, T, true), h('div', null, h('div', { class: 'fus-out-name', text: T.label }), h('div', { class: 'card-sub', text: `${T.raceName} · base level ${T.lvl}` }))),
-      P0 && P0.way(T) ? h('button', { type: 'button', class: 'btn btn-sm', 'data-tip': 'The whole way to it from demons you can contract, easiest first', onclick: () => { Object.assign(U.tree, { target: T, sel: null, open: new Set() }); store.set('fus-tree-target', String(T.id)); U.view = 'tree'; store.set('fus-view', 'tree'); render(); } }, 'Show the whole tree') : null));
-    const R = E.recipes(T);
-    const byEase = P0 && U.sort !== 'level';
-    if (byEase) [R.two, R.three].forEach((l) => l.sort((x, y) => ease(x) - ease(y) || lvSum(x) - lvSum(y)));
-    let q = '';
-    const hasQ = (r) => !q || r.some((d) => d.label.toLowerCase().includes(q) || d.raceName.toLowerCase().includes(q));
-    const elemTag = (r) => {
-      const e = r.find((d) => E.isElemental(d)), o = r.find((d) => !E.isElemental(d));
-      if (!e || !o || r.length !== 2) return null;
-      const up = o.lvl < T.lvl || (o.lvl === T.lvl && o.id < T.id);
-      return h('span', { class: 'tag ' + (o.id === T.id ? 'fus-same' : up ? 'fus-up' : 'fus-down'), text: o.id === T.id ? 'Stays the same' : up ? 'Rank up' : 'Rank down' });
-    };
-    // a recipe as a card: its kind and its levels added up on top, then one ingredient per line; the grid gives every
-    // card of a section the same size (CSS: grid-auto-rows 1fr)
-    const rcard = (parts, head, foot) => h('li', { class: 'fus-rcard' },
-      h('div', { class: 'fus-rcard-head' }, head || null, h('span', { class: 'src-count fus-sum', 'data-tip': 'The ingredients’ base levels added up', text: `Σ ${parts.reduce((s2, p) => s2 + p.d.lvl, 0)}` })),
-      parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, chip(p.d, p.tag)]),
-      foot || null);
-    const recipeRow = (r) => rcard(r.map((d) => ({ d, tag: startTag(d) })), elemTag(r));
-    const section = (title, sub, rows, key) => {
-      const list = rows.filter(hasQ), shown = U[key] || 30;
-      const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, title, h('span', { class: 'src-count', text: q ? `${list.length} of ${rows.length}` : `${rows.length}` })), sub ? h('span', { class: 'card-sub', text: sub }) : null));
-      if (!list.length) sec.append(h('p', { class: 'note', text: rows.length ? `None with “${U.with.trim()}”.` : 'None.' }));
-      else sec.append(h('ul', { class: 'fus-recipes' }, list.slice(0, shown).map(recipeRow)));
-      if (list.length > shown) sec.append(h('button', { type: 'button', class: 'btn btn-sm', style: 'justify-self:start', onclick: () => { U[key] = shown + 60; drawLists(); } }, `Show ${Math.min(60, list.length - shown)} more`));
-      return sec;
-    };
-    const any = R.special.length || R.two.length || R.three.length;
-    if (!any) { box.append(h('p', { class: 'notice' }, icon('info'), h('span', { text: `No fusion makes ${T.label}. It comes from somewhere else in the game (a quest, an event, a contract), or only from demons the planner doesn’t list.` }))); return box; }
-    if (R.special.length) {
-      const sec = h('section', { class: 'card fus-sec' }, h('div', { class: 'card-head' }, h('h3', { class: 'card-title', text: 'Special fusion' }), h('span', { class: 'card-sub', text: 'Always this result, whatever the levels' })));
-      const grid = h('ul', { class: 'fus-recipes' });
-      R.special.forEach((sp) => {
-        const parts = sp.src.map(([id, variant]) => ({ d: E.byId.get(id),
-          tag: variant ? null : h('span', { class: 'tag', 'data-tip': 'Only this exact demon; its other versions don’t count', text: 'exact' }) })).filter((p) => p.d);
-        grid.append(rcard(parts, h('span', { class: 'tag tag-digi', text: parts.length === 3 ? 'Tri-fusion' : 'Two demons' }), pluginNote(E, sp)));
-      });
-      sec.append(grid);
-      box.append(sec);
-    }
-    const lists = h('div', { class: 'fus-body' });
-    const elemRows = R.two.filter((r) => r.some((d) => E.isElemental(d)));
-    const drawLists = () => {
-      q = (U.with || '').trim().toLowerCase();
-      lists.replaceChildren(section('Two demons', elemRows.length ? `${elemRows.length} with an elemental (rank up or down)` : '', R.two, 'shown2'),
-        section('Tri-fusion (three demons)', '', R.three, 'shown3'));
-    };
-    if (R.two.length || R.three.length) {
-      box.append(h('div', { class: 'toolbar' }, searchBox(U.with || '', 'Only recipes with this demon or race', (v) => { U.with = v; U.shown2 = 30; U.shown3 = 30; drawLists(); }),
-        P0 ? [h('span', { class: 'q-key', text: 'Sort' }), h('div', { class: 'chips', role: 'group', 'aria-label': 'Order of the recipes' },
-          [['ease', 'Easiest to get first', 'Recipes from demons you can contract, or get from a Summon PG, come first; then the ones whose demons take the fewest fusions'], ['level', 'Lowest levels first', 'The ingredients’ base levels added up, lowest first']].map(([id, label, tip]) =>
-            h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String((U.sort === 'level') === (id === 'level')), 'data-tip': tip, onclick: () => { U.sort = id; store.set('fus-sort', id); U.shown2 = 30; U.shown3 = 30; render(); } }, label)))] : null), lists);
-      drawLists();
-    }
-    box.append(h('p', { class: 'note', text: 'Recipes use the demons the race chart can make, at their base levels; a demon that has levelled up can give a higher result. “Contract” and “PG” mark a demon you can simply go and get; the Fusion tree shows the whole way from such demons. Special fusions are listed whatever the levels. Mitama-fused demons are left out: the game won’t fuse them.' }));
-    return box;
-  }
-
   // ---- Fusion tree: the whole way to a demon from scratch (fusionPlanner), as a pyramid ----
-  const FT_KIND = { two: 'Fuse two', special: 'Special fusion', same: 'Same race', mitama: 'Two elementals', contract: 'Contract', pg: 'Summon PG', have: 'You have it' };
+  const FT_KIND = { two: 'Fuse two', tri: 'Tri-fusion', special: 'Special fusion', same: 'Same race', mitama: 'Two elementals', contract: 'Contract', pg: 'Summon PG', have: 'You have it' };
   const ftKind = (w) => (w.kind === 'rank' ? (w.dir === 1 ? 'Rank up' : 'Rank down') : FT_KIND[w.kind] || '');
   const ftSig = (w) => (w ? `${w.kind}:${w.parts.map((p) => `${p.d.id}@${p.lvl}`).join('+')}` : '');
   /** Where a start comes from, in a line: the contract place, the PG, or "you have it". */
@@ -8087,6 +8022,14 @@
     return { P: U.plan, P0: U.plan0 };
   }
 
+  /** Open the Fusion tree on a demon with its details open: where the Demon Database and "Fuse demons" send you for
+   *  every way to make it (the old "Find a recipe"). */
+  function fusOpenTree(d) {
+    const U = S.fus;
+    Object.assign(U.tree, { target: d, sel: '0', shownFor: d.id, open: new Set(), wq: '', wmode: 'best', wst: { pg: 0 } });
+    store.set('fus-tree-target', String(d.id)); U.view = 'tree'; store.set('fus-view', 'tree');
+  }
+
   function fusionTree(E) {
     const U = S.fus, V = U.tree, box = h('div', { class: 'fus-body' });
     loadDemonDb();
@@ -8099,10 +8042,12 @@
     let centred = false;
     const draw = () => {
       const old = box.querySelector('.ftree'), sx = old ? old.scrollLeft : 0, sy = old ? old.scrollTop : 0;
-      const P = plan(), P0 = U.plan0, T = V.target, kids = [];
+      const P = plan(), P0 = U.plan0, kids = [];
+      if (V.target && !P.fusable(V.target)) V.target = null;   // a saved demon that no fusion makes is no longer offered
+      const T = V.target;
       const chip = (on, label, tip, fn) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(on), 'data-tip': tip, onclick: fn }, label);
       kids.push(h('div', { class: 'toolbar' },
-        demonCombo(E, T, 'Which demon do you want?', (d) => { V.target = d; V.sel = null; V.open = new Set(); centred = false; store.set('fus-tree-target', d ? String(d.id) : ''); draw(); }, P.makeable()),
+        demonCombo(E, T, 'Which demon do you want?', (d) => { V.target = d; V.sel = null; V.open = new Set(); V.wq = ''; V.wmode = 'best'; V.wst.pg = 0; centred = false; store.set('fus-tree-target', d ? String(d.id) : ''); draw(); }, P.listable()),
         h('span', { class: 'q-key', text: 'Start from' }),
         h('div', { class: 'chips', role: 'group', 'aria-label': 'Demons the tree may start from' },
           h('span', { class: 'chip-btn ft-fixed', 'data-tip': 'Demons a spawn lets you contract all year: always used', text: 'Contracts' }),
@@ -8131,14 +8076,112 @@
         kids.push(h('p', { class: 'note', text: 'Pick a demon to get the whole way to it from scratch: which demons to contract (or get from a Summon PG), what to fuse in which order, and the levels to raise them to. At every step the tree takes the demons that are easiest to get.' }));
         return done();
       }
-      if (!P.way(T)) {
-        kids.push(h('p', { class: 'notice' }, icon('info'), h('span', { text: `Nothing you can contract or get from a Summon PG leads to ${T.label} with these choices. Switch on “Summon PG demons” or “Event demons” above, or it only comes from a quest, an event or a gift.` })));
+      // a way picked here (V.over, by demon) holds while its demons can still be had; one that no longer does is dropped
+      const usable = (Q, d, w) => (w.parts.length ? w.parts.every((p) => Q.way(p.d)) && w : (() => { const s = Q.source(d); return s && s.kind === w.kind ? { kind: s.kind, cost: s.cost, parts: [], src: s } : null; })());
+
+      // A demon's details: how it is made in the tree, and every way to get it, as two lists. "Easiest of each kind" is
+      // the planner's (the best pair of each two races with levels raised where that helps, each special fusion,
+      // getting it directly). "Every recipe" is the engine's sweep at base levels: every special fusion, two-demon
+      // fusion and tri-fusion (worked out once, about a second). Both can be narrowed to a demon or race; a typed
+      // demon gets its own best ways, not only the ones that happened to be best. This replaced the "Find a recipe" view.
+      const panelFor = (sel, alone) => {
+        const d = sel.d, w = sel.w, Q = sel.Q, has = V.have.has(d.id), own = Q.way(d);
+        const total = new Map(), fusionsOf = (x) => { if (!total.has(x.id)) { const y = Q.way(x); total.set(x.id, y && y.parts.length ? 1 + y.parts.reduce((s2, p) => s2 + fusionsOf(p.d), 0) : 0); } return total.get(x.id); };
+        const pick = (way) => { if (ftSig(way) === ftSig(own)) V.over.delete(d.id); else V.over.set(d.id, way); V.open = new Set(); draw(); };
+        const panel = h('section', { class: 'card fus-sec ft-panel' });
+        panel.append(h('div', { class: 'card-head' },
+          h('div', { class: 'fus-out' }, demonPic(E, d, true), h('div', null, h('div', { class: 'fus-out-name', text: d.label }), h('div', { class: 'card-sub', text: `${d.raceName} · base level ${d.lvl}` }))),
+          h('div', { class: 'toolbar' },
+            V.over.has(d.id) ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { V.over.delete(d.id); V.open = new Set(); draw(); } }, 'Back to the easiest way') : null,
+            h('button', { type: 'button', class: 'btn btn-sm', 'aria-pressed': String(has), 'data-tip': has ? 'Plan it again from scratch' : 'The tree stops here for one of them, and uses it where that makes things easier',
+              onclick: () => { if (has) V.have.delete(d.id); else { V.have.add(d.id); V.over.delete(d.id); } store.set('fus-have', JSON.stringify([...V.have])); V.open = new Set(); draw(); } }, has ? 'I don’t have it after all' : 'I already have it'),
+            alone ? null : h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'aria-label': 'Close', onclick: () => { V.sel = null; draw(); } }, 'Close'))));
+        if (w) {
+          const lines = [];
+          if (w.kind === 'have') lines.push('You marked it as a demon you already have, so the tree stops here.');
+          else if (w.kind === 'contract') lines.push(`Contract it: ${w.src.places.filter((c) => !c.season || V.events).map((c) => `${c.zone} (${ddbLv(c)}${c.moon ? `, ${ddbMoon(c.moon)}` : ''}${c.season ? `, ${c.season} event` : ''})`).join(' · ')}.`);
+          else if (w.kind === 'pg') { lines.push(`${w.src.text}.`); lines.push(`${w.src.from.length > 1 ? 'The item comes from any one of these: ' : 'The item: '}${w.src.from.join(' · ')}.`); if (w.src.note) lines.push(w.src.note); }
+          else { lines.push(`In this tree: ${w.parts.map((p) => `${p.d.label} (level ${p.lvl})`).join(' + ')}.`); E.fuse(w.parts.map((p) => ({ d: p.d, lvl: p.lvl }))).how.forEach((t) => lines.push(t)); }
+          if (sel.need) lines.push(`It comes at level ${d.lvl}: raise it to level ${sel.need} before the fusion above it (Magical Golden Apples).`);
+          panel.append(h('ul', { class: 'fus-how' }, lines.map((t) => h('li', { text: t }))));
+          if (w.sp) panel.append(pluginLine(E, w.sp));
+        }
+
+        // every recipe at base levels as ways the tree can take, easiest ingredients first; a special fusion is shown
+        // with the easiest version of each demon when the planner found one
+        let every = null;
+        const allRecipes = () => {
+          if (every) return every;
+          const R = E.recipes(d), at = (x) => ({ d: x, lvl: x.lvl }), best = Q.ways(d);
+          const kindOf = (r) => { const f = E.fuse(r.map(at), { log: false, plugins: false }); return f.elemental ? { kind: 'rank', dir: f.elemental } : { kind: d.race === 57 ? 'mitama' : E.isElemental(d) ? 'same' : 'two' }; };
+          const cost = (x) => x.parts.reduce((s2, p) => s2 + Q.cost(p.d), 0), lv = (x) => x.parts.reduce((s2, p) => s2 + p.d.lvl, 0);
+          every = [
+            ...R.special.map((sp) => best.find((x) => x.sp === sp) || { kind: 'special', sp, parts: sp.src.map(([id, variant]) => ({ d: E.byId.get(id), exact: !variant })).filter((p) => p.d).map((p) => Object.assign(p, { lvl: p.d.lvl })) }),
+            ...R.two.map((r) => Object.assign(kindOf(r), { parts: r.map(at) })),
+            ...R.three.map((r) => ({ kind: 'tri', parts: r.map(at) })),
+          ].filter((x) => x.parts.every((p) => p.d.id !== d.id));
+          every.forEach((x) => { x.ease = cost(x); x.lv = lv(x); });
+          every.sort((x, y) => (x.ease === y.ease ? 0 : x.ease - y.ease) || x.lv - y.lv);
+          return every;
+        };
+        const startTag = (x) => { const y = Q.way(x); return y && !y.parts.length ? h('span', { class: 'tag tag-digi', 'data-tip': ftSource(y.src), text: y.kind === 'pg' ? 'PG' : ftKind(y) }) : null; };
+        const wayCard = (way) => {
+          const cur = !!w && ftSig(way) === ftSig(w), lost = way.parts.filter((p) => !Q.way(p.d));
+          const n = way.parts.length && !lost.length ? 1 + way.parts.reduce((s2, p) => s2 + fusionsOf(p.d), 0) : 0;
+          return h('li', { class: 'fus-rcard' + (cur ? ' ft-cur' : '') },
+            h('div', { class: 'fus-rcard-head' }, h('span', { class: 'tag' + (way.parts.length ? '' : ' tag-digi'), text: ftKind(way) }),
+              lost.length ? null : h('span', { class: 'src-count fus-sum', 'data-tip': 'Fusions in all, counting the ones that make its demons', text: n ? ftPlural(n, 'fusion') : 'No fusion' })),
+            way.parts.length ? way.parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, demonChip(E, p.d, p.lvl, null, startTag(p.d))])
+              : h('div', { class: 'ft-way-src', text: `${ftSource(way.src)}${way.src.kind === 'pg' && way.src.from[0] ? ` · ${way.src.from[0]}` : ''}` }),
+            pluginNote(E, way.sp),
+            cur ? h('span', { class: 'ft-inuse' }, icon('check'), 'In the tree')
+              : lost.length ? h('span', { class: 'ft-lost', tabindex: '0', 'data-tip': `Nothing you can contract or get from a Summon PG leads to ${lost.map((p) => p.d.label).join(' or ')} with the starts chosen above, so the tree can’t take this recipe.`, text: `No way to ${lost[0].d.label}` })
+                : h('button', { type: 'button', class: 'btn btn-sm ft-use', onclick: () => pick(way) }, 'Use this way'));
+        };
+        // a demon nothing leads to has no "easiest" list: its recipes are what there is to show
+        if (V.wmode !== 'all' && !Q.ways(d).length) V.wmode = 'all';
+        const list = h('div', { class: 'fus-body' }), pager = h('nav', { class: 'pager', 'aria-label': 'Pages' }), count = h('span', { class: 'src-count' });
+        const drawWays = () => {
+          const q = (V.wq || '').trim().toLowerCase(), must = q ? (x) => x.label.toLowerCase().includes(q) || x.raceName.toLowerCase().includes(q) : null;
+          let ways;
+          if (V.wmode === 'all') {
+            if (!E.built()) {
+              list.replaceChildren(h('p', { class: 'note', role: 'status' }, h('span', { class: 'spin ink', style: 'margin-right:8px;vertical-align:-2px' }), 'Working out every fusion once (a second or two)…'));
+              pager.replaceChildren(); count.textContent = '';
+              setTimeout(() => { E.build(); if (list.isConnected) drawWays(); }, 30);
+              return;
+            }
+            ways = allRecipes();
+            if (must) ways = ways.filter((x) => x.parts.some((p) => must(p.d)));
+          } else ways = Q.ways(d, must);
+          count.textContent = fmt(ways.length);
+          const pg = pageOf(V.wst, ways);
+          list.replaceChildren(ways.length ? h('ul', { class: 'fus-recipes' }, pg.rows.map(wayCard))
+            : h('p', { class: 'note', text: q ? `None with “${V.wq.trim()}”.` : V.wmode === 'all' ? `No fusion makes ${d.label}.` : 'No other way.' }));
+          if (ways.length > pg.per) drawPager(pager, V.wst, ways.length, pg, drawWays, () => list, V.wmode === 'all' ? 'recipes' : 'ways'); else pager.replaceChildren();
+        };
+        const modes = [['best', 'Easiest of each kind', 'The best pair of each two races, with levels raised where that helps, each special fusion, and getting it directly'],
+          ['all', 'Every recipe', 'Every special fusion, two-demon fusion and tri-fusion that makes it at base levels, the ones from demons that are easy to get first']];
+        panel.append(h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, 'Every way to get it', count),
+            h('span', { class: 'card-sub', text: V.wmode === 'all' ? 'At base levels, tri-fusions included; easiest demons first.' : 'Easiest first, with levels raised where that helps.' })),
+          h('div', { class: 'toolbar' }, searchBox(V.wq || '', 'Only ways with this demon or race', (v) => { V.wq = v; V.wst.pg = 0; drawWays(); }),
+            h('div', { class: 'chips', role: 'group', 'aria-label': 'Which ways' }, modes.map(([id, label, tip]) =>
+              h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(V.wmode === id), 'data-tip': tip, onclick: () => { V.wmode = id; V.wst.pg = 0; draw(); } }, label)))),
+          list, pager);
+        drawWays();
+        return panel;
+      };
+
+      // no start leads to it (and no way picked here does): say so, and still show what fuses into it
+      const rootPick = V.over.get(T.id);
+      if (!P.way(T) && !(rootPick && usable(P, T, rootPick))) {
+        kids.push(h('p', { class: 'notice' }, icon('info'), h('span', { text: `Nothing you can contract or get from a Summon PG leads to ${T.label} with these choices. Switch on “Summon PG demons” or “Event demons” above, or it only comes from a quest, an event or a gift. Its recipes are below.` })));
+        kids.push(panelFor({ d: T, w: null, Q: P, need: 0 }, true));
         return done();
       }
 
-      // the tree: every demon made the planner's way, or the way picked for it here (V.over, by demon). A way that is no
-      // longer possible is dropped; a demon met again inside its own tree is made the planner's way from there down
-      const usable = (Q, d, w) => (w.parts.length ? w.parts.every((p) => Q.way(p.d)) && w : (() => { const s = Q.source(d); return s && s.kind === w.kind ? { kind: s.kind, cost: s.cost, parts: [], src: s } : null; })());
+      // the tree: every demon made the planner's way, or the way picked for it here. A demon met again inside its own
+      // tree is made the planner's way from there down (a picked way could loop)
       const byPath = new Map(), used = new Set();
       let count = 0;
       const build = (Q, d, need, path, anc, free) => {
@@ -8211,7 +8254,7 @@
         const w = n.w, start = !w.parts.length, folded = foldedAt.has(n.path);
         const btn = h('button', { type: 'button', class: 'ft-node' + (start ? ' start' : '') + (w.kind === 'have' ? ' have' : '') + (V.sel === n.path ? ' on' : ''), 'aria-pressed': String(V.sel === n.path),
           'data-tip': `${n.d.label}: ${start ? ftSource(w.src) : w.parts.map((p) => `${p.d.label} (Lv ${p.lvl})`).join(' + ')}. Click for other ways.`,
-          onclick: () => { V.sel = V.sel === n.path ? null : n.path; draw(); if (V.sel) { const p = box.querySelector('.ft-panel'); if (p) p.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } } },
+          onclick: () => { V.sel = V.sel === n.path ? null : n.path; V.wq = ''; V.wmode = 'best'; V.wst.pg = 0; draw(); if (V.sel) { const p = box.querySelector('.ft-panel'); if (p) p.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } } },
           demonPic(E, n.d), h('span', { class: 'fus-chip-text' }, h('span', { class: 'fus-chip-name', text: n.d.label }), h('span', { class: 'fus-chip-sub', text: `Lv ${n.d.lvl} · ${ftKind(w)}` })));
         const marks = [n.need ? h('span', { class: 'tag ft-raise', 'data-tip': `Raise it to level ${n.need} before this fusion (it starts at ${n.d.lvl})`, text: `Raise to Lv ${n.need}` }) : null,
           w.sp && w.sp.plugin ? h('span', { class: 'tag tag-warn', 'data-tip': 'This special fusion needs a plugin (a key item): see “Get these first”', text: 'Plugin' }) : null,
@@ -8232,44 +8275,9 @@
           h('div', { class: 'seg', role: 'group', 'aria-label': 'Size of the tree' }, [1, 0.75, 0.5].map((z) => h('button', { type: 'button', 'aria-pressed': String(V.zoom === z), onclick: () => { V.zoom = z; store.set('fus-tree-zoom', String(z)); centred = false; draw(); } }, `${z * 100}%`))),
           h('span', { class: 'note', text: 'Drag the tree to move around in it.' }))));
 
-      // the clicked demon: how it is made here, and every other way, easiest first
+      // the clicked demon: how it is made here, and every way to get it
       const sel = V.sel && byPath.get(V.sel);
-      if (sel) {
-        const d = sel.d, w = sel.w, Q = sel.Q, has = V.have.has(d.id), own = Q.way(d);
-        const total = new Map(), fusionsOf = (x) => { if (!total.has(x.id)) { const y = Q.way(x); total.set(x.id, y && y.parts.length ? 1 + y.parts.reduce((s2, p) => s2 + fusionsOf(p.d), 0) : 0); } return total.get(x.id); };
-        const pick = (way) => { if (ftSig(way) === ftSig(own)) V.over.delete(d.id); else V.over.set(d.id, way); V.open = new Set(); draw(); };
-        const panel = h('section', { class: 'card fus-sec ft-panel' });
-        panel.append(h('div', { class: 'card-head' },
-          h('div', { class: 'fus-out' }, demonPic(E, d, true), h('div', null, h('div', { class: 'fus-out-name', text: d.label }), h('div', { class: 'card-sub', text: `${d.raceName} · base level ${d.lvl}` }))),
-          h('div', { class: 'toolbar' },
-            V.over.has(d.id) ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { V.over.delete(d.id); V.open = new Set(); draw(); } }, 'Back to the easiest way') : null,
-            h('button', { type: 'button', class: 'btn btn-sm', 'aria-pressed': String(has), 'data-tip': has ? 'Plan it again from scratch' : 'The tree stops here for one of them, and uses it where that makes things easier',
-              onclick: () => { if (has) V.have.delete(d.id); else { V.have.add(d.id); V.over.delete(d.id); } store.set('fus-have', JSON.stringify([...V.have])); V.open = new Set(); draw(); } }, has ? 'I don’t have it after all' : 'I already have it'),
-            h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'aria-label': 'Close', onclick: () => { V.sel = null; draw(); } }, 'Close'))));
-        const lines = [];
-        if (w.kind === 'have') lines.push('You marked it as a demon you already have, so the tree stops here.');
-        else if (w.kind === 'contract') lines.push(`Contract it: ${w.src.places.filter((c) => !c.season || V.events).map((c) => `${c.zone} (${ddbLv(c)}${c.moon ? `, ${ddbMoon(c.moon)}` : ''}${c.season ? `, ${c.season} event` : ''})`).join(' · ')}.`);
-        else if (w.kind === 'pg') { lines.push(`${w.src.text}.`); lines.push(`${w.src.from.length > 1 ? 'The item comes from any one of these: ' : 'The item: '}${w.src.from.join(' · ')}.`); if (w.src.note) lines.push(w.src.note); }
-        else { lines.push(`In this tree: ${w.parts.map((p) => `${p.d.label} (level ${p.lvl})`).join(' + ')}.`); E.fuse(w.parts.map((p) => ({ d: p.d, lvl: p.lvl }))).how.forEach((t) => lines.push(t)); }
-        if (sel.need) lines.push(`It comes at level ${d.lvl}: raise it to level ${sel.need} before the fusion above it (Magical Golden Apples).`);
-        panel.append(h('ul', { class: 'fus-how' }, lines.map((t) => h('li', { text: t }))));
-        if (w.sp) panel.append(pluginLine(E, w.sp));
-        const ways = Q.ways(d);
-        if (ways.length > 1 || (ways.length && ftSig(ways[0]) !== ftSig(w))) {
-          panel.append(h('div', { class: 'card-head' }, h('h3', { class: 'card-title' }, 'Every way to get it', h('span', { class: 'src-count', text: String(ways.length) })), h('span', { class: 'card-sub', text: 'Easiest first: the best pair of each two races, each special fusion, and getting it directly.' })));
-          panel.append(h('ul', { class: 'fus-recipes' }, ways.map((way) => {
-            const cur = ftSig(way) === ftSig(w), n = way.parts.length ? 1 + way.parts.reduce((s2, p) => s2 + fusionsOf(p.d), 0) : 0;
-            return h('li', { class: 'fus-rcard' + (cur ? ' ft-cur' : '') },
-              h('div', { class: 'fus-rcard-head' }, h('span', { class: 'tag' + (way.parts.length ? '' : ' tag-digi'), text: ftKind(way) }),
-                h('span', { class: 'src-count fus-sum', 'data-tip': 'Fusions in all, counting the ones that make its demons', text: n ? ftPlural(n, 'fusion') : 'No fusion' })),
-              way.parts.length ? way.parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, demonChip(E, p.d, p.lvl, null, Q.way(p.d).parts.length ? null : h('span', { class: 'tag tag-digi', 'data-tip': ftSource(Q.way(p.d).src), text: ftKind(Q.way(p.d)) }))])
-                : h('div', { class: 'ft-way-src', text: `${ftSource(way.src)}${way.src.kind === 'pg' && way.src.from[0] ? ` · ${way.src.from[0]}` : ''}` }),
-              pluginNote(E, way.sp),
-              cur ? h('span', { class: 'ft-inuse' }, icon('check'), 'In the tree') : h('button', { type: 'button', class: 'btn btn-sm ft-use', onclick: () => pick(way) }, 'Use this way'));
-          })));
-        }
-        kids.push(panel);
-      }
+      if (sel) kids.push(panelFor(sel));
 
       // 2. the fusions, in the order to do them (ingredients first)
       if (fusions) kids.push(h('section', { class: 'card fus-sec' },
