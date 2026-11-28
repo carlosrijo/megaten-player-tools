@@ -365,6 +365,9 @@ html.vt-view .page-head .summoned:not(.none), html.vt-view .page-head .partner-c
 html.vt-view .page > .exp-band { view-transition-name: ov-exp; }
 html.vt-view .page > .gear-band { view-transition-name: ov-gear; }
 html.vt-view .page > .sect { view-transition-name: ov-sheet; }
+/* a name may be on one element only, or the browser drops the whole transition: the cards under the first section (the partner's Mitama card) are named apart and fade in */
+html.vt-view .page > .sect ~ .sect { view-transition-name: ov-more; }
+html.vt-view .page > .sect ~ .sect ~ .sect { view-transition-name: none; }
 /* the assistant in the corner stands over the page: a layer of its own, or the moving parts would cover it while the switch runs */
 html.vt-view .assistant { view-transition-name: ov-assistant; }
 html.vt-view::view-transition-old(ov-assistant), html.vt-view::view-transition-new(ov-assistant) { animation: none; }
