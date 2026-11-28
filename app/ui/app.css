@@ -2599,3 +2599,6 @@ button.tag.ft-refold:focus-visible { outline: 2px solid var(--focus); outline-of
 .hist-ask { display: inline-flex; align-items: center; gap: 8px; }
 tr.hist-asking td { background: color-mix(in srgb, var(--bad) 10%, var(--surface)); }
 @media (max-width: 820px) { .hist-row { grid-template-columns: minmax(0, 1fr); } .hist-pick { height: 415px; } }
+
+/* The website (WEB in app.js): what only the desktop app can do is not shown */
+html.web [data-desktop] { display: none !important; }

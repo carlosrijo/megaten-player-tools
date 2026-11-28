@@ -144,3 +144,40 @@ jobs:
           if ($tag -like '*-*') { $flags += '--prerelease' }
           gh release create $tag dist/BABEL.exe dist/BABEL.exe.sha256 dist/BABEL.exe.sig @flags
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  # The website (the page in web mode, tools/build-site.ps1) on Cloudflare Pages. It runs after the exe was built, so the
+  # site only changes with a release that worked. A version tag deploys it: a normal tag to the live site, a test tag
+  # (v1.2.0-beta.1) to a preview address. A hand run only builds the folder, kept as the run's artifact.
+  # Needs the secrets CLOUDFLARE_API_TOKEN (Cloudflare Pages: Edit, nothing else) and CLOUDFLARE_ACCOUNT_ID. The Pages
+  # project's name is the repository variable CLOUDFLARE_PAGES_PROJECT (default "babel"); its production branch is "main".
+  website:
+    needs: portable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the website
+        shell: pwsh
+        run: ./tools/build-site.ps1 -Out site
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: website-${{ github.ref_name }}
+          path: site
+
+      - name: Check the Cloudflare secrets
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if (-not $env:CF_TOKEN -or -not $env:CF_ACCOUNT) { Write-Error 'No CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID secret: the website was not deployed (the release itself is out).'; exit 1 }
+
+      - name: Deploy to Cloudflare Pages
+        if: github.ref_type == 'tag'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'babel' }} --branch=${{ contains(github.ref_name, '-') && 'preview' || 'main' }} --commit-dirty=true
