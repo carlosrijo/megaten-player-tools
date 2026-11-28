@@ -8373,7 +8373,8 @@
           else { lines.push(`In this tree: ${w.parts.map((p) => `${p.d.label} (level ${p.lvl})`).join(' + ')}.`); E.fuse(w.parts.map((p) => ({ d: p.d, lvl: p.lvl }))).how.forEach((t) => lines.push(t)); }
           if (sel.need) lines.push(`It comes at level ${d.lvl}: raise it to level ${sel.need} before the fusion above it (Magical Golden Apples).`);
           panel.append(h('ul', { class: 'fus-how' }, lines.map((t) => h('li', { text: t }))));
-          if (w.sp) panel.append(pluginLine(E, w.sp));
+          const plug = w.sp && pluginLine(E, w.sp);
+          if (plug) panel.append(plug);
         }
 
         // every recipe at base levels as ways the tree can take, easiest ingredients first; a special fusion is shown
@@ -8385,7 +8386,13 @@
           const kindOf = (r) => { const f = E.fuse(r.map(at), { log: false, plugins: false }); return f.elemental ? { kind: 'rank', dir: f.elemental } : { kind: d.race === 57 ? 'mitama' : E.isElemental(d) ? 'same' : 'two' }; };
           const cost = (x) => x.parts.reduce((s2, p) => s2 + Q.cost(p.d), 0), lv = (x) => x.parts.reduce((s2, p) => s2 + p.d.lvl, 0);
           every = [
-            ...R.special.map((sp) => best.find((x) => x.sp === sp) || { kind: 'special', sp, parts: sp.src.map(([id, variant]) => ({ d: E.byId.get(id), exact: !variant })).filter((p) => p.d).map((p) => Object.assign(p, { lvl: p.d.lvl })) }),
+            // a special fusion as the game lists it (the demons named in it), and also with the easiest version of each
+            // demon when the planner found one that differs
+            ...R.special.flatMap((sp) => {
+              const written = { kind: 'special', sp, parts: sp.src.map(([id, variant]) => ({ d: E.byId.get(id), exact: !variant })).filter((p) => p.d).map((p) => Object.assign(p, { lvl: p.d.lvl })) };
+              const easy = best.find((x) => x.sp === sp);
+              return easy && ftSig(easy) !== ftSig(written) ? [written, easy] : [written];
+            }),
             ...R.two.map((r) => Object.assign(kindOf(r), { parts: r.map(at) })),
             ...R.three.map((r) => ({ kind: 'tri', parts: r.map(at) })),
           ].filter((x) => x.parts.every((p) => p.d.id !== d.id));
@@ -8397,7 +8404,9 @@
         const wayCard = (way) => {
           const cur = !!w && ftSig(way) === ftSig(w), lost = way.parts.filter((p) => !Q.way(p.d));
           const n = way.parts.length && !lost.length ? 1 + way.parts.reduce((s2, p) => s2 + fusionsOf(p.d), 0) : 0;
-          return h('li', { class: 'fus-rcard' + (cur ? ' ft-cur' : '') },
+          // a card the tree can take is a button as a whole: a click anywhere on it (but its own links) puts it in the tree
+          const can = !cur && !lost.length;
+          return h('li', { class: 'fus-rcard' + (cur ? ' ft-cur' : '') + (can ? ' ft-pick' : ''), onclick: can ? (ev) => { if (!ev.target.closest('a, button')) pick(way); } : null },
             h('div', { class: 'fus-rcard-head' }, h('span', { class: 'tag' + (way.parts.length ? '' : ' tag-digi'), text: ftKind(way) }),
               lost.length ? null : h('span', { class: 'src-count fus-sum', 'data-tip': 'Fusions in all, counting the ones that make its demons', text: n ? ftPlural(n, 'fusion') : 'No fusion' })),
             way.parts.length ? way.parts.map((p, i) => [i ? h('span', { class: 'fus-plus', 'aria-hidden': 'true', text: '+' }) : null, demonChip(E, p.d, p.lvl, null, startTag(p.d))])
@@ -8405,7 +8414,7 @@
             pluginNote(E, way.sp),
             cur ? h('span', { class: 'ft-inuse' }, icon('check'), 'In the tree')
               : lost.length ? h('span', { class: 'ft-lost', tabindex: '0', 'data-tip': `Nothing you can contract or get from a Summon PG leads to ${lost.map((p) => p.d.label).join(' or ')} with the starts chosen above, so the tree can’t take this recipe.`, text: `No way to ${lost[0].d.label}` })
-                : h('button', { type: 'button', class: 'btn btn-sm ft-use', onclick: () => pick(way) }, 'Use this way'));
+                : h('button', { type: 'button', class: 'btn btn-sm ft-use', onclick: () => pick(way) }, 'Use this'));
         };
         // a demon nothing leads to has no "easiest" list: its recipes are what there is to show
         if (V.wmode !== 'all' && !Q.ways(d).length) V.wmode = 'all';

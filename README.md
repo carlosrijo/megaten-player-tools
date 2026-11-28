@@ -397,7 +397,7 @@ Under **Tools** in the left bar. Two views:
     it is fused from (hover it for the names, click it to show them in full there too, **Fold** to put it back). Big trees:
     drag to move around, and pick 75% or 50%.
   - The tree itself never picks a normal tri-fusion (two demons can make every race); special fusions of three are
-    used. A normal tri-fusion from **Every recipe** can be picked with **Use this way**.
+    used. A normal tri-fusion from **Every recipe** can be picked by clicking it (or **Use this**).
   - A demon no start leads to can still be picked: the page says so and lists its recipes.
 
 Mitama-fused demons are not in the lists: the game won't fuse them. The Fusion tree offers the demons some fusion makes
