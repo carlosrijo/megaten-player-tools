@@ -276,7 +276,8 @@ pub fn build(data: &GameData, decoded: &Path, store: Option<&Path>, client_dir: 
             let p: Vec<&str> = line.split('\t').collect();
             if let (Some(id), Some(n)) = (p.first().and_then(|s| fmt::parse_i32(s)), p.get(1)) {
                 if !n.trim().is_empty() {
-                    item_names.insert(id, n.trim().to_string());
+                    // BABEL's English where the client names the item only in Japanese (item-names-en.tsv)
+                    item_names.insert(id, crate::data::game_data::item_name_en(id, n).unwrap_or_else(|| n.trim().to_string()));
                 }
             }
         }
@@ -434,6 +435,9 @@ pub fn build(data: &GameData, decoded: &Path, store: Option<&Path>, client_dir: 
         s.insert("type".into(), json!(ty));
         if let Some(desc) = data.skill_text(id)? {
             s.insert("desc".into(), json!(desc));
+            if let Some(ja) = data.skill_text_ja(id)? {
+                s.insert("descJa".into(), json!(ja));   // the description is BABEL's translation of this
+            }
         }
         if let Some(ic) = icon(id)? {
             s.insert("icon".into(), json!(ic));

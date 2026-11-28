@@ -259,10 +259,15 @@ fn equipment_json(data: &GameData, item_name: &dyn Fn(i32) -> Result<String>) ->
     for r in rows("devil-equipment-items.tsv")? {
         let (item, skill) = (int(&r[0]), int(r.get(1).map_or("", String::as_str)));
         let name = item_name(item)?;
-        if name.starts_with("Debug ") {
+        if name.starts_with("Debug") {
             continue; // "Debug Epitaph Parts 1-3": the developers' test items, which nothing in the game hands out
         }
-        items.push(json!([item, skill, name, skill_name(skill), data.skill_text(skill)?.unwrap_or_default()]));
+        let mut row = vec![json!(item), json!(skill), json!(name), json!(skill_name(skill)), json!(data.skill_text(skill)?.unwrap_or_default())];
+        // a 6th entry: the game's Japanese when the description is BABEL's translation (desc-en.tsv; the page greys it)
+        if let Some(ja) = data.skill_text_ja(skill)? {
+            row.push(json!(ja));
+        }
+        items.push(Value::Array(row));
     }
     let mut rules: IndexMap<String, Value> = IndexMap::new();
     for r in rows("devil-equipment.tsv")? {
@@ -460,9 +465,34 @@ fn force_json(data: &GameData, item_name: &dyn Fn(i32) -> Result<String>) -> Res
     Ok(json!({ "max": MAX, "items": items, "slots": slots, "random": random }))
 }
 
+/// Each Demon Force item's effect as the client words it: item id -> the texts of its DevilBoostData extra's tokusei
+/// (the same lines the Demon Planner's Demon Force step shows; force_json). The Item Database lists them for the item.
+pub fn demon_force_texts(data: &GameData) -> Result<IndexMap<i32, Vec<String>>> {
+    let tokusei: IndexMap<i32, Vec<i32>> = rows("devil-boost-extra.tsv")?
+        .iter()
+        .map(|r| (int(&r[0]), r.get(3).map_or("", String::as_str).split(',').map(int).filter(|&x| x > 0).collect()))
+        .collect();
+    let mut res = IndexMap::new();
+    for r in rows("devil-boost-items.tsv")? {
+        let (item, stack) = (int(&r[0]), int(r.get(2).map_or("", String::as_str)));
+        let mut out = Vec::new();
+        for &tid in tokusei.get(&stack).map_or(&[][..], Vec::as_slice) {
+            if let Some(t) = data.tokusei_text(tid)? {
+                out.push(t.split_whitespace().collect::<Vec<_>>().join(" "));
+            }
+        }
+        if !out.is_empty() {
+            res.insert(item, out);
+        }
+    }
+    Ok(res)
+}
+
 /// Writes app\ui\rebirth-planner.json.
 pub fn build(data: &GameData, out_file: &Path) -> Result<()> {
-    let v = planner_json(data)?;
+    let mut v = planner_json(data)?;
+    // what is still Japanese inside the text (Demon Force lines, statuses): BABEL's English (game_data::translate_json)
+    crate::data::game_data::translate_json(&mut v);
     std::fs::write(out_file, json::serialize(&v, Escape::Relaxed, false))?;
     crate::console::write_line(&format!(
         "Wrote {} ({} runes, {} growth types, {} Mitama sets).",
@@ -474,7 +504,8 @@ pub fn build(data: &GameData, out_file: &Path) -> Result<()> {
     // beside it, rbp-effects.json: the skills' effects, made WITHOUT the sealed data (this file is committed; the app
     // serves its own made with it, `effects_bytes`)
     let fx_file = out_file.with_file_name("rbp-effects.json");
-    let fx = effects_json(std::sync::Arc::new(GameData::new().without_sealed_data()))?;
+    let mut fx = effects_json(std::sync::Arc::new(GameData::new().without_sealed_data()))?;
+    crate::data::game_data::translate_json(&mut fx);
     std::fs::write(&fx_file, json::serialize(&fx, Escape::Relaxed, false))?;
     crate::console::write_line(&format!("Wrote {} ({} skills).", fx_file.display(), fx["skills"].as_object().map_or(0, |a| a.len())));
     Ok(())

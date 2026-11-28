@@ -1,0 +1,168 @@
+#status id	the client's name (Japanese, as reference\status-names.tsv has it)	BABEL's English (the game has no English name for these)
+6	至福	Bliss
+28	疫病	Pestilence
+107	鬼人降臨	Oni Descent
+246	樹蔭の冥感	Treeshade Dark Sense
+247	始生の加護	Primordial Protection
+268	質実剛健	Simple and Sturdy
+269	延年転寿	Longevity Prolonged
+270	心願成就	Wish Fulfilled
+391	物理ブースト▲	Physical Boost Up
+392	魔法ブースト▲	Magic Boost Up
+393	恐怖	Fear
+394	烙印	Brand
+395	パニックマジック	Panic Magic
+396	捧魂の法	Soul Offering Rite
+397	魂捧げの夜伽	Soul-Offering Night Vigil
+449	斬撃ブースト	Slash Boost
+450	突撃ブースト	Thrust Boost
+451	打撃ブースト	Blunt Boost
+452	貫通ブースト	Penetrate Boost
+453	散弾ブースト	Spread Boost
+454	回復ブースト	Curative Boost
+455	補助ブースト	Support Boost
+456	魔力ブースト	Mystic Boost
+457	神経ブースト	Nerve Boost
+458	精神ブースト	Mind Boost
+459	自爆ブースト	Self-Destruct Boost
+460	射撃ブースト	Handgun Boost
+461	万能ブースト(デバッグ)	Almighty Boost (Debug)
+491	ノックバックを無効▼	Null Knockback Down
+492	大凍結	Great Freeze
+493	大スタン	Great Stun
+645	真那伽の香（小）	Manaka Incense (Small)
+646	羅国の香（小）	Rakoku Incense (Small)
+647	伽羅の香（小）	Kyara Incense (Small)
+658	エキスパート▲▲▲	Expertise Up Cubed
+661	エキスパート▲▲▲	Expertise Up Cubed
+662	デジタライズポイント▲▲▲	Digitalization Points Up Cubed
+663	デジタライズポイント▲▲▲	Digitalization Points Up Cubed
+860	ククノチノタマビコ	Kukunochi-no-Tamabiko
+868	回復効果▼	Healing Effect Down
+869	ＤＢブートパック３０ｄａｙｓ	DB Boot Pack (30 Days)
+872	ソウルポイント▲	Soul Points Up
+873	ソウルポイント▲	Soul Points Up
+874	ソウルジェム（ＢＣ）の加護	Soul Gem ~ Divine Protection (BC)
+875	キャロットジュース▲	Carrot Juice Up
+876	獣の眼光	Gleam of the Beast
+877	王の威光	King's Majesty
+905	デジタライズ中（男）	Digitalizing (Male)
+906	デジタライズ待機中	Digitalization Standby
+907	デジタライズ中（女）	Digitalizing (Female)
+911	デジタライズエフェクト	Digitalization Effect
+912	悪魔降伏	Demon Surrender
+913	壅塞	Obstruction
+914	雪合戦体力	Snowball Fight HP
+915	スロットル全開	Full Throttle
+916	近接ダメージ増加20▲	Close-Range Damage Up 20
+917	射撃ダメージ増加20▲	Long-Range Damage Up 20
+918	魔法ダメージ増加20▲	Spell Damage Up 20
+919	デジタライズポイント▲▲	Digitalization Points Up Squared
+1144	ジアイの言の葉	Words of Jiai
+1145	至高の名言・天	Supreme Quote: Heaven
+1146	至高の名言・地	Supreme Quote: Earth
+1147	至高の名言・人	Supreme Quote: Man
+1149	砂幻陵探索サポーター	Sagenryo Exploration Supporter
+1157	符術高揚（斬撃）	Talisman Boost (Slash)
+1158	符術高揚（突撃）	Talisman Boost (Thrust)
+1159	符術高揚（打撃）	Talisman Boost (Blunt)
+1160	符術高揚（射撃）	Talisman Boost (Handgun)
+1161	符術高揚（貫通）	Talisman Boost (Penetrate)
+1162	符術高揚（散弾）	Talisman Boost (Spread)
+1163	符術高揚（火炎）	Talisman Boost (Fire)
+1164	符術高揚（氷結）	Talisman Boost (Ice)
+1165	符術高揚（電撃）	Talisman Boost (Electric)
+1166	符術高揚（衝撃）	Talisman Boost (Force)
+1167	符術高揚（破魔）	Talisman Boost (Expel)
+1168	符術高揚（呪殺）	Talisman Boost (Death)
+1169	符術高揚（魔力）	Talisman Boost (Mystic)
+1170	符術高揚（神経）	Talisman Boost (Nerve)
+1171	符術高揚（精神）	Talisman Boost (Mind)
+1172	鬼道の書物	Tome of Kido
+1173	符術高揚（斬撃突撃打撃）	Talisman Boost (Slash/Thrust/Blunt)
+1174	符術高揚（射撃貫通散弾）	Talisman Boost (Handgun/Penetrate/Spread)
+1175	符術高揚（火炎氷結電撃衝撃）	Talisman Boost (Fire/Ice/Electric/Force)
+1176	符術高揚（破魔呪殺）	Talisman Boost (Expel/Death)
+1177	符術高揚（魔力神経精神）	Talisman Boost (Mystic/Nerve/Mind)
+1179	地神の注連縄	Earth God's Shimenawa
+2123	ウズメノマジナイ	Uzume's Charm
+2124	ウズメノマジナイ	Uzume's Charm
+2125	ウズメノマジナイ	Uzume's Charm
+2126	ウズメノマジナイ	Uzume's Charm
+2127	ウズメノマジナイ	Uzume's Charm
+2128	ウズメノマジナイ	Uzume's Charm
+2129	ウズメノマジナイ	Uzume's Charm
+2130	ウズメノマジナイ	Uzume's Charm
+2131	ウズメノタタリ	Uzume's Curse
+2140	オニ特製ジュース	Oni's Special Juice
+2227	爪櫛の加護	Tsumagushi's Protection
+2228	敵愾高揚	Enmity Surge
+2229	白羽の矢	White-Feathered Arrow
+2230	白羽の矢	White-Feathered Arrow
+2231	白羽の矢	White-Feathered Arrow
+2232	白羽の矢	White-Feathered Arrow
+2233	白羽の矢	White-Feathered Arrow
+2234	白羽の矢	White-Feathered Arrow
+2265	修練の混乱	Training Confusion
+2267	修練の緊縛	Training Binding
+2273	ダークゾーン弱	Dark Zone (Weak)
+2274	ダークゾーン中	Dark Zone (Medium)
+2275	ダークゾーン強	Dark Zone (Strong)
+2321	スピリッツオブアート	Spirits of Art
+2326	其の命、叛逆の罰を	That Life, Rebellion's Penalty
+2327	其、彼の声を	His Voice
+2328	絶てよ、まほろばの糸を	Sever the Threads of Mahoroba
+2329	讃えよ、宇宙の意思を	Praise the Will of the Cosmos
+2330	喚けよ、汝に末魔の嘆きを	Cry Out the Death Throes Upon Thee
+2331	山羊屋共通優待券	Yagiya Common Privilege Ticket
+2334	若駒奮起	Young Colt Rousing
+2335	若駒突撃	Young Colt Charge
+2336	若駒高揚	Young Colt Elation
+2338	絵馬素材奉納	Ema Material Offering
+2339	絵馬素材奉納	Ema Material Offering
+2340	絵馬素材奉納	Ema Material Offering
+2341	絵馬素材奉納	Ema Material Offering
+2342	絵馬素材奉納	Ema Material Offering
+2343	絵馬素材奉納	Ema Material Offering
+2344	絵馬素材奉納	Ema Material Offering
+2345	絵馬奉納	Ema Offering
+2346	絵馬奉納	Ema Offering
+2347	絵馬奉納	Ema Offering
+2348	絵馬奉納	Ema Offering
+2349	絵馬奉納	Ema Offering
+2350	絵馬奉納	Ema Offering
+2351	絵馬奉納	Ema Offering
+2352	絵馬奉納	Ema Offering
+2353	若駒の嘶き	Young Colt's Neigh
+2420	移動不能(ﾓｰｼｮﾝﾅｼ)	Immobilized (No Motion)
+2431	明王の書物	Tome of the Wisdom King
+2432	普遍化する律動の力	Power of Universalizing Rhythm
+2433	体得の助力	Aid of Mastery
+2434	鬼道の助力	Aid of Kido
+2435	霊魂流出中	Soul Outflowing
+2436	入場判定用付与（5分）	Entry Check Grant (5 Min)
+2439	電痕	Electric Scar
+2440	不快指数増加	Discomfort Index Up
+2444	？？遁？	??Dun?
+2445	？？遁甲	??Dunjia
+2446	天？遁甲	Heaven-?Dunjia
+2447	天一遁甲	Heaven-One Dunjia
+2448	風雲霧	Wind Cloud Mist
+2449	水煙霧	Water Smoke Mist
+2454	煩悩退散	Dispel Earthly Desires
+2465	鞍馬山への通行手形	Mt. Kurama Pass
+2466	諸魔退散	Dispel All Demons
+2511	炎上状態	Aflame
+2512	色即是空	Form Is Emptiness
+2513	力の簒奪	Usurpation of Power
+2539	トートのおまじない	Thoth's Charm
+2540	地下遺構探索サポーター	Underground Ruins Exploration Supporter
+2541	駐屯地探索サポーター	Garrison Exploration Supporter
+2542	坑道探索サポーター	Mine Exploration Supporter
+2548	短命の誓約	Oath of Short Life
+2566	ノジーとの免罪符交換制限用	Nozy Indulgence Exchange Limit
+2567	ヒトミとの免罪符交換制限用	Hitomi Indulgence Exchange Limit
+2572	アヤ用20時間制限時間	Aya 20-Hour Time Limit
+2573	サキュバス用20時間制限時間	Succubus 20-Hour Time Limit
+2905	地神の紙垂守り	Earth God's Shide Charm
+2909	活性化する意志の輝き	Brilliance of Invigorating Will

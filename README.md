@@ -225,8 +225,8 @@ They appear first, marked "IMAGINE note".
 
 Under **Tools** in the left bar. Lists the game's key items (the 282 it shows; its hidden progress flags are left out):
 which ones your character has, what each one does and how to get it. The game names most key items only in Japanese:
-each shows its English name, from the game's own English text where there is one, else a translation marked
-"translated", with the Japanese name greyed under it. Chips filter by kind (modes and access such as WILDCAT and
+each shows its English name, from the game's own English text where there is one, else BABEL's translation, greyed
+out and marked "translated" like the other pages' translations, with the Japanese name greyed under it. Chips filter by kind (modes and access such as WILDCAT and
 BEARCAT, licenses, COMP and system, shops and people, expertise cap, story, quest items, records, Electronic Corridor
 programs, seasonal) and by **You have** / **Missing**. Click one for how to get it, what it does in full and the quests
 involved, each with a link to it in the Quest Database. Which ones you have is read from the game every few seconds while
@@ -240,8 +240,9 @@ Under **Tools** in the left bar, next to the other databases. Lists every quest 
 and, when opened, what to do step by step: who to talk to and where (zone and map grid position), which dialogue
 choices to pick, what you need, what you get and give, and the kill or collect counts. For each question the answer to
 pick is shown with the other answers that work as well and the ones that do not move the quest on, worded as the game
-words them now (since the update of 19 November several answers are in Japanese in game, and the guide shows them that
-way). When a step needs several talks (Act 1: Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with
+words them now. Since the update of 19 November several answers are in Japanese in game: the guide shows BABEL's
+English for them greyed out, with the game's Japanese in the tooltip (also event names and item names the game has only
+in Japanese). When a step needs several talks (Act 1: Demonization: Kiara, Nora, Lorie and Izo) all of them are listed, with
 their answers and whether the order matters. When your answers decide the outcome (Uriel in Act 13: Envoy for the
 Messian Church moves your alignment to a different place for each line of answers, and one of them also gives you
 Inexperienced Uriel) the talk is shown as a tree of answers, each branch with what it gives and what it does to your
@@ -294,6 +295,13 @@ the rest. A second row of chips narrows a kind down: the slot for gear, the game
 (Weapon Mod Tool, Demon Voucher, Junk...). The **Filters** button opens more chips, each with its count: who can use
 it (sex, alignment), how it can be got (shop, exchange, enemy drop, chest, ticket or box, event, quest...; pick several),
 a weapon's range and affinity, and a level limit. Click a column header to sort by it.
+Items the game names only in Japanese (3,828 of them, and the key items without an English name) show BABEL's
+English translation greyed out, with the Japanese small under it; the item's details say so. Search also finds the
+Japanese. Descriptions the game has only in Japanese (about 1,350 items, 840 skills) are translated the same way:
+greyed out, marked "(translated)", with the game's text in the tooltip. Other pages (skill barters, demon exchanges,
+dungeon drops, fusion plugins, the Demon Planner's parts and Demon Force lines) use the same English, as do
+the 167 statuses the game names only in Japanese; the Dungeon Database greys
+its translated drops too.
 
 - **Gear** (10,266 pieces) shows what it gives: stats, effects, appearance bonus, the sets it belongs to, mod slots,
   and who can wear it, with community notes from SnowSheet's gear reference for IMAGINE beside it.

@@ -655,6 +655,8 @@
   /** Gives an element a game-style tooltip: `build` makes its content the first time the pointer is over it. */
   const withTip = (el, build) => { el.dataset.rich = ''; el._rich = build; return el; };
   const tipHead = (iconEl, title, sub) => h('div', { class: 'tt-head' }, iconEl, h('div', null, h('div', { class: 'tt-title', text: title }), sub ? h('div', { class: 'tt-sub', text: sub }) : null));
+  /** A tooltip's description lines; when `ja` is set the text is BABEL's translation of it: greyed, with a note first. */
+  const tlTipLines = (text, ja) => (ja ? [h('div', { class: 'tt-line tl-name tl-note', text: TL_DESC_NOTE }), h('div', { class: 'tl-name' }, ...tipLines(text))] : tipLines(text));
   /** Tooltip text as lines: "[Section]" lines become headings; Japanese flavour lines are left out. */
   const tipLines = (text) => {
     const out = []; let blank = true;
@@ -2917,7 +2919,11 @@
     S.quest.state = 'loading';
     // the people's pictures (npc-pictures.json beside this file); the names show without them until it loads
     fetch('npc-pictures.json').then((r) => (r.ok ? r.json() : null)).catch(() => null).then((f) => { S.quest.faces = f; if (f && S.quest.data && (S.page === 'quests' || S.page === 'tracker')) render(); });
-    fetch('quest-guide.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+    const json = (f) => fetch(f, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    // quest-tl.json: BABEL's English for the Japanese the quest data still has (answers, event names, item and valuable
+    // names inside a line); without it the guide shows the game's Japanese
+    Promise.all([json('quest-guide.json'), json('quest-tl.json')]).then(([d, tl]) => {
+      if (d && tl) S.quest.tl = questTranslate(d, tl);
       S.quest.data = d; S.quest.state = d ? 'ready' : 'failed';
       if (d) d.quests.forEach((q) => {
         const words = [q.title, q.client, q.zone, ...(q.seasonal || [])];
@@ -2930,6 +2936,48 @@
       if (S.page === 'quests' || S.page === 'tracker') render();
     });
   }
+  /**
+   * Puts BABEL's English into the quest data in place (quest-tl.json: `text` = whole strings, `names` = item and valuable
+   * names inside a line, both Japanese -> English) and returns English -> the game's Japanese for every string it changed.
+   * Object keys are translated too (`answerFx` is keyed by the answer). The page greys those strings (`questTlMark`).
+   */
+  function questTranslate(d, tl) {
+    const text = tl.text || {}, names = Object.keys(tl.names || {}).sort((a, b) => b.length - a.length), back = new Map();
+    const one = (s) => {
+      if (typeof s !== 'string' || !/[぀-ヿ㐀-鿿]/.test(s)) return s;
+      let t = text[s];
+      if (t === undefined) { t = s; for (const n of names) if (t.includes(n)) t = t.split(n).join(tl.names[n]); }
+      if (t !== s) back.set(t, s);
+      return t;
+    };
+    const walk = (o) => {
+      if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) o[i] = typeof o[i] === 'string' ? one(o[i]) : walk(o[i]); return o; }
+      if (!o || typeof o !== 'object') return o;
+      for (const k of Object.keys(o)) {
+        const v = typeof o[k] === 'string' ? one(o[k]) : walk(o[k]), k2 = one(k);
+        if (k2 !== k) delete o[k];
+        o[k2] = v;
+      }
+      return o;
+    };
+    walk(d);
+    return back;
+  }
+  /** Greys the quest lines that are BABEL's translation (S.quest.tl), with the game's Japanese in the tooltip: any element
+   *  whose whole text is such a line. Runs on what the page adds, so every way a line is drawn is covered. */
+  function questTlMark(root) {
+    const tl = S.quest.tl;
+    if (!tl || !tl.size || root.nodeType !== 1) return;
+    const GAME_TEXT = '.q-pick, .q-said, .q-asks, .q-goals > li, .q-item';
+    for (const el of [...(root.matches(GAME_TEXT) ? [root] : []), ...root.querySelectorAll(GAME_TEXT)]) {
+      if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3 || el.classList.contains('tl-name')) continue;
+      const ja = tl.get(el.textContent);
+      if (ja === undefined) continue;
+      el.classList.add('tl-name');
+      if (!el.hasAttribute('data-tip')) el.setAttribute('data-tip', `BABEL's translation: the game has this only in Japanese. In game: ${ja}`);
+    }
+  }
+  new MutationObserver((muts) => { if (S.quest && S.quest.tl && (S.page === 'quests' || S.page === 'tracker')) muts.forEach((m) => m.addedNodes.forEach(questTlMark)); }).observe(document.body, { childList: true, subtree: true });
   /**
    * The ways of doing a step, as groups: ways that ask the same and give the same differ only in who you talk to
    * (three NPCs who all take the report), so they become one instruction naming all of them.
@@ -2955,7 +3003,7 @@
     // answers that take the quest another way: only those that change your alignment are worth a warning (the others are
     // shown as their own way, or are menus and repeats); in a tree its own branches are left out
     const other = ((x.elsewhere && x.elsewhere[i]) || []).filter((t) => fx[t] && !(skip && skip.has(t)));
-    const said = (t) => [`“${t}”`, fx[t] ? h('span', { class: 'q-fx', text: ` (${fx[t].map((f) => f[0].toLowerCase() + f.slice(1)).join('; ')})` }) : null];
+    const said = (t) => ['“', h('span', { class: 'q-said', text: t }), '”', fx[t] ? h('span', { class: 'q-fx', text: ` (${fx[t].map((f) => f[0].toLowerCase() + f.slice(1)).join('; ')})` }) : null];
     // a flat list: h() flattens one level only
     return [...[p, ...also].flatMap((t, j) => [j ? h('span', { class: 'q-arrow', text: 'or' }) : null, h('span', { class: 'q-pick', text: t })]),
       not.length ? h('span', { class: 'q-not' }, 'not ', not.flatMap((t, j) => [j ? ' or ' : '', ...said(t)])) : null,
@@ -2974,7 +3022,7 @@
     return src ? h('span', { class: 'q-who' }, h('img', { class: 'q-face', src, alt: '', onerror: (e) => e.target.remove() }), h('b', { text: x.who })) : h('b', { text: x.who });
   };
   const questAt = (x) => (x.where ? (x.kind === 'zone' ? ` to ${x.where}` : ` in ${x.where}`) : '') + (x.grid ? ` at (${x.grid})` : '');
-  const questRow = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.join(', '))) : null);
+  const questRow = (label, list, cls) => (list && list.length ? h('div', { class: 'q-line' + (cls ? ' ' + cls : '') }, h('span', { class: 'q-key', text: label }), h('span', null, list.flatMap((t, i) => [i ? ', ' : '', h('span', { class: 'q-item', text: t })]))) : null);
   /** What you need, fight, get, hand over and what changes for a way. What changes is one line each: an alignment change
    *  can depend on your alignment ("If your alignment is …"). */
   const questRows = (w) => [questRow('You must', w.needs), questRow('You fight', w.fights), questRow('You receive', w.get, 'q-get'), questRow('You hand over', w.lose),
@@ -3170,11 +3218,11 @@
   const panelOpen = () => Promise.resolve(host.call('panel', { open: true })).catch(() => null);
   function questDetail(q) {
     const box = h('div', { class: 'q-detail' });
-    if (q.needs.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Before you can start' }), h('span', null, q.needs.join(' · '))));
+    if (q.needs.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Before you can start' }), h('span', null, q.needs.flatMap((t, i) => [i ? ' · ' : '', h('span', { class: 'q-item', text: t })]))));
     if (!q.walkthrough) box.append(h('p', { class: 'note', text: 'The server\'s event files do not cover this quest, so only the game\'s own objective text is shown.' }));
     // a quest started only from a seasonal event's files (the public server has those switched off)
     if (q.seasonal && q.seasonal.length) box.append(h('div', { class: 'q-needs' }, h('span', { class: 'q-key', text: 'Seasonal event' }),
-      h('span', null, `${q.seasonal.join(' · ')}. Its steps come from that event's files, which the public server keeps switched off, so IMAGINE may not run it.`)));
+      h('span', null, ...q.seasonal.flatMap((t, i) => [i ? ' · ' : '', h('span', { class: 'q-item', text: t })]), `. Its steps come from that event's files, which the public server keeps switched off, so IMAGINE may not run it.`)));
     const ol = h('ol', { class: 'q-steps' });
     q.steps.forEach((s) => ol.append(h('li', null,
       /^Step /.test(s.label) ? null : h('div', { class: 'q-step-title', text: s.label }),   // the number is already in the circle
@@ -3403,7 +3451,7 @@
     if (k.newmoon) notes.push('NewMoon’s own: the public server files don’t have it, so this comes from the game’s own description.');
     if (k.seasonal) notes.push('Only from a seasonal event, which may not be running.');
     if (!k.sure) notes.push('Worked out from the game files, not checked in game.');
-    if (k.enSrc === 'translated') notes.push('The game names it only in Japanese; the English name is a translation.');
+    if (k.enSrc === 'translated') notes.push(`The game names it only in Japanese (${k.jp}); the English name is BABEL’s translation.`);
     if (notes.length) box.append(h('p', { class: 'note', text: notes.join(' ') }));
     return box;
   }
@@ -3449,7 +3497,8 @@
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : '') + (held && !has(k) ? ' key-missing' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
             h('span', { class: 'chev' }, icon('chevron')),
-            h('span', null, h('span', { class: 'key-en', text: k.en }),
+            // a translated name is greyed like the other pages' (the game names it only in Japanese, shown under it)
+            h('span', null, k.enSrc === 'translated' ? h('span', { class: 'key-en tl-name', 'data-tip': TL_TIP(k.jp, 'key item'), text: k.en }) : h('span', { class: 'key-en', text: k.en }),
               k.enSrc === 'translated' ? h('span', { class: 'key-tr', tabindex: 0, 'data-tip': 'The game names it only in Japanese; this is a translation', text: 'translated' }) : null,
               k.jp && k.jp.normalize('NFKC') !== k.en.normalize('NFKC') ? h('span', { class: 'key-jp', lang: 'ja', text: k.jp }) : null))),
           h('td', { class: 'key-does' }, k.unlocks && k.unlocks !== 'Not known.' ? keyFirst(k.unlocks) : h('span', { class: 'zero', text: 'Not known' })),
@@ -3638,7 +3687,7 @@
           // the game's own effect text packs several lines into one, with a written-out line break between them
           const lines = (list) => (list || []).flatMap((x) => String(x).split(/\s*\\n\s*/)).map((x) => x.trim()).filter(Boolean);
           it.stats = lines(it.stats); it.effects = lines(it.effects); it.appearance = lines(it.appearance);
-          it.tarot = lines(it.tarot); it.soul = lines(it.soul); it.desc = it.desc || []; it.gives = it.gives || []; it.how = it.how || []; it.quests = it.quests || [];
+          it.tarot = lines(it.tarot); it.soul = lines(it.soul); it.force = lines(it.force); it.desc = it.desc || []; it.gives = it.gives || []; it.how = it.how || []; it.quests = it.quests || [];
           (it.sets || []).forEach((s) => { s.effects = lines(s.effects); });
           it.all = [...(it.stats || []), ...(it.effects || []), ...(it.appearance || []), ...(it.sets || []).flatMap((s) => s.effects)];
           it.get = it.get || []; it.sources = it.sources || [];
@@ -3651,7 +3700,7 @@
           if (it.sources.some((s) => s.ticket)) it.src.add('Box');
           if (it.sources.length) it.src.add('Notes');
           if (!it.src.size) it.src.add('None');
-          it.hay = [it.name, it.kind, it.class || '', it.slot || '', ...it.all, ...it.tarot, ...it.soul, ...it.desc, ...it.gives, ...it.how, ...it.quests,
+          it.hay = [it.name, it.ja || '', it.kind, it.class || '', it.slot || '', ...it.all, ...it.tarot, ...it.soul, ...it.force, ...it.desc, ...it.gives, ...it.how, ...it.quests,
             ...(it.sets || []).flatMap((s) => s.with), ...getWords(it.get),
             ...it.sources.flatMap((s) => [s.tab, s.how, s.ticket || '', ...getWords(s.ticketGet)])].join(' ').toLowerCase();
         });
@@ -3660,7 +3709,9 @@
         d.classes = {};
         d.items.forEach((it) => { if (it.class) (d.classes[it.kind] = d.classes[it.kind] || new Set()).add(it.class); });
       }
-      if (S.page === 'geardb' || S.page === 'rebirth') render();   // the Rebirth Planner's equipment and Demon Force steps say where each part and item comes from
+      // the Rebirth Planner's equipment and Demon Force steps say where each part and item comes from; the Dungeon Database's
+      // drops show the item's entry (a tooltip made before this arrived is cached on its element: redraw)
+      if (S.page === 'geardb' || S.page === 'rebirth' || S.page === 'dungeons') render();
       return d;
     }));
   }
@@ -3690,6 +3741,34 @@
     const notes = [...new Set(it.sources.map((s) => [s.tab, s.how].filter(Boolean).join(' · ')))];
     return { where, notes };
   }
+  /**
+   * An item's Item Database entry as a tooltip (the Dungeon Database's drops): `pic` and `sub` head it (the page's own
+   * picture and what it says about the drop), then the kind and facts, the description, what it gives and where to get
+   * it, each list cut short. `null` while gear-db.json is not in yet (it is asked for here) or when it lacks the item:
+   * the caller keeps its own tooltip then.
+   */
+  function itemCardTip(id, pic, sub) {
+    if (S.gdb.state === 'idle') loadGearDb();
+    const d = S.gdb.data;
+    const it = d && id ? (S.gdb.byId || (S.gdb.byId = new Map(d.items.filter((x) => x.id && !x.keyItem).map((x) => [x.id, x])))).get(id) : null;
+    if (!it) return null;
+    const gear = it.kind === 'Gear';
+    const facts = [gear ? it.slot : gdbKindLabel(it.kind), it.class && it.class !== it.slot && it.class !== gdbKindLabel(it.kind) && it.class !== it.kind ? it.class : '',
+      it.level ? `Level ${it.level}+` : '', it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : ''].filter(Boolean);
+    const MAX = 8;
+    const sec = (label, list, cls) => (list && list.length ? [h('div', { class: 'tt-sec', text: label }),
+      ...list.slice(0, MAX).map((x) => h('div', { class: 'tt-line' + (cls ? ' ' + cls : ''), text: x })),
+      list.length > MAX ? h('div', { class: 'tt-line', text: `and ${fmt(list.length - MAX)} more` }) : null] : []);
+    const where = it.get.map((g) => [g.k, g.t, g.s, g.v].filter(Boolean).join(' · '));
+    return h('div', null, tipHead(pic, it.name, [facts.join(' · '), sub].filter(Boolean).join(' · ')),
+      it.ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(it.ja, 'item') }) : null,
+      ...(it.desc.length ? [h('div', { class: 'tt-sec', text: it.descJa ? 'Description (translated)' : 'Description' }), ...tlTipLines(it.desc.join('\n'), it.descJa)] : []),
+      ...sec('Tarot Fusion', it.tarot), ...sec('Soul Fusion', it.soul), ...sec('Demon Force', it.force),
+      ...sec('Can give', it.gives.concat(it.givesMore ? [`and ${fmt(it.givesMore)} more`] : [])),
+      ...(it.sets || []).flatMap((x) => sec('Set bonus', x.effects)),
+      ...sec('Appearance Bonus', it.appearance), ...sec('Basic Features', it.stats), ...sec('Characteristics', it.effects),
+      ...sec('Where to get it', where.concat(it.how)));
+  }
   function gearDbDetail(it) {
     const box = h('div', { class: 'q-detail' });
     const block = (label, list) => (list && list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('ul', { class: 'gdb-list' }, list.map((x) => h('li', { text: x })))) : null);
@@ -3699,10 +3778,15 @@
       it.level ? `Level ${it.level}+` : '', it.gender && it.gender !== 'Any' ? it.gender + ' only' : '', it.alignment ? it.alignment + ' only' : '', it.weapon || '', it.affinity ? it.affinity + ' affinity' : '',
       it.stack ? `Stacks to ${fmt(it.stack)}` : '', it.sell ? `Sells for ${fmt(it.sell)} Macca` : ''].filter(Boolean);
     box.append(h('div', { class: 'detail-meta' }, facts.map((x) => h('span', { class: 'tag', text: x }))));
+    // `ja`: the game names it only in Japanese and the name is BABEL's translation (item-names-en.tsv, or the Key Items page's)
+    if (it.ja) box.append(h('p', { class: 'note' }, h('span', { class: 'tl-name', text: it.name }), ` is BABEL's translation. The game has no English name for this item: it calls it ${it.ja}.`));
     if (it.sheetOnly) box.append(h('p', { class: 'note', text: 'This row is from the spreadsheet only: its name matched no item in the game data, so the effects below are the sheet\'s own text.' }));
     // the game's own description (its tooltip), then what a tarot or soul crystal gives when fused into a piece
-    const descBlock = block('Description', it.desc); if (descBlock) box.append(descBlock);
-    [block('Tarot Fusion', it.tarot), block('Soul Fusion', it.soul)].filter(Boolean).forEach((b) => box.append(b));
+    const descBlock = block(it.descJa ? 'Description (translated)' : 'Description', it.desc);
+    if (descBlock && it.descJa) { descBlock.classList.add('tl-name'); descBlock.setAttribute('data-tip', TL_DESC_TIP(it.descJa)); }
+    if (descBlock) box.append(descBlock);
+    // a Demon Force material: the effect it puts in a demon's force slot (the Demon Planner's Demon Force step)
+    [block('Tarot Fusion', it.tarot), block('Soul Fusion', it.soul), block('Demon Force', it.force)].filter(Boolean).forEach((b) => box.append(b));
     // a voucher, ticket or random box: the items it can give (the server's box tables)
     if (it.gives.length) {
       const b = block('Can give', it.gives);
@@ -3774,7 +3858,7 @@
     // the Gives column: what a piece gives, what a crystal fuses in, what a box can give, else the game's description
     const givesText = (it) => {
       const list = it.all.length ? it.all : it.tarot.length || it.soul.length ? [...it.tarot.map((x) => `Tarot: ${x}`), ...it.soul.map((x) => `Soul: ${x}`)]
-        : it.gives.length ? [`Can give ${it.gives.slice(0, 2).join(', ')}` + (it.gives.length + (it.givesMore || 0) > 2 ? ` and ${fmt(it.gives.length + (it.givesMore || 0) - 2)} more` : '')] : it.desc;
+        : it.force.length ? it.force.map((x) => `Demon Force: ${x}`) : it.gives.length ? [`Can give ${it.gives.slice(0, 2).join(', ')}` + (it.gives.length + (it.givesMore || 0) > 2 ? ` and ${fmt(it.gives.length + (it.givesMore || 0) - 2)} more` : '')] : it.desc;
       // a description is the game's whole tooltip: the start of it here, all of it in the opened row
       if (list === it.desc) { const d = it.desc.join(' '); return d.length > 110 ? d.slice(0, 108).replace(/\s+\S*$/, '') + '…' : d; }
       return list.slice(0, 3).join(' · ') + (list.length > 3 ? ` · and ${list.length - 3} more` : '');
@@ -3797,9 +3881,11 @@
         const gives = givesText(it), src = whereText(it), type = typeText(it);
         body.append(h('tr', { class: 'row-click' + (open ? ' open' : ''), onclick: (ev) => { if (!ev.target.closest('button')) toggle(); } },
           h('td', null, h('button', { type: 'button', class: 'row-btn', 'aria-expanded': String(open), onclick: toggle },
-            h('span', { class: 'chev' }, icon('chevron')), ddbImg(it.icon, 28, 'dcm-icon gdb-icon'), h('span', null, it.name, it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null))),
+            h('span', { class: 'chev' }, icon('chevron')), ddbImg(it.icon, 28, 'dcm-icon gdb-icon'), h('span', null, tlName(it.name, it.ja, 'item'), it.sheetOnly ? h('span', { class: 'src-count', text: 'sheet only' }) : null,
+              it.ja ? h('span', { class: 'key-jp', lang: 'ja', text: it.ja }) : null))),
           h('td', null, type || h('span', { class: 'zero', text: '—' })),
-          h('td', { class: gives ? 'gdb-gives' : 'zero', text: gives || '—' }),
+          // the start of the description when nothing else is known; greyed when that description is BABEL's translation
+          h('td', { class: (gives ? 'gdb-gives' : 'zero') + (it.descJa && !it.all.length && !it.tarot.length && !it.soul.length && !it.gives.length ? ' tl-name' : ''), text: gives || '—' }),
           h('td', { class: src ? '' : 'zero', text: src || 'Not known' })));
         if (open) body.append(h('tr', { class: 'detail-row' }, h('td', { colspan: 4 }, gearDbDetail(it))));
       });
@@ -3875,13 +3961,14 @@
         const sk = (id) => (d.skills[id] ? d.skills[id][0] : '');
         Object.values(d.mobs).forEach((m) => { m.hay = [m.name, m.ja || '', m.race || '', ...m.skills.map(sk), ...m.enemySkills.map(sk), ...m.traits.map(sk)].join(' ').toLowerCase(); });
         // a drop points at d.items[id] = [name, the game's description, picture]
-        const item = (g) => { const [name, desc, icon] = d.items[g.i] || ['', '', null]; return Object.assign(g, { item: name, desc, icon }); };
+        const item = (g) => { const [name, desc, icon, ja, dja] = d.items[g.i] || ['', '', null]; return Object.assign(g, { item: name, desc, icon, ja, dja }); };   // ja: BABEL translated the name
         (d.everywhere || []).forEach(item);   // the game-wide drops every enemy that inherits drops can give
         d.dungeons.forEach((x, i) => {
           x.key = i;
-          (x.shared || []).forEach(item); (x.bossChest || []).forEach(item); (x.chests || []).forEach(item);
+          (x.shared || []).forEach(item); (x.bossChest || []).forEach(item); (x.chests || []).forEach(item); (x.rewards || []).forEach(item);
           x.mobs.forEach((e) => { e.mob = d.mobs[e.m]; (e.drops || []).forEach(item); e.hay = [e.mob.hay, e.where || '', ...(e.drops || []).map((g) => g.item)].join(' ').toLowerCase(); });
-          x.hay = [x.name, x.from || '', ...(x.shared || []).map((g) => g.item)].join(' ').toLowerCase();
+          // chests and scripted rewards too: "god's majesty" finds End of Days
+          x.hay = [x.name, x.from || '', ...[x.shared, x.bossChest, x.chests, x.rewards].flatMap((l) => (l || []).map((g) => g.item))].join(' ').toLowerCase();
           x.bosses = x.mobs.filter((e) => e.boss).length;
         });
       }
@@ -3917,17 +4004,17 @@
     const skills = (label, ids, kind, tip) => {
       const list = ids.filter((id) => D.skills[id]).sort((a, b) => !D.skills[a][2] - !D.skills[b][2]);
       return list.length ? h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label, 'data-tip': tip || null }),
-        h('div', { class: 'dun-skill-row' }, list.map((id) => { const [n, d, icon, ja] = D.skills[id];   // ja: the game's Japanese when n is BABEL's translation
+        h('div', { class: 'dun-skill-row' }, list.map((id) => { const [n, d, icon, ja, dja] = D.skills[id];   // ja / dja: the game's Japanese name / description when BABEL translated it
           const el = icon ? h('span', { class: 'dun-skill', tabindex: 0, role: 'img', 'aria-label': n }, skillPic(icon))
             : h('span', { class: 'tag dun-skill-name' + (ja ? ' tl-name' : ''), tabindex: 0, text: n });
-          return withTip(el, () => h('div', null, tipHead(icon ? skillPic(icon) : null, n, kind), ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(ja, 'skill') }) : null, ...tipLines(d))); }))) : null;
+          return withTip(el, () => h('div', null, tipHead(icon ? skillPic(icon) : null, n, kind), ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(ja, 'skill') }) : null, ...tlTipLines(d, dja))); }))) : null;
     };
     [skills('Skills', m.skills, 'Skill'), skills('Enemy-only skills', m.enemySkills, 'Enemy-only skill', 'Skills only this enemy version uses'),
       skills('Traits', m.traits, 'Trait', 'Its innate passive features')].forEach((b) => b && box.append(b));
     if (e.drops) box.append(h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: 'Drops' }),
       h('ul', { class: 'gdb-list dun-drop-list' }, e.drops.map((g) => withTip(h('li', { tabindex: 0 }, h('span', { class: 'gdb-kind dun-rate', text: `${nf.format(g.rate)}%` }),
-        dunItemPic(g, 20), g.item, g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null),
-        () => h('div', null, tipHead(dunItemPic(g, 32), g.item, `${nf.format(g.rate)}% per kill${g.max ? ` · up to ${fmt(g.max)}` : ''}`), ...tipLines(g.desc)))))));
+        dunItemPic(g, 20), tlName(g.item, g.ja, 'item'), g.max ? h('span', { class: 'src-count', text: `up to ${fmt(g.max)}` }) : null),
+        () => itemCardTip(g.i, dunItemPic(g, 32), `Here: ${nf.format(g.rate)}% per kill${g.max ? ` · up to ${fmt(g.max)}` : ''}`) || h('div', null, tipHead(dunItemPic(g, 32), g.item, `${nf.format(g.rate)}% per kill${g.max ? ` · up to ${fmt(g.max)}` : ''}`), g.ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(g.ja, 'item') }) : null, ...tlTipLines(g.desc, g.dja)))))));
     return box;
   }
   /** A cell of the enemy list with one tag per affinity (weaknesses, or null / reflect / absorb), so nobody has to open the enemy. */
@@ -3955,19 +4042,21 @@
     const strip = (list, tip) => h('div', { class: 'dun-loot' }, list.map((l) => withTip(h('span', { class: 'dun-loot-item', tabindex: 0, role: 'img', 'aria-label': `${l.item}, up to ${nf.format(l.best)}%` },
       dunItemPic(l, 32), h('span', { class: 'dun-loot-rate', text: `${nf.format(l.best)}%` })), () => tip(l))));
     // the chests its events open: the boss chest at the end of a stage, and any others (a stage's events decide which)
-    const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
-    const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest');
+    const chestList = (list, who) => (list || []).map((g) => ({ i: g.i, item: g.item, ja: g.ja, dja: g.dja, desc: g.desc, icon: g.icon, best: g.rate, max: g.max || 0, from: [{ who, rate: g.rate }] }));
+    // and what its events give by script (x.rewards: End of Days' reward rolls), each with its chance per roll
+    const boss = chestList(x.bossChest, 'boss'), other = chestList(x.chests, 'chest'), rewards = chestList(x.rewards, 'reward');
     // One short warning for all of it: the rates are the vanilla server data's, and a place whose enemies drop nothing
     // there (Dark Babel: IMAGINE sets those on its own server) says so. The game-wide drops any enemy anywhere can give
     // (d.everywhere) are left off the page: the user asked to ignore them.
-    if (loot.length || boss.length || other.length) box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null,
+    if (loot.length || boss.length || other.length || rewards.length) box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null,
       h('b', { text: 'Vanilla rates, not IMAGINE\'s. ' }),
       loot.length ? '' : 'No enemy drops here in the server data (IMAGINE keeps its own). ',
-      boss.length || other.length ? 'Each chest item rolls on its own.' : '')));
+      boss.length || other.length || rewards.length ? 'Each chest or reward item rolls on its own.' : '')));
     else box.append(h('div', { class: 'notice notice-warn dun-warn' }, icon('alert'), h('span', null, h('b', { text: 'No drops here in the server data. ' }), 'IMAGINE keeps its own.')));
     if (loot.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', text: `Drops here · ${loot.length === 1 ? '1 item' : `${loot.length} items`}` }), strip(loot, dunLootTip)));
     if (boss.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'What the boss chest at the end of a stage can hold, over every stage of this place', text: `End chest · ${boss.length === 1 ? '1 item' : `${boss.length} items`}` }), strip(boss, dunLootTip)));
     if (other.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'Other chests the events here open', text: `Other chests · ${other.length === 1 ? '1 item' : `${other.length} items`}` }), strip(other, dunLootTip)));
+    if (rewards.length) box.append(h('div', { class: 'dun-loot-block' }, h('span', { class: 'q-key', 'data-tip': 'Given by the events here by script, not from a chest or an enemy (a reward roll, such as at the end of a run): the chance of each roll', text: `Rewards · ${rewards.length === 1 ? '1 item' : `${rewards.length} items`}` }), strip(rewards, dunLootTip)));
     box.append(h('table', { class: 'tbl dun-mobs' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', text: 'Enemy' }), h('th', { scope: 'col', class: 'num', text: 'Level' }), h('th', { scope: 'col', class: 'num', text: 'Max HP' }),
         h('th', { scope: 'col', text: 'Weak to' }), h('th', { scope: 'col', text: 'Null, reflect, absorb' }))), body));
@@ -3984,7 +4073,7 @@
     if (x.loot) return x.loot;
     const by = new Map();
     const add = (g, who) => {
-      if (!by.has(g.i)) by.set(g.i, { i: g.i, item: g.item, desc: g.desc, icon: g.icon, best: 0, max: 0, from: [] });
+      if (!by.has(g.i)) by.set(g.i, { i: g.i, item: g.item, ja: g.ja, dja: g.dja, desc: g.desc, icon: g.icon, best: 0, max: 0, from: [] });
       const l = by.get(g.i); l.best = Math.max(l.best, g.rate); l.max = Math.max(l.max, g.max || 0); l.from.push({ who, rate: g.rate });
     };
     (x.shared || []).forEach((g) => add(g, null));
@@ -3993,12 +4082,18 @@
   }
   function dunLootTip(l) {
     const rows = l.from.slice().sort((a, b) => b.rate - a.rate);
+    {
+      const reward = rows[0] && rows[0].who === 'reward', inChest = rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest');
+      const card = itemCardTip(l.i, dunItemPic(l, 32), `Here: up to ${nf.format(l.best)}% ${reward ? 'per roll' : inChest ? 'per chest' : 'per kill'}${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`);
+      if (card) return card;
+    }
     const shown = rows.slice(0, 10), more = rows.length - shown.length;
-    const inChest = rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest');
-    return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% ${inChest ? 'per chest' : 'per kill'}${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
-      ...tipLines(l.desc),
-      h('div', { class: 'tt-sec', text: rows[0] && rows[0].who === 'all' ? 'Dropped by' : rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest') ? 'Found in' : 'Dropped here by' }),
-      shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who === 'all' ? 'Any enemy, in any place' : r.who === 'boss' ? 'The boss chest at the end of a stage' : r.who === 'chest' ? 'A chest the events here open' : r.who ?`${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
+    const inChest = rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest'), reward = rows[0] && rows[0].who === 'reward';
+    return h('div', null, tipHead(dunItemPic(l, 32), l.item, `Up to ${nf.format(l.best)}% ${reward ? 'per roll' : inChest ? 'per chest' : 'per kill'}${l.max > 1 ? ` · up to ${fmt(l.max)} at once` : ''}`),
+      l.ja ? h('p', { class: 'tt-line tl-name', text: TL_TIP(l.ja, 'item') }) : null,
+      ...tlTipLines(l.desc, l.dja),
+      h('div', { class: 'tt-sec', text: rows[0] && rows[0].who === 'all' ? 'Dropped by' : reward ? 'Given by' : rows[0] && (rows[0].who === 'boss' || rows[0].who === 'chest') ? 'Found in' : 'Dropped here by' }),
+      shown.map((r) => h('div', { class: 'tt-line dun-tt-row' }, h('span', { text: r.who === 'all' ? 'Any enemy, in any place' : r.who === 'boss' ? 'The boss chest at the end of a stage' : r.who === 'chest' ? 'A chest the events here open' : r.who === 'reward' ? 'A reward roll of the events here' : r.who ?`${r.who.mob.name}${r.who.boss ? ' (boss)' : ''} · level ${r.who.mob.level}` : 'Every enemy here' }), h('b', { text: `${nf.format(r.rate)}%` }))),
       more > 0 ? h('div', { class: 'tt-line', text: `and ${more} more` }) : null);
   }
   /**
@@ -4022,6 +4117,7 @@
   function pageDungeons() {
     const D = S.dun, page = h('div', { class: 'page page-dcm' });
     loadDungeons();
+    loadGearDb();   // the drops' tooltips are the Item Database's entries (itemCardTip)
     page.append(pageHead('Every dungeon and the enemies in it that can\'t be contracted. Click a dungeon for its enemies, and an enemy for its stats, affinities, skills and traits.'));
     if (D.state !== 'ready') {
       page.append(h('p', { class: 'note', text: D.state === 'failed' ? 'The dungeon list could not be loaded (dungeons.json is missing beside the page).' : 'Loading the dungeons…' }));
@@ -4237,7 +4333,7 @@
 
     const skillRow = (id, tag, inline) => { const s = sk(id);
       return h('li', { class: 'ddb-skill', 'data-tip': inline ? null : s.desc || null }, ddbImg(s.icon, 24, 'skill-ico'),
-        h('span', null, sklName(s, 'b'), tag ? h('span', { class: 'src-count', text: tag }) : null, inline && s.desc ? h('small', { class: 'ddb-desc', text: s.desc }) : null)); };
+        h('span', null, sklName(s, 'b'), tag ? h('span', { class: 'src-count', text: tag }) : null, inline && s.desc ? h('small', { class: 'ddb-desc' + (s.descJa ? ' tl-name' : ''), 'data-tip': s.descJa ? TL_DESC_TIP(s.descJa) : null, text: s.desc }) : null)); };
     // Features. The Mitama-fused form keeps most and gains or swaps one: those are "Mitama features", shown in both views.
     const gained = x.mt ? x.mt.traits.filter((t) => !x.traits.includes(t)) : [], lost = x.mt ? x.traits.filter((t) => !x.mt.traits.includes(t)) : [];
     box.append(block('Features', v.traits.length ? h('ul', { class: 'gdb-list' }, v.traits.map((t) => skillRow(t, mv && gained.includes(t) ? 'Mitama feature' : '', true))) : h('span', { class: 'zero', text: 'None' })));
@@ -4423,6 +4519,10 @@
    *  growth-names-en.tsv); without it the name is the game's and shows as it is. */
   const TL_TIP = (ja, what) => `BABEL's translation: the game has no English name for this ${what}. In game it is called ${ja}`;
   const tlName = (name, ja, what, tag = 'span') => (ja ? h(tag, { class: 'tl-name', 'data-tip': TL_TIP(ja, what), text: name }) : h(tag, { text: name }));
+  /** A description BABEL translated because the game's is Japanese (`descJa`: skill-db, demon-db, gear-db, dungeons):
+   *  greyed out, the game's own text in the tooltip. */
+  const TL_DESC_TIP = (ja) => `BABEL's translation: the game has this text only in Japanese. In game it reads:\n\n${Array.isArray(ja) ? ja.join('\n') : ja}`;
+  const TL_DESC_NOTE = 'BABEL\'s translation of the game\'s Japanese text';
   const SKL_TL_TIP = (s) => TL_TIP(s.ja, 'skill');
   const sklName = (s, tag = 'span') => tlName(s ? s.name : '', s && s.ja, 'skill', tag);
   const sklIcon = (x) => { const box = ddbImg(x.icon, 24, 'skill-ico'); if (!x.icon && SKL_NO_ICON[x.noIcon]) box.setAttribute('data-tip', SKL_NO_ICON[x.noIcon]); return box; };
@@ -4510,7 +4610,7 @@
     const block = (label, ...kids) => h('div', { class: 'gdb-block' }, h('span', { class: 'q-key', text: label }), h('div', null, ...kids));
     if (x.ja) box.append(block('Name', h('p', { class: 'ddb-desc skl-desc' }, h('span', { class: 'tl-name', text: x.name }),
       ` is BABEL's translation. The game has no English name for this skill: it calls it ${x.ja}.`)));
-    if (x.desc) box.append(block('In game', h('p', { class: 'ddb-desc skl-desc', text: x.desc })));
+    if (x.desc) box.append(block(x.descJa ? 'In game (translated)' : 'In game', h('p', { class: 'ddb-desc skl-desc' + (x.descJa ? ' tl-name' : ''), 'data-tip': x.descJa ? TL_DESC_TIP(x.descJa) : null, text: x.desc })));
     const facts = [['Target', x.target], ['Reach', x.reach != null ? String(x.reach) : null, 'In the game\'s own distance units: compare skills with each other.'],
       ['Damage from', sklStatRates(x.stat), 'The stat its damage or effect is worked out from. With two stats the first counts in full and the second at half; with three, each counts in full and they are added.'], ['Needs', x.weapon],
       ['Heals', x.heal != null ? String(x.heal) : null, 'The healing modifier (a % is of the target\'s Max HP).'],
@@ -8298,15 +8398,15 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
   // parts BABEL last read on it.
   const RBP_EQ_SLOTS = 4;
   let rbpEqItems = null, rbpEqFrom = null;
-  /** The equipment items by id: { id, skill, name, skillName, desc, groups, hay }. */
+  /** The equipment items by id: { id, skill, name, skillName, desc, descJa (the game's Japanese when desc is BABEL's translation), groups, hay }. */
   function rbpEqById(P) {
     const E = P && P.equipment;
     if (!E) return null;
     if (rbpEqFrom !== E) {
-      rbpEqItems = new Map(E.items.map(([id, skill, name, skillName, desc]) => {
+      rbpEqItems = new Map(E.items.map(([id, skill, name, skillName, desc, descJa]) => {
         const rule = E.rules[String(skill)], groups = rule ? rule[1] : [];
         const gnames = groups.map((g) => E.groups[String(g)]).filter(Boolean);
-        return [id, { id, skill, name, skillName, desc: desc || '', groups, gnames, hay: [name, skillName, ...gnames, desc || ''].join(' ').toLowerCase() }];
+        return [id, { id, skill, name, skillName, desc: desc || '', descJa, groups, gnames, hay: [name, skillName, ...gnames, desc || ''].join(' ').toLowerCase() }];
       }));
       rbpEqFrom = E;
     }
@@ -8391,7 +8491,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
         onclick: (ev) => { rbpEqFor = ev.currentTarget; rbpEqSlot = i; } }, it ? (rbpEqPic(it.id, 40) || h('span', { class: 'rbp-skillpic rbp-skillnone', text: '?' })) : h('span', { class: 'rbp-skillpic rbp-skillnone rbp-plus', 'aria-hidden': 'true' }));   // the plus is drawn (not a "+" glyph, which sits low), so it is in the exact middle
       const feat = T ? h('span', { class: 'rbp-eqfeat' + (it ? ' covered' : ''), 'data-tip': T.desc || null, tabindex: T.desc ? 0 : null }, T.name) : h('span', { class: 'rbp-eqfeat none', text: 'no feature' });
       const text = it
-        ? h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }),
+        ? h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count' + (it.descJa ? ' tl-name' : ''), 'data-tip': it.descJa ? TL_DESC_TIP(it.descJa) : null, text: rbpEqText(it) }),
           T ? h('small', { class: 'rbp-skillfrom' }, 'in place of ', feat) : h('small', { class: 'rbp-skillfrom', text: 'in a slot with no feature' }), block ? h('small', { class: 'rbp-eqbad', text: block.fixed ? 'This feature can’t be covered' : `Can’t be worn with ${block.clash} (${block.group})` }) : null,
           h('small', { class: 'rbp-skillfrom got', text: rbpEqWhere(it.id) }))
         // the feature as it is: its name and the game's description of it (user, 2026-11-27: not just "its own feature")
@@ -8424,7 +8524,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
     shown.forEach(({ it, block }) => items.push(h('button', { type: 'button', class: 'char' + (block ? ' rbp-eqoff' : ''), 'aria-disabled': block ? 'true' : null, 'aria-current': equip[rbpEqSlot] === it.id ? 'true' : null,
       'data-tip': block ? (block.fixed ? 'This slot’s feature can’t be covered' : `Can’t be worn with ${block.clash} in slot ${block.slot + 1}: both are ${block.group}`) : it.desc || null,
       onclick: () => { if (!block) pick(it.id); } },
-      h('span', { class: 'dm-icon rbp-dm-icon' }, rbpEqPic(it.id, 32)), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: it.name }), h('span', { class: 'char-line', text: rbpEqText(it) || it.skillName })),
+      h('span', { class: 'dm-icon rbp-dm-icon' }, rbpEqPic(it.id, 32)), h('span', { class: 'char-text' }, h('span', { class: 'char-name', text: it.name }), h('span', { class: 'char-line' + (it.descJa ? ' tl-name' : ''), text: rbpEqText(it) || it.skillName })),
       block ? h('span', { class: 'tag tag-off', text: block.fixed ? 'fixed feature' : `clashes · slot ${block.slot + 1}` }) : equip.includes(it.id) ? h('span', { class: 'tag', text: 'worn' }) : null)));
     list.replaceChildren(...items);
     const free = rows.filter((r) => !r.block).length;
@@ -9108,7 +9208,7 @@ In place of ${T.name}` : ''}` }, rbpEqPic(it.id, 24) || letter());
       const parts = byId ? rbpEquip(plan, D, endFused).filter((id) => id && byId.has(id) && !worn.includes(id)).map((id) => byId.get(id)) : [];
       if (parts.length) gather.append(h('div', { class: 'rbp-gather-group' }, h('span', { class: 'q-key', 'data-tip': 'The Epitaph Parts planned in the equipment step that the demon does not wear yet, and where each comes from in the game (the Item Database has every way)', tabindex: 0, text: `Demon equipment to get · ${parts.length}` }),
         h('ul', { class: 'gdb-list rbp-skilllist rbp-skillcosts' }, parts.map((it) => h('li', { class: 'rbp-skillcost' },
-          h('div', { class: 'rbp-skillrow' }, h('span', { class: 'skill-ico' }, rbpEqPic(it.id, 24)), h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count', text: rbpEqText(it) }))),
+          h('div', { class: 'rbp-skillrow' }, h('span', { class: 'skill-ico' }, rbpEqPic(it.id, 24)), h('span', { class: 'rbp-skilltext' }, h('b', { text: it.name }), h('span', { class: 'src-count' + (it.descJa ? ' tl-name' : ''), 'data-tip': it.descJa ? TL_DESC_TIP(it.descJa) : null, text: rbpEqText(it) }))),
           h('div', { class: 'rbp-ways' }, h('div', { class: 'rbp-way' }, h('span', { class: 'rbp-way-where', text: rbpEqWhere(it.id) }))))))));
     }
     // the Demon Force items to use: every slot the plan fills with an effect the demon doesn't have there yet, as item

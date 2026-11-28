@@ -1,0 +1,3829 @@
+#item id	the client's name (Japanese, as reference\items-game.tsv has it)	BABEL's English (shown greyed out; the game has no English name for these)
+308	熟達の香（小・トレード不可）	Incense of Mastery (Small, Non-Trade)
+309	育成の香（１日・トレード不可）	Incense of Training (1 Day, Non-Trade)
+316	育成の香（１日）・初心者用	Incense of Training (1 Day, For Newbies)
+319	経験の香（小）・初心者用	Incense of Experience (Small, For Newbies)
+400	育成の香（１０日・特典）	Incense of Training (10 Days, Bonus)
+489	月影鏡・望（譲渡不可）	Mirror of Moonlight (Full Moon, Non-Trade)
+691	力（小）＆堅守の香引換券	Voucher (Incense of Strength (Small) & Defense)
+692	速さ（小）＆堅守の香引換券	Voucher (Incense of Speed (Small) & Defense)
+693	魔力（小）＆堅守の香引換券	Voucher (Incense of Magic (Small) & Defense)
+762	お正月衣装引換券（浮舟／夕霧）	Voucher (New Year Outfit, Drifting Boat/Evening Mist)
+763	お正月衣装引換券（澪標／紅梅）	Voucher (New Year Outfit, Waterway Marker/Rose Plum)
+783	チケットブランク１	Blank Ticket 1
+784	チケットブランク２	Blank Ticket 2
+907	アイテム倉庫券（３０日譲渡不可）	Item Depository Pass (30 Days, Non-Trade)
+908	アイテム倉庫券（６０日譲渡不可）	Item Depository Pass (60 Days, Non-Trade)
+909	アイテム倉庫券（９０日譲渡不可）	Item Depository Pass (90 Days, Non-Trade)
+910	悪魔倉庫券（３０日譲渡不可）	Demon Depository Pass (30 Days, Non-Trade)
+911	悪魔倉庫券（６０日譲渡不可）	Demon Depository Pass (60 Days, Non-Trade)
+912	悪魔倉庫券（９０日譲渡不可）	Demon Depository Pass (90 Days, Non-Trade)
+946	力（小）＆堅守の香引換券	Voucher (Incense of Strength (Small) & Defense)
+947	魔力（小）＆堅守の香引換券	Voucher (Incense of Magic (Small) & Defense)
+948	速さ（小）＆堅守の香引換券	Voucher (Incense of Speed (Small) & Defense)
+971	Data Ticket (Chivalry窶冱 not Dead)	Data Ticket (Chivalry's not Dead)
+1079	経験の香（５倍・ＰＴ・譲渡不可）	Incense of Experience (PT 5x, Non-Trade)
+1341	桜舞扇（山吹茶）	Cherry Blossom Fan (Golden Brown)
+1342	桜舞扇（鳶色）	Cherry Blossom Fan (Russet)
+1343	桜舞扇（青藍）	Cherry Blossom Fan (Indigo)
+1344	桜舞扇（草色）	Cherry Blossom Fan (Grass Green)
+1345	桜舞扇（菖蒲色）	Cherry Blossom Fan (Iris)
+1361	暗躍する情報屋のナイフ	Scheming Informant's Knife
+1369	銀のダガー	Silver Dagger
+1370	銀のダガー＋１	Silver Dagger +1
+1371	銀のダガー＋２	Silver Dagger +2
+1376	燃ゆる短剣	Burning Dagger
+1377	燃ゆる短剣・神域	Burning Dagger - Sanctuary
+1378	燃ゆる短剣・神託	Burning Dagger - Oracle
+1379	凶星・デスパレード	Ominous Star: Death Parade
+1380	新緑の落し物（坤）	Verdant Envelope (Kon)
+1466	プリングルズ　ハンマー	Pringles Hammer
+1467	池袋最強の男の標識	Sign of Ikebukuro's Strongest Man
+1480	トレイニーハンマー	Trainee Hammer
+1483	スイカ割り棒	Watermelon Splitting Stick
+1484	金剛軍配	Kongo War Fan
+1486	おいちいキャンディ【火炎】	Yummy Candy (Fire)
+1487	おいちいキャンディ【氷結】	Yummy Candy (Ice)
+1488	おいちいキャンディ【電撃】	Yummy Candy (Electric)
+1489	おいちいキャンディ【衝撃】	Yummy Candy (Force)
+1490	おいちいキャンディ【魔力】	Yummy Candy (Magic)
+1492	超豪邪主破壊棍	Super Mighty Evil Lord Destruction Club
+1576	天上天下（万能・１日）	Tenjo Tenge (Almighty 1 Day)
+1578	天上天下（万能・７日）	Tenjo Tenge (Almighty 7 Days)
+1581	大人しき美少女の罪歌	Saika of the Demure Beauty
+1591	ブライトワールド	Bright World
+1592	ブライトワールド＋	Bright World +
+1593	ブライトワールド＋＋	Bright World ++
+1594	オニマルセイバー	Onimaru Saber
+1595	True オニマルセイバー	True Onimaru Saber
+1597	ディスオーナー	Dishonor
+1598	ブライトワールド・アナザー	Bright World - Another
+1599	絶命Ⅱ（破壊）	Cold Strike of Death II (Destruction)
+1600	ＨＯネックチョッパーⅡ（破壊）	Hate of Neckchopper II (Destruction)
+1657	緋扇槍	Scarlet Fan Spear
+1659	ムソウイチモンジ	Musou Ichimonji
+1660	True ムソウイチモンジ	True Musou Ichimonji
+1661	ラストジャッジメントⅡ（破壊）	Last Judgment II (Destruction)
+1666	孔雀の錫杖	Peacock Shakujo
+1667	マンイーター	Man-Eater
+1669	荒法師の薙刀	Warrior Monk's Naginata
+1670	荒法師の薙刀・弐	Warrior Monk's Naginata II
+1671	荒法師の薙刀・参	Warrior Monk's Naginata III
+1672	荒法師の薙刀・肆	Warrior Monk's Naginata IV
+1677	スイカランス	Watermelon Lance
+1678	ハイパー・スイカランス	Hyper Watermelon Lance
+1739	ゴールデン杵α	Golden Pestle α
+1804	桜巾着（白磁）	Cherry Blossom Pouch (White Porcelain)
+1805	桜巾着（金糸雀）	Cherry Blossom Pouch (Canary Yellow)
+1856	十拳剣＋１	Totsuka Blade +1
+1857	十拳剣＋２	Totsuka Blade +2
+1858	十拳剣＋３	Totsuka Blade +3
+1859	天叢雲剣	Ame-no-Murakumo
+1860	マクスウェルⅡ（破壊）	Maxwell II (Destruction)
+1861	螺旋の炎剣アグニ	Spiral Fire Sword Agni
+1862	Demon Cucumber【旬モノ】	Demon Cucumber [In Season]
+1863	鬼一法眼	Kiichi Hogen
+1864	カットラス	Cutlass
+1868	Demon Cucumber【トラスト】	Demon Cucumber [Trust]
+1869	Demon Cucumber【トラスト】＋１	Demon Cucumber [Trust] +1
+1870	Demon Cucumber【トラスト】＋２	Demon Cucumber [Trust] +2
+1871	Demon Cucumber【トラスト】＋３	Demon Cucumber [Trust] +3
+1878	黒曜之凶刃	Obsidian Baleful Blade
+1879	True 黒曜之凶刃	True Obsidian Baleful Blade
+1880	修験者の法螺貝	Ascetic's Conch Shell
+1881	修験者の法螺貝・弐	Ascetic's Conch Shell II
+1882	修験者の法螺貝・参	Ascetic's Conch Shell III
+1883	修験者の法螺貝・肆	Ascetic's Conch Shell IV
+1884	業物・鬼一法眼	Masterwork Kiichi Hogen
+1885	大業物・鬼一法眼	Grand Masterwork Kiichi Hogen
+1887	マクスウェル・悪心	Maxwell - Nausea
+1889	天之御剣・天割	Heaven's Sword - Sky Splitter
+1890	天之御剣・星破	Heaven's Sword - Star Breaker
+1891	セイオリス	Seioris
+1892	慈剣セイオリス	Merciful Blade Seioris
+1894	ブラックナーゲル	Black Nagel
+1895	曲刀・白蛇	Scimitar - White Snake
+1896	曲刀・白蛇＋１	Scimitar - White Snake +1
+1897	曲刀・白蛇＋２	Scimitar - White Snake +2
+1898	曲刀・白蛇＋３	Scimitar - White Snake +3
+1899	曲刀・赤蛇	Scimitar - Red Snake
+1918	凶風Ⅱ（破壊）	Shock Wind II (Destruction)
+1919	東岳泰山Ⅱ（破壊）	Dongyue Staff II (Destruction)
+1923	キンググローブ（後の先）	King Gloves (Counterstrike)
+1924	ルドルフパペット	Rudolph Puppet
+1925	ルドルフパペットⅡ	Rudolph Puppet II
+1926	聖・ルドルフパペット	Holy Rudolph Puppet
+1927	凶風・悪心	Shock Wind - Nausea
+1928	キンググローブ（生涯無敗）	King Gloves (Undefeated for Life)
+1929	デモンズクロー	Demon's Claw
+1930	True デモンズクロー	True Demon's Claw
+1933	アメリカンドッグもどき	Imitation Corndog
+1935	串おでんもどき	Imitation Skewered Oden
+1936	蛸足おでんもどき	Imitation Octopus Leg Oden
+1937	焼きとうもろこしもどき	Imitation Grilled Corn
+1939	おにぎりもどき	Imitation Rice Ball
+1940	ターキーもどき	Imitation Turkey
+2063	ディファレントワールズ	Different Worlds
+2064	ディファレントワールズ＋	Different Worlds +
+2065	ディファレントワールズ＋＋	Different Worlds ++
+2068	ベイビースマイルⅡ（破壊）	Baby Smile II (Destruction)
+2069	ホーリーエクソシズムⅡ（破壊）	Holy Exorcism II (Destruction)
+2070	Ｎ・サクリファイスⅡ（破壊）	Nightmare Sacrifice II (Destruction)
+2071	フリントロックピストル	Flintlock Pistol
+2075	チョコピストル	Chocolate Pistol
+2076	レーザーガン	Laser Gun
+2077	糖分ＭＡＸチョコルト【火炎】	Sugar MAX Chocolt (Fire)
+2078	糖分ＭＡＸチョコルト【氷結】	Sugar MAX Chocolt (Ice)
+2079	糖分ＭＡＸチョコルト【電撃】	Sugar MAX Chocolt (Electric)
+2080	糖分ＭＡＸチョコルト【衝撃】	Sugar MAX Chocolt (Force)
+2081	糖分ＭＡＸチョコルト【魔力】	Sugar MAX Chocolt (Magic)
+2082	ＡＭＰハイパワーブラスター	AMP High-Power Blaster
+2083	ＡＭＰハイパワーブラスター＋１	AMP High-Power Blaster +1
+2084	ＡＭＰハイパワーブラスター＋２	AMP High-Power Blaster +2
+2085	ＡＭＰハイパワーブラスター＋３	AMP High-Power Blaster +3
+2087	ディファレントワールズΩ	Different Worlds Omega
+2088	メルセデスⅡ	Mercedes II
+2089	メルセデス・デビルⅡ	Mercedes Devil II
+2091	ヘヴンズアポストロ・紅蓮式	Heaven's Apostolo - Crimson Lotus Type
+2093	リボルカッパー【巻物】	Revolcapper [Scroll]
+2094	リボルカッパー【トレジャー】	Revolcapper [Treasure]
+2095	リボルカッパー【ヘリテージ】	Revolcapper [Heritage]
+2096	リボルカッパー【トラスト】	Revolcapper [Trust]
+2097	リボルカッパー【トラスト】＋１	Revolcapper [Trust] +1
+2098	リボルカッパー【トラスト】＋２	Revolcapper [Trust] +2
+2099	リボルカッパー【トラスト】＋３	Revolcapper [Trust] +3
+2100	ピースメーカー	Peacemaker
+2146	トレイニーライフル	Trainee Rifle
+2148	アウトバレット	Out Bullet
+2150	ポジトロンライフルⅡ（破壊）	Positron Rifle II (Destruction)
+2151	バーストヘイズⅡ（破壊）	Burst Haze II (Destruction)
+2152	Ｎａｓｋａ－５５Ⅱ（破壊）	Naska-55 II (Destruction)
+2153	螺旋のｌｏｓｔ：ｓｉｇｈｔ	Spiral lost:sight
+2156	ＡＶＡＬＯＮ－２４・雷電式	AVALON-24 - Thunderbolt Type
+2158	レールガンα	Railgun α
+2159	レールガン	Railgun
+2160	レールガン＋１	Railgun +1
+2161	レールガン＋２	Railgun +2
+2162	レールガン＋３	Railgun +3
+2165	蒼閃雷砲	Azure Flash Thunder Gun
+2261	ガビアル	Gavial
+2263	ベアトリス・デビル	Beatrice Devil
+2264	Ｈａｉｌ－Ⅱ（破壊）	Hail-II (Destruction)
+2265	Ｒｅ－１３Ⅱ（破壊）	Re-13 II (Destruction)
+2266	ネクサス・センチネル	Nexus Sentinel
+2267	雷公砲・改	Thunder Lord Cannon Custom
+2268	ジャッジメントデイ・改	Judgment Day Custom
+2269	天威霧砲・改	Heavenly Mist Cannon Custom
+2270	Ｇｒａｖｅｌ－Ｉ・改	Gravel-I Custom
+2271	ＳＣＡＴＴＥＲ－ＳＧ・改	SCATTER-SG Custom
+2272	ＧＡＭＩＣ－２０・改	GAMIC-20 Custom
+2273	ブルトレーゲン・改	Blutregen Custom
+2274	ブレイジングフリッカー・改	Blazing Flicker Custom
+2275	パニッシュメント・改	Punishment Custom
+2276	ベアトリスⅡ	Beatrice II
+2277	ベアトリス・デビルⅡ	Beatrice Devil II
+2280	ルドルフクラッカー	Rudolph Cracker
+2281	ルドルフクラッカーⅡ	Rudolph Cracker II
+2282	聖・ルドルフクラッカー	Holy Rudolph Cracker
+2287	ヴァイパーショット・Ｗ	Viper Shot W
+2288	ヴァイパーショット・Ｗ＋１	Viper Shot W +1
+2289	ヴァイパーショット・Ｗ＋２	Viper Shot W +2
+2290	ヴァイパーショット・Ｗ＋３	Viper Shot W +3
+2291	ヴァイパーショット・Ｒ	Viper Shot R
+2292	ヴァイパーショット・Ｒ＋１	Viper Shot R +1
+2293	ヴァイパーショット・Ｒ＋２	Viper Shot R +2
+2294	ヴァイパーショット・Ｒ＋３	Viper Shot R +3
+2297	フルオート・イレブン	Full Auto Eleven
+2300	アーベントイヤーⅡ（破壊）	Abenteuer II (Destruction)
+2301	螺旋のオルクリスト	Spiral Orcrist
+2302	ネクサス・ストライカー	Nexus Striker
+2303	コテツ弐式（拝神）・異	Kotetsu II (Worship God) - Variant
+2305	膝丸	Hizamaru
+2306	蜘蛛切	Kumokiri
+2307	吠丸	Hoemaru
+2308	薄緑	Usumidori
+2309	青雷刀	Azure Thunder Blade
+2310	毘沙霊刃・改	Bishamon Spirit Blade Custom
+2311	天楼白刃・改	Heavenly Tower White Blade Custom
+2312	影斬・改	Shadowslash Custom
+2313	暴雀舞刃・改	Sparrowblade Custom
+2314	妖刀・零・改	Demonic Blade Zero Custom
+2315	燕墜刀・改	Swallowtail Custom
+2316	フランボワヤン・改	Flamboyant Custom
+2317	ショテルセレスチャル・改	Celestial Shotel Custom
+2318	イナズマ・エッジ・改	Lightning Edge Custom
+2319	アリス十番のチェーンソー	Alice No. 10's Chainsaw
+2320	True アリス十番のチェーンソー	True Alice No. 10's Chainsaw
+2321	宝刀・蜘蛛切	Treasure Blade - Kumokiri
+2322	宝刀・吠丸	Treasure Blade - Hoemaru
+2323	宝刀・薄緑	Treasure Blade - Usumidori
+2324	剣皇グロスポリナーレプリカ	Sword Emperor Grospoliner Replica
+2325	グロスポリナー・四元	Grospoliner - Four Elements
+2326	グロスポリナー・二極	Grospoliner - Dual Poles
+2327	グロスポリナー・乱	Grospoliner - Chaos
+2328	グロスポリナー・破	Grospoliner - Break
+2329	グロスポリナー・砕	Grospoliner - Shatter
+2330	グロスポリナー・陥	Grospoliner - Fall
+2331	グロスポリナー・耐	Grospoliner - Endure
+2332	グロスポリナー・蓄	Grospoliner - Store
+2333	グロスポリナー・復	Grospoliner - Restore
+2334	グロスポリナー・硬	Grospoliner - Harden
+2335	グロスポリナー・滅	Grospoliner - Annihilate
+2336	グロスポリナー・崩	Grospoliner - Crumble
+2337	グロスポリナー・殺	Grospoliner - Slay
+2338	グロスポリナー・圧	Grospoliner - Crush
+2339	グロスポリナー・天	Grospoliner - Heaven
+2340	剣皇グロスポリナー	Sword Emperor Grospoliner
+2341	ブライトワールドΩ	Bright World Omega
+2343	天上天下・紅蓮式	Tenjo Tenge - Crimson Lotus Type
+2347	無想正宗α	Musou Masamune α
+2348	無想正宗	Musou Masamune
+2349	無想正宗＋１	Musou Masamune +1
+2350	無想正宗＋２	Musou Masamune +2
+2351	無想正宗＋３	Musou Masamune +3
+2353	ヘルシックル	Hell Sickle
+2354	リプルソード	Ripple Sword
+2361	宝刀・膝丸	Treasure Blade - Hizamaru
+2362	秋水・膝丸	Shusui - Hizamaru
+2363	絶刀・膝丸	Peerless Blade - Hizamaru
+2364	秋水・蜘蛛切	Shusui - Kumokiri
+2365	絶刀・蜘蛛切	Peerless Blade - Kumokiri
+2366	秋水・吠丸	Shusui - Hoemaru
+2367	絶刀・吠丸	Peerless Blade - Hoemaru
+2368	秋水・薄緑	Shusui - Usumidori
+2369	絶刀・薄緑	Peerless Blade - Usumidori
+2370	悪器・黒獅子	Evil Weapon - Black Lion
+2372	赤炎刀	Red Flame Blade
+2373	アーベントイヤー・悪心	Abenteuer - Nausea
+2374	絶命・悪心	Cold Strike of Death - Nausea
+2375	パラレルワールド	Parallel World
+2376	パラレルワールド＋（２０分）	Parallel World + (20 Min)
+2377	倶利伽羅の剣	Kurikara Sword
+2378	セトナクト	Setnakht
+2379	飆剣セトナクト	Gale Sword Setnakht
+2380	リプルソード＋１	Ripple Sword +1
+2384	神器・白狼	Divine Weapon - White Wolf
+2385	リベンジ・エッジ	Revenge Edge
+2386	トリックスウィーパー	Trick Sweeper
+2387	アリス十番のチェーンソー α	Alice No. 10's Chainsaw α
+2501	死神の鐘	Grim Reaper's Bell
+2502	死神の鐘＋１	Grim Reaper's Bell +1
+2503	死神の鐘＋２	Grim Reaper's Bell +2
+2504	死神の鐘＋３	Grim Reaper's Bell +3
+2506	銀皇軍配	Silver Emperor War Fan
+2507	スイカ・キル・マシン	Watermelon Kill Machine
+2510	グビジン	Gubijin
+2511	スノウエスケープピッケル	Snow Escape Pickaxe
+2512	シホのフライパン	Shiho's Frying Pan
+2513	アルベニスⅡ	Albeniz II
+2514	ディアブルロッド	Diable Rod
+2601	タイムレス	Timeless
+2602	鬼一法ＧＵＮ	Kiichi HoGUN
+2603	業物・鬼一法ＧＵＮ	Masterwork Kiichi HoGUN
+2604	大業物・鬼一法ＧＵＮ	Grand Masterwork Kiichi HoGUN
+2605	悪器・黒鷹	Evil Weapon - Black Hawk
+2607	ベイビースマイル・悪心	Baby Smile - Nausea
+2608	Ｈａｉｌ－Ⅰ・悪心	Hail-I - Nausea
+2610	ピースメーカーレガシーⅡ	Peacemaker Legacy II
+2611	ピースメーカーレガシーⅢ	Peacemaker Legacy III
+2612	アナザーワールズ	Another Worlds
+2613	アナザーワールズ＋（２０分）	Another Worlds + (20 Min)
+2615	ピースメーカー＋１	Peacemaker +1
+2617	レネゲイダー	Renegade
+2618	フルメタルバレット・改	Full Metal Bullet Custom
+2621	神器・白隼	Divine Weapon - White Falcon
+2623	未実装	(Unimplemented)
+2746	図南鵬翼の玉	Bullet of the Roc's Ambition
+2747	ブルーバレット（３日）	Blue Bullet (3 Days)
+2748	グリーンバレット（３日）	Green Bullet (3 Days)
+2749	レッドバレット（３日）	Red Bullet (3 Days)
+2753	紅焔の魔導書	Grimoire of the Crimson Flame
+2754	凍気の魔導書	Grimoire of Frozen Air
+2755	轟雷の魔導書	Grimoire of Roaring Thunder
+2756	衝天の魔導書	Grimoire of Sky-Piercing Force
+2757	未定	(Undecided)
+2800	曲刀・赤蛇＋１	Scimitar - Red Snake +1
+2801	曲刀・赤蛇＋２	Scimitar - Red Snake +2
+2802	曲刀・赤蛇＋３	Scimitar - Red Snake +3
+2803	月影剣・フォルモーント	Moonlight Sword - Vollmond
+2804	月影剣・ノイモーント	Moonlight Sword - Neumond
+2806	ソードオブエチュード・改	Sword of Etude Custom
+2807	ブレードオブエチュード・改	Blade of Etude Custom
+3322	総本山薬屋NPC腕輪	Souhonzan Apothecary NPC Bracelet
+3466	三日月の具足	Crescent Moon Greaves
+3467	三日月の具足	Crescent Moon Greaves
+3468	三日月の具足	Crescent Moon Greaves
+3542	総本山武器屋NPCくつ赤	Souhonzan Weaponsmith NPC Shoes, Red
+3689	襟巻きα	Scarf α
+3690	ブラックファー襟巻きα	Black Fur Scarf α
+4199	サンタキャップα	Santa Cap α
+4200	サンタキャップα	Santa Cap α
+4246	とあるジャッジメントの腕章	A Certain Judgment Armband
+4247	とあるジャッジメントの腕章α	A Certain Judgment Armband α
+4248	とあるジャッジメントの腕章	A Certain Judgment Armband
+4249	とあるジャッジメントの腕章α	A Certain Judgment Armband α
+4311	ゲコ太のイヤリング	Gekota Earrings
+4312	ゲコ太のイヤリング	Gekota Earrings
+4337	帝王の叫び（破壊・仲魔）	Emperor's Shout (Destruction, Demon)
+4356	ラックダンスリング	Luck Dance Ring
+4674	サンタキャップ・黒α	Santa Cap - Black α
+4675	サンタキャップ・白α	Santa Cap - White α
+4676	サンタキャップ・黒α	Santa Cap - Black α
+4876	ゲコ太の缶バッジ	Gekota Can Badge
+4913	桐下駄（消炭・焼磨き）	Kiri-Geta (Charcoal) (Burnt Wood)
+4914	桐下駄（赤銅・焼磨き）	Kiri-Geta (Copper) (Burnt Wood)
+4916	桐下駄（黄水仙・白木）	Kiri-Geta (Daffodil) (Whitewood)
+4977	下駄（山吹・焼磨き）・Ｇ	Geta G (Golden Yellow) (Burnt Wood)
+4980	下駄（菜の花・焼磨き）・Ｇ	Geta G (Rapeseed) (Burnt Wood)
+5059	パラノイアサーカスカード	Paranoia Circus Card
+5060	仕舞袴（源）α	Noh Pants (Origin) α
+5061	仕舞袴（暁）α	Noh Pants (Dawn) α
+5062	仕舞袴（明星）α	Noh Pants (Morning Star) α
+5063	仕舞袴（浮舟）α	Noh Pants (Drifting Boat) α
+5065	桐下駄（消炭・焼磨き）α	Kiri-Geta (Charcoal) (Burnt Wood) α
+5066	桐下駄（赤銅・焼磨き）α	Kiri-Geta (Copper) (Burnt Wood) α
+5067	巫女足袋α	Shrine Maiden Tabi α
+5128	アビスグローブ・アサルト	Gloves of the Abyss: Assault
+5129	アビスグローブ・アサルト	Gloves of the Abyss: Assault
+5147	メロイックバンド	Meroic Band
+5148	メロイックバンド	Meroic Band
+5190	セルティのグローブ	Celty's Gloves
+5191	セルティのグローブα	Celty's Gloves α
+5192	折原臨也のハンドジュエリー	Izaya Orihara's Hand Jewelry
+5193	折原臨也のハンドジュエリーα	Izaya Orihara's Hand Jewelry α
+5195	紀田正臣のバングルα	Masaomi Kida's Bangle α
+5378	ストップウォッチ・バルサム	Stopwatch (Balsam)
+5379	ストップウォッチ・ミルラ	Stopwatch (Myrrh)
+5380	ストップウォッチ・ベンゾイン	Stopwatch (Benzoin)
+5381	ストップウォッチ・ストラックス	Stopwatch (Storax)
+5493	首なしライダーのＰＤＡ	Headless Rider's PDA
+5494	首なしライダーのＰＤＡ	Headless Rider's PDA
+5553	経験の香（小）・サンプル品	Incense of Experience (Small, Sample)
+5585	シリアルカード（ビギナー）	Serial Card (Beginner)
+5586	シリアルカード（ライセンサー）	Serial Card (Licenser)
+5587	シリアルカード（ハイクラス）	Serial Card (High Class)
+5835	ソリッドアーツ・ブラウン	Solid Arts (Brown)
+5836	ソリッドアーツ・チョコレート	Solid Arts (Chocolate)
+5837	ソリッドアーツ・ピンク	Solid Arts (Pink)
+5838	ソリッドアーツ・ブルー	Solid Arts (Blue)
+5917	スニーカー（想像）	Sneakers (Imagination)
+5924	とある高校生のスニーカーα	A Certain High Schooler's Sneakers α
+5939	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5940	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5941	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5942	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5943	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5944	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5945	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5946	ハイロウシューズ（破壊）	Hi-Low Shoes (Destruction)
+5969	アビスシューズ・アサルト	Abyss Shoes (Assault)
+5970	アビスシューズ・バスター	Abyss Shoes (Buster)
+6101	１ｓｔアニバーサリーＴシャツ	1st Anniversary T-Shirt
+6102	１ｓｔアニバーサリーＴシャツ	1st Anniversary T-Shirt
+6228	漱石枕流（澪標）	Symbol of Iron Will (Waterway Marker)
+6258	シークレットスーツ【湧力】	Stealth Suit (Surge)
+6259	シークレットジャケット【湧力】	Stealth Jacket (Surge)
+6260	シークレットスーツ【神速】	Stealth Suit (Godspeed)
+6261	シークレットジャケット【神速】	Stealth Jacket (Godspeed)
+6262	シークレットスーツ【鼓舞】	Stealth Suit (Inspire)
+6263	シークレットジャケット【鼓舞】	Stealth Jacket (Inspire)
+6264	シークレットスーツ【鉄壁】	Stealth Suit (Ironclad)
+6265	シークレットジャケット【鉄壁】	Stealth Jacket (Ironclad)
+6297	Ｒｅ：聖エルミン学生服＆スカート	Re : St Hermelin HS Uniform & Skirt
+6298	Ｒｅ：聖エルミン制服＆スカートⅡ	Re : St Hermelin HS Uniform & Skirt II
+6383	サンタベストα	Santa Vest α
+6384	サンタトップスα	Santa Top α
+6385	サンタベスト・ブラックα	Santa Vest - Black α
+6386	サンタトップス・ブラックα	Santa Top - Black α
+6455	シークレットパンプス【湧力】	Stealth Shoes (Surge)
+6456	シークレットパンプス【神速】	Stealth Shoes (Godspeed)
+6457	シークレットパンプス【鼓舞】	Stealth Shoes (Inspire)
+6458	シークレットパンプス【鉄壁】	Stealth Shoes (Ironclad)
+6469	シークレットパンプス【蝕呪】	Stealth Shoes (Decay)
+6470	シークレットパンプス【縛呪】	Stealth Shoes (Bind)
+6471	シークレットパンプス【援魔】	Stealth Shoes (Demonstrength)
+6472	シークレットパンプス【護魔】	Stealth Shoes (Demonspirit)
+6473	シークレットパンプス【環力】	Stealth Shoes (Conservation)
+6618	シークレットグラス【援魔】	Secret Service Shades (Demonstrength)
+6619	シークレットグラス【護魔】	Secret Service Shades (Demonspirit)
+6620	シークレットグラス【環力】	Secret Service Shades (Conservation)
+6800	サンタトップス・ホワイトα	Santa Top - White α
+6955	常盤台中学校スカートα	Tokiwadai Middle-schooler Skirt α
+6956	柵川中学校スカート	Sakugawa Middle-schooler Skirt
+6957	柵川中学校スカートα	Sakugawa Middle-schooler Skirt α
+6970	ハイロウボトムス（破壊）	Hi-Low Bottoms (Destruction)
+6971	ハイロウスカート（破壊）	Hi-Low Skirt (Destruction)
+6972	ハイロウボトムス（破壊）	Hi-Low Bottoms (Destruction)
+6973	ハイロウスカート（破壊）	Hi-Low Skirt (Destruction)
+6974	ハイロウボトムス（破壊）	Hi-Low Bottoms (Destruction)
+6975	ハイロウスカート（破壊）	Hi-Low Skirt (Destruction)
+6976	ハイロウボトムス（破壊）	Hi-Low Bottoms (Destruction)
+6977	ハイロウスカート（破壊）	Hi-Low Skirt (Destruction)
+6996	アビスボトムス・アサルト	Pants of the Abyss: Assault
+6997	アビススカート・アサルト	Skirt of the Abyss: Assault
+6998	アビスボトムス・バスター	Pants of the Abyss: Buster
+6999	アビススカート・バスター	Skirt of the Abyss: Buster
+7000	サンタボトムスα	Santa Bottoms α
+7350	サンタミニα	Santa Miniskirt α
+7351	サンタボトムス・黒α	Black Santa Bottoms α
+7352	サンタミニ・黒α	Black Santa Miniskirt α
+7353	サンタミニ・白α	White Santa Miniskirt α
+7354	サンタブーツα	Santa Boots α
+7355	サンタブーツ・黒α	Black Santa Boots α
+7356	サンタブーツ・白α	White Santa Boots α
+7357	頑固一徹α	Stubborn to the End α
+7358	漱石枕流（浮舟）α	Pillow the Stream (Ukifune) α
+7359	神道装束α	Shinto Costume α
+7360	神道浅沓α	Shinto Shoes α
+7361	巫女装束α	Shrine Maiden Costume α
+7362	振袖（黄水仙）α	Furisode (Daffodil) α
+7363	振袖（黒羽）α	Furisode (Black Feather) α
+7364	振袖（紫苑）α	Furisode (Aster) α
+7365	振袖（夕霧）α	Furisode (Evening Mist) α
+7366	振袖（紅梅）α	Furisode (Rose Plum) α
+7367	桜花繚乱（暁）α	Cherry Blossom Riot (Dawn) α
+7368	桜花繚乱（宵）α	Cherry Blossom Riot (Dusk) α
+7584	裏内符・信条	Dark Token (Creed)
+7585	裏内符・魅力	Dark Token (Charm)
+7586	裏内符・摂理	Dark Token (Providence)
+7587	裏内符・名誉	Dark Token (Honor)
+7599	裏内符・復活	Dark Token (Resurrection)
+7607	裏内符・逃避の剣【Ⅶ】	Dark Token (Sword of Escape)
+7608	裏内符・拘束の剣【Ⅷ】	Dark Token (Sword of Restraint)
+7609	裏内符・幻滅の剣【Ⅸ】	Dark Token (Sword of Disillusionment)
+7610	裏内符・破局の剣【Ⅹ】	Dark Token (Sword of Catastrophe)
+7611	裏内符・打開の剣【小姓】	Dark Token (Sword of Breakthrough)
+7612	裏内符・獲得の剣【騎士】	Dark Token (Sword of Acquisition)
+7613	裏内符・批判の剣【女王】	Dark Token (Sword of Criticism)
+7614	裏内符・名誉の剣【王】	Dark Token (Sword of Honor)
+7621	裏内符・解明の杖【Ⅶ】	Dark Token (Rod of Elucidation)
+7622	裏内符・好転の杖【Ⅷ】	Dark Token (Rod of Improvement)
+7623	裏内符・雌伏の杖【Ⅸ】	Dark Token (Rod of Lying Low)
+7624	裏内符・抑圧の杖【Ⅹ】	Dark Token (Rod of Oppression)
+7625	裏内符・安定の杖【小姓】	Dark Token (Rod of Stability)
+7626	裏内符・決断の杖【騎士】	Dark Token (Rod of Decision)
+7627	裏内符・善意の杖【女王】	Dark Token (Rod of Goodwill)
+7628	裏内符・独立の杖【王】	Dark Token (Rod of Independence)
+7631	裏内符・解決の聖杯【Ⅲ】	Dark Token (Holy Grail of Resolution)
+7635	裏内符・空想の聖杯【Ⅶ】	Dark Token (Holy Grail of Fantasy)
+7636	裏内符・衰退の聖杯【Ⅷ】	Dark Token (Holy Grail of Decline)
+7637	裏内符・理想の聖杯【Ⅸ】	Dark Token (Holy Grail of Ideals)
+7638	裏内符・充足の聖杯【Ⅹ】	Dark Token (Holy Grail of Fulfillment)
+7639	裏内符・鮮明の聖杯【小姓】	Dark Token (Holy Grail of Vividness)
+7640	裏内符・情熱の聖杯【騎士】	Dark Token (Holy Grail of Passion)
+7641	裏内符・献身の聖杯【女王】	Dark Token (Holy Grail of Devotion)
+7642	裏内符・使命の聖杯【王】	Dark Token (Holy Grail of Mission)
+7645	裏内符・確立の護符【Ⅲ】	Dark Token (Talisman of Establishment)
+7649	裏内符・転機の護符【Ⅶ】	Dark Token (Talisman of Turning Point)
+7650	裏内符・応報の護符【Ⅷ】	Dark Token (Talisman of Retribution)
+7651	裏内符・好機の護符【Ⅸ】	Dark Token (Talisman of Opportunity)
+7652	裏内符・進展の護符【Ⅹ】	Dark Token (Talisman of Progress)
+7653	裏内符・成果の護符【小姓】	Dark Token (Talisman of Results)
+7654	裏内符・豊穣の護符【騎士】	Dark Token (Talisman of Abundance)
+7655	裏内符・感情の護符【女王】	Dark Token (Talisman of Emotion)
+7656	裏内符・共存の護符【王】	Dark Token (Talisman of Coexistence)
+7660	ナイトカード・Ⅰ（譲渡不可）	Tarot Card: I of Knights (Non-Trade)
+7701	九曜の護符	Amulet of the Nine Luminaries
+7702	Ｓ・ＥＸＴ：エイルメントデバイス	S-EXT: Ailment Device
+7917	魂合石・紫微垣－零－	Soul Stone: Purple Forbidden Encl. 0
+7919	魂合石・天市垣－零－	Soul Stone: Heavenly Market Encl. 0
+7920	魂合石・紫微垣－壱－	Soul Stone: Purple Forbidden Encl. I
+7922	魂合石・天市垣－壱－	Soul Stone: Heavenly Market Encl. I
+7923	魂合石・紫微垣－弐－	Soul Stone: Purple Forbidden Encl. II
+7924	魂合石・太微垣－弐－	Soul Stone: Supreme Palace Encl. II
+7925	魂合石・天市垣－弐－	Soul Stone: Heavenly Market Encl. II
+7926	魂合石・紫微垣－参－	Soul Stone: Purple Forbidden Encl. III
+7927	魂合石・太微垣－参－	Soul Stone: Supreme Palace Encl. III
+7928	魂合石・天市垣－参－	Soul Stone: Heavenly Market Encl. III
+7933	魂合石・紫微垣－肆－	Soul Stone: Purple Forbidden Encl. IV
+7934	魂合石・太微垣－肆－	Soul Stone: Supreme Palace Encl. IV
+7935	魂合石・天市垣－肆－	Soul Stone: Heavenly Market Encl. IV
+7936	魂合石・紫微垣－伍－	Soul Stone: Purple Forbidden Encl. V
+7937	魂合石・太微垣－伍－	Soul Stone: Supreme Palace Encl. V
+7938	魂合石・天市垣－伍－	Soul Stone: Heavenly Market Encl. V
+7939	魂合石・紫微垣－陸－	Soul Stone: Purple Forbidden Encl. VI
+7940	魂合石・太微垣－陸－	Soul Stone: Supreme Palace Encl. VI
+7941	魂合石・天市垣－陸－	Soul Stone: Heavenly Market Encl. VI
+7942	魂合石・紫微垣－漆－	Soul Stone: Purple Forbidden Encl. VII
+7943	魂合石・太微垣－漆－	Soul Stone: Supreme Palace Encl. VII
+7944	魂合石・天市垣－漆－	Soul Stone: Heavenly Market Encl. VII
+7945	魂合石・紫微垣－捌－	Soul Stone: Purple Forbidden Encl. VIII
+7946	魂合石・太微垣－捌－	Soul Stone: Supreme Palace Encl. VIII
+7947	魂合石・天市垣－捌－	Soul Stone: Heavenly Market Encl. VIII
+7948	魂合石・紫微垣－玖－	Soul Stone: Purple Forbidden Encl. IX
+7949	魂合石・太微垣－玖－	Soul Stone: Supreme Palace Encl. IX
+7950	魂合石・天市垣－玖－	Soul Stone: Heavenly Market Encl. IX
+7951	魂合石・紫微垣－拾－	Soul Stone: Purple Forbidden Encl. X
+7952	魂合石・太微垣－拾－	Soul Stone: Supreme Palace Encl. X
+7953	魂合石・天市垣－拾－	Soul Stone: Heavenly Market Encl. X
+7954	魂合石・紫微垣－結－	Soul Stone: Purple Forbidden Encl. Final
+7955	魂合石・太微垣－結－	Soul Stone: Supreme Palace Encl. Final
+7956	魂合石・天市垣－結－	Soul Stone: Heavenly Market Encl. Final
+7964	魂合石・赤星	Soul Stone: Red Star
+7965	魂合石・天社	Soul Stone: Heavenly Shrine
+7966	魂合石・天車	Soul Stone: Heavenly Cart
+7967	魂合石・粗野	Soul Stone: Crudeness
+7968	魂合石・自信	Soul Stone: Confidence
+7969	魂合石・冒険	Soul Stone: Adventure
+7970	魂合石・保守	Soul Stone: Conservatism
+7971	魂合石・分析	Soul Stone: Analysis
+7972	魂合石・自我	Soul Stone: Ego
+7973	魂合石・鋭敏	Soul Stone: Acuity
+7974	魂合石・機転	Soul Stone: Quick Wit
+7975	魂合石・独創	Soul Stone: Originality
+7976	魂合石・感得	Soul Stone: Intuition
+7977	魂合石・情熱	Soul Stone: Passion
+7978	魂合石・交感	Soul Stone: Empathy
+7979	魂合石・星宿	Soul Stone: Star Mansion
+7980	魂合石・天相	Soul Stone: Tianxiang
+7981	魂合石・軒轅	Soul Stone: Xuanyuan
+7982	魂合石・内平	Soul Stone: Neiping
+7992	天使の楽譜	Angel's Sheet Music
+7993	悪魔の楽譜	Demon's Sheet Music
+7994	七丘の冠	Crown of the Seven Hills
+7995	魂合石・地獄	Soul Stone: Hell
+7996	魂合石・餓鬼	Soul Stone: Preta
+7997	魂合石・畜生	Soul Stone: Beast
+7998	魂合石・修羅	Soul Stone: Asura
+7999	魂合石・人間	Soul Stone: Human
+8000	魂合石・秋月	Soul Stone: Autumn Moon
+8042	福袋	Lucky Bag
+8046	ハーモナイズロザリィ【火炎】	Harmonized Rosary (Fire)
+8047	ハーモナイズロザリィ【氷結】	Harmonized Rosary (Ice)
+8048	ハーモナイズロザリィ【電撃】	Harmonized Rosary (Electric)
+8049	ハーモナイズロザリィ【衝撃】	Harmonized Rosary (Force)
+8100	魂合石・天上	Soul Stone: Heaven
+8101	魂合石・声聞	Soul Stone: Shravaka
+8102	魂合石・縁覚	Soul Stone: Pratyekabuddha
+8103	魂合石・菩薩	Soul Stone: Bodhisattva
+8104	魂合石・佛	Soul Stone: Buddha
+8105	魂合石・光環	Soul Stone: Halo
+8106	魂合石・月暈	Soul Stone: Lunar Halo
+8107	魂合石・星合	Soul Stone: Star Meeting
+8108	魂合石・鵲橋	Soul Stone: Magpie Bridge
+8109	魂合石・燈	Soul Stone: Lantern
+8110	魂合石・淡月	Soul Stone: Pale Moon
+8111	ファイトエフェクター	Fight Effector
+8112	ガンエフェクター	Gun Effector
+8113	ウィザーエフェクター	Wizard Effector
+8114	ファイトエフェクターＤ	Fight Effector D
+8115	ガンエフェクターＤ	Gun Effector D
+8116	ウィザーエフェクターＤ	Wizard Effector D
+8117	神に捧げられし聖者の記憶	Memory of a Saint Offered to God
+8118	夢を見て尽きた勇者の記憶	Memory of a Hero Who Dreamed Until Spent
+8121	神威	God's Majesty
+8125	魂合石・流星	Soul Stone: Meteor
+8126	魂合石・天道	Soul Stone: Heavenly Path
+8127	魂合石・地道	Soul Stone: Earthly Path
+8128	魂合石・人道	Soul Stone: Human Path
+8129	魂合石・暁星	Soul Stone: Morning Star
+8130	魂合石・睦月	Soul Stone: Mutsuki (January)
+8131	魂合石・如月	Soul Stone: Kisaragi (February)
+8132	魂合石・弥生	Soul Stone: Yayoi (March)
+8133	魂合石・卯月	Soul Stone: Uzuki (April)
+8134	魂合石・皐月	Soul Stone: Satsuki (May)
+8135	魂合石・水無月	Soul Stone: Minazuki (June)
+8136	魂合石・文月	Soul Stone: Fumizuki (July)
+8137	魂合石・葉月	Soul Stone: Hazuki (August)
+8138	魂合石・長月	Soul Stone: Nagatsuki (September)
+8139	魂合石・神無月	Soul Stone: Kannazuki (October)
+8140	魂合石・霜月	Soul Stone: Shimotsuki (November)
+8141	魂合石・師走	Soul Stone: Shiwasu (December)
+9038	インタリオ・フェンリル	Intaglio: Fenrir
+9040	インタリオ・ハヤグリーヴァ	Intaglio: Hayagriva
+9041	インタリオ・Valkyrie	Intaglio: Valkyrie
+9042	インタリオ・祭囃子	Intaglio: Festival Music
+9810	とある高校生のワイシャツ	A Certain High Schooler's Shirt
+9811	とある高校生のワイシャツα	A Certain High Schooler's Shirt α
+9812	常盤台中学校ニットベスト	Tokiwadai Jr High Knit Vest
+9813	常盤台中学校ニットベストα	Tokiwadai Jr High Knit Vest α
+9814	柵川中学校セーラー	Sakugawa Sailor Uniform
+9858	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9859	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9860	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9861	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9862	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9863	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9864	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9865	ハイロウコート（破壊）	Hi-Low Coat (Destruction)
+9901	とあるゲコ太の引換券	Voucher (A Certain Gekota)
+9912	Ｗ倉庫券（３０日譲渡不可）	W Warehouse Voucher (30 Days, Non-Trade)
+9913	Ｗ倉庫券（６０日譲渡不可）	W Warehouse Voucher (60 Days, Non-Trade)
+9914	Ｗ倉庫券（９０日譲渡不可）	W Warehouse Voucher (90 Days, Non-Trade)
+9917	とある腕章のData Ticket	A Certain Armband Data Ticket
+9918	とある腕章のData Ticketα	A Certain Armband Data Ticket α
+9919	とあるコインのData Ticket	A Certain Coin Data Ticket
+12007	レールガン・コイン	Railgun Coin
+12008	テレポート・ダーツ	Teleport Dart
+12025	テレポート・ダーツⅡ	Teleport Dart II
+12175	Raptus Etarna α 竇｢	Raptus Etarna α III
+12292	初級教本・破壊魔法	Beginner Textbook (Destruction Magic)
+12302	初級教本・武器知識	Beginner Textbook (Weapon Knowledge)
+12303	初級教本・生存技術	Beginner Textbook (Survival Techniques)
+12305	初級教本・医学	Beginner Textbook (Medical Sciences)
+12333	レギュラーコード（破壊の刻印）	Regular Code (Mark of Destruction)
+12343	初級教本・医学（譲渡不可）	Beginner Textbook (Medical Sciences, Non-Trade)
+12376	プリングルズ　うすしお	Pringles Light Salted
+12377	サワークリーム	Sour Cream
+12378	プリングルズ　グリルドチーズ	Pringles Grilled Cheese
+12379	リッチベイクドポテト	Rich Baked Potato
+12401	バリューパック【デュラララ】	Value Pack: Durarara!!
+12405	バリューパック【デュララララ】	Value Pack: Durararara!!
+12406	フロッピー「ＤＯＬＬＡＲＳ」	Floppy "DOLLARS"
+12407	フロッピー「池袋最強の男」	Floppy "Strongest Man in Ikebukuro"
+12408	フロッピー「首なしライダー」	Floppy "Headless Rider"
+12418	バリューパック【デュラララララ】	Value Pack: Durarararara!!
+12419	フロッピー「暗躍する情報屋」	Floppy "Scheming Information Broker"
+12435	魔斥瘴聖灰（斬撃）	Sacred Demon-repelling Ash (Slash)
+12438	魔斥瘴聖灰（射撃）	Sacred Demon-repelling Ash (Handgun)
+12439	魔斥瘴聖灰（貫通）	Sacred Demon-repelling Ash (Penetrate)
+12443	魔斥瘴聖灰（電撃）	Sacred Demon-repelling Ash (Electric)
+12445	魔斥瘴聖灰（万能）	Sacred Demon-repelling Ash (Almighty)
+12482	レギュラーコード（旬宴の刻印）	Regular Code (Mark of the Seasonal Feast)
+12580	ヘアカタログ・デコ出しロング	Hair Catalog (Long, Forehead Bared)
+12871	フルールの雫【神聖なる殉教墓地】	Fleur Drop (Sacred Martyr Cemetery)
+12874	Ｌｖ３０までの経験の香（１０倍）	Incense of XP (Up to Lv30, 10x)
+12875	Ｌｖ５０までの経験の香（１５倍）	Incense of XP (Up to Lv50, 15x)
+12876	Ｌｖ８０までの経験の香（２０倍）	Incense of XP (Up to Lv80, 20x)
+12877	ＤＢブートパック３０ｄａｙｓ	DB Boot Pack 30 Days
+12879	巳の証	Mark of the Snake
+12880	干支のお守り	Zodiac Charm
+12883	魔性の香水	Bewitching Perfume
+12884	悪魔的精導光（評価版・短縮）	Demonic Guide Light (Trial, Short)
+12889	フルールの雫【焔天なる電子孤島】	Fleur Drop (Blazing Electronic Isle)
+12890	フルールの雫【試練なる瘴気辺獄】	Fleur Drop (Trial Miasma Limbo)
+12891	ヘアカタログ・ミディアムシャギー	Hair Catalog (Medium Shaggy)
+12892	ヘアカタログ・クールショート	Hair Catalog (Cool Short)
+12893	ヘアカタログ・レイヤーボブ	Hair Catalog (Layered Bob)
+12894	ヘアカタログ・おさげ	Hair Catalog (Braids)
+12895	メッシュヘア・クールショート	Mesh Hair (Cool Short)
+12896	メッシュヘア・クールレイヤー	Mesh Hair (Cool Layers)
+12897	メッシュヘア・ワンサイドフォール	Mesh Hair (One-Side Fall)
+12898	メッシュヘア・ミディアムシャギー	Mesh Hair (Medium Shaggy)
+12899	メッシュヘア・ストリーム	Mesh Hair (Stream)
+12900	メッシュヘア・セミロングシャギー	Mesh Hair (Semi-Long Shaggy)
+12901	メッシュヘア・センターパート	Mesh Hair (Center Part)
+12902	メッシュヘア・キューティーカール	Mesh Hair (Cutie Curl)
+12903	メッシュヘア・オリエンタルテール	Mesh Hair (Oriental Tail)
+12904	メッシュヘア・おさげ	Mesh Hair (Braids)
+12905	メッシュヘア・ショートドール	Mesh Hair (Short Doll)
+12906	メッシュヘア・レイヤーボブ	Mesh Hair (Layered Bob)
+12907	ヘアカラー・パステルピンク	Hair Color (Pastel Pink)
+12908	ヘアカラー・パステルブルー	Hair Color (Pastel Blue)
+12909	ヘアカラー・パステルレッド	Hair Color (Pastel Red)
+12910	ヘアカラー・パステルグリーン	Hair Color (Pastel Green)
+12911	ヘアカラー・パステルパープル	Hair Color (Pastel Purple)
+12914	プレミアムギモーヴ・ハイパー	Premium Guimauve (Hyper)
+12917	プレミアムショコラ・天上	Premium Chocolat (Heavenly)
+12918	プレミアムショコラ・必殺	Premium Chocolat (Deathblow)
+12921	深淵の秘鑰	Abyss Secret Key
+12922	異界マグネタイト	Otherworld Magnetite
+12923	異界新宿トラエスト	Otherworld Shinjuku Traesto
+12929	回復の雫	Recovery Drop
+12930	真那伽の香（小）	Incense of Manaka (Small)
+12931	羅国の香（小）	Incense of Rakoku (Small)
+12932	伽羅の香（小）	Incense of Kyara (Small)
+12933	異界の砂子	Otherworld Sand
+12935	黒い封筒	Black Envelope
+12936	メンズナックル１月号	Men's Knuckle (January Issue)
+12937	メンズナックル２月号	Men's Knuckle (February Issue)
+12938	メンズナックル３月号	Men's Knuckle (March Issue)
+12939	メンズナックル４月号	Men's Knuckle (April Issue)
+12940	メンズナックル５月号	Men's Knuckle (May Issue)
+12941	メンズナックル６月号	Men's Knuckle (June Issue)
+12942	メンズナックル７月号	Men's Knuckle (July Issue)
+12943	メンズナックル８月号	Men's Knuckle (August Issue)
+12944	メンズナックル９月号	Men's Knuckle (September Issue)
+12945	メンズナックル１０月号	Men's Knuckle (October Issue)
+12946	メンズナックル１１月号	Men's Knuckle (November Issue)
+12947	メンズナックル１２月号	Men's Knuckle (December Issue)
+12949	ヘアカタログ・Ｍ字バング	Hair Catalog (M-Shaped Bangs)
+12950	ヘアカタログ・カールアップ	Hair Catalog (Curl Up)
+12955	Sacrifice Orb: ベノンザッパー	Sacrifice Orb: Venom Zapper
+12956	Sacrifice Orb: 菩薩掌	Sacrifice Orb: Bodhisattva Palm
+12959	Sacrifice Orb: ハイパーセーブ１	Sacrifice Orb: Hyper Saver 1
+12960	Sacrifice Orb: ハイパーセーブ２	Sacrifice Orb: Hyper Saver 2
+12961	Sacrifice Orb: ハイパーセーブ３	Sacrifice Orb: Hyper Saver 3
+12962	Sacrifice Orb: ハイパーセーブ４	Sacrifice Orb: Hyper Saver 4
+12963	Sacrifice Orb: ＡＲＳフルブースタ１	Sacrifice Orb: ARS Full Booster 1
+12964	Sacrifice Orb: ＳＲフルブースタ１	Sacrifice Orb: SR Full Booster 1
+12965	Sacrifice Orb: エボルヴ１	Sacrifice Orb: Evolve 1
+12966	Sacrifice Orb: エボルヴ２	Sacrifice Orb: Evolve 2
+12967	Sacrifice Orb: エボルヴ３	Sacrifice Orb: Evolve 3
+12968	ＳＨＰＧ認証カードＥ	SHPG Authorization Card E
+12969	ＳＨＰＧ認証カードＥＶ－ＧＬ	SHPG Authorization Card EV - GL
+12970	ＳＨＰＧ認証カードＥＶ－ＧＡ	SHPG Authorization Card EV - GA
+12973	ＤｉｅＨａｒｄ（１分）	Die Hard (1 minute)
+12974	ソウルジェム（ＢＣ）	Soul Gem (BC)
+12980	ロンドンブーツ	London Boots
+12991	悪魔の秘密箱１	Demon's Secret Box 1
+12992	悪魔の秘密箱２	Demon's Secret Box 2
+12993	アイカラー・サンセット	Eye Color (Sunset)
+12994	アイカラー・セルリアン	Eye Color (Cerulean)
+12995	アイカラー・キャンディピンク	Eye Color (Candy Pink)
+12996	フルールの雫【静謐なる停止空間】	Fleur Drop (Serene Stasis Space)
+12998	黄泉還りの匣	Yomi Return Box
+12999	ヘアカタログ・シャープアシメ	Hair Catalog (Sharp Asymmetric)
+13001	隠された真理のシャムロック	Shamrock of Hidden Truth
+21320	熟れたスイカ	Ripe Watermelon
+21321	Inexperienced スイカ	Unripe Watermelon
+21322	業玉【Yoshitsuneの欠片	Karma Orb [Fragment of Yoshitsune]
+21323	業玉【Yoshitsune	Karma Orb [Yoshitsune]
+21324	召喚の書・壱の巻	Summoning Book: Volume I
+21325	召喚の書・弐の巻	Summoning Book: Volume II
+21326	召喚の書・参の巻	Summoning Book: Volume III
+21327	召喚の書・肆の巻	Summoning Book: Volume IV
+21328	召喚の書・伍の巻	Summoning Book: Volume V
+21373	黄昏色の壷【ⅩⅩⅩ】	Twilight Urn [XXX]
+21374	黄昏色の壷【ⅩⅤ】	Twilight Urn [XV]
+21375	黄昏色の壷【ＬⅩⅨ】	Twilight Urn [LXIX]
+21376	黄昏色の壷【ⅩⅩⅧ】	Twilight Urn [XXVIII]
+21377	黄昏色の壷【ＬⅤ】	Twilight Urn [LV]
+21378	黄昏色の壷【ＬⅦ】	Twilight Urn [LVII]
+21385	ユミルの毛髪	Ymir Hair
+21388	ユミルの毛髪（譲渡不可）	Ymir Hair (Non-trade)
+21390	ガルムの秘密箱１	Garm's Secret Box 1
+21391	ガルムの秘密箱２	Garm's Secret Box 2
+21392	うしみつ人形くん	Ushimitsu Doll
+21396	キャンディボックス	Candy Box
+21397	Ｘキャンディボックス	X Candy Box
+21398	ＥＸキャンディボックス	EX Candy Box
+21426	マテリアルピアシング（試作版）	Material Piercing (Prototype)
+21432	覚書【無度の極み】	Memo [Extreme of Excess]
+21433	覚書【殴り合い通信】	Memo [Brawl Communication]
+21434	覚書【パラダイス・バースト】	Memo [Paradise Burst]
+21435	覚書【ボルトアクション自動火器】	Memo [Bolt-Action Automatic Weapon]
+21436	覚書【人間失格】	Memo [No Longer Human]
+21437	覚書【パラサイト・エバ】	Memo [Parasite Eve]
+21438	覚書【ヤればデキる】	Memo [Do It and You Can]
+21439	覚書【そして誰もいなくなった】	Memo [And Then There Were None]
+21440	覚書【永眠の白】	Memo [White of Eternal Sleep]
+21441	覚書【破滅の黒】	Memo [Black of Ruin]
+21442	覚書【揚棄の紅】	Memo [Crimson of Sublation]
+21443	覚書【終末の碧】	Memo [Azure of the End]
+21444	覚書【螺旋の黄】	Memo [Yellow of the Spiral]
+21445	覚書【千夜一夜物語】	Memo [One Thousand and One Nights]
+21446	覚書【力こそパワー！】	Memo [Strength Is Power!]
+21447	覚書【動いても撃つ！】	Memo [Shoot Even While Moving!]
+21448	覚書【見えてはいけない何か！】	Memo [Something Unseeable!]
+21449	覚書【悪魔を呪わば穴４つ】	Memo [Curse a Demon, Dig Four Graves]
+21450	ハロウィンボックス	Halloween Box
+21451	Ｘハロウィンボックス	X Halloween Box
+21452	ＥＸハロウィンボックス	EX Halloween Box
+21453	カボチャパイ	Pumpkin Pie
+21456	回復の雫（トレード不可）	Recovery Drop (Non-Trade)
+21457	箱入りのＴシャツ（無地）	Boxed T-Shirts (Plain)
+21458	Ｔシャツ（無地）	T-Shirt (Plain)
+21459	赤本・武器知識	Red Book (Weapon Knowledge)
+21460	赤本・刃物	Red Book (Blades)
+21461	赤本・銃器知識	Red Book (Gun Knowledge)
+21462	赤本・工作	Red Book (Crafts)
+21463	赤本・神秘学	Red Book (Occultism)
+21464	赤本・鉱物学	Red Book (Mineralogy)
+21465	赤本・外丹	Red Book (Creation)
+21466	赤本・栽工技術	Red Book (Sketching)
+21493	Sacrifice Orb: 木っ端微塵斬り	Sacrifice Orb: Void Slash
+21495	Sacrifice Orb: 神速１	Sacrifice Orb: Godspeed 1
+21496	Sacrifice Orb: 神速２	Sacrifice Orb: Godspeed 2
+21497	Sacrifice Orb: 神速３	Sacrifice Orb: Godspeed 3
+21498	Sacrifice Orb: 神速４	Sacrifice Orb: Godspeed 4
+21499	Sacrifice Orb: 厄祓１	Sacrifice Orb: Misfortune Purification 1
+21500	Sacrifice Orb: 厄祓２	Sacrifice Orb: Misfortune Purification 2
+21501	Sacrifice Orb: 厄祓３	Sacrifice Orb: Misfortune Purification 3
+21503	山羊屋共通優待券（１日）	Goat Shop Shared Coupon (1 Day)
+21504	山羊屋共通優待券（３日）	Goat Shop Shared Coupon (3 Days)
+21505	山羊屋共通優待券（７日）	Goat Shop Shared Coupon (7 Days)
+21507	ジャンク製のボード	Junk Board
+21508	ヨダレ塗れの板	Drool-Soaked Plank
+21509	石造の板	Stone Plank
+21510	血濡れの板	Bloodstained Plank
+21511	悪魔絵馬【バイコーン】（電）	Demon Ema [Bicorn] (Electric)
+21512	悪魔絵馬【ユニコーン】（電）	Demon Ema [Unicorn] (Electric)
+21513	悪魔絵馬【ケルピー】（電）	Demon Ema [Kelpie] (Electric)
+21514	悪魔絵馬【Kinnari】（電）	Demon Ema [Kinnari] (Electric)
+21515	悪魔絵馬【ハヤグリーヴァ】（電）	Demon Ema [Hayagriva] (Electric)
+21516	悪魔絵馬【スレイプニル】（電）	Demon Ema [Sleipnir] (Electric)
+21517	悪魔絵馬【クヴァンダ】（電）	Demon Ema [Kumbhanda] (Electric)
+21518	悪魔絵馬【オロバス】（電）	Demon Ema [Orobas] (Electric)
+21519	悪魔絵馬【バイコーン】（涎）	Demon Ema [Bicorn] (Drool)
+21520	悪魔絵馬【ユニコーン】（涎）	Demon Ema [Unicorn] (Drool)
+21521	悪魔絵馬【ケルピー】（涎）	Demon Ema [Kelpie] (Drool)
+21522	悪魔絵馬【Kinnari】（涎）	Demon Ema [Kinnari] (Drool)
+21523	悪魔絵馬【ハヤグリーヴァ】（涎）	Demon Ema [Hayagriva] (Drool)
+21524	悪魔絵馬【スレイプニル】（涎）	Demon Ema [Sleipnir] (Drool)
+21525	悪魔絵馬【クヴァンダ】（涎）	Demon Ema [Kumbhanda] (Drool)
+21526	悪魔絵馬【オロバス】（涎）	Demon Ema [Orobas] (Drool)
+21527	悪魔絵馬【バイコーン】（石）	Demon Ema [Bicorn] (Stone)
+21528	悪魔絵馬【ユニコーン】（石）	Demon Ema [Unicorn] (Stone)
+21529	悪魔絵馬【ケルピー】（石）	Demon Ema [Kelpie] (Stone)
+21530	悪魔絵馬【Kinnari】（石）	Demon Ema [Kinnari] (Stone)
+21531	悪魔絵馬【ハヤグリーヴァ】（石）	Demon Ema [Hayagriva] (Stone)
+21532	悪魔絵馬【スレイプニル】（石）	Demon Ema [Sleipnir] (Stone)
+21533	悪魔絵馬【クヴァンダ】（石）	Demon Ema [Kumbhanda] (Stone)
+21534	悪魔絵馬【オロバス】（石）	Demon Ema [Orobas] (Stone)
+21535	悪魔絵馬【バイコーン】（血）	Demon Ema [Bicorn] (Blood)
+21536	悪魔絵馬【ユニコーン】（血）	Demon Ema [Unicorn] (Blood)
+21537	悪魔絵馬【ケルピー】（血）	Demon Ema [Kelpie] (Blood)
+21538	悪魔絵馬【Kinnari】（血）	Demon Ema [Kinnari] (Blood)
+21539	悪魔絵馬【ハヤグリーヴァ】（血）	Demon Ema [Hayagriva] (Blood)
+21540	悪魔絵馬【スレイプニル】（血）	Demon Ema [Sleipnir] (Blood)
+21541	悪魔絵馬【クヴァンダ】（血）	Demon Ema [Kumbhanda] (Blood)
+21542	悪魔絵馬【オロバス】（血）	Demon Ema [Orobas] (Blood)
+21559	ヒョウタンボックス	Gourd Box
+21560	まんだらニンジン	Mandara Carrot
+21561	Inexperienced まんだらニンジン	Inexperienced Mandara Carrot
+21565	キャロットジュース	Carrot Juice
+21568	魔力の潮流	Magic Tide
+21569	妖魔の残留思念【アプサラス】	Yoma Residual Thought [Apsaras]
+21570	妖魔の残留思念【イソラ】	Yoma Residual Thought [Isora]
+21571	妖魔の残留思念【ディース】	Yoma Residual Thought [Dis]
+21572	妖魔の残留思念【Kinnari】	Yoma Residual Thought [Kinnari]
+21573	妖魔の残留思念【オンコット】	Yoma Residual Thought [Onkot]
+21574	妖魔の残留思念【イフリート】	Yoma Residual Thought [Efreet]
+21575	妖魔の残留思念【ジン】	Yoma Residual Thought [Jinn]
+21576	妖魔の残留思念【プルキシ】	Yoma Residual Thought [Purski]
+21577	妖魔の残留思念【ガネーシャ】	Yoma Residual Thought [Ganesha]
+21578	上級妖魔の契約【アプサラス】	High Yoma Contract [Apsaras]
+21579	上級妖魔の契約【イソラ】	High Yoma Contract [Isora]
+21580	上級妖魔の契約【ディース】	High Yoma Contract [Dis]
+21581	上級妖魔の契約【Kinnari】	High Yoma Contract [Kinnari]
+21582	上級妖魔の契約【オンコット】	High Yoma Contract [Onkot]
+21583	上級妖魔の契約【イフリート】	High Yoma Contract [Efreet]
+21584	上級妖魔の契約【ジン】	High Yoma Contract [Jinn]
+21585	上級妖魔の契約【プルキシ】	High Yoma Contract [Purski]
+21586	上級妖魔の契約【ガネーシャ】	High Yoma Contract [Ganesha]
+21598	トレブルゼリー	Treble Jelly
+21602	魔除けの牛乳	Warding Milk
+21603	魔除けの十字架	Warding Cross
+21604	シンクロニシティエッグ	Synchronicity Egg
+21605	不気味な円盤	Eerie Disc
+21619	運命印のドリンコ	Fate-Mark Drinko
+21620	マスターキー	Master Key
+21637	理の砂・快参	Sand of Logic (Pleasant III)
+21638	理の砂・介参	Sand of Logic (Mediate III)
+21639	理の砂・充参	Sand of Logic (Fill III)
+21640	理の砂・緋参	Sand of Logic (Scarlet III)
+21641	理の砂・持参	Sand of Logic (Hold III)
+21642	理の砂・鋪参	Sand of Logic (Pave III)
+21643	理の砂・俊参	Sand of Logic (Eminent III)
+21644	理の砂・楽参	Sand of Logic (Ease III)
+21645	理の砂・安	Sand of Logic (Safety)
+21646	理の砂・瞑	Sand of Logic (Meditate)
+21647	理の砂・近	Sand of Logic (Melee)
+21648	理の砂・射	Sand of Logic (Shoot)
+21649	理の砂・魔	Sand of Logic (Magic)
+21650	理の砂・補	Sand of Logic (Aid)
+21651	理の砂・護弐	Sand of Logic (Guard II)
+21652	理の砂・悟	Sand of Logic (Insight)
+21653	理の砂・必	Sand of Logic (Certain)
+21654	理の砂・抑	Sand of Logic (Restrain)
+21655	理の砂・圏参	Sand of Logic (Range III)
+21656	理の砂・状	Sand of Logic (Status)
+21657	牢獄の鍵	Prison Key
+21658	創造のメノラー	Menorah of Creation
+21659	完成のメノラー	Menorah of Completion
+21660	長成のメノラー	Menorah of Maturation
+21661	蘇生のメノラー	Menorah of Revival
+21663	千本桜	Senbonzakura
+21665	穢れ満つる杯	Chalice Brimming with Impurity
+21668	アニバーサリーボックス【１】	Anniversary Box [1]
+21669	アニバーサリーボックス【２】	Anniversary Box [2]
+21670	アニバーサリーボックス【３】	Anniversary Box [3]
+21671	アニバーサリーボックス【４】	Anniversary Box [4]
+21672	アニバーサリーボックス【５】	Anniversary Box [5]
+21673	アニバーサリーボックス【６】	Anniversary Box [6]
+21674	アニバーサリーボックス【７】	Anniversary Box [7]
+21675	アニバーサリーボックス【８】	Anniversary Box [8]
+21676	アニバーサリーボックス【９】	Anniversary Box [9]
+21677	アニバーサリーボックス【１０】	Anniversary Box [10]
+21678	アニバーサリーボックス【蘇生】	Anniversary Box [Revival]
+21679	アニバーサリーボックス【長成】	Anniversary Box [Maturation]
+21680	アニバーサリーボックス【完成】	Anniversary Box [Completion]
+21682	禍魂【ヴィマーナ】	Calamity Soul [Vimana]
+21683	禍魂【ヴィマーナα】	Calamity Soul [Vimana α]
+21684	禍魂【ヴィマーナβ】	Calamity Soul [Vimana β]
+21686	豪華なジュエルＢＯＸ	Deluxe Jewel Box
+21688	豪華なジュエルＢＯＸ（譲渡不可）	Deluxe Jewel Box (Non-Trade)
+21719	メノラー探知機	Menorah Detector
+21725	Sacrifice Orb: 絶氷剣	Sacrifice Orb: Absolute Zero Blade
+21728	Sacrifice Orb: 厄祓４	Sacrifice Orb: Calamity Ward 4
+21729	囚われし孔雀の羽	Captive Peacock Feather
+21730	悪魔の骨	Demon Bone
+21731	明王の書物	Book of the Wisdom King
+21732	鬼道の書物	Book of the Demon Path
+21733	万象符（斬撃）	Myriad Talisman (Slash)
+21734	万象符（突撃）	Myriad Talisman (Thrust)
+21735	万象符（打撃）	Myriad Talisman (Blunt)
+21736	万象符（射撃）	Myriad Talisman (Handgun)
+21737	万象符（貫通）	Myriad Talisman (Penetrate)
+21738	万象符（散弾）	Myriad Talisman (Spread)
+21739	万象符（火炎）	Myriad Talisman (Fire)
+21740	万象符（氷結）	Myriad Talisman (Ice)
+21741	万象符（電撃）	Myriad Talisman (Electric)
+21742	万象符（衝撃）	Myriad Talisman (Force)
+21743	万象符（破魔）	Myriad Talisman (Expel)
+21744	万象符（呪殺）	Myriad Talisman (Death)
+21745	万象符（魔力）	Myriad Talisman (Magic)
+21746	万象符（神経）	Myriad Talisman (Nerve)
+21747	万象符（精神）	Myriad Talisman (Mind)
+21748	万象呪符（斬撃突撃打撃）	Myriad Hex Talisman (Slash/Thrust/Blunt)
+21749	万象呪符（射撃貫通散弾）	Myriad Hex Talisman (Handgun/Penetrate/Spread)
+21750	万象呪符（火炎氷結電撃衝撃）	Myriad Hex Talisman (Fire/Ice/Electric/Force)
+21751	万象呪符（破魔呪殺）	Myriad Hex Talisman (Expel/Death)
+21752	万象呪符（魔力神経精神）	Myriad Hex Talisman (Magic/Nerve/Mind)
+21753	万象霊符（斬撃）	Myriad Spirit Talisman (Slash)
+21754	万象霊符（突撃）	Myriad Spirit Talisman (Thrust)
+21755	万象霊符（打撃）	Myriad Spirit Talisman (Blunt)
+21756	万象霊符（射撃）	Myriad Spirit Talisman (Handgun)
+21757	万象霊符（貫通）	Myriad Spirit Talisman (Penetrate)
+21758	万象霊符（散弾）	Myriad Spirit Talisman (Spread)
+21759	万象霊符（火炎）	Myriad Spirit Talisman (Fire)
+21760	万象霊符（氷結）	Myriad Spirit Talisman (Ice)
+21761	万象霊符（電撃）	Myriad Spirit Talisman (Electric)
+21762	万象霊符（衝撃）	Myriad Spirit Talisman (Force)
+21763	万象霊符（破魔）	Myriad Spirit Talisman (Expel)
+21764	万象霊符（呪殺）	Myriad Spirit Talisman (Death)
+21765	万象霊符（魔力）	Myriad Spirit Talisman (Magic)
+21766	万象霊符（神経）	Myriad Spirit Talisman (Nerve)
+21767	万象霊符（精神）	Myriad Spirit Talisman (Mind)
+21768	覇道符（斬撃）	Hegemon Talisman (Slash)
+21769	覇道符（突撃）	Hegemon Talisman (Thrust)
+21770	覇道符（打撃）	Hegemon Talisman (Blunt)
+21771	覇道符（射撃）	Hegemon Talisman (Handgun)
+21772	覇道符（貫通）	Hegemon Talisman (Penetrate)
+21773	覇道符（散弾）	Hegemon Talisman (Spread)
+21774	覇道符（火炎）	Hegemon Talisman (Fire)
+21775	覇道符（氷結）	Hegemon Talisman (Ice)
+21776	覇道符（電撃）	Hegemon Talisman (Electric)
+21777	覇道符（衝撃）	Hegemon Talisman (Force)
+21778	覇道符（破魔）	Hegemon Talisman (Expel)
+21779	覇道符（呪殺）	Hegemon Talisman (Death)
+21780	覇道符（魔力）	Hegemon Talisman (Magic)
+21781	覇道符（神経）	Hegemon Talisman (Nerve)
+21782	覇道符（精神）	Hegemon Talisman (Mind)
+21783	覇道呪符（斬撃突撃打撃）	Hegemon Hex Talisman (Slash/Thrust/Blunt)
+21784	覇道呪符（射撃貫通散弾）	Hegemon Hex Talisman (Handgun/Penetrate/Spread)
+21785	覇道呪符（火炎氷結電撃衝撃）	Hegemon Hex Talisman (Fire/Ice/Electric/Force)
+21786	覇道呪符（破魔呪殺）	Hegemon Hex Talisman (Expel/Death)
+21787	覇道呪符（魔力神経精神）	Hegemon Hex Talisman (Magic/Nerve/Mind)
+21788	覇道霊符（斬撃）	Hegemon Spirit Talisman (Slash)
+21789	覇道霊符（突撃）	Hegemon Spirit Talisman (Thrust)
+21790	覇道霊符（打撃）	Hegemon Spirit Talisman (Blunt)
+21791	覇道霊符（射撃）	Hegemon Spirit Talisman (Handgun)
+21792	覇道霊符（貫通）	Hegemon Spirit Talisman (Penetrate)
+21793	覇道霊符（散弾）	Hegemon Spirit Talisman (Spread)
+21794	覇道霊符（火炎）	Hegemon Spirit Talisman (Fire)
+21795	覇道霊符（氷結）	Hegemon Spirit Talisman (Ice)
+21796	覇道霊符（電撃）	Hegemon Spirit Talisman (Electric)
+21797	覇道霊符（衝撃）	Hegemon Spirit Talisman (Force)
+21798	覇道霊符（破魔）	Hegemon Spirit Talisman (Expel)
+21799	覇道霊符（呪殺）	Hegemon Spirit Talisman (Death)
+21800	覇道霊符（魔力）	Hegemon Spirit Talisman (Magic)
+21801	覇道霊符（神経）	Hegemon Spirit Talisman (Nerve)
+21802	覇道霊符（精神）	Hegemon Spirit Talisman (Mind)
+21825	戦国魂	Sengoku Soul
+21826	群雄の魂・戦	Warlord Soul: Battle
+21827	群雄の魂・国	Warlord Soul: Province
+21828	群雄の魂・武	Warlord Soul: Arms
+21829	群雄の魂・将	Warlord Soul: General
+21830	群雄の魂・列	Warlord Soul: Ranks
+21831	群雄の魂・伝	Warlord Soul: Legend
+21832	気魂・天	Spirit Soul: Heaven
+21833	気魂・地	Spirit Soul: Earth
+21834	気魂・人	Spirit Soul: Man
+21835	一攫千金の葛籠	Windfall Wicker Trunk
+21836	浄化カートリッジ	Purification Cartridge
+21837	Demon Cucumber【ハニー】	Demon Cucumber [Honey]
+21852	Rollback PG（譲渡不可）	Rollback PG (Non-Trade)
+21854	クエスチョンキー	Question Key
+21855	アンサーキー	Answer Key
+21856	晴嵐五兵図	Seiran Five-Weapon Chart
+21866	兵信神符・？？遁？	Heishin Divine Charm: ??Dun?
+21867	兵信神符・？？遁甲	Heishin Divine Charm: ??Dunjia
+21868	兵信神符・天？遁甲	Heishin Divine Charm: Heaven?Dunjia
+21869	兵信神符・天一遁甲	Heishin Divine Charm: Tianyi Dunjia
+21870	兵信魔符・？？遁？	Heishin Demonic Charm: ??Dun?
+21871	兵信魔符・？？遁甲	Heishin Demonic Charm: ??Dunjia
+21872	兵信魔符・天？遁甲	Heishin Demonic Charm: Heaven?Dunjia
+21873	兵信魔符・天一遁甲	Heishin Demonic Charm: Tianyi Dunjia
+21878	デビル？ソウル【サイエン】	Demon? Soul [Saien]
+21912	七色のピラー	Seven-Colored Pillar
+21913	七曜のピラー	Seven Luminaries Pillar
+21914	天上の花輪	Heavenly Garland
+21915	菩提樹の実	Bodhi Fruit
+21935	菩提樹の葉	Bodhi Leaf
+21977	アイテム倉庫券（１日譲渡不可）	Item Storage Ticket (1 Day, Non-Trade)
+21978	アイテム倉庫券（３日譲渡不可）	Item Storage Ticket (3 Days, Non-Trade)
+21979	アイテム倉庫券（７日譲渡不可）	Item Storage Ticket (7 Days, Non-Trade)
+21980	悪魔倉庫チケット（１日譲渡不可）	Demon Storage Ticket (1 Day, Non-Trade)
+21981	悪魔倉庫チケット（３日譲渡不可）	Demon Storage Ticket (3 Days, Non-Trade)
+21982	悪魔倉庫チケット（７日譲渡不可）	Demon Storage Ticket (7 Days, Non-Trade)
+21989	タロットメイキング（試）	Tarot Making (Trial)
+21990	ソウルストーンメイキング（試）	Soul Stone Making (Trial)
+22000	極彩色の蜻蛉	Brightly-colored Dragonfly
+22084	王国の嘆き（破壊・仲魔）	Kingdom's Scream (Destruction, Demon)
+22138	躍動せし虎眼のリング	Dynamic Tiger Eye Ring
+22139	隆盛なるジェネレートリング	Prosperous Generate Ring
+22140	黎明の指輪（螺旋）	Dawn Ring (Spiral)
+22141	約束された白詰草の指輪	Promised Clover Ring
+22142	リングライセンス	Ring License
+22143	リングライセンス	Ring License
+22144	未実装	(Unimplemented)
+22145	エンゼルリング改	Angel Ring Kai
+22146	リングオブヒューマンビーイング改	Ring of Human Being Kai
+22147	デビルリング改	Devil Ring Kai
+22148	リングライセンス（仲魔）	Ring License (Demon)
+22149	リングライセンス（仲魔）	Ring License (Demon)
+22150	ブランチリング・リチウム	Branch Ring (Lithium)
+22151	ブランチリング・ジルコニウム	Branch Ring (Zirconium)
+22152	ブランチリング・チタン	Branch Ring (Titanium)
+22153	ブランチリング・パラジウム	Branch Ring (Palladium)
+22154	ブランチリング・セレン	Branch Ring (Selenium)
+22155	王国の嘆き＋	Kingdom's Scream +
+22156	王国の嘆き（破壊・仲魔）＋	Kingdom's Scream (Destruction, Demon) +
+22157	情と理の交錯	Intersection of Emotion and Reason
+22159	夢と現の交錯	Intersection of Dream and Reality
+22163	リフレクトガードリング	Reflect Guard Ring
+22230	ヒーホーリング	Hee-Ho Ring
+22231	ヒーホーリング	Hee-Ho Ring
+22232	ヒーホーリング＋１	Hee-Ho Ring +1
+22233	ヒーホーリング＋１	Hee-Ho Ring +1
+22234	ヒーホーリング＋２	Hee-Ho Ring +2
+22235	ヒーホーリング＋２	Hee-Ho Ring +2
+22236	ヒーホーリング＋３	Hee-Ho Ring +3
+22237	ヒーホーリング＋３	Hee-Ho Ring +3
+22240	リフレクトガードリング＋	Reflect Guard Ring +
+22241	大地の鳴動（仲魔）	Earth's Tremors (Demon)
+22244	神の癒し	God's Healing
+22245	審判の天秤	Scales of Judgment
+22246	神の癒し＋	God's Healing +
+22247	荒廃と飢餓	Desolation and Famine
+22248	荒廃と飢餓＋	Desolation and Famine +
+22249	南瞻部洲の守護者	Guardian of Jambudvipa
+22250	南瞻部洲の守護者＋	Guardian of Jambudvipa +
+22261	Ｆインタリオ・スレイプニル	F Intaglio: Sleipnir
+22262	マテリアルピアシング（必中）	Material Piercing (Sure Hit)
+22263	タロットメイキング（必中）	Tarot Making (Sure Hit)
+22264	ソウルストーンメイキング（必中）	Soul Stone Making (Sure Hit)
+22266	煉丹の箱	Elixir Box
+22277	リングライセンス・白	Ring License (White)
+22278	リングライセンス・白	Ring License (White)
+22279	理の匣・参	Box of Logic - 3
+22520	・｣ﾏ会ｼ凪・Veronica	Cω3 - Veronica
+22526	蛇のイヤリング	Serpent Earrings
+22527	蛇のイヤリング	Serpent Earrings
+22529	躍動せし朱雀翼	Dynamic Vermilion Bird Wings
+22530	躍動せし朱雀翼	Dynamic Vermilion Bird Wings
+22531	シルキーピアス	Silky Pierce
+22532	シルキーピアス	Silky Pierce
+22533	隆盛なるギャザーイヤリング	Prosperous Gather Earrings
+22534	隆盛なるギャザーイヤリング	Prosperous Gather Earrings
+22535	黎明の耳飾（螺旋）	Dawn Earrings (Spiral)
+22536	黎明の耳飾（螺旋）	Dawn Earrings (Spiral)
+22539	パンプキンスマイル【火炎】	Pumpkin Smile [Fire]
+22540	パンプキンスマイル【氷結】	Pumpkin Smile [Ice]
+22541	パンプキンスマイル【電撃】	Pumpkin Smile [Electric]
+22542	パンプキンスマイル【衝撃】	Pumpkin Smile [Force]
+22543	パンプキンスマイル【魔力】	Pumpkin Smile [Magic]
+22544	パンプキンスマイル【火炎】	Pumpkin Smile [Fire]
+22545	パンプキンスマイル【氷結】	Pumpkin Smile [Ice]
+22546	パンプキンスマイル【電撃】	Pumpkin Smile [Electric]
+22547	パンプキンスマイル【衝撃】	Pumpkin Smile [Force]
+22548	パンプキンスマイル【魔力】	Pumpkin Smile [Magic]
+22549	未実装	(Unimplemented)
+22550	未実装	(Unimplemented)
+22557	ソウルブレイカーイヤリング・紫	Soul Breaker Earrings (Purple)
+22558	ソウルブレイカーイヤリング・紫α	Soul Breaker Earrings (Purple) α
+22559	ハートホープピアス	Heart Hope Pierce
+22560	ハートホープピアス	Heart Hope Pierce
+22561	ハートラックピアス	Heart Luck Pierce
+22562	ハートラックピアス	Heart Luck Pierce
+22563	ハートリビドーピアス	Heart Libido Pierce
+22564	ハートリビドーピアス	Heart Libido Pierce
+22565	ハートベノムピアス	Heart Venom Pierce
+22566	ハートベノムピアス	Heart Venom Pierce
+22567	パワーポスト	Power Post
+22568	ファストポスト	Fast Post
+22569	マジックポスト	Magic Post
+22570	帝王の叫び＋	Emperor's Shout +
+22571	帝王の叫び（破壊・仲魔）＋	Emperor's Shout (Destruction, Demon) +
+22572	孀婦の血涙	Widow's Tears of Blood
+22574	寡婦の血涙	Bereaved Wife's Tears of Blood
+22578	無告の血涙（仲魔）	Unspoken Tears of Blood (Demon)
+22581	神の伝令	Messenger of God
+22582	神の伝令＋	Messenger of God +
+22583	流血と戦争	Bloodshed and War
+22584	流血と戦争＋	Bloodshed and War +
+22585	西牛貨洲の守護者	Guardian of Western Godaniya
+22586	西牛貨洲の守護者＋	Guardian of Western Godaniya +
+22588	ホワイトノイズ＋１	White Noise +1
+22589	パワーポスト＋１	Power Post +1
+22590	飛天の破片＋１	Shard of Hiten +1
+22591	ファストポスト＋１	Fast Post +1
+22592	グリモワールアッシュ＋１	Grimoire Ash +1
+22593	マジックポスト＋１	Magic Post +1
+22594	ブレイブハート＋１	Brave Heart +1
+22595	ブレイブハート＋１	Brave Heart +1
+22596	ハートホープピアス＋１	Heart Hope Pierce +1
+22597	ハートホープピアス＋１	Heart Hope Pierce +1
+22600	ハートラックピアス＋１	Heart Luck Pierce +1
+22601	ハートラックピアス＋１	Heart Luck Pierce +1
+22602	ミスティックハート＋１	Mystic Heart +1
+22603	ミスティックハート＋１	Mystic Heart +1
+22604	ハートリビドーピアス＋１	Heart Libido Pierce +1
+22605	ハートリビドーピアス＋１	Heart Libido Pierce +1
+22606	ライオンハート＋１	Lion Heart +1
+22607	ライオンハート＋１	Lion Heart +1
+22608	ハートベノムピアス＋１	Heart Venom Pierce +1
+22609	ハートベノムピアス＋１	Heart Venom Pierce +1
+22610	冷徹のイヤリング・斬光＋１	Cold-Blooded Earrings (Slash Light) +1
+22611	冷徹のイヤリング・撃光＋１	Cold-Blooded Earrings (Strike Light) +1
+22612	冷徹のイヤリング・祷光＋１	Cold-Blooded Earrings (Prayer Light) +1
+22613	模索のイヤリング・斬光＋１	Seeking Earrings (Slash Light) +1
+22614	模索のイヤリング・撃光＋１	Seeking Earrings (Strike Light) +1
+22615	模索のイヤリング・祷光＋１	Seeking Earrings (Prayer Light) +1
+22616	憤怒のイヤリング・斬光＋１	Wrath Earrings (Slash Light) +1
+22617	憤怒のイヤリング・撃光＋１	Wrath Earrings (Strike Light) +1
+22618	憤怒のイヤリング・祷光＋１	Wrath Earrings (Prayer Light) +1
+23049	モーターベスト	Motor Vest
+23050	バンギャキャミソール	Bangya Camisole
+23069	一式・クールストライプ	Complete Set: Cool Stripe
+23158	プリングルズ　Ｔ－シャツ	Pringles T-Shirt
+23159	プリングルズ　Ｔ－シャツ	Pringles T-Shirt
+23180	カウンターテンプルナイトクロス	Counter Temple Knight Cloth
+23202	来良学園ブレザーβ	Raira Academy Blazer β
+23203	来良学園ブレザーβ	Raira Academy Blazer β
+23204	来良学園ブレザーα	Raira Academy Blazer α
+23205	来良学園ブレザーα	Raira Academy Blazer α
+23206	平和島静雄のバーテン服	Shizuo Heiwajima's Bartender Outfit
+23207	セルティのスーツ	Celty's Suit
+23208	平和島静雄のバーテン服α	Shizuo Heiwajima's Bartender Outfit α
+23209	セルティのスーツα	Celty's Suit α
+23218	折原臨也の服	Izaya Orihara's Outfit
+23220	折原臨也の服α	Izaya Orihara's Outfit α
+23221	贄川春奈のブレザーα	Haruna Niekawa's Blazer α
+23237	園原杏里のブレザー	Anri Sonohara's Blazer
+23238	紀田正臣のブレザーα	Masaomi Kida's Blazer α
+23239	園原杏里のブレザーα	Anri Sonohara's Blazer α
+23347	天王洲第一高校制服β	Tennozu First High School Uniform β
+23348	天王洲第一高校制服β	Tennozu First High School Uniform β
+23359	天王洲第一高校制服	Tennozu First High School Uniform
+23360	天王洲第一高校制服	Tennozu First High School Uniform
+23361	葬儀社の制服	Funeral Home Uniform
+23362	葬儀社の制服	Funeral Home Uniform
+23363	天王洲第一高校制服α	Tennozu First High School Uniform α
+23364	天王洲第一高校制服α	Tennozu First High School Uniform α
+23365	葬儀社の制服α	Funeral Home Uniform α
+23366	葬儀社の制服α	Funeral Home Uniform α
+23367	天王洲第一高校制服♯１	Tennozu First High School Uniform #1
+23368	天王洲第一高校制服♯１	Tennozu First High School Uniform #1
+23369	葬儀社の制服♯１	Funeral Home Uniform #1
+23370	葬儀社の制服♯１	Funeral Home Uniform #1
+23371	天王洲第一高校制服♯２	Tennozu First High School Uniform #2
+23372	天王洲第一高校制服♯２	Tennozu First High School Uniform #2
+23373	葬儀社の制服♯２	Funeral Home Uniform #2
+23374	葬儀社の制服♯２	Funeral Home Uniform #2
+23375	トナカイアバター・異	Reindeer Avatar (Variant)
+23376	サンタさんアバター・異	Santa Avatar (Variant)
+23377	天王洲第一高校制服♯３	Tennozu First High School Uniform #3
+23378	天王洲第一高校制服♯３	Tennozu First High School Uniform #3
+23379	葬儀社の制服♯３	Funeral Home Uniform #3
+23380	葬儀社の制服♯３	Funeral Home Uniform #3
+23422	True 軽子坂高校制服	True Karukozaka High School Uniform
+23423	True 軽子坂高校制服	True Karukozaka High School Uniform
+23445	オガミの衣	Ogami's Robes
+23508	ジャアクＦスーツ・ソウルメイト	Evil F Suit (Soul Mate)
+23509	ジャアクＦスーツ・ソウルメイト	Evil F Suit (Soul Mate)
+23516	スプラッタジャケット	Splatter Jacket
+23517	スプラッタシャツ	Splatter Shirt
+23534	リセプタージャケット	Receptor Jacket
+23535	アゴニストコート	Agonist Coat
+23538	カロルスーツα	Carol Suit α
+23539	カロルローブα	Carol Robe α
+23542	協調と繁栄のクロースα	Cloth of Harmony and Prosperity α
+23543	協調と繁栄のクロースα	Cloth of Harmony and Prosperity α
+23544	デビルＤｒコート・ソウルメイト	Devil Dr Coat (Soul Mate)
+23545	デビルＤｒコート・ソウルメイト	Devil Dr Coat (Soul Mate)
+23546	神道装束・祓神	Shinto Attire: Purifying God
+23548	神道装束・祓神α	Shinto Attire: Purifying God α
+23549	巫女装束・祓神α	Priestess Attire: Purifying God α
+23550	愚者の衣・逆	Fool's Clothes (Reverse)
+23551	愚者の衣・逆	Fool's Clothes (Reverse)
+23552	愚者の衣・逆α	Fool's Clothes (Reverse) α
+23553	愚者の衣・逆α	Fool's Clothes (Reverse) α
+23554	ディビジョンスーツⅡ	Division Suit II
+23555	ディビジョンスーツⅡ	Division Suit II
+23556	ディビジョンスーツⅡα	Division Suit II α
+23557	ディビジョンスーツⅡα	Division Suit II α
+23560	ラヴァーズスーツ・紫	Lovers Suit (Purple)
+23561	ラヴァーズドレス・紫	Lovers Dress (Purple)
+23562	ラヴァーズスーツ・紫α	Lovers Suit (Purple) α
+23563	ラヴァーズドレス・紫α	Lovers Dress (Purple) α
+23564	セドリックトップス	Cedric Top
+23565	ロングメイドドレス	Long Maid Dress
+23566	セドリックトップスα	Cedric Top α
+23567	ロングメイドドレスα	Long Maid Dress α
+23568	モードアバター	Mode Avatar
+23569	モードアバター	Mode Avatar
+23570	聖職者の衣・速	Priest's Clothes (Speed)
+23571	聖職者の衣・速	Priest's Clothes (Speed)
+23572	聖職者の衣・力	Priest's Clothes (Power)
+23573	聖職者の衣・力	Priest's Clothes (Power)
+23574	聖職者の衣・魔	Priest's Clothes (Magic)
+23575	聖職者の衣・魔	Priest's Clothes (Magic)
+23576	聖職者の衣（破壊）・速	Priest's Clothes (Destruction, Speed)
+23577	聖職者の衣（破壊）・速	Priest's Clothes (Destruction, Speed)
+23578	聖職者の衣（破壊）・力	Priest's Clothes (Destruction, Power)
+23579	聖職者の衣（破壊）・力	Priest's Clothes (Destruction, Power)
+23580	聖職者の衣（破壊）・魔	Priest's Clothes (Destruction, Magic)
+23581	聖職者の衣（破壊）・魔	Priest's Clothes (Destruction, Magic)
+23582	奏でる者の衣	Performer's Clothes
+23583	紡ぐ者の衣	Weaver's Clothes
+23584	奏でる者の衣α	Performer's Clothes α
+23585	紡ぐ者の衣α	Weaver's Clothes α
+23586	共同体社会支給の制服	Community-Issued Uniform
+23587	饗宴へと導く者のクロース	Cloth of the Banquet Guide
+23588	共同体社会支給の制服α	Community-Issued Uniform α
+23589	饗宴へと導く者のクロースα	Cloth of the Banquet Guide α
+23594	アナザーヒーロークロース	Another Hero Cloth
+23595	アナザーヒロインクロース	Another Heroine Cloth
+23596	True アナザーヒーロークロース	True Another Hero Cloth
+23597	True アナザーヒロインクロース	True Another Heroine Cloth
+23598	アナザーヒーロークロースα	Another Hero Cloth α
+23599	アナザーヒロインクロースα	Another Heroine Cloth α
+23600	ボルディアバター	Boldia Avatar
+23601	ボルディアバター	Boldia Avatar
+23602	ボルディアバターα	Boldia Avatar α
+23603	ボルディアバターα	Boldia Avatar α
+23606	死神の衣・逆α	Reaper's Clothes (Reverse) α
+23607	死神の衣・逆α	Reaper's Clothes (Reverse) α
+23608	オーメンジャケット・黒	Omen Jacket (Black)
+23609	オーメンドレス・黒	Omen Dress (Black)
+23610	オーメンジャケット・黒α	Omen Jacket (Black) α
+23611	オーメンドレス・黒α	Omen Dress (Black) α
+23624	メンナクＴシャツ	Menace T-Shirt
+23625	メンナクＴシャツ	Menace T-Shirt
+23626	ブラックＧｕｙｓアバター	Black Guys Avatar
+23627	ブラックＧｕｙｓアバター	Black Guys Avatar
+23628	ブラックレイニーアバター	Black Rainy Avatar
+23629	ブラックレイニーアバター	Black Rainy Avatar
+23630	Ｒｘ：ブレスドスーツ	Rx: Blessed Suit
+23631	Ｒｘ：ブレスドドレス	Rx: Blessed Dress
+23632	Ｄ３・ブレスドスーツ	D3 Blessed Suit
+23633	Ｄ３・ブレスドドレス	D3 Blessed Dress
+23634	ブラックＧｕｙｓアバターα	Black Guys Avatar α
+23635	ブラックＧｕｙｓアバターα	Black Guys Avatar α
+23636	血塗られし韻士のクロース・異	Cloth of the Blood-Stained Rhymer (Variant)
+23637	拝神せし者のクロース・異	Cloth of the God Worshipper (Variant)
+23638	Ｒｘ：カレッジジャケット・白	Rx: College Jacket - White
+23639	Ｒｘ：カレッジシャツ・白	Rx: College Shirt - White
+23640	Ｄ３・カレッジジャケット・白	D3 College Jacket - White
+23641	Ｄ３・カレッジシャツ・白	D3 College Shirt - White
+23642	Ｒｘ：カレッジジャケット・黒	Rx: College Jacket - Black
+23643	Ｒｘ：カレッジシャツ・黒	Rx: College Shirt - Black
+23644	Ｄ３・カレッジジャケット・黒	D3 College Jacket - Black
+23645	Ｄ３・カレッジシャツ・黒	D3 College Shirt - Black
+23648	夜叉丸胴衣α	Yashamaru Armor α
+23649	夜叉丸胴衣α	Yashamaru Armor α
+23650	サマーズビートシャツα	Summer's Beat Shirt α
+23651	サマーズビートワンピースα	Summer's Beat One-Piece α
+23652	Ｒｘ：メディックトップス	Rx: Medic Top
+23653	Ｒｘ：メディックローブ	Rx: Medic Robe
+23654	Ｄ３・メディックトップス	D3 Medic Top
+23655	Ｄ３・メディックローブ	D3 Medic Robe
+23656	デビルパイレーツコート・青	Devil Pirate Coat (Blue)
+23657	デビルパイレーツベスト・青	Devil Pirate Vest (Blue)
+23658	デビルパイレーツコート・青α	Devil Pirate Coat (Blue) α
+23659	デビルパイレーツベスト・青α	Devil Pirate Vest (Blue) α
+23660	レゾネータークロース	Resonator Cloth
+23661	レゾネータークロース	Resonator Cloth
+23662	ロイファースーツ	Royfer Suit
+23663	ロイファースーツ	Royfer Suit
+23664	ロイファースーツα	Royfer Suit α
+23665	ロイファースーツα	Royfer Suit α
+23668	マジシャントップスα	Magician Top α
+23669	マジシャントップスα	Magician Top α
+23670	シュバルツアース	Schwarz Earth
+23671	シュバルツアース	Schwarz Earth
+23672	オニビトの衣	Onibito's Clothes
+23673	オニビトの衣	Onibito's Clothes
+23674	オニビトの衣α	Onibito's Clothes α
+23675	オニビトの衣α	Onibito's Clothes α
+23676	フォースジャケット・裏	Force Jacket (Reverse)
+23677	フォースジャケット・裏	Force Jacket (Reverse)
+23678	フォースジャケット・裏α	Force Jacket (Reverse) α
+23679	フォースジャケット・裏α	Force Jacket (Reverse) α
+23680	アリス十番推しのＴシャツ	Alice No. 10 Fan T-Shirt
+23681	アリス十番推しのＴシャツ	Alice No. 10 Fan T-Shirt
+23682	スチームガールズ推しのＴシャツ	Steam Girls Fan T-Shirt
+23683	スチームガールズ推しのＴシャツ	Steam Girls Fan T-Shirt
+23692	Ｒｘ：奉武羽織・赤	Rx: Martial Offering Haori (Red)
+23693	Ｒｘ：奉舞神衣・赤	Rx: Dance Offering Divine Robe (Red)
+23694	Ｒｘ：奉武羽織・白	Rx: Martial Offering Haori (White)
+23695	Ｒｘ：奉舞神衣・黒	Rx: Dance Offering Divine Robe (Black)
+23696	Ｒｘ：奉武羽織・青	Rx: Martial Offering Haori (Blue)
+23697	Ｒｘ：奉舞神衣・水	Rx: Dance Offering Divine Robe (Light Blue)
+23698	Ｄ３・奉武羽織・赤	D3 Martial Offering Haori (Red)
+23699	Ｄ３・奉舞神衣・赤	D3 Dance Offering Divine Robe (Red)
+23700	Ｄ３・奉武羽織・白	D3 Martial Offering Haori (White)
+23701	Ｄ３・奉舞神衣・黒	D3 Dance Offering Divine Robe (Black)
+23702	Ｄ３・奉武羽織・青	D3 Martial Offering Haori (Blue)
+23703	Ｄ３・奉舞神衣・水	D3 Dance Offering Divine Robe (Light Blue)
+23704	創造の衣（４Ｇａｍｅｒ）	Clothes of Creation (4Gamer)
+23705	創造の衣（４Ｇａｍｅｒ）	Clothes of Creation (4Gamer)
+23708	月のクロース・逆	Moon Cloth (Reverse)
+23709	月のクロース・逆	Moon Cloth (Reverse)
+23710	月のクロース・逆α	Moon Cloth (Reverse) α
+23711	月のクロース・逆α	Moon Cloth (Reverse) α
+23718	ハルシオンスーツ	Halcyon Suit
+23719	ハルシオンドレス	Halcyon Dress
+23720	ハルシオンスーツα	Halcyon Suit α
+23721	ハルシオンドレスα	Halcyon Dress α
+23722	ソウルブレイカースーツ・紫	Soul Breaker Suit (Purple)
+23723	ソウルブレイカースーツ・紫	Soul Breaker Suit (Purple)
+23724	Ｒｘ：烈龍袍衣	Rx: Fierce Dragon Robe
+23725	Ｒｘ：烈龍旗袍	Rx: Fierce Dragon Qipao
+23726	Ｒｘ：武龍袍衣	Rx: Martial Dragon Robe
+23727	Ｒｘ：武龍旗袍	Rx: Martial Dragon Qipao
+23728	Ｒｘ：大龍袍衣	Rx: Great Dragon Robe
+23729	Ｒｘ：大龍旗袍	Rx: Great Dragon Qipao
+23730	Ｄ３・烈龍袍衣	D3 Fierce Dragon Robe
+23731	Ｄ３・烈龍旗袍	D3 Fierce Dragon Qipao
+23732	Ｄ３・武龍袍衣	D3 Martial Dragon Robe
+23733	Ｄ３・武龍旗袍	D3 Martial Dragon Qipao
+23734	Ｄ３・大龍袍衣	D3 Great Dragon Robe
+23735	Ｄ３・大龍旗袍	D3 Great Dragon Qipao
+23736	ソウルブレイカースーツ・紫α	Soul Breaker Suit (Purple) α
+23737	ソウルブレイカースーツ・紫α	Soul Breaker Suit (Purple) α
+23738	リゾルトクロースⅡα	Resolute Cloth II α
+23739	リゾルトクロースⅡα	Resolute Cloth II α
+23740	セデュラスクロースⅡα	Sedulous Cloth II α
+23741	セデュラスクロースⅡα	Sedulous Cloth II α
+23742	フェアネスクロースⅡα	Fairness Cloth II α
+23743	フェアネスクロースⅡα	Fairness Cloth II α
+23745	彩狐のジャケット	Painted Fox Jacket
+23754	ライディングクロース・赤α	Riding Clothes (Red) α
+23755	ライディングクロース・赤α	Riding Clothes (Red) α
+23756	ＡＭＰ旧制服	AMP Old Uniform
+23757	ＡＭＰ旧制服＋１	AMP Old Uniform +1
+23758	ＡＭＰ旧制服＋２	AMP Old Uniform +2
+23759	ＡＭＰ新制服	AMP New Uniform
+23760	機動警察ハードスーツ・ボディ	Mobile Police Hard Suit (Body)
+23763	剛毅のジャケットα	Strong-Willed Jacket α
+23764	剛毅のジャケットα	Strong-Willed Jacket α
+23765	五道のノスタルジアスーツ	Godo's Nostalgia Suit
+23766	五道のノスタルジアスーツ	Godo's Nostalgia Suit
+23767	ＡＭＰ新制服α	AMP New Uniform α
+23768	機動警察ハードスーツ・ボディα	Mobile Police Hard Suit (Body) α
+23769	血鶴の衣・異	Blood Crane Clothes (Alt)
+23770	オガミの衣・異	Ogami's Clothes (Alt)
+23771	ディテクティブインバネス・白	Detective Inverness (White)
+23772	ディテクティブインバネス・白	Detective Inverness (White)
+23773	ディテクティブインバネス・白α	Detective Inverness (White) α
+23774	ディテクティブインバネス・白α	Detective Inverness (White) α
+23775	ヤングソウルアバター・緑	Young Soul Avatar (Green)
+23776	ヤングソウルアバター・緑	Young Soul Avatar (Green)
+23777	ヤングソウルアバター・緑α	Young Soul Avatar (Green) α
+23778	ヤングソウルアバター・緑α	Young Soul Avatar (Green) α
+23779	アーミーボディ	Army Body
+23780	アーミーボディ	Army Body
+23781	アーミーボディα	Army Body α
+23782	アーミーボディα	Army Body α
+23785	バウンサートップスα	Bouncer Top α
+23786	バウンサートップスα	Bouncer Top α
+23787	ヤギヌマの衣	Yaginuma's Clothes
+23788	親切なデビルバスターの衣	Kind Devil Buster's Clothes
+23789	ラヴァーズスーツ・青＋	Lovers Suit (Blue)+
+23790	ラヴァーズドレス・青＋	Lovers Dress (Blue)+
+23797	統制の衣（４Ｇａｍｅｒ）	Clothes of Control (4Gamer)
+23798	統制の衣（４Ｇａｍｅｒ）	Clothes of Control (4Gamer)
+23799	悪魔のクロース	Demon Cloth
+23800	悪魔のクロース	Demon Cloth
+23801	悪魔のクロースα	Demon Cloth α
+23802	悪魔のクロースα	Demon Cloth α
+23803	軽子坂ブレザー・ソウルメイト	Karukozaka HS Blazer (Soulmate)
+23804	軽子坂ブレザー・ソウルメイト	Karukozaka HS Blazer (Soulmate)
+23807	夜叉丸胴衣・白α	Yashamaru Armor (White) α
+23808	夜叉丸胴衣・白α	Yashamaru Armor (White) α
+23819	アナザーヒーロークロース異α	Another Hero Clothes (Alt) α
+23820	アナザーヒロインクロース異α	Another Heroine Clothes (Alt) α
+23821	True アナザーヒーロークロース異	True Another Hero Clothes (Alt)
+23822	True アナザーヒロインクロース異	True Another Heroine Clothes (Alt)
+23823	刑死者のトップス	Hanged Man's Top
+23824	刑死者のトップス	Hanged Man's Top
+23825	刑死者のトップスα	Hanged Man's Top α
+23826	刑死者のトップスα	Hanged Man's Top α
+23831	フルネスジャケット・黒	Fullness Jacket (Black)
+23832	フルネストップス・黒	Fullness Top (Black)
+23833	フルネスジャケット・黒α	Fullness Jacket (Black) α
+23834	フルネストップス・黒α	Fullness Top (Black) α
+23839	教皇の衣・逆	Pope's Clothes (Reverse)
+23840	女教皇の衣・逆	High Priestess Clothes (Reverse)
+23841	True 教皇の衣・逆	True Pope's Clothes (Reverse)
+23842	True 女教皇の衣・逆	True High Priestess Clothes (Reverse)
+23843	教皇の衣・逆α	Pope's Clothes (Reverse) α
+23844	女教皇の衣・逆α	High Priestess Clothes (Reverse) α
+23845	セブンスブレザー・裏	Seventh Blazer (Reverse)
+23846	セブンスセーラー・裏	Seventh Sailor (Reverse)
+23847	ディビジョンアバター・異	Division Avatar (Alt)
+23848	ディビジョンアバター・異	Division Avatar (Alt)
+23849	スヴァリントップス	Svalinn Top
+23850	スヴァリントップス	Svalinn Top
+23851	スヴァリントップス・裏	Svalinn Top (Reverse)
+23852	スヴァリントップス・裏	Svalinn Top (Reverse)
+23853	ジャアクＦスーツ・デジタラクト	Jaaku F Suit (Digitalact)
+23854	ジャアクＦスーツ・デジタラクト	Jaaku F Suit (Digitalact)
+23859	共同体社会支給の制服・異	Commune Society Issue Uniform (Alt)
+23860	饗宴へと導く者のクロース・異	Cloth of the One Who Leads to the Feast (Alt)
+23861	親切なデビルバスターの衣・異	Kind Devil Buster's Clothes (Alt)
+23862	ヤギヌマの衣・異	Yaginuma's Clothes (Alt)
+23869	セデュラスクロースⅢα	Sedulous Cloth III α
+23870	セデュラスクロースⅢα	Sedulous Cloth III α
+23875	フェアネスクロースⅢα	Fairness Cloth III α
+23876	フェアネスクロースⅢα	Fairness Cloth III α
+23881	リゾルトクロースⅢα	Resolute Cloth III α
+23882	リゾルトクロースⅢα	Resolute Cloth III α
+23887	デビルドクターアバター・黒	Devil Doctor Avatar (Black)
+23888	デビルドクターアバター・黒	Devil Doctor Avatar (Black)
+23891	ディヴァインアーマー・ハルモニア	Divine Armor (Harmonia)
+23892	ディヴァインアーマー・ハルモニア	Divine Armor (Harmonia)
+23893	フロストスーツ・デジタラクト	Frost Suit (Digitalact)
+23894	フロストスーツ・デジタラクト	Frost Suit (Digitalact)
+23895	秋赤音の衣	Akiakane's Outfit
+23896	秋赤音の衣	Akiakane's Outfit
+23897	秋赤音の衣α	Akiakane's Outfit α
+23898	秋赤音の衣α	Akiakane's Outfit α
+23899	エヴェンオーバー・紫	Even Over (Purple)
+23900	サイブワンピース・紫	Cybe Dress (Purple)
+23901	エヴェンオーバー・紫α	Even Over (Purple) α
+23902	サイブワンピース・紫α	Cybe Dress (Purple) α
+23903	サロンコート・青	Salon Coat (Blue)
+23904	サロンドレス・青	Salon Dress (Blue)
+23905	サロンコート・青α	Salon Coat (Blue) α
+23906	サロンドレス・青α	Salon Dress (Blue) α
+23907	キュリオスクロース	Curious Cloth
+23908	キュリオスクロースα	Curious Cloth α
+23909	キュリオスクロース	Curious Cloth
+23910	キュリオスクロースα	Curious Cloth α
+23913	モデスティアバターα	Modesty Avatar α
+23917	フォースジャケット・黒	Force Jacket (Black)
+23918	フォースジャケット・黒	Force Jacket (Black)
+23919	フォースジャケット・黒α	Force Jacket (Black) α
+23920	フォースジャケット・黒α	Force Jacket (Black) α
+23921	スノウエスケープアバター	Snow Escape Avatar
+23922	スノウエスケープアバター	Snow Escape Avatar
+23923	デビルカレッジ	Devil College
+23924	デビルカレッジ	Devil College
+23925	デビルカレッジα	Devil College α
+23926	デビルカレッジα	Devil College α
+23927	乱破鎖帷子・参	Ranpa Chain Mail III
+23928	乱破鎖帷子・参	Ranpa Chain Mail III
+23929	フロストスーツ・デジタラクト＋	Frost Suit (Digitalact)+
+23930	フロストスーツ・デジタラクト＋	Frost Suit (Digitalact)+
+23931	ポカポカセーター・白	Cozy Sweater (White)
+23932	ポカポカセーター・白	Cozy Sweater (White)
+23933	ポカポカセーター・黒	Cozy Sweater (Black)
+23934	ポカポカセーター・黒	Cozy Sweater (Black)
+23937	ビギナーズ軽子坂高校ブレザー	Beginner's Karukozaka HS Blazer
+23938	ビギナーズ軽子坂高校ブレザー	Beginner's Karukozaka HS Blazer
+23939	ヤングソウルアバター・青α	Young Soul Avatar (Blue) α
+23940	ヤングソウルアバター・青α	Young Soul Avatar (Blue) α
+23945	レガシーアーマーα	Legacy Armor α
+23946	真紅のワンピースα	Crimson Dress α
+23947	オニビトの衣・赤	Onibito's Clothes (Red)
+23948	オニビトの衣・赤	Onibito's Clothes (Red)
+23949	オニビトの衣・赤α	Onibito's Clothes (Red) α
+23950	オニビトの衣・赤α	Onibito's Clothes (Red) α
+23951	信仰の装束	Garb of Faith
+23952	信仰の装束	Garb of Faith
+23953	意志の装束	Garb of Will
+23954	意志の装束	Garb of Will
+23955	放埓の装束	Garb of Licentiousness
+23956	放埓の装束	Garb of Licentiousness
+23957	ハイロウコート白・悪心	Hi-Low Coat (White, Evil Heart)
+23958	ハイロウコート白・悪心	Hi-Low Coat (White, Evil Heart)
+23959	ハイロウコート黒・悪心	Hi-Low Coat (Black, Evil Heart)
+23960	ハイロウコート黒・悪心	Hi-Low Coat (Black, Evil Heart)
+23961	ジョーイアバター・異	Joey Avatar (Alt)
+23962	ジョーイアバター・異	Joey Avatar (Alt)
+23963	ジョーイアバター・異α	Joey Avatar (Alt) α
+23964	ジョーイアバター・異α	Joey Avatar (Alt) α
+23965	ブライダルアバター・深紅	Bridal Avatar (Crimson)
+23966	ブライダルアバター・深紅	Bridal Avatar (Crimson)
+23967	ブライダルアバター・深紅α	Bridal Avatar (Crimson) α
+23968	ブライダルアバター・深紅α	Bridal Avatar (Crimson) α
+23969	デビルカレッジ（ＷＭ）	Devil College (WM)
+23970	デビルカレッジ（ＷＭ）	Devil College (WM)
+23971	オーメンジャケット・紫	Omen Jacket (Purple)
+23972	オーメンドレス・紫	Omen Dress (Purple)
+23973	オーメンジャケット・紫α	Omen Jacket (Purple) α
+23974	オーメンドレス・紫α	Omen Dress (Purple) α
+23975	洞察せし者の衣	Clothes of the Insightful
+23976	無垢なる者の衣	Clothes of the Innocent
+23977	片翼の洞察せし者の衣	Clothes of the One-Winged Insightful
+23978	双翼持つ無垢なる者の衣	Clothes of the Twin-Winged Innocent
+23979	洞察せし者の衣α	Clothes of the Insightful α
+23980	無垢なる者の衣α	Clothes of the Innocent α
+23981	歩み続ける者の衣	Clothes of the Ceaseless Walker
+23982	歩み続ける者の衣	Clothes of the Ceaseless Walker
+23983	紋様宿す歩み続ける者の衣	Clothes of the Crest-Bearing Ceaseless Walker
+23984	紋様宿す歩み続ける者の衣	Clothes of the Crest-Bearing Ceaseless Walker
+23985	歩み続ける者の衣α	Clothes of the Ceaseless Walker α
+23986	歩み続ける者の衣α	Clothes of the Ceaseless Walker α
+23993	愚者の衣・黄α	Fool's Clothes (Yellow) α
+23994	愚者の衣・黄α	Fool's Clothes (Yellow) α
+23997	カオスシェル	Chaos Shell
+23998	カオスシェル	Chaos Shell
+23999	ライトシェル	Light Shell
+24000	悪魔のクロース・逆	Demon Cloth (Reverse)
+24016	モーターパンツ	Motor Pants
+24017	バンギャミニスカート	Bangya Miniskirt
+24082	来良学園スラックスβ	Raira Academy Slacks β
+24083	来良学園スカートβ	Raira Academy Skirt β
+24084	来良学園スラックスα	Raira Academy Slacks α
+24085	来良学園スカートα	Raira Academy Skirt α
+24087	贄川春奈のスカートα	Haruna Niekawa's Skirt α
+24097	園原杏里のスカート	Anri Sonohara's Skirt
+24098	紀田正臣のスラックスα	Masaomi Kida's Slacks α
+24099	園原杏里のスカートα	Anri Sonohara's Skirt α
+24179	スプラッタカーゴパンツ	Splatter Cargo Pants
+24180	スプラッタパンツ	Splatter Pants
+24183	リセプタースラックス	Receptor Slacks
+24185	カロルスラックスα	Carol Slacks α
+24187	協調と繁栄のスラックスα	Slacks of Harmony and Prosperity α
+24190	ロイファーボトムス	Royfer Bottoms
+24191	ロイファーボトムス	Royfer Bottoms
+24192	聖職者の下衣・速	Cleric's Bottoms (Speed)
+24193	聖職者の下衣・速	Cleric's Bottoms (Speed)
+24194	聖職者の下衣・力	Cleric's Bottoms (Power)
+24195	聖職者の下衣・力	Cleric's Bottoms (Power)
+24196	聖職者の下衣・魔	Cleric's Bottoms (Magic)
+24197	聖職者の下衣・魔	Cleric's Bottoms (Magic)
+24198	聖職者の下衣（破壊）・速	Cleric's Bottoms (Destruction, Speed)
+24199	聖職者の下衣（破壊）・速	Cleric's Bottoms (Destruction, Speed)
+24200	聖職者の下衣（破壊）・力	Cleric's Bottoms (Destruction, Power)
+24201	聖職者の下衣（破壊）・力	Cleric's Bottoms (Destruction, Power)
+24202	聖職者の下衣（破壊）・魔	Cleric's Bottoms (Destruction, Magic)
+24203	聖職者の下衣（破壊）・魔	Cleric's Bottoms (Destruction, Magic)
+24206	死神の下衣・逆α	Reaper's Undergarments (Reverse) α
+24207	死神の下衣・逆α	Reaper's Undergarments (Reverse) α
+24208	オーメンスラックス・黒	Omen Slacks (Black)
+24209	オーメンスラックス・黒α	Omen Slacks (Black) α
+24210	Ｒｘ：ブレスドスラックス	Rx: Blessed Slacks
+24211	Ｄ３・ブレスドスラックス	D3 Blessed Slacks
+24212	Ｒｘ：カレッジスラックス・白	Rx: College Slacks (White)
+24213	Ｒｘ：カレッジスカート・白	Rx: College Skirt (White)
+24214	Ｄ３・カレッジスラックス・白	D3 College Slacks (White)
+24215	Ｄ３・カレッジスカート・白	D3 College Skirt (White)
+24216	Ｒｘ：カレッジスラックス・黒	Rx: College Slacks (Black)
+24217	Ｒｘ：カレッジスカート・黒	Rx: College Skirt (Black)
+24218	Ｄ３・カレッジスラックス・黒	D3 College Slacks (Black)
+24219	Ｄ３・カレッジスカート・黒	D3 College Skirt (Black)
+24222	夜叉丸下衣α	Yashamaru Bottoms α
+24223	夜叉丸下衣α	Yashamaru Bottoms α
+24224	サマーズビートデニムパンツα	Summer's Beat Denim Pants α
+24225	Ｒｘ：メディックボトムス	Rx: Medic Bottoms
+24226	Ｄ３・メディックボトムス	D3 Medic Bottoms
+24227	デビルパイレーツパンツ・青	Devil Pirates Pants (Blue)
+24228	デビルパイレーツパンツ・青α	Devil Pirates Pants (Blue) α
+24229	ロイファーボトムスα	Royfer Bottoms α
+24230	ロイファーボトムスα	Royfer Bottoms α
+24231	フォースボトムス・裏	Force Bottoms (Reverse)
+24232	フォースボトムス・裏	Force Bottoms (Reverse)
+24233	フォースボトムス・裏α	Force Bottoms (Reverse) α
+24234	フォースボトムス・裏α	Force Bottoms (Reverse) α
+24237	ロリポップな下着α	Lollipop Underwear α
+24238	ロリポップな下着α	Lollipop Underwear α
+24239	Ｒｘ：奉武袴・赤	Rx: Martial Offering Hakama (Red)
+24240	Ｒｘ：奉舞袴・赤	Rx: Dance Offering Hakama (Red)
+24241	Ｒｘ：奉武袴・白	Rx: Martial Offering Hakama (White)
+24242	Ｒｘ：奉舞袴・黒	Rx: Dance Offering Hakama (Black)
+24243	Ｒｘ：奉武袴・青	Rx: Martial Offering Hakama (Blue)
+24244	Ｒｘ：奉舞袴・水	Rx: Dance Offering Hakama (Light Blue)
+24245	Ｄ３・奉武袴・赤	D3 Martial Offering Hakama (Red)
+24246	Ｄ３・奉舞袴・赤	D3 Dance Offering Hakama (Red)
+24247	Ｄ３・奉武袴・白	D3 Martial Offering Hakama (White)
+24248	Ｄ３・奉舞袴・黒	D3 Dance Offering Hakama (Black)
+24249	Ｄ３・奉武袴・青	D3 Martial Offering Hakama (Blue)
+24250	Ｄ３・奉舞袴・水	D3 Dance Offering Hakama (Light Blue)
+24251	月のボトムス・逆	Moon Bottoms (Reverse)
+24252	月のボトムス・逆	Moon Bottoms (Reverse)
+24253	月のボトムス・逆α	Moon Bottoms (Reverse) α
+24254	月のボトムス・逆α	Moon Bottoms (Reverse) α
+24255	Ｒｘ：烈龍下衣	Rx: Fierce Dragon Bottoms
+24256	Ｒｘ：武龍下衣	Rx: Martial Dragon Bottoms
+24257	Ｒｘ：大龍下衣	Rx: Great Dragon Bottoms
+24258	Ｄ３・烈龍下衣	D3 Fierce Dragon Bottoms
+24259	Ｄ３・武龍下衣	D3 Martial Dragon Bottoms
+24260	Ｄ３・大龍下衣	D3 Great Dragon Bottoms
+24262	彩狐のスカート	Painted Fox Skirt
+24265	剛毅のボトムスα	Strong-Willed Bottoms α
+24266	剛毅のスカートα	Strong-Willed Skirt α
+24267	五道のノスタルジアスラックス	Godo's Nostalgia Slacks
+24268	五道のノスタルジアスラックス	Godo's Nostalgia Slacks
+24269	血鶴の下着	Blood Crane Underwear
+24270	オガミの下着	Ogami's Underwear
+24271	血鶴の下着・異	Blood Crane Underwear (Alt)
+24272	オガミの下着・異	Ogami's Underwear (Alt)
+24273	ディテクティブスラックス・白	Detective Slacks (White)
+24274	ディテクティブスカート・白	Detective Skirt (White)
+24275	ディテクティブスラックス・白α	Detective Slacks (White) α
+24276	ディテクティブスカート・白α	Detective Skirt (White) α
+24277	アーミーボトムス	Army Bottoms
+24278	アーミーボトムス	Army Bottoms
+24279	アーミーボトムスα	Army Bottoms α
+24280	アーミーボトムスα	Army Bottoms α
+24283	バウンサーボトムスα	Bouncer Bottoms α
+24284	バウンサーボトムスα	Bouncer Bottoms α
+24291	軽子坂スラックス・ソウルメイト	Karukozaka HS Slacks (Soulmate)
+24292	軽子坂スカート・ソウルメイト	Karukozaka HS Skirt (Soulmate)
+24295	夜叉丸下衣・白α	Yashamaru Bottoms (White) α
+24296	夜叉丸下衣・白α	Yashamaru Bottoms (White) α
+24297	刑死者のボトムス	Hanged Man's Bottoms
+24298	刑死者のボトムス	Hanged Man's Bottoms
+24299	刑死者のボトムスα	Hanged Man's Bottoms α
+24300	刑死者のボトムスα	Hanged Man's Bottoms α
+24301	フルネスボトムス・黒	Fullness Bottoms (Black)
+24302	フルネススカート・黒	Fullness Skirt (Black)
+24303	フルネスボトムス・黒α	Fullness Bottoms (Black) α
+24304	フルネススカート・黒α	Fullness Skirt (Black) α
+24305	フレッシュスラックス	Fresh Slacks
+24306	フレッシュホットパンツ	Fresh Hot Pants
+24307	フレッシュスラックスα	Fresh Slacks α
+24308	フレッシュホットパンツα	Fresh Hot Pants α
+24309	セブンススラックス・裏	Seventh Slacks (Reverse)
+24310	セブンススカート・裏	Seventh Skirt (Reverse)
+24311	スヴァリンボトムス	Svalinn Bottoms
+24312	スヴァリンボトムス	Svalinn Bottoms
+24313	スヴァリンボトムス・裏	Svalinn Bottoms (Reverse)
+24314	スヴァリンボトムス・裏	Svalinn Bottoms (Reverse)
+24321	ヴァイスボトムスα	Weiss Bottoms α
+24322	ヴァイスボトムスα	Weiss Bottoms α
+24328	エヴェンスラックス・紫	Even Slacks (Purple)
+24329	エヴェンスラックス・紫α	Even Slacks (Purple) α
+24330	サロンスラックス・青	Salon Slacks (Blue)
+24331	サロンスカート・青	Salon Skirt (Blue)
+24332	サロンスラックス・青α	Salon Slacks (Blue) α
+24333	サロンスカート・青α	Salon Skirt (Blue) α
+24335	フォースボトムス・黒	Force Bottoms (Black)
+24336	フォースボトムス・黒	Force Bottoms (Black)
+24337	フォースボトムス・黒α	Force Bottoms (Black) α
+24338	フォースボトムス・黒α	Force Bottoms (Black) α
+24343	ビギナーズ軽子坂高校スラックス	Beginner's Karukozaka HS Slacks
+24344	ビギナーズ軽子坂高校スカート	Beginner's Karukozaka HS Skirt
+24345	ハイロウボトムス白・悪心	Hi-Low Bottoms (White, Evil Heart)
+24346	ハイロウスカート白・悪心	Hi-Low Skirt (White, Evil Heart)
+24347	ハイロウボトムス黒・悪心	Hi-Low Bottoms (Black, Evil Heart)
+24348	ハイロウスカート黒・悪心	Hi-Low Skirt (Black, Evil Heart)
+24349	オーメンスラックス・紫	Omen Slacks (Purple)
+24350	オーメンスラックス・紫α	Omen Slacks (Purple) α
+24355	ファンスレート	Fan Slate
+24356	ファンスレート	Fan Slate
+24357	ファンブランシュ	Fan Blanche
+24358	ファンブランシュ	Fan Blanche
+24363	ピュルテスラックス	Pulte Slacks
+24364	バウンサーボトムス・赤	Bouncer Bottoms (Red)
+24365	バウンサーボトムス・赤	Bouncer Bottoms (Red)
+24366	統治のスラックス・ＥＸ	Slacks of Governance (EX)
+24367	神秘のスカート・ＥＸ	Skirt of Mystery (EX)
+24368	悪魔のクロース・逆	Demon Cloth (Reverse)
+24377	未登場アイテム	Unreleased Item
+24378	未登場アイテム	Unreleased Item
+24387	ソウルリンカーボトムス・黄	Soul Linker Bottoms (Yellow)
+24388	ソウルリンカーボトムス・黄	Soul Linker Bottoms (Yellow)
+24389	約束と運命のスラックス	Slacks of Promise and Fate
+24390	約束と運命のクロース	Cloth of Promise and Fate
+25020	Ａ．Ｒ．Ｃ．ｖｅｒⅡ【片手剣】	A.R.C Ver. II (1-Handed Sword)
+25021	Ａ．Ｒ．Ｃ．ｖｅｒⅡ【両手剣】	A.R.C Ver. II (2-Handed Sword)
+25022	Ａ．Ｒ．Ｃ．ｖｅｒⅡ【突剣】	A.R.C Ver. II (Thrust Sword)
+25023	Ａ．Ｒ．Ｃ．ｖｅｒⅡ【槍】	A.R.C Ver. II (Spear)
+25024	Ａ．Ｒ．Ｃ．ｖｅｒⅡ【鈍器】	A.R.C Ver. II (Primitive weapon)
+25025	Ａ．Ｒ．Ｃ．ｖｅｒⅡ【斧】	A.R.C Ver. II (Axe)
+25026	Ａ．Ｒ．Ｃ．ｖｅｒⅡ【拳闘】	A.R.C Ver. II (Martial Arts)
+25027	Ａ．Ｒ．Ｃ．ｖｅｒⅢ【片手剣】	A.R.C Ver. III (1-Handed Sword)
+25028	Ａ．Ｒ．Ｃ．ｖｅｒⅢ【両手剣】	A.R.C Ver. III (2-Handed Sword)
+25029	Ａ．Ｒ．Ｃ．ｖｅｒⅢ【突剣】	A.R.C Ver. III (Thrust Sword)
+25030	Ａ．Ｒ．Ｃ．ｖｅｒⅢ【槍】	A.R.C Ver. III (Spear)
+25031	Ａ．Ｒ．Ｃ．ｖｅｒⅢ【鈍器】	A.R.C Ver. III (Primitive weapon)
+25032	Ａ．Ｒ．Ｃ．ｖｅｒⅢ【斧】	A.R.C Ver. III (Axe)
+25033	Ａ．Ｒ．Ｃ．ｖｅｒⅢ【拳闘】	A.R.C Ver. III (Martial Arts)
+25039	スプリングエンブレス・ミドル	Spring Embrace (Middle)
+25040	サマーエンブレス・ミドル	Summer Embrace (Middle)
+25041	オータムエンブレス・ミドル	Autumn Embrace (Middle)
+25042	ウィンターエンブレス・ミドル	Winter Embrace (Middle)
+25043	ウィザーエンブレス・ミドル	Whither Embrace (Middle)
+25044	スプリングエンブレス・ハイ	Spring Embrace (High)
+25045	サマーエンブレス・ハイ	Summer Embrace (High)
+25046	オータムエンブレス・ハイ	Autumn Embrace (High)
+25047	ウィンターエンブレス・ハイ	Winter Embrace (High)
+25048	ウィザーエンブレス・ハイ	Whither Embrace (High)
+25067	櫛名田比売の大切な櫛（近接）	Kushinada-Hime Precious Comb (Close-Range)
+25068	櫛名田比売の大切な櫛（射撃）	Kushinada-Hime Precious Comb (Long-Range)
+25123	蛇のタリスマン	Snake Talisman
+25127	隆盛なるヘキサグラムシンボル	Flourishing Hexagram Symbol
+25140	金色に輝く竪琴	Golden Shining Lyre
+25141	漆黒に染まる竪琴	Jet-Black Lyre
+25142	慈愛のタリスマン＋１	Talisman of Love +1
+25143	支配のタリスマン＋１	Talisman of Authority +1
+25144	異端のタリスマン＋１	Talisman of the Outcast +1
+25145	浮揚のタリスマン＋１	Talisman of Levitation +1
+25146	使徒のタリスマン＋１	Talisman of the Apostle +1
+25147	昇華のタリスマン＋１	Talisman of Sublimation +1
+25148	鎮魂のタリスマン＋１	Talisman of the Requiem +1
+25149	凶兆のタリスマン＋１	Talisman of Evil +1
+25150	大地のタリスマン＋１	Talisman of the Land +1
+25151	瓦解のタリスマン＋１	Talisman of Collapse +1
+25152	啓蒙のタリスマン＋１	Talisman of Enlightenment +1
+25153	俊傑のタリスマン＋１	Talisman of Genius +1
+25154	夜陰のタリスマン＋１	Talisman of Darkness +1
+25155	奔放のタリスマン＋１	Talisman of Rowdiness +1
+25156	刹那のタリスマン＋１	Talisman of Lightspeed +1
+25157	守護のタリスマン＋１	Talisman of the Guardian +1
+25158	夢想のタリスマン＋１	Talisman of Fantasy +1
+25159	屈強のタリスマン＋１	Talisman of Toughness +1
+25160	交錯のタリスマン＋１	Talisman of Variety +1
+25161	英魂のタリスマン＋１	Talisman of Legends +1
+25162	憤激のタリスマン＋１	Talisman of Fury +1
+25163	豊穣のタリスマン＋１	Talisman of Fertility +1
+25164	驕慢のタリスマン＋１	Talisman of Arrogance +1
+25165	強健のタリスマン＋１	Talisman of Toughness +1
+25166	煩悩のタリスマン＋１	Talisman of Desires +1
+25167	因業のタリスマン＋１	Talisman of Corruption +1
+25168	孤高のタリスマン＋１	Talisman of Loftiness +1
+25169	怨恨のタリスマン＋１	Talisman of Revenge +1
+25170	背徳のタリスマン＋１	Talisman of Immorality +1
+25171	慈愛のタリスマン＋２	Talisman of Love +2
+25172	支配のタリスマン＋２	Talisman of Authority +2
+25173	異端のタリスマン＋２	Talisman of the Outcast +2
+25174	浮揚のタリスマン＋２	Talisman of Levitation +2
+25175	使徒のタリスマン＋２	Talisman of the Apostle +2
+25176	昇華のタリスマン＋２	Talisman of Sublimation +2
+25177	鎮魂のタリスマン＋２	Talisman of the Requiem +2
+25178	凶兆のタリスマン＋２	Talisman of Evil +2
+25179	大地のタリスマン＋２	Talisman of the Land +2
+25180	瓦解のタリスマン＋２	Talisman of Collapse +2
+25181	啓蒙のタリスマン＋２	Talisman of Enlightenment +2
+25182	俊傑のタリスマン＋２	Talisman of Genius +2
+25183	夜陰のタリスマン＋２	Talisman of Darkness +2
+25184	奔放のタリスマン＋２	Talisman of Rowdiness +2
+25185	刹那のタリスマン＋２	Talisman of Lightspeed +2
+25186	守護のタリスマン＋２	Talisman of the Guardian +2
+25187	夢想のタリスマン＋２	Talisman of Fantasy +2
+25188	屈強のタリスマン＋２	Talisman of Toughness +2
+25189	交錯のタリスマン＋２	Talisman of Variety +2
+25190	英魂のタリスマン＋２	Talisman of Legends +2
+25191	憤激のタリスマン＋２	Talisman of Fury +2
+25192	豊穣のタリスマン＋２	Talisman of Fertility +2
+25193	驕慢のタリスマン＋２	Talisman of Arrogance +2
+25194	強健のタリスマン＋２	Talisman of Toughness +2
+25195	煩悩のタリスマン＋２	Talisman of Desires +2
+25196	因業のタリスマン＋２	Talisman of Corruption +2
+25197	孤高のタリスマン＋２	Talisman of Loftiness +2
+25198	怨恨のタリスマン＋２	Talisman of Revenge +2
+25199	背徳のタリスマン＋２	Talisman of Immorality +2
+25200	お兄のバッジ	Big Brother's Badge
+25201	黎明の紋章（螺旋）	Crest of the Dawn (Spiral)
+25202	シーキングダイアリー	Seeking Diary
+25203	アサルトバッジ	Assault Badge
+25204	バスターバッジ	Buster Badge
+25205	マジックバッジ	Magic Badge
+25206	夜光貝の手鏡	Turban Shell Hand Mirror
+25207	黒猫のバッジ【火炎】	Black Cat Badge [Fire]
+25208	黒猫のバッジ【氷結】	Black Cat Badge [Ice]
+25209	黒猫のバッジ【電撃】	Black Cat Badge [Electric]
+25210	黒猫のバッジ【衝撃】	Black Cat Badge [Force]
+25211	黒猫のバッジ【魔力】	Black Cat Badge [Magic]
+25212	サイン色紙（亀田伶央奈）	Autograph (Reona Kameda)
+25213	サイン色紙（佐倉梨杏）	Autograph (Rian Sakura)
+25214	サイン色紙（澤田リサ）	Autograph (Risa Sawada)
+25215	サイン色紙（桜雪）	Autograph (Sayuki)
+25216	サイン色紙（小柳朋恵）	Autograph (Tomoe Koyanagi)
+25217	サイン色紙（黒瀬サラ）	Autograph (Sara Kurose)
+25218	サイン色紙（新矢皐月）	Autograph (Satsuki Shinya)
+25219	サイン色紙（月宮かれん）	Autograph (Karen Tsukimiya)
+25220	サイン色紙（神谷えりな）	Autograph (Erina Kamiya)
+25221	サイン色紙（藤崎麻美）	Autograph (Mami Fujisaki)
+25222	サイン色紙（早瀬愛夢）	Autograph (Ayumu Hayase)
+25223	サイン色紙（立花あんな）	Signed Shikishi (Anna Tachibana)
+25224	サイン色紙（森カノン）	Signed Shikishi (Kanon Mori)
+25225	サイン色紙（桜のどか）	Signed Shikishi (Nodoka Sakura)
+25226	サイン色紙（渡辺まあり）	Signed Shikishi (Maari Watanabe)
+25227	サイン色紙（川村虹花）	Signed Shikishi (Nijika Kawamura)
+25229	未実装	(Unimplemented)
+25230	未実装	(Unimplemented)
+25233	フィンブルヴェトルの魔狼の牙	Fang of Fimbulvetr's Demon Wolf
+25234	地上世界の澱み＋	World's Demise +
+25235	地上世界の澱み（破壊・仲魔）＋	World's Demise (Destruction, Demon) +
+25236	怨嗟の塊	Mass of Resentment
+25238	遺恨の塊	Mass of Grudge
+25239	Demon Cucumber・ワイルドカット	Demon Cucumber: Wild Cut
+25241	グリッドストーンα	Grid Stone α
+25246	ブラックヒランヤ	Black Hiranya
+25247	楽園支配の終焉（仲魔）	End of Paradise's Reign (Demon)
+25248	リサーチダイアリー＋	Research Diary +
+25249	シーキングダイアリー＋	Seeking Diary +
+25252	クリスマス・リース	Christmas Wreath
+25253	ブラックヒランヤ＋	Black Hiranya +
+25254	黄沙の滴	Drop of Yellow Sand
+25256	神の火	God's Fire
+25257	神の火＋	God's Fire +
+25258	腐敗と殺戮	Corruption and Slaughter
+25259	腐敗と殺戮＋	Corruption and Slaughter +
+25260	北倶廬洲の守護者	Guardian of Uttarakuru
+25261	北倶廬洲の守護者＋	Guardian of Uttarakuru +
+25271	紅の人形	Sacrifice Doll (Crimson)
+25277	紅の人形＋１	Sacrifice Doll (Crimson) +1
+25279	シャムロック（真）	True Shamrock
+25280	調和の印・奏	Mark of Harmony: Ensemble
+25281	盟約の刻・奏	Hour of the Covenant: Ensemble
+25282	輪廻の語り・奏	Tale of Reincarnation: Ensemble
+25283	同調の兆し・奏	Omen of Attunement: Ensemble
+25284	共鳴の誘い・奏	Invitation of Resonance: Ensemble
+25529	板チョコＣＯＭＰ・Ⅰ	Chocolate Bar COMP I
+25530	板チョコＣＯＭＰ・Ⅰ	Chocolate Bar COMP I
+25531	板チョコＣＯＭＰ・Ⅱ	Chocolate Bar COMP II
+25532	板チョコＣＯＭＰ・Ⅱ	Chocolate Bar COMP II
+25533	板チョコＣＯＭＰ・Ⅲ	Chocolate Bar COMP III
+25534	板チョコＣＯＭＰ・Ⅲ	Chocolate Bar COMP III
+25535	アドバンスナックル	Advance Knuckle
+25536	アドバンスコンプレラ	Advance COMPrella
+25537	ＴｙｐｅＭ：アドバンス	TypeM : Advance
+25538	ＴｙｐｅＭ：アドバンス	TypeM : Advance
+25541	ＴｙｐｅＴ：アドバンス	TypeT : Advance
+25542	ＴｙｐｅＴ：アドバンス	TypeT : Advance
+25543	Ｍ．ＣＯＭＰ（力．ＬＶ２）	M. COMP (Str. LV2)
+25544	Ｍ．ＣＯＭＰ（速さ．ＬＶ２）	M. COMP (Speed LV2)
+25545	Ｍ．ＣＯＭＰ（魔力．ＬＶ２）	M. COMP (Magic LV2)
+25548	マフツＣＯＭＰ	Mafutsu COMP
+25549	マフツＣＯＭＰ＋１	Mafutsu COMP +1
+25550	マフツＣＯＭＰ＋２	Mafutsu COMP +2
+25551	マフツＣＯＭＰ＋３	Mafutsu COMP +3
+25552	マフツＣＯＭＰ	Mafutsu COMP
+25553	マフツＣＯＭＰ＋１	Mafutsu COMP +1
+25554	マフツＣＯＭＰ＋２	Mafutsu COMP +2
+25555	マフツＣＯＭＰ＋３	Mafutsu COMP +3
+25556	八咫鏡	Yata Mirror
+25557	八咫鏡	Yata Mirror
+25558	五道の丑ＣＯＭＰ	Bethel Bull COMP
+25559	五道の丑ＣＯＭＰ	Bethel Bull COMP
+25560	五道のシルバーパラディオン	Bethel Silver Palladium
+25561	五道のシルバーパラディオン	Bethel Silver Palladium
+25562	デンジャラスＣＯＭＰ＋２	Dangerous COMP +2
+25563	デンジャラスＣＯＭＰ＋２	Dangerous COMP +2
+25564	アレイスター＋２	Aleister +2
+25565	アレイスター＋２	Aleister +2
+25570	Ｄ・Ｄ・Ｓ（バンプ）	D.D.S (Bump)
+25571	Ｄ・Ｄ・Ｓ（バンプ）	D.D.S (Bump)
+25588	グラビティＣＯＭＰ	Gravity COMP
+25589	刑死者のＣＯＭＰ	Hanged Man's COMP
+25590	刑死者のＣＯＭＰ	Hanged Man's COMP
+25591	刑死者のＣＯＭＰα	Hanged Man's COMP α
+25592	刑死者のＣＯＭＰα	Hanged Man's COMP α
+25593	フロントサモンパイプ	Front Summon Pipe
+25594	フロントサモンパイプ	Front Summon Pipe
+25595	フロントサモンチャイム	Front Summon Chime
+25596	フロントサモンチャイム	Front Summon Chime
+25597	フロントコンプレラ・紫傘	Front COMPrella (Purple)
+25598	フロントコンプレラ・紫傘	Front COMPrella (Purple)
+25599	フロントコロプレラ・葉っぱ	Front COMPrella (Leaf)
+25600	フロントコロプレラ・葉っぱ	Front COMPrella (Leaf)
+25601	フロントサモンウィンドベル	Front Summon Wind Bell
+25602	フロントサモンウィンドベル	Front Summon Wind Bell
+25603	フロントサモンウィンドベルⅡ	Front Summon Wind Bell II
+25604	フロントサモンウィンドベルⅡ	Front Summon Wind Bell II
+25605	フロントサモンウィンドベルⅢ	Front Summon Wind Bell III
+25606	フロントサモンウィンドベルⅢ	Front Summon Wind Bell III
+25625	キュリオスＣＯＭＰ	Curious COMP
+25626	キュリオスＣＯＭＰα	Curious COMP α
+25627	キュリオスＣＯＭＰ	Curious COMP
+25628	キュリオスＣＯＭＰα	Curious COMP α
+25629	グラビティＣＯＭＰ＋	Gravity COMP +
+25630	クリスタルゲート・Ｄ	Crystal Gate D
+25631	クリスタルゲート・Ｄ	Crystal Gate D
+25632	デモンズコンプレラ・紅傘	Demon's COMPrella (Red)
+25633	デモンズコンプレラ・紅傘	Demon's COMPrella (Red)
+25634	デモンズコンプレラ・紫傘	Demon's COMPrella (Purple)
+25635	デモンズコンプレラ・紫傘	Demon's COMPrella (Purple)
+25638	ビットキャッシュＣＯＭＰ	Bitcash COMP
+25639	奇術師の召喚機＋	Magician's COMP +
+25640	奇術師の召喚機＋	Magician's COMP +
+25645	ＡＲ－サイバーターミナル＋１	AR-Cyber Terminal +1
+25646	ＡＲ－サイバーターミナル＋１	AR-Cyber Terminal +1
+25647	クリスタルゲート・翠	Crystal Gate (Emerald)
+25648	クリスタルゲート・翠	Crystal Gate (Emerald)
+25659	クリスタルゲート・緋	Crystal Gate (Scarlet)
+25660	クリスタルゲート・緋	Crystal Gate (Scarlet)
+26001	モーターブーツ	Motor Boots
+26002	バンギャブーツ	Bangya Boots
+26020	二式・美脚ロング（火力）	Elegant Long Boots Type2 (Firepower)
+26022	二式・美脚ロング（火力）	Elegant Long Boots Type2 (Firepower)
+26024	二式・美脚ロング（ＤＢ）	Elegant Long Boots Type2 (DB)
+26026	二式・美脚ロング（ＤＢ）	Elegant Long Boots Type2 (DB)
+26028	二式・美脚ロング（支援）	Elegant Long Boots Type2 (Support)
+26030	二式・美脚ロング（支援）	Elegant Long Boots Type2 (Support)
+26032	二式・美脚ロング（仲魔）	Elegant Long Boots Type2 (Demons)
+26034	二式・美脚ロング（仲魔）	Elegant Long Boots Type2 (Demons)
+26036	二式・美脚ロング（時間）	Elegant Long Boots Type2 (Time)
+26038	二式・美脚ロング（時間）	Elegant Long Boots Type2 (Time)
+26093	来良学園シューズβ	Raira Academy Shoes β
+26094	来良学園シューズβ	Raira Academy Shoes β
+26095	来良学園シューズα	Raira Academy Shoes α
+26096	来良学園シューズα	Raira Academy Shoes α
+26097	平和島静雄の靴	Shizuo Heiwajima's Shoes
+26098	平和島静雄の靴α	Shizuo Heiwajima's Shoes α
+26107	折原臨也の靴	Izaya Orihara's Shoes
+26109	折原臨也の靴α	Izaya Orihara's Shoes α
+26110	贄川春奈のシューズα	Haruna Niekawa's Shoes α
+26120	園原杏里のシューズ	Anri Sonohara's Shoes
+26121	紀田正臣のシューズα	Masaomi Kida's Shoes α
+26122	園原杏里のシューズα	Anri Sonohara's Shoes α
+26246	夏下駄（銀鼠・白木）	Summer Geta (Silver Gray)(Whitewood)
+26260	スプラッタブーツ	Splatter Boots
+26261	スプラッタブーツ	Splatter Boots
+26265	カロルシューズα	Carol Shoes α
+26266	カロルブーツα	Carol Boots α
+26267	デビルＤｒブーツ・ソウルメイト	Devil Doctor Boots (Soulmate)
+26268	デビルＤｒブーツ・ソウルメイト	Devil Doctor Boots (Soulmate)
+26269	神道浅沓・祓神	Shinto Shoes (Purifying God)
+26270	巫女足袋・祓神	Shrine Maiden's Tabi (Purifying God)
+26271	神道浅沓・祓神α	Shinto Shoes (Purifying God) α
+26272	巫女足袋・祓神α	Shrine Maiden's Tabi (Purifying God) α
+26273	愚者の靴・逆	Fool's Shoes (Reverse)
+26274	愚者の靴・逆	Fool's Shoes (Reverse)
+26275	愚者の靴・逆α	Fool's Shoes (Reverse) α
+26276	愚者の靴・逆α	Fool's Shoes (Reverse) α
+26278	ラヴァーズシューズ・紫	Lover's Shoes (Purple)
+26279	ラヴァーズヒール・紫	Lover's Heels (Purple)
+26280	ラヴァーズシューズ・紫α	Lover's Shoes (Purple) α
+26281	ラヴァーズヒール・紫α	Lover's Heels (Purple) α
+26284	聖職者の靴・速	Cleric's Shoes (Speed)
+26285	聖職者の靴・速	Cleric's Shoes (Speed)
+26286	聖職者の靴・力	Cleric's Shoes (Strength)
+26287	聖職者の靴・力	Cleric's Shoes (Strength)
+26288	聖職者の靴・魔	Cleric's Shoes (Magic)
+26289	聖職者の靴・魔	Cleric's Shoes (Magic)
+26290	ネコ足スリッパ（三毛）	Cat Feet Slippers (Calico)
+26291	ネコ足スリッパ（白）	Cat Feet Slippers (White)
+26292	ネコ足スリッパ（茶トラ）	Cat Feet Slippers (Orange Tabby)
+26293	ネコ足スリッパ（三毛）	Cat Feet Slippers (Calico)
+26294	ネコ足スリッパ（白）	Cat Feet Slippers (White)
+26295	ネコ足スリッパ（茶トラ）	Cat Feet Slippers (Orange Tabby)
+26296	聖職者の靴（破壊）・速	Cleric's Shoes (Destruction, Speed)
+26297	聖職者の靴（破壊）・速	Cleric's Shoes (Destruction, Speed)
+26298	聖職者の靴（破壊）・力	Cleric's Shoes (Destruction, Strength)
+26299	聖職者の靴（破壊）・力	Cleric's Shoes (Destruction, Strength)
+26300	聖職者の靴（破壊）・魔	Cleric's Shoes (Destruction, Magic)
+26301	聖職者の靴（破壊）・魔	Cleric's Shoes (Destruction, Magic)
+26308	Ｒｘ：ブレスドシューズ	Rx: Blessed Shoes
+26309	Ｒｘ：ブレスドシューズ	Rx: Blessed Shoes
+26310	Ｄ３・ブレスドシューズ	D3 Blessed Shoes
+26311	Ｄ３・ブレスドシューズ	D3 Blessed Shoes
+26312	Ｒｘ：カレッジシューズ・白	Rx: College Shoes (White)
+26313	Ｄ３・カレッジシューズ・白	D3 College Shoes (White)
+26314	Ｒｘ：カレッジシューズ・黒	Rx: College Shoes (Black)
+26315	Ｄ３・カレッジシューズ・黒	D3 College Shoes (Black)
+26318	Ｒｘ：メディックブーツ	Rx: Medic Boots
+26319	Ｄ３・メディックブーツ	D3 Medic Boots
+26326	螺鈿の足環	Mother-of-Pearl Anklet
+26327	螺鈿の足環	Mother-of-Pearl Anklet
+26330	Ｒｘ：奉武靴・赤	Rx: Votive Martial Shoes (Red)
+26331	Ｒｘ：奉舞足袋・赤	Rx: Votive Dance Tabi (Red)
+26332	Ｒｘ：奉武靴・白	Rx: Votive Martial Shoes (White)
+26333	Ｒｘ：奉舞足袋・黒	Rx: Votive Dance Tabi (Black)
+26334	Ｒｘ：奉武靴・青	Rx: Votive Martial Shoes (Blue)
+26335	Ｒｘ：奉舞足袋・水	Rx: Votive Dance Tabi (Aqua)
+26336	Ｄ３・奉武靴・赤	D3 Votive Martial Shoes (Red)
+26337	Ｄ３・奉舞足袋・赤	D3 Votive Dance Tabi (Red)
+26338	Ｄ３・奉武靴・白	D3 Votive Martial Shoes (White)
+26339	Ｄ３・奉舞足袋・黒	D3 Votive Dance Tabi (Black)
+26340	Ｄ３・奉武靴・青	D3 Votive Martial Shoes (Blue)
+26341	Ｄ３・奉舞足袋・水	D3 Votive Dance Tabi (Aqua)
+26342	霊妙なる螺鈿の足環	Mystic Mother-of-Pearl Anklet
+26343	霊妙なる螺鈿の足環	Mystic Mother-of-Pearl Anklet
+26344	Ｒｘ：烈龍長靴	Rx: Boots of the Fighting Dragon
+26345	Ｒｘ：烈龍靴	Rx: Shoes of the Fighting Dragon
+26346	Ｒｘ：武龍長靴	Rx: Boots of the Violent Dragon
+26347	Ｒｘ：武龍靴	Rx: Shoes of the Violent Dragon
+26348	Ｒｘ：大龍長靴	Rx: Boots of the Colossal Dragon
+26349	Ｒｘ：大龍靴	Rx: Shoes of the Colossal Dragon
+26350	Ｄ３・烈龍長靴	D3 Boots of the Fighting Dragon
+26351	Ｄ３・烈龍靴	D3 Shoes of the Fighting Dragon
+26352	Ｄ３・武龍長靴	D3 Boots of the Violent Dragon
+26353	Ｄ３・武龍靴	D3 Shoes of the Violent Dragon
+26354	Ｄ３・大龍長靴	D3 Boots of the Colossal Dragon
+26355	Ｄ３・大龍靴	D3 Shoes of the Colossal Dragon
+26357	彩狐のパンプス	Colorful Fox Pumps
+26362	五道のNostalgia Boots	Bethel Nostalgia Boots
+26363	五道のNostalgia Boots	Bethel Nostalgia Boots
+26374	軽子坂シューズ・ソウルメイト	Karukozaka Shoes (Soulmate)
+26375	軽子坂シューズ・ソウルメイト	Karukozaka Shoes (Soulmate)
+26402	エヴェンシューズ・紫	Even Shoes (Purple)
+26403	サイブシューズ・紫	Sybe Shoes (Purple)
+26404	エヴェンシューズ・紫α	Even Shoes (Purple) α
+26405	サイブシューズ・紫α	Sybe Shoes (Purple) α
+26409	あきばサンダル・赤	Akiba Sandals (Red)
+26410	あきばサンダル・青	Akiba Sandals (Blue)
+26411	あきばサンダル・緑	Akiba Sandals (Green)
+26413	あきばサンダル・赤	Akiba Sandals (Red)
+26414	あきばサンダル・青	Akiba Sandals (Blue)
+26415	あきばサンダル・緑	Akiba Sandals (Green)
+26418	乱破脚絆・参	Rappa Gaiters III
+26419	乱破脚絆・参	Rappa Gaiters III
+26424	ビギナーズ軽子坂高校の靴	Beginner's Karukozaka HS Shoes
+26425	ビギナーズ軽子坂高校の靴	Beginner's Karukozaka HS Shoes
+26429	真紅のブーツα	Crimson Boots α
+26430	ハイロウシューズ白・悪心	Hi-Low Shoes (White, Nausea)
+26431	ハイロウシューズ白・悪心	Hi-Low Shoes (White, Nausea)
+26432	ハイロウシューズ黒・悪心	Hi-Low Shoes (Black, Nausea)
+26433	ハイロウシューズ黒・悪心	Hi-Low Shoes (Black, Nausea)
+26442	愚者の靴・黄	Fool's Shoes (Yellow)
+26443	愚者の靴・黄	Fool's Shoes (Yellow)
+26444	愚者の靴・黄α	Fool's Shoes (Yellow) α
+26445	愚者の靴・黄α	Fool's Shoes (Yellow) α
+26452	レイブーツ	Ray Boots
+26453	レイブーツ	Ray Boots
+26454	ピュルテブーツ	Pulte Boots
+26455	ピュルテパンプス	Pulte Pumps
+26456	統治のシューズ・ＥＸ	Governance Shoes EX
+26457	神秘のシューズ・ＥＸ	Mystic Shoes EX
+27010	HALLOWEEN竏奪AP Ticket	HALLOWEEN-MAP Ticket
+27058	デストラクション・反チケットα	Destruction (Reverse) Ticket α
+27072	平和島静雄のData Ticket	Shizuo Heiwajima's Data Ticket
+27073	セルティのData Ticket	Celty's Data Ticket
+27074	平和島静雄のData Ticketα	Shizuo Heiwajima's Data Ticket α
+27075	セルティのData Ticketα	Celty's Data Ticket α
+27076	首なしライダーから貰ったデータ	Data Received from the Headless Rider
+27080	ブライダルアバター・青チケットα	Bridal Avatar Ticket α (Blue)
+27081	折原臨也のData Ticket	Izaya Orihara's Data Ticket
+27083	折原臨也のData Ticketα	Izaya Orihara's Data Ticket α
+27084	贄川春奈のData Ticketα	Haruna Niekawa's Data Ticket α
+27086	園原杏里のData Ticket	Anri Sonohara's Data Ticket
+27087	紀田正臣のData Ticketα	Masaomi Kida's Data Ticket α
+27088	園原杏里のData Ticketα	Anri Sonohara's Data Ticket α
+27109	和魂狼士Data Ticketα	Spirited Wolf Warrior Data Ticket α
+27118	モトリー衣装Data Ticket選	Motley Outfit Data Select-a-Ticket
+27121	バトラーアバターData Ticket選	Butler Avatar Data Select-a-Ticket
+27129	ハロウィンチケット２０１１選	Halloween Select-a-Ticket 2011
+27132	ファーレンアバター・赤チケット選	Fallen Avatar Select-a-Ticket (Red)
+27133	バトラーアバターⅡチケット選	Butler Avatar II Select-a-Ticket
+27134	サーバーアバターⅡチケット選	Servant Avatar II Select-a-Ticket
+27138	ギルティクラウンⅠチケットβ	Guilty Crown I Ticket β
+27140	ハロウィンチケット２００９選	Halloween Select-a-Ticket 2009
+27141	チアリングアバターチケット選	Cheering Avatar Select-a-Ticket
+27142	マーチングアバターチケット選	Marching Avatar Select-a-Ticket
+27145	マーチングアバター・黒チケット選	Marching Avatar Select-a-Ticket (Black)
+27149	和魂志士Data Ticket選	Spirited Patriot Data Select-a-Ticket
+27158	アルカナアバターⅤチケット選	Arcana Avatar V Select-a-Ticket
+27159	アルカナアバターⅡチケット選	Arcana Avatar II Select-a-Ticket
+27164	クリスマスアバター・異チケット	Christmas Avatar Ticket (Another)
+27165	クリスマスアペンド・異チケット	Christmas Append Ticket (Another)
+27169	ヤングソウル・青Data Ticket選	Young Soul Data Select-a-Ticket (Blue)
+27170	オネスティアバターチケット選	Honesty Avatar Select-a-Ticket
+27171	デビルプリズンアバターチケット選	Devil Prison Avatar Select-a-Ticket
+27172	ハロウィンチケット２０１０選♂	Halloween Select-a-Ticket 2010 (M)
+27173	ハロウィンチケット２０１０選♀	Halloween Select-a-Ticket 2010 (F)
+27177	アルカナアバター０チケット選	Arcana Avatar 0 Select-a-Ticket
+27181	バレンタインチケット２０１２選	Valentine Select-a-Ticket 2012
+27184	魂合石Data Ticket三垣－肆－	Soul Stone Data Ticket: Three Enclosures IV
+27189	バレンタインアバターチケット選	Valentine Avatar Select-a-Ticket
+27194	白狼の尖兵Data Ticket選	White Wolf Vanguard Data Select-a-Ticket
+27195	紅狐の尖兵Data Ticket選	Red Fox Vanguard Data Select-a-Ticket
+27196	デビルドクターアバターチケット選	Devil Doctor Avatar Select-a-Ticket
+27197	デビルパイレーツチケット選	Devil Pirates Select-a-Ticket
+27205	魂合石Data Ticket三垣－伍－	Soul Stone Data Ticket: Three Enclosures V
+27210	魂合石Data Ticket三垣－陸－	Soul Stone Data Ticket: Three Enclosures VI
+27222	ヴァリアント・豹チケット選	Valiant (Panther) Select-a-Ticket
+27223	デアリング・豹チケット選	Daring (Panther) Select-a-Ticket
+27241	魂合石Data Ticket三垣－漆－	Soul Stone Data Ticket: Three Enclosures VII
+27242	魂合石Data Ticket三垣－捌－	Soul Stone Data Ticket: Three Enclosures VIII
+27243	魂合石Data Ticket三垣－玖－	Soul Stone Data Ticket: Three Enclosures IX
+27244	魂合石Data Ticket三垣－拾－	Soul Stone Data Ticket: Three Enclosures X
+27245	魂合石Data Ticket三垣－結－	Soul Stone Data Ticket: Three Enclosures Final
+27253	乱破装束・弐Data Ticket選	Rappa Outfit II Data Select-a-Ticket
+27261	壬子のアバター（修羅）チケット選	Jinshi Avatar (Carnage) Select-a-Ticket
+27262	壬子のアバター（羅刹）チケット選	Jinshi Avatar (Rakshasa) Select-a-Ticket
+27298	スプラッタアバターチケット選	Splatter Avatar Select-a-Ticket
+27302	増強香（小）チケット・４個入り	Incense of Augment (Small) Ticket (Pack of 4)
+27303	増強香（小）チケット・５個入り	Incense of Augment (Small) Ticket (Pack of 5)
+27304	増強香（小）チケット・１０個入り	Incense of Augment (Small) Ticket (Pack of 10)
+27306	リリーフアバターチケット・裏選	Relief Avatar Select-a-Ticket (Reverse)
+27327	カロルData Ticket選	Carol Data Select-a-Ticket
+27330	協調と繁栄のData Ticketα	Harmony and Prosperity Data Ticket α
+27332	奉神装束Data Ticket・祓神	Votive Deity Outfit Data Ticket (Purifying God)
+27333	奉神装束Data Ticket・祓神α	Votive Deity Outfit Data Ticket (Purifying God) α
+27335	アルカナ０・逆のチケットα	Arcana 0 (Reverse) Ticket α
+27336	愚者の外套・逆のData Ticket	Fool's Cloak (Reverse) Data Ticket
+27339	クリスマスリングData Ticket	Christmas Ring Data Ticket
+27340	ムーブランタンハット引換券・歓待	Moving Lantern Hat Voucher (Hospitality)
+27342	魂合石引換券－春のダイヤモンド－	Soul Stone Voucher -Spring Diamond-
+27343	Ｄ・Ｄ・Ｓ（Ｂｌｉｔｚ）チケット	D.D.S (Blitz) Ticket
+27344	Ｄ・Ｄ・Ｓ（Ｂｌａｓｔ）チケット	D.D.S (Blast) Ticket
+27352	初回特典・モードアバターチケット	First-Time Bonus: Mode Avatar Ticket
+27353	モードアバターData Ticket	Mode Avatar Data Ticket
+27354	ニューヘアカタログチケットⅡ	New Hair Catalog Ticket II
+27355	メッシュヘアカタログチケット♂	Mesh Hair Catalog Ticket (M)
+27356	ニューヘアカラーData Ticket	New Hair Color Data Ticket
+27357	聖職者の衣装・速Data Ticket	Cleric's Outfit Data Ticket (Speed)
+27358	聖職者の衣装・力Data Ticket	Cleric's Outfit Data Ticket (Strength)
+27359	聖職者の衣装・魔Data Ticket	Cleric's Outfit Data Ticket (Magic)
+27361	狐面・裏Data Ticket	Fox Mask (Reverse) Data Ticket
+27362	ハートフレームData Ticket	Heart Frame Data Ticket
+27363	メッシュヘアカタログチケット♀	Mesh Hair Catalog Ticket (F)
+27365	巡遊する者のData Ticketα	The Pilgrim's Data Ticket α
+27370	ハートピースData Ticket	Heart Piece Data Ticket
+27372	リベレーションウェポンチケット	Liberation Weapon Ticket
+27374	リベレーションアバターチケットα	Liberation Avatar Ticket α
+27377	ボルディアバターData Ticket α	Boldy Avatar Data Ticket α
+27379	アルカナⅩⅢ・逆のチケットα	Arcana XIII (Reverse) Ticket α
+27384	暁光遮リシ匣	Box That Blocked the Dawn Light
+27386	契の玉（蒼穹・翠嶺・紅霞）引換券	Voucher (Orb of Promise: Azure Sky, Emerald Peak, Crimson Haze)
+27387	選べるＬＮＣの香引換券	Selectable LNC Incense Voucher
+27388	選べるバレット引換券	Selectable Bullet Voucher
+27390	フェアネスData Ticket	Fairness Data Ticket
+27391	リゾルトData Ticket	Resolute Data Ticket
+27393	選べる騎乗セットData Ticket	Selectable Riding Set Data Ticket
+27394	アシッドアーツ＆調律・仲魔引換券	Acid Arts and Tuning Voucher (Demon)
+27395	アシッドアーツData Ticket	Acid Arts Data Ticket
+27396	選べる物霊結晶・エキセントリック	Selectable Crystallized Spirit: Eccentric
+27397	選べる物霊結晶・大和	Selectable Crystallized Spirit: Yamato
+27398	選べる物霊結晶・モダン	Selectable Crystallized Spirit: Modern
+27400	ブラックレイニー衣装引換券	Black Rainy Outfit Voucher
+27403	Ｒｘ：ブレスド衣装引換券・白	Rx: Blessed Outfit Voucher (White)
+27404	伊達ワルコーディネイトチケットα	Dandy Rogue Coordinate Ticket α
+27405	ＳｃｒｕｍData Ticket・異	Scrum Data Ticket (Another)
+27406	選べる物霊結晶・戦	Selectable Crystallized Spirit: War
+27407	選べる物霊結晶・パッション	Selectable Crystallized Spirit: Passion
+27408	選べる物霊結晶・新天地	Selectable Crystallized Spirit: New World
+27409	選べる物霊結晶・コンサート	Selectable Crystallized Spirit: Concert
+27411	Ｒｘ：学生衣装引換券・白	Rx: Student Outfit Voucher (White)
+27416	星宿のData Ticket	Star Mansion Data Ticket
+27420	Ｒｘ：学生衣装引換券・黒	Rx: Student Outfit Voucher (Black)
+27426	選べる物霊結晶・Ｃｒｉｍｅ	Selectable Crystallized Spirit: Crime
+27429	Ｒｘ：メディカル衣装引換券・黒	Rx: Medical Outfit Voucher (Black)
+27430	虚構の瞳Data Ticket	Eyes of Fiction Data Ticket
+27439	選べる物霊結晶・ルネサンス	Selectable Crystallized Spirit: Renaissance
+27441	リミテッドＣＯＭＰ引換券	Limited COMP Voucher
+27445	シュバルツData Ticket	Schwarz Data Ticket
+27446	スワーミーモノクル引換券	Swami Monocle Voucher
+27447	選べるＸカード引換券	Selectable X Card Voucher
+27448	仮面女子マスク引換券	Kamen Joshi Mask Voucher
+27453	選べるＸカード（仲魔）引換券	Selectable X Card (Demon) Voucher
+27454	選べる物霊結晶・エレガント	Selectable Crystallized Spirit: Elegant
+27455	選べる物霊結晶・コンサート黒	Selectable Crystallized Spirit: Concert Black
+27456	選べる物霊結晶・Ａｎｏｔｈｅｒ	Selectable Crystallized Spirit: Another
+27457	選べる武器引換券・両手剣	Selectable Weapon Voucher: Two-Handed Sword
+27458	選べる武器引換券・ショットガン	Selectable Weapon Voucher: Shotgun
+27465	キャンペーンお得セット	Campaign Value Set
+27466	キャンペーン仲魔セット	Campaign Demon Set
+27471	未実装	(Unimplemented)
+27472	Ｒｘ：退魔衣装引換券	Rx: Exorcist Outfit Voucher
+27473	選べる物霊結晶・Ｓｐｒｅａｄ	Selectable Crystallized Spirit: Spread
+27474	創造の衣引換券（４Ｇａｍｅｒ）	Garment of Creation Voucher (4Gamer)
+27475	選べるブーストリングチケット	Selectable Boost Ring Ticket
+27485	魂合石チケット・三垣	Soul Stone Ticket: Three Enclosures
+27486	魂合石チケット・三垣（零～伍）	Soul Stone Ticket: Three Enclosures (0 to V)
+27487	魂合石チケット・三垣（陸～結）	Soul Stone Ticket: Three Enclosures (VI to Final)
+27495	Ｒｘ：争覇衣装Data Ticket・鼎	Rx: Supremacy Outfit Data Ticket (Triad)
+27508	Silent Mobius Voucher・試供品	Silent Mobius Voucher (Sample)
+27515	パーティクルシェイカーチケット	Particle Shaker Ticket
+27516	ギャザーイヤリングチケット	Gather Earring Ticket
+27538	くったりジャアクフロスト引換券	Cuddly Black Frost Voucher
+27540	煌天の翼引換券	Wings of the Radiant Heavens Voucher
+27541	亡国のシンボルチケット選	Symbol of the Lost Country Select-a-Ticket
+27542	統制の衣引換券（４Ｇａｍｅｒ）	Garment of Control Voucher (4Gamer)
+27544	挽歌のシンボルチケット選	Elegy Symbol Select-a-Ticket
+27547	True デビルサマナー衣装引換券	True Devil Summoner Outfit Voucher
+27548	魂合石Data Ticket十界	Soul Stone Data Ticket: Ten Realms
+27559	選べるメノラー引換券	Selectable Menorah Voucher
+27562	鬼魂・宿望	Oni Soul: Long-Held Wish
+27563	一攫千金の葛籠引換券	Windfall Wicker Chest Voucher
+27565	キンググローブチケット	King Glove Ticket
+27569	魂合石チケット（光環・月暈）	Soul Stone Ticket (Halo, Lunar Halo)
+27581	選べるフェイスペイント引換券	Selectable Face Paint Voucher
+27582	魂合石Data Ticket七夕	Soul Stone Data Ticket: Tanabata
+27585	アルカナⅡ＆Ⅴ・逆のチケット	Arcana II & V (Reverse) Ticket
+27586	アルカナⅡ＆Ⅴ・逆のチケットα	Arcana II & V (Reverse) Ticket α
+27588	選べる武器チケット・Ｉ	Selectable Weapon Ticket: I
+27589	スヴァリンアバターチケット	Svalinn Avatar Ticket
+27590	Ｄ・Ｄ・Ｓ（マージ）チケット	D.D.S (Merge) Ticket
+27591	ジャアクＦ・デジタラクトチケット	Black Frost Digitalact Ticket
+27594	ＳｃｒｕｍⅡチケット・異	Scrum II Ticket (Another)
+27595	True ＳｃｒｕｍⅡチケット・異	True Scrum II Ticket (Another)
+27620	フロントサモンウィンドベル引換券	Front Summon Wind Bell Voucher
+27622	ハルモニア交換コード【ＧＡ】	Harmonia Exchange Code [GA]
+27623	ハルモニアチケット【ギア】	Harmonia Ticket [Gear]
+27624	ハルモニアチケット【アーマー】	Harmonia Ticket [Armor]
+27625	ハルモニアチケット【スラスト】	Harmonia Ticket [Thrust]
+27629	イビルフーセンガム引換券	Evil Bubble Gum Voucher
+27635	パープルレーベルData Ticket	Purple Label Data Ticket
+27636	パープルレーベルData Ticketα	Purple Label Data Ticket α
+27639	ジャックＦ・デジタラクトチケット	Jack Frost Digitalact Ticket
+27641	アウトリミテーションチケット	Out-Limitation Ticket
+27644	秋赤音の武器引換券	Akiakane's Weapon Voucher
+27654	ソリッドサインチケット	Solid Sign Ticket
+27657	亡国のシンボルチケット（仲魔）選	Symbol of the Lost Country (Demon) Select-a-Ticket
+27658	あきばサンダルチケット	Akihabara Sandals Ticket
+27660	経験の香（１０倍）引換券	Incense of Experience (10x) Voucher
+27664	スノウエスケープチケット選	Snow Escape Select-a-Ticket
+27668	乱破装束・参Data Ticket選	Rappa Outfit III Data Select-a-Ticket
+27675	夜叉丸衣装・赤チケット	Yashamaru Clothing Ticket (Red)
+27677	選べるエピタフパーツＥＸ引換券	Selectable Epitaph Parts EX Voucher
+27678	選べるエピタフパーツＥＸ引換券Ⅱ	Selectable Epitaph Parts EX Voucher II
+27682	トラベラークロースチケット	Traveler Cloth Ticket
+27686	オニビトの衣装チケット・赤α	Onibito Costume Ticket (Red) α
+27691	トラベラーパック	Traveler Pack
+27692	悪心宿す天使衣装・白チケット	Angel Outfit Ticket (Nausea, White)
+27693	悪心宿す天使衣装・黒チケット	Angel Outfit Ticket (Nausea, Black)
+27698	デモンズコンプレラ引換券	Demon's COMPrella Voucher
+27703	ギフトパック（４Ｇａｍｅｒ）	Gift Pack (4Gamer)
+27706	デビルカレッジチケット（ＷＭ）	Devil College Ticket (WM)
+27709	ファーレンアバター・紫チケット選	Fallen Avatar Select-a-Ticket (Purple)
+27716	対なす兄妹剣の引換券	Parallel Siblings' Swords Voucher
+27718	イビルフーセンガム引換券	Evil Bubble Gum Voucher
+27735	アルカナⅠ・黒Data Ticket	Arcana I (Black) Data Ticket
+27736	ヴァンキッシュヘッドギアチケット	Vanquish Headgear Ticket
+27741	ロウディスーツData Ticket	Rowdy Suit Data Ticket
+27748	ホースライディングチケット・黒	Horse Riding Ticket (Black)
+27750	翠のクリスタル引換券	Emerald Crystal Voucher
+27751	翠のクリスタルスクトゥム引換券	Emerald Crystal Scutum Voucher
+27754	災厄齎す者の仮面引換券	Mask of the Calamity Bringer Voucher
+27757	疾駆の玉（３日）引換券	Orb of Dash (3 Days) Voucher
+27758	Ariadne's Thread（３日）引換券	Ariadne's Thread (3 Days) Voucher
+27759	リミテッド通常弾（３日）引換券	Limited Normal Bullet (3 Days) Voucher
+27760	解戒の実引換券	Fruit of Release Voucher
+27766	アイテムチケット梅・２０１５年夏	Item Ticket (Plum) - Summer 2015
+27767	アイテムチケット竹・２０１５年夏	Item Ticket (Bamboo) - Summer 2015
+27768	アイテムチケット松・２０１５年夏	Item Ticket (Pine) - Summer 2015
+27769	黒漆具足一式引換券	Black Lacquer Armor Set Voucher
+27774	異世界の兄妹の衣装引換券（ＷＭ）	Otherworld Siblings' Outfit Voucher (WM)
+27779	エヴォルコードⅠチケット	Evol Code I Ticket
+27780	ゴシック衣装引換券	Gothic Outfit Voucher
+27781	堕罪のシンボルチケット	Symbol of Fallen Sin Ticket
+27782	フォーミュラチケット	Formula Ticket
+27787	堕罪のシンボルチケット（仲魔）	Symbol of Fallen Sin Ticket (Demon)
+27788	カーネイジアバターData Ticket	Carnage Avatar Data Ticket
+27790	緋のクリスタル引換券	Scarlet Crystal Voucher
+27791	緋のクリスタルスクトゥム引換券	Scarlet Crystal Scutum Voucher
+27792	選べるＤＢＯＲ－ＧＯＬＤ引換券	Selectable DBOR-GOLD Voucher
+27794	悪魔のマント・逆のチケット	Demon's Cloak (Reverse) Ticket
+27796	異世界の兄妹の衣装引換券・裏	Otherworld Siblings' Outfit Voucher (Reverse)
+27798	スマートグラス引換券	Smart Glasses Voucher
+27799	悪食の十字架引換券	Cross of Gluttony Voucher
+27800	選べるピアシング引換券	Selectable Piercing Voucher
+27802	アニマル装備・白Data Ticket	Animal Equipment (White) Data Ticket
+27803	ハウンドアバター・紺チケット	Hound Avatar Ticket (Navy)
+27805	黄玉のクリスタル引換券	Topaz Crystal Voucher
+27806	黄玉のクリスタルスクトゥム引換券	Topaz Crystal Scutum Voucher
+27809	クイントアーツ引換券	Quint Arts Voucher
+27810	魂合石Data Ticket三道	Soul Stone Data Ticket (Three Paths)
+27811	ソウルリンカー・黄チケット	Soul Linker Ticket (Yellow)
+27812	異端者の衣装引換券	Heretic's Outfit Voucher
+27814	ブラックメイルブーツ引換券	Black Mail Boots Voucher
+27818	大熊猫スーツ引換券	Giant Panda Suit Voucher
+27819	笹の葉楊枝引換券	Bamboo Leaf Toothpick Voucher
+27820	アーミーアバター・黒チケット	Army Avatar Ticket (Black)
+27822	くったり（？）山本長官引換券	Cuddly (?) Commander Yamamoto Voucher
+27824	リベレーションチケット・裏	Liberation Ticket (Dark)
+27825	ノードゥスアバター・青チケット	Nodus Avatar Ticket (Blue)
+27826	ヴァイスライセンス引換券	Vice License Voucher
+27828	約束と運命のData Ticket	Data Ticket of Promise and Fate
+27831	工具ウェポン引換券	Tool Weapon Voucher
+28509	物霊結晶（頭・基本・経験値）	Crystallized Spirit (Head: Basic, EXP)
+28510	物霊結晶（胴・基本・経験値）	Crystallized Spirit (Body: Basic, EXP)
+28511	物霊結晶（首・基本・経験値）	Crystallized Spirit (Neck: Basic, EXP)
+28512	物霊結晶（腕・基本・経験値）	Crystallized Spirit (Arm: Basic, EXP)
+28513	物霊結晶（腰・基本・経験値）	Crystallized Spirit (Hips: Basic, EXP)
+28514	物霊結晶（足・基本・経験値）	Crystallized Spirit (Foot: Basic, EXP)
+28515	物霊結晶（背・基本・経験値）	Crystallized Spirit (Back: Basic, EXP)
+28516	物霊結晶（顔・基本・経験値）	Crystallized Spirit (Face: Basic, EXP)
+28517	物霊結晶（頭・特性・ＰＴ経験値）	Crystallized Spirit (Head: Trait, Party EXP)
+28518	物霊結晶（胴・特性・ＰＴ経験値）	Crystallized Spirit (Body: Trait, Party EXP)
+28519	物霊結晶（首・特性・ＰＴ経験値）	Crystallized Spirit (Neck: Trait, Party EXP)
+28520	物霊結晶（腕・特性・ＰＴ経験値）	Crystallized Spirit (Arm: Trait, Party EXP)
+28521	物霊結晶（腰・特性・ＰＴ経験値）	Crystallized Spirit (Hips: Trait, Party EXP)
+28522	物霊結晶（足・特性・ＰＴ経験値）	Crystallized Spirit (Foot: Trait, Party EXP)
+28523	物霊結晶（背・特性・ＰＴ経験値）	Crystallized Spirit (Back: Trait, Party EXP)
+28524	物霊結晶（顔・特性・ＰＴ経験値）	Crystallized Spirit (Face: Trait, Party EXP)
+28525	物霊結晶（頭・特性・詠唱）	Crystallized Spirit (Head: Trait, Incantation)
+28526	物霊結晶（胴・特性・詠唱）	Crystallized Spirit (Body: Trait, Incantation)
+28527	物霊結晶（首・特性・詠唱）	Crystallized Spirit (Neck: Trait, Incantation)
+28528	物霊結晶（腕・特性・詠唱）	Crystallized Spirit (Arm: Trait, Incantation)
+28529	物霊結晶（腰・特性・詠唱）	Crystallized Spirit (Hips: Trait, Incantation)
+28530	物霊結晶（足・特性・詠唱）	Crystallized Spirit (Foot: Trait, Incantation)
+28531	物霊結晶（背・特性・詠唱）	Crystallized Spirit (Back: Trait, Incantation)
+28532	物霊結晶（顔・特性・詠唱）	Crystallized Spirit (Face: Trait, Incantation)
+28533	物霊結晶（頭・基本・クール）	Crystallized Spirit (Head: Basic, Cooldown)
+28534	物霊結晶（胴・基本・クール）	Crystallized Spirit (Body: Basic, Cooldown)
+28535	物霊結晶（首・基本・クール）	Crystallized Spirit (Neck: Basic, Cooldown)
+28536	物霊結晶（腕・基本・クール）	Crystallized Spirit (Arm: Basic, Cooldown)
+28537	物霊結晶（腰・基本・クール）	Crystallized Spirit (Hips: Basic, Cooldown)
+28538	物霊結晶（足・基本・クール）	Crystallized Spirit (Foot: Basic, Cooldown)
+28539	物霊結晶（背・基本・クール）	Crystallized Spirit (Back: Basic, Cooldown)
+28540	物霊結晶（顔・基本・クール）	Crystallized Spirit (Face: Basic, Cooldown)
+28553	物霊結晶（頭・ブルーレーベル）	Crystallized Spirit (Head: Blue Label)
+28554	物霊結晶（胴・ブルーレーベル）	Crystallized Spirit (Body: Blue Label)
+28555	物霊結晶（腰・ブルーレーベル）	Crystallized Spirit (Hips: Blue Label)
+28556	物霊結晶（足・ブルーレーベル）	Crystallized Spirit (Foot: Blue Label)
+28557	物霊結晶（胴・パッション＋＋）	Crystallized Spirit (Body: Passion++)
+28563	物霊結晶（頭・赤誠）	Crystallized Spirit (Head: Sincerity)
+28564	物霊結晶（胴・赤誠）	Crystallized Spirit (Body: Sincerity)
+28565	物霊結晶（顔・軒猿＋）	Crystallized Spirit (Face: Nokizaru+)
+28566	物霊結晶（胴・軒猿＋）	Crystallized Spirit (Body: Nokizaru+)
+28569	物霊結晶（首・軒猿＋）	Crystallized Spirit (Neck: Nokizaru+)
+28584	物霊結晶（耳・黄昏の翼）	Crystallized Spirit (Ears: Twilight Wings)
+28585	物霊結晶（首・黄昏の翼）	Crystallized Spirit (Neck: Twilight Wings)
+28586	物霊結晶（指・黄昏の翼）	Crystallized Spirit (Fingers: Twilight Wings)
+28587	物霊結晶（耳・黎明の翼）	Crystallized Spirit (Ears: Dawn Wings)
+28588	物霊結晶（首・黎明の翼）	Crystallized Spirit (Neck: Dawn Wings)
+28589	物霊結晶（指・黎明の翼）	Crystallized Spirit (Fingers: Dawn Wings)
+28592	物霊結晶（指・Ｓｐｒｅａｄ）	Crystallized Spirit (Fingers: Spread)
+28601	物霊結晶（指・Ｐｌｅｄｇｅ）	Crystallized Spirit (Fingers: Pledge)
+28602	物霊結晶（頭・アルカナⅠ逆）	Crystallized Spirit (Head: Arcana I Reversed)
+28603	物霊結晶（顔・アルカナⅠ逆）	Crystallized Spirit (Face: Arcana I Reversed)
+28604	物霊結晶（胴・アルカナⅠ逆）	Crystallized Spirit (Body: Arcana I Reversed)
+28605	物霊結晶（腕・アルカナⅠ逆）	Crystallized Spirit (Arm: Arcana I Reversed)
+28606	物霊結晶（足・アルカナⅠ逆）	Crystallized Spirit (Foot: Arcana I Reversed)
+28607	物霊結晶（Ｃ・アルカナⅠ逆）	Crystallized Spirit (COMP: Arcana I Reversed)
+28612	物霊結晶（頭・エレガント）	Crystallized Spirit (Head: Elegant)
+28613	物霊結晶（胴・エレガント）	Crystallized Spirit (Body: Elegant)
+28614	物霊結晶（腕・エレガント）	Crystallized Spirit (Arm: Elegant)
+28615	物霊結晶（足・エレガント）	Crystallized Spirit (Foot: Elegant)
+28632	物霊結晶（頭・アルカナⅡ＆Ⅴ）	Crystallized Spirit (Head: Arcana II & V)
+28633	物霊結晶（胴・アルカナⅡ＆Ⅴ）	Crystallized Spirit (Body: Arcana II & V)
+28634	物霊結晶（足・アルカナⅡ＆Ⅴ）	Crystallized Spirit (Foot: Arcana II & V)
+28635	物霊結晶（首・アルカナⅡ＆Ⅴ）	Crystallized Spirit (Neck: Arcana II & V)
+28636	物霊結晶（頭・アルカナ０）	Crystallized Spirit (Head: Arcana 0)
+28637	物霊結晶（胴・アルカナ０）	Crystallized Spirit (Body: Arcana 0)
+28638	物霊結晶（腕・アルカナ０）	Crystallized Spirit (Arm: Arcana 0)
+28639	物霊結晶（足・アルカナ０）	Crystallized Spirit (Foot: Arcana 0)
+29041	老練の物霊結晶（背・ベース）	Veteran Crystallized Spirit (Back: Base)
+29042	老練の物霊結晶（背・アタック１）	Veteran Crystallized Spirit (Back: Attack 1)
+29043	老練の物霊結晶（背・アタック２）	Veteran Crystallized Spirit (Back: Attack 2)
+29044	老練の物霊結晶（背・アタック３）	Veteran Crystallized Spirit (Back: Attack 3)
+29045	老練の物霊結晶（背・アタック４）	Veteran Crystallized Spirit (Back: Attack 4)
+29046	老練の物霊結晶（背・アタック５）	Veteran Crystallized Spirit (Back: Attack 5)
+29047	老練の物霊結晶（背・スピン１）	Veteran Crystallized Spirit (Back: Spin 1)
+29048	老練の物霊結晶（背・スピン２）	Veteran Crystallized Spirit (Back: Spin 2)
+29049	老練の物霊結晶（背・スピン３）	Veteran Crystallized Spirit (Back: Spin 3)
+29050	老練の物霊結晶（背・スピン４）	Veteran Crystallized Spirit (Back: Spin 4)
+29051	老練の物霊結晶（背・スピン５）	Veteran Crystallized Spirit (Back: Spin 5)
+29052	老練の物霊結晶（背・ラッシュ１）	Veteran Crystallized Spirit (Back: Rush 1)
+29053	老練の物霊結晶（背・ラッシュ２）	Veteran Crystallized Spirit (Back: Rush 2)
+29054	老練の物霊結晶（背・ラッシュ３）	Veteran Crystallized Spirit (Back: Rush 3)
+29055	老練の物霊結晶（背・ラッシュ４）	Veteran Crystallized Spirit (Back: Rush 4)
+29056	老練の物霊結晶（背・ラッシュ５）	Veteran Crystallized Spirit (Back: Rush 5)
+29057	老練の物霊結晶（背・ショット１）	Veteran Crystallized Spirit (Back: Shot 1)
+29058	老練の物霊結晶（背・ショット２）	Veteran Crystallized Spirit (Back: Shot 2)
+29059	老練の物霊結晶（背・ショット３）	Veteran Crystallized Spirit (Back: Shot 3)
+29060	老練の物霊結晶（背・ショット４）	Veteran Crystallized Spirit (Back: Shot 4)
+29061	老練の物霊結晶（背・ショット５）	Veteran Crystallized Spirit (Back: Shot 5)
+29062	老練の物霊結晶（背・ラピッド１）	Veteran Crystallized Spirit (Back: Rapid 1)
+29063	老練の物霊結晶（背・ラピッド２）	Veteran Crystallized Spirit (Back: Rapid 2)
+29064	老練の物霊結晶（背・ラピッド３）	Veteran Crystallized Spirit (Back: Rapid 3)
+29065	老練の物霊結晶（背・ラピッド４）	Veteran Crystallized Spirit (Back: Rapid 4)
+29066	老練の物霊結晶（背・ラピッド５）	Veteran Crystallized Spirit (Back: Rapid 5)
+29067	老練の物霊結晶（背・破壊魔法１）	Veteran Crystallized Spirit (Back: Destruction Magic 1)
+29068	老練の物霊結晶（背・破壊魔法２）	Veteran Crystallized Spirit (Back: Destruction Magic 2)
+29069	老練の物霊結晶（背・破壊魔法３）	Veteran Crystallized Spirit (Back: Destruction Magic 3)
+29070	老練の物霊結晶（背・破壊魔法４）	Veteran Crystallized Spirit (Back: Destruction Magic 4)
+29071	老練の物霊結晶（背・破壊魔法５）	Veteran Crystallized Spirit (Back: Destruction Magic 5)
+29072	老練の物霊結晶（頭・ベース）	Veteran Crystallized Spirit (Head: Base)
+29073	老練の物霊結晶（頭・アタック１）	Veteran Crystallized Spirit (Head: Attack 1)
+29074	老練の物霊結晶（頭・アタック２）	Veteran Crystallized Spirit (Head: Attack 2)
+29075	老練の物霊結晶（頭・アタック３）	Veteran Crystallized Spirit (Head: Attack 3)
+29076	老練の物霊結晶（頭・アタック４）	Veteran Crystallized Spirit (Head: Attack 4)
+29077	老練の物霊結晶（頭・アタック５）	Veteran Crystallized Spirit (Head: Attack 5)
+29078	老練の物霊結晶（頭・スピン１）	Veteran Crystallized Spirit (Head: Spin 1)
+29079	老練の物霊結晶（頭・スピン２）	Veteran Crystallized Spirit (Head: Spin 2)
+29080	老練の物霊結晶（頭・スピン３）	Veteran Crystallized Spirit (Head: Spin 3)
+29081	老練の物霊結晶（頭・スピン４）	Veteran Crystallized Spirit (Head: Spin 4)
+29082	老練の物霊結晶（頭・スピン５）	Veteran Crystallized Spirit (Head: Spin 5)
+29083	老練の物霊結晶（頭・ラッシュ１）	Veteran Crystallized Spirit (Head: Rush 1)
+29084	老練の物霊結晶（頭・ラッシュ２）	Veteran Crystallized Spirit (Head: Rush 2)
+29085	老練の物霊結晶（頭・ラッシュ３）	Veteran Crystallized Spirit (Head: Rush 3)
+29086	老練の物霊結晶（頭・ラッシュ４）	Veteran Crystallized Spirit (Head: Rush 4)
+29087	老練の物霊結晶（頭・ラッシュ５）	Veteran Crystallized Spirit (Head: Rush 5)
+29088	老練の物霊結晶（頭・ショット１）	Veteran Crystallized Spirit (Head: Shot 1)
+29089	老練の物霊結晶（頭・ショット２）	Veteran Crystallized Spirit (Head: Shot 2)
+29090	老練の物霊結晶（頭・ショット３）	Veteran Crystallized Spirit (Head: Shot 3)
+29091	老練の物霊結晶（頭・ショット４）	Veteran Crystallized Spirit (Head: Shot 4)
+29092	老練の物霊結晶（頭・ショット５）	Veteran Crystallized Spirit (Head: Shot 5)
+29093	老練の物霊結晶（頭・ラピッド１）	Veteran Crystallized Spirit (Head: Rapid 1)
+29094	老練の物霊結晶（頭・ラピッド２）	Veteran Crystallized Spirit (Head: Rapid 2)
+29095	老練の物霊結晶（頭・ラピッド３）	Veteran Crystallized Spirit (Head: Rapid 3)
+29096	老練の物霊結晶（頭・ラピッド４）	Veteran Crystallized Spirit (Head: Rapid 4)
+29097	老練の物霊結晶（頭・ラピッド５）	Veteran Crystallized Spirit (Head: Rapid 5)
+29098	老練の物霊結晶（頭・破壊魔法１）	Veteran Crystallized Spirit (Head: Destruction Magic 1)
+29099	老練の物霊結晶（頭・破壊魔法２）	Veteran Crystallized Spirit (Head: Destruction Magic 2)
+29100	老練の物霊結晶（頭・破壊魔法３）	Veteran Crystallized Spirit (Head: Destruction Magic 3)
+29101	老練の物霊結晶（頭・破壊魔法４）	Veteran Crystallized Spirit (Head: Destruction Magic 4)
+29102	老練の物霊結晶（頭・破壊魔法５）	Veteran Crystallized Spirit (Head: Destruction Magic 5)
+29541	物霊結晶（頭・エキセントリック）	Crystallized Spirit (Head: Eccentric)
+29542	物霊結晶（胴・エキセントリック）	Crystallized Spirit (Body: Eccentric)
+29543	物霊結晶（腰・エキセントリック）	Crystallized Spirit (Hips: Eccentric)
+29544	物霊結晶（足・エキセントリック）	Crystallized Spirit (Foot: Eccentric)
+29545	物霊結晶（頭・大和）	Crystallized Spirit (Head: Yamato)
+29546	物霊結晶（胴・大和）	Crystallized Spirit (Body: Yamato)
+29547	物霊結晶（足・大和）	Crystallized Spirit (Foot: Yamato)
+29548	物霊結晶（顔１・モダン）	Crystallized Spirit (Face 1: Modern)
+29549	物霊結晶（顔２・モダン）	Crystallized Spirit (Face 2: Modern)
+29550	物霊結晶（首・モダン）	Crystallized Spirit (Neck: Modern)
+29551	物霊結晶（腕１・モダン）	Crystallized Spirit (Arm 1: Modern)
+29552	物霊結晶（腕２・モダン）	Crystallized Spirit (Arm 2: Modern)
+29553	物霊結晶（頭・戦）	Crystallized Spirit (Head: War)
+29554	物霊結晶（首・戦）	Crystallized Spirit (Neck: War)
+29555	物霊結晶（胴・戦）	Crystallized Spirit (Body: War)
+29556	物霊結晶（腕・戦）	Crystallized Spirit (Arm: War)
+29557	物霊結晶（足・戦）	Crystallized Spirit (Foot: War)
+29558	物霊結晶（頭・新天地）	Crystallized Spirit (Head: New World)
+29559	物霊結晶（首・新天地）	Crystallized Spirit (Neck: New World)
+29560	物霊結晶（胴・新天地）	Crystallized Spirit (Body: New World)
+29561	物霊結晶（腕・新天地）	Crystallized Spirit (Arm: New World)
+29562	物霊結晶（腰・新天地）	Crystallized Spirit (Hips: New World)
+29563	物霊結晶（足・新天地）	Crystallized Spirit (Foot: New World)
+29564	物霊結晶（頭・コンサート）	Crystallized Spirit (Head: Concert)
+29565	物霊結晶（顔・コンサート）	Crystallized Spirit (Face: Concert)
+29566	物霊結晶（胴・コンサート）	Crystallized Spirit (Body: Concert)
+29567	物霊結晶（腰・コンサート）	Crystallized Spirit (Hips: Concert)
+29568	物霊結晶（足・コンサート）	Crystallized Spirit (Foot: Concert)
+29569	物霊結晶（ＥＸ・トリニティ）	Crystallized Spirit (EX: Trinity)
+29570	未実装	(Unimplemented)
+29571	未実装	(Unimplemented)
+29572	未実装	(Unimplemented)
+29573	物霊結晶（護符・Ｃｒｉｍｅ）	Crystallized Spirit (Talisman: Crime)
+29574	物霊結晶（背・Ｓｏｓｒ）	Crystallized Spirit (Back: Sosr)
+29575	物霊結晶（胴・ルネサンス）	Crystallized Spirit (Body: Renaissance)
+29576	物霊結晶（腕・ルネサンス）	Crystallized Spirit (Arm: Renaissance)
+29577	物霊結晶（腰・ルネサンス）	Crystallized Spirit (Hips: Renaissance)
+29578	物霊結晶（足・ルネサンス）	Crystallized Spirit (Foot: Renaissance)
+29579	物霊結晶（頭・コンサート黒）	Crystallized Spirit (Head: Concert Black)
+29580	物霊結晶（顔・コンサート黒）	Crystallized Spirit (Face: Concert Black)
+29581	物霊結晶（胴・コンサート黒）	Crystallized Spirit (Body: Concert Black)
+29582	物霊結晶（腰・コンサート黒）	Crystallized Spirit (Hips: Concert Black)
+29583	物霊結晶（足・コンサート黒）	Crystallized Spirit (Foot: Concert Black)
+29584	物霊結晶（顔１・Ａｎｏｔｈｅｒ）	Crystallized Spirit (Face 1: Another)
+29585	物霊結晶（顔２・Ａｎｏｔｈｅｒ）	Crystallized Spirit (Face 2: Another)
+29586	物霊結晶（顔３・Ａｎｏｔｈｅｒ）	Crystallized Spirit (Face 3: Another)
+29587	物霊結晶（護符・Ｓｐｒｅａｄ）	Crystallized Spirit (Talisman: Spread)
+29588	物霊結晶（頭・１號）	Crystallized Spirit (Head: No. 1)
+29589	物霊結晶（頭・２號）	Crystallized Spirit (Head: No. 2)
+29590	物霊結晶（頭・３號）	Crystallized Spirit (Head: No. 3)
+29591	物霊結晶（頭・４號）	Crystallized Spirit (Head: No. 4)
+29592	物霊結晶（頭・５號）	Crystallized Spirit (Head: No. 5)
+29593	物霊結晶（頭・６號）	Crystallized Spirit (Head: No. 6)
+29594	物霊結晶（頭・７號）	Crystallized Spirit (Head: No. 7)
+29595	物霊結晶（頭・８號）	Crystallized Spirit (Head: No. 8)
+29596	物霊結晶（頭・９號）	Crystallized Spirit (Head: No. 9)
+29597	物霊結晶（頭・１０號）	Crystallized Spirit (Head: No. 10)
+29598	物霊結晶（頭・１１號）	Crystallized Spirit (Head: No. 11)
+29599	物霊結晶（頭・１２號）	Crystallized Spirit (Head: No. 12)
+29600	物霊結晶（頭・１３號）	Crystallized Spirit (Head: No. 13)
+29601	物霊結晶（頭・１４號）	Crystallized Spirit (Head: No. 14)
+29602	物霊結晶（頭・１５號）	Crystallized Spirit (Head: No. 15)
+29603	物霊結晶（頭・１６號）	Crystallized Spirit (Head: No. 16)
+29604	物霊結晶（頭・１７號）	Crystallized Spirit (Head: No. 17)
+29605	物霊結晶（頭・１８號）	Crystallized Spirit (Head: No. 18)
+29606	物霊結晶（頭・１９號）	Crystallized Spirit (Head: No. 19)
+29607	物霊結晶（頭・２０號）	Crystallized Spirit (Head: No. 20)
+29608	物霊結晶（頭・２１號）	Crystallized Spirit (Head: No. 21)
+29609	物霊結晶（頭・２２號）	Crystallized Spirit (Head: No. 22)
+29610	物霊結晶（頭・２３號）	Crystallized Spirit (Head: No. 23)
+29611	物霊結晶（頭・２４號）	Crystallized Spirit (Head: No. 24)
+29612	物霊結晶（頭・２５號）	Crystallized Spirit (Head: No. 25)
+29613	物霊結晶（腕・１號）	Crystallized Spirit (Arm: No. 1)
+29614	物霊結晶（腕・２號）	Crystallized Spirit (Arm: No. 2)
+29615	物霊結晶（腕・３號）	Crystallized Spirit (Arm: No. 3)
+29616	物霊結晶（腕・４號）	Crystallized Spirit (Arm: No. 4)
+29617	物霊結晶（腕・５號）	Crystallized Spirit (Arm: No. 5)
+29618	物霊結晶（腕・６號）	Crystallized Spirit (Arm: No. 6)
+29619	物霊結晶（腕・７號）	Crystallized Spirit (Arm: No. 7)
+29620	物霊結晶（腕・８號）	Crystallized Spirit (Arm: No. 8)
+29621	物霊結晶（腕・９號）	Crystallized Spirit (Arm: No. 9)
+29622	物霊結晶（腕・１０號）	Crystallized Spirit (Arm: No. 10)
+29623	物霊結晶（腕・１１號）	Crystallized Spirit (Arm: No. 11)
+29624	物霊結晶（腕・１２號）	Crystallized Spirit (Arm: No. 12)
+29625	物霊結晶（腕・１３號）	Crystallized Spirit (Arm: No. 13)
+29626	物霊結晶（腕・１４號）	Crystallized Spirit (Arm: No. 14)
+29627	物霊結晶（腕・１５號）	Crystallized Spirit (Arm: No. 15)
+29628	物霊結晶（腕・１６號）	Crystallized Spirit (Arm: No. 16)
+29629	物霊結晶（腕・１７號）	Crystallized Spirit (Arm: No. 17)
+29630	物霊結晶（腕・１８號）	Crystallized Spirit (Arm: No. 18)
+29631	物霊結晶（腕・１９號）	Crystallized Spirit (Arm: No. 19)
+29632	物霊結晶（腕・２０號）	Crystallized Spirit (Arm: No. 20)
+29633	物霊結晶（腕・２１號）	Crystallized Spirit (Arm: No. 21)
+29634	物霊結晶（腕・２２號）	Crystallized Spirit (Arm: No. 22)
+29635	物霊結晶（腕・２３號）	Crystallized Spirit (Arm: No. 23)
+29636	物霊結晶（腕・２４號）	Crystallized Spirit (Arm: No. 24)
+29637	物霊結晶（腕・２５號）	Crystallized Spirit (Arm: No. 25)
+29638	物霊結晶（足・１號）	Crystallized Spirit (Foot: No. 1)
+29639	物霊結晶（足・２號）	Crystallized Spirit (Foot: No. 2)
+29640	物霊結晶（足・３號）	Crystallized Spirit (Foot: No. 3)
+29641	物霊結晶（足・４號）	Crystallized Spirit (Foot: No. 4)
+29642	物霊結晶（足・５號）	Crystallized Spirit (Foot: No. 5)
+29643	物霊結晶（足・６號）	Crystallized Spirit (Foot: No. 6)
+29644	物霊結晶（足・７號）	Crystallized Spirit (Foot: No. 7)
+29645	物霊結晶（足・８號）	Crystallized Spirit (Foot: No. 8)
+29646	物霊結晶（足・９號）	Crystallized Spirit (Foot: No. 9)
+29647	物霊結晶（足・１０號）	Crystallized Spirit (Foot: No. 10)
+29648	物霊結晶（足・１１號）	Crystallized Spirit (Foot: No. 11)
+29649	物霊結晶（足・１２號）	Crystallized Spirit (Foot: No. 12)
+29650	物霊結晶（足・１３號）	Crystallized Spirit (Foot: No. 13)
+29651	物霊結晶（足・１４號）	Crystallized Spirit (Foot: No. 14)
+29652	物霊結晶（足・１５號）	Crystallized Spirit (Foot: No. 15)
+29653	物霊結晶（足・１６號）	Crystallized Spirit (Foot: No. 16)
+29654	物霊結晶（足・１７號）	Crystallized Spirit (Foot: No. 17)
+29655	物霊結晶（足・１８號）	Crystallized Spirit (Foot: No. 18)
+29656	物霊結晶（足・１９號）	Crystallized Spirit (Foot: No. 19)
+29657	物霊結晶（足・２０號）	Crystallized Spirit (Foot: No. 20)
+29658	物霊結晶（足・２１號）	Crystallized Spirit (Foot: No. 21)
+29659	物霊結晶（足・２２號）	Crystallized Spirit (Foot: No. 22)
+29660	物霊結晶（足・２３號）	Crystallized Spirit (Foot: No. 23)
+29661	物霊結晶（足・２４號）	Crystallized Spirit (Foot: No. 24)
+29662	物霊結晶（足・２５號）	Crystallized Spirit (Foot: No. 25)
+29663	物霊結晶（顔・１號）	Crystallized Spirit (Face: No. 1)
+29664	物霊結晶（顔・２號）	Crystallized Spirit (Face: No. 2)
+29665	物霊結晶（顔・３號）	Crystallized Spirit (Face: No. 3)
+29666	物霊結晶（顔・４號）	Crystallized Spirit (Face: No. 4)
+29667	物霊結晶（顔・５號）	Crystallized Spirit (Face: No. 5)
+29668	物霊結晶（顔・６號）	Crystallized Spirit (Face: No. 6)
+29669	物霊結晶（顔・７號）	Crystallized Spirit (Face: No. 7)
+29670	物霊結晶（顔・８號）	Crystallized Spirit (Face: No. 8)
+29671	物霊結晶（顔・９號）	Crystallized Spirit (Face: No. 9)
+29672	物霊結晶（顔・１０號）	Crystallized Spirit (Face: No. 10)
+29673	物霊結晶（顔・１１號）	Crystallized Spirit (Face: No. 11)
+29674	物霊結晶（顔・１２號）	Crystallized Spirit (Face: No. 12)
+29675	物霊結晶（顔・１３號）	Crystallized Spirit (Face: No. 13)
+29676	物霊結晶（顔・１４號）	Crystallized Spirit (Face: No. 14)
+29677	物霊結晶（顔・１５號）	Crystallized Spirit (Face: No. 15)
+29678	物霊結晶（顔・１６號）	Crystallized Spirit (Face: No. 16)
+29679	物霊結晶（顔・１７號）	Crystallized Spirit (Face: No. 17)
+29680	物霊結晶（顔・１８號）	Crystallized Spirit (Face: No. 18)
+29681	物霊結晶（顔・１９號）	Crystallized Spirit (Face: No. 19)
+29682	物霊結晶（顔・２０號）	Crystallized Spirit (Face: No. 20)
+29683	物霊結晶（顔・２１號）	Crystallized Spirit (Face: No. 21)
+29684	物霊結晶（顔・２２號）	Crystallized Spirit (Face: No. 22)
+29685	物霊結晶（顔・２３號）	Crystallized Spirit (Face: No. 23)
+29686	物霊結晶（顔・２４號）	Crystallized Spirit (Face: No. 24)
+29687	物霊結晶（顔・２５號）	Crystallized Spirit (Face: No. 25)
+29688	物霊結晶（下半身・１號）	Crystallized Spirit (Lower Body: No. 1)
+29689	物霊結晶（下半身・２號）	Crystallized Spirit (Lower Body: No. 2)
+29690	物霊結晶（下半身・３號）	Crystallized Spirit (Lower Body: No. 3)
+29691	物霊結晶（下半身・４號）	Crystallized Spirit (Lower Body: No. 4)
+29692	物霊結晶（下半身・５號）	Crystallized Spirit (Lower Body: No. 5)
+29693	物霊結晶（下半身・６號）	Crystallized Spirit (Lower Body: No. 6)
+29694	物霊結晶（下半身・７號）	Crystallized Spirit (Lower Body: No. 7)
+29695	物霊結晶（下半身・８號）	Crystallized Spirit (Lower Body: No. 8)
+29696	物霊結晶（下半身・９號）	Crystallized Spirit (Lower Body: No. 9)
+29697	物霊結晶（下半身・１０號）	Crystallized Spirit (Lower Body: No. 10)
+29698	物霊結晶（ＣＯＭＰ・１號）	Crystallized Spirit (COMP: No. 1)
+29699	物霊結晶（ＣＯＭＰ・２號）	Crystallized Spirit (COMP: No. 2)
+29700	物霊結晶（ＣＯＭＰ・３號）	Crystallized Spirit (COMP: No. 3)
+29701	物霊結晶（ＣＯＭＰ・４號）	Crystallized Spirit (COMP: No. 4)
+29702	物霊結晶（ＣＯＭＰ・５號）	Crystallized Spirit (COMP: No. 5)
+29703	物霊結晶（ＣＯＭＰ・６號）	Crystallized Spirit (COMP: No. 6)
+29704	物霊結晶（ＣＯＭＰ・７號）	Crystallized Spirit (COMP: No. 7)
+29705	物霊結晶（ＣＯＭＰ・８號）	Crystallized Spirit (COMP: No. 8)
+29706	物霊結晶（ＣＯＭＰ・９號）	Crystallized Spirit (COMP: No. 9)
+29707	物霊結晶（ＣＯＭＰ・１０號）	Crystallized Spirit (COMP: No. 10)
+29708	物霊結晶（首・１號）	Crystallized Spirit (Neck: No. 1)
+29709	物霊結晶（首・２號）	Crystallized Spirit (Neck: No. 2)
+29710	物霊結晶（首・３號）	Crystallized Spirit (Neck: No. 3)
+29711	物霊結晶（首・４號）	Crystallized Spirit (Neck: No. 4)
+29712	物霊結晶（首・５號）	Crystallized Spirit (Neck: No. 5)
+29713	物霊結晶（首・６號）	Crystallized Spirit (Neck: No. 6)
+29714	物霊結晶（首・７號）	Crystallized Spirit (Neck: No. 7)
+29715	物霊結晶（首・８號）	Crystallized Spirit (Neck: No. 8)
+29716	物霊結晶（首・９號）	Crystallized Spirit (Neck: No. 9)
+29717	物霊結晶（首・１０號）	Crystallized Spirit (Neck: No. 10)
+29718	物霊結晶（ＥＸ・１號）	Crystallized Spirit (EX: No. 1)
+32017	平和島静雄のサングラス	Shizuo Heiwajima's Sunglasses
+32018	平和島静雄のサングラスα	Shizuo Heiwajima's Sunglasses α
+32024	園原杏里のメガネ	Anri Sonohara's Glasses
+32025	園原杏里のメガネα	Anri Sonohara's Glasses α
+32091	ディビジョングラスⅡ	Division Glasses II
+32092	ディビジョングラスⅡ	Division Glasses II
+32093	ディビジョングラスⅡα	Division Glasses II α
+32094	ディビジョングラスⅡα	Division Glasses II α
+32096	躍動せし亀龍紋	Leaping Turtle Dragon Crest
+32097	躍動せし亀龍紋	Leaping Turtle Dragon Crest
+32100	死神の眼帯・逆α	Reaper's Eyepatch (Reverse) α
+32101	死神の眼帯・逆α	Reaper's Eyepatch (Reverse) α
+32104	チェインリビドーα	Chain Libido α
+32105	チェインリビドーα	Chain Libido α
+32106	ブラックＧｕｙｓシガレット	Black Guys Cigarette
+32107	ブラックＧｕｙｓペイント	Black Guys Paint
+32108	ブラックＧｕｙｓシガレットα	Black Guys Cigarette α
+32109	ブラックＧｕｙｓペイントα	Black Guys Paint α
+32110	未実装	(Unimplemented)
+32111	未実装	(Unimplemented)
+32112	未実装	(Unimplemented)
+32113	未実装	(Unimplemented)
+32114	Ｒｘ：リムレスグラス・白	Rx: Rimless Glasses - White
+32115	Ｄ３・リムレスグラス・白	D3 Rimless Glasses - White
+32116	シーキングパイプ	Seeking Pipe
+32117	シーキングパイプ	Seeking Pipe
+32118	シーキングモノクル	Seeking Monocle
+32119	シーキングモノクル	Seeking Monocle
+32120	Ｒｘ：リムレスグラス・黒	Rx: Rimless Glasses - Black
+32121	Ｄ３・リムレスグラス・黒	D3 Rimless Glasses - Black
+32122	デビルパイレーツフェイス・青	Devil Pirates Face (Blue)
+32123	デビルパイレーツフェイス・青α	Devil Pirates Face (Blue) α
+32124	虚構の瞳	Eyes of Fiction
+32125	虚構の瞳	Eyes of Fiction
+32126	ロイファーパッチ	Loyfer Patch
+32127	ロイファーパッチ	Loyfer Patch
+32128	ロイファーパッチα	Loyfer Patch α
+32129	ロイファーパッチα	Loyfer Patch α
+32133	シュバルツヘブン	Schwarz Heaven
+32134	マジシャンフェイスα	Magician Face α
+32135	シュバルツヘブン	Schwarz Heaven
+32136	スワーミーモノクル	Swarmy Monocle
+32137	スワーミーモノクル	Swarmy Monocle
+32140	十番マスク・白	Tenth Mask - White
+32141	十番マスク・白	Tenth Mask - White
+32142	十番マスク	Tenth Mask
+32143	十番マスク	Tenth Mask
+32148	True 十番マスク	True Tenth Mask
+32149	True 十番マスク	True Tenth Mask
+32158	プライムグラス	Prime Glasses
+32159	プライムグラス	Prime Glasses
+32160	アーミーフェイス	Army Face
+32161	アーミーフェイス	Army Face
+32162	アーミーフェイスα	Army Face α
+32163	アーミーフェイスα	Army Face α
+32166	紅玉の瞳＋	Ruby Eyes+
+32167	紅玉の瞳＋	Ruby Eyes+
+32168	青金石の瞳＋	Lazurite Eyes+
+32169	青金石の瞳＋	Lazurite Eyes+
+32170	瑪瑙の瞳＋	Agate Eyes+
+32171	瑪瑙の瞳＋	Agate Eyes+
+32172	緑柱石の瞳＋	Beryl Eyes+
+32173	緑柱石の瞳＋	Beryl Eyes+
+32174	黄玉の瞳＋	Topaz Eyes+
+32175	黄玉の瞳＋	Topaz Eyes+
+32176	紅玉の瞳（仲魔）＋	Ruby Eyes (Demon)+
+32177	紅玉の瞳（仲魔）＋	Ruby Eyes (Demon)+
+32178	青金石の瞳（仲魔）＋	Lazurite Eyes (Demon)+
+32179	青金石の瞳（仲魔）＋	Lazurite Eyes (Demon)+
+32180	瑪瑙の瞳（仲魔）＋	Agate Eyes (Demon)+
+32181	瑪瑙の瞳（仲魔）＋	Agate Eyes (Demon)+
+32182	黄玉の瞳（仲魔）＋	Topaz Eyes (Demon)+
+32183	黄玉の瞳（仲魔）＋	Topaz Eyes (Demon)+
+32184	ピコガード	Pico Guard
+32185	ピコガード	Pico Guard
+32186	緑柱石の瞳（仲魔）＋	Beryl Eyes (Demon)+
+32187	緑柱石の瞳（仲魔）＋	Beryl Eyes (Demon)+
+32188	欲望と戦争の仮面	Mask of Desire and War
+32189	欲望と戦争の仮面	Mask of Desire and War
+32190	餓えと貧困の仮面	Mask of Hunger and Poverty
+32191	餓えと貧困の仮面	Mask of Hunger and Poverty
+32192	支配と勝利の仮面	Mask of Domination and Victory
+32193	支配と勝利の仮面	Mask of Domination and Victory
+32194	死と疫病の仮面	Mask of Death and Plague
+32195	死と疫病の仮面	Mask of Death and Plague
+32196	悪魔のフェイスペイント	Demon Face Paint
+32197	悪魔のフェイスペイント	Demon Face Paint
+32198	悪魔のフェイスペイントα	Demon Face Paint α
+32199	悪魔のフェイスペイントα	Demon Face Paint α
+32202	刑死者のマスクα	Mask of the Executed α
+32203	刑死者のマスクα	Mask of the Executed α
+32206	ＪＡＰＡＮペイント	JAPAN Paint
+32207	ＪＡＰＡＮペイント	JAPAN Paint
+32208	赤ほっぺ	Red Cheeks
+32209	赤ほっぺ	Red Cheeks
+32210	ＪＡＰＡＮペイント＋	JAPAN Paint+
+32211	ＪＡＰＡＮペイント＋	JAPAN Paint+
+32212	赤ほっぺ＋	Red Cheeks+
+32213	赤ほっぺ＋	Red Cheeks+
+32217	イビルフーセンガム	Evil Balloon Gum
+32218	イビルフーセンガム	Evil Balloon Gum
+32219	イビルフーセンガムⅡ	Evil Balloon Gum II
+32220	イビルフーセンガムⅡ	Evil Balloon Gum II
+32221	イビルフーセンガムⅢ	Evil Balloon Gum III
+32222	イビルフーセンガムⅢ	Evil Balloon Gum III
+32223	プライムグラス＋	Prime Glasses+
+32224	プライムグラス＋	Prime Glasses+
+32227	般若の面・白	Hannya Mask (White)
+32228	般若の面・白	Hannya Mask (White)
+32229	般若の面・赤	Hannya Mask (Red)
+32230	般若の面・赤	Hannya Mask (Red)
+32231	秋赤音の眼鏡	Akiakane's Glasses
+32232	秋赤音の眼鏡α	Akiakane's Glasses α
+32245	リサーチパイプ＋	Research Pipe+
+32246	リサーチパイプ＋	Research Pipe+
+32247	リサーチモノクル＋	Research Monocle+
+32248	リサーチモノクル＋	Research Monocle+
+32249	シーキングパイプ＋	Seeking Pipe+
+32250	シーキングパイプ＋	Seeking Pipe+
+32251	シーキングモノクル＋	Seeking Monocle+
+32252	シーキングモノクル＋	Seeking Monocle+
+32253	乱破面頬・参	Rappa Face Guard III
+32254	乱破面頬・参	Rappa Face Guard III
+32257	紅玉の瞳・悪心	Ruby Eyes (Malice)
+32258	紅玉の瞳・悪心	Ruby Eyes (Malice)
+32259	青金石の瞳・悪心	Lazurite Eyes (Malice)
+32260	青金石の瞳・悪心	Lazurite Eyes (Malice)
+32261	黄玉の瞳・悪心	Topaz Eyes (Malice)
+32262	黄玉の瞳・悪心	Topaz Eyes (Malice)
+32263	瑪瑙の瞳・悪心	Agate Eyes (Malice)
+32264	瑪瑙の瞳・悪心	Agate Eyes (Malice)
+32267	裁きの刻印	Mark of Judgment
+32268	裁きの刻印	Mark of Judgment
+32270	覚醒の刻印	Mark of Awakening
+32271	覚醒の刻印	Mark of Awakening
+32274	歩み続ける者のバイザー	Visor of the Unceasing Walker
+32275	歩み続ける者のバイザー	Visor of the Unceasing Walker
+32278	支配と勝利の仮面・Ｄ	Mask of Domination and Victory (D)
+32279	支配と勝利の仮面・Ｄ	Mask of Domination and Victory (D)
+32280	欲望と戦争の仮面・Ｄ	Mask of Desire and War (D)
+32281	欲望と戦争の仮面・Ｄ	Mask of Desire and War (D)
+32282	スワーミーモノクル＋	Swarmy Monocle+
+32283	スワーミーモノクル＋	Swarmy Monocle+
+32286	テクタイトマスク	Tektite Mask
+32287	テクタイトマスク	Tektite Mask
+32288	アマゼツマスク	Amazetsu Mask
+32289	アマゼツマスク	Amazetsu Mask
+32290	神秘のグラス・ＥＸ	Mysterious Glasses EX
+32291	災厄齎す者の仮面	Mask of the Calamity Bringer
+32292	災厄齎す者の仮面	Mask of the Calamity Bringer
+32293	ハウンドフェイス	Hound Face
+32294	ハウンドフェイス・裏	Hound Face (Reverse)
+32295	ハウンドフェイスα	Hound Face α
+32296	悪魔のフェイスペイント・逆	Demon Face Paint (Reverse)
+32297	悪魔のフェイスペイント・逆	Demon Face Paint (Reverse)
+32298	スマートグラス	Smart Glasses
+32299	スマートグラス＋１	Smart Glasses +1
+32300	スマートグラス＋２	Smart Glasses +2
+32301	スマートグラス	Smart Glasses
+32302	スマートグラス＋１	Smart Glasses +1
+32303	スマートグラス＋２	Smart Glasses +2
+32304	ハウンドフェイス・紺	Hound Face (Navy)
+32305	レッドドライバー	Red Driver
+32306	イエロードライバー	Yellow Driver
+32546	グラッジラジエーター	Grudge Radiator
+32547	グラッジラジエーター・Ｌ	Grudge Radiator (L)
+32548	グラッジラジエーター・Ｎ	Grudge Radiator (N)
+32549	グラッジラジエーター・Ｃ	Grudge Radiator (C)
+32554	リリィベア（ホワイト）α	Lilly Bear (White) α
+32555	リリィベア（ピンク）α	Lilly Bear (Pink) α
+32556	ヒナザクラ	Primrose
+32559	メテオール＋２	Meteor +2
+32568	アニマルテイル・リス	Animal Tail (Squirrel)
+32569	アニマルテイル・リス	Animal Tail (Squirrel)
+32570	アニマルテイル・キツネ	Animal Tail (Fox)
+32571	アニマルテイル・キツネ	Animal Tail (Fox)
+32572	アニマルテイル・ウサギ	Animal Tail (Rabbit)
+32573	アニマルテイル・ウサギ	Animal Tail (Rabbit)
+32578	クリスタルスクトゥム・紫	Crystal Scutum (Purple)
+32579	クリスタルスクトゥム・紫	Crystal Scutum (Purple)
+32582	ガルムテイルα	Garm's Tail α
+32583	ガルムテイルα	Garm's Tail α
+32584	サキュバスの下僕たちα	Servants of Succubus α
+32585	幻夢闇経α	Illusory Dream Dark Sutra α
+32586	ネコマタテイルα	Nekomata's Tail α
+32587	ネコマタテイルα	Nekomata's Tail α
+32588	セブンスターズ	Seven Stars
+32597	グラッジラジエーター・Ｌ＋	Grudge Radiator (L)+
+32598	グラッジラジエーター・Ｎ＋	Grudge Radiator (N)+
+32599	グラッジラジエーター・Ｃ＋	Grudge Radiator (C)+
+32600	ソウルラジエーター・Ｌ＋	Soul Radiator (L)+
+32601	ソウルラジエーター・Ｎ＋	Soul Radiator (N)+
+32602	ソウルラジエーター・Ｃ＋	Soul Radiator (C)+
+32603	トワイライトディスク	Twilight Disk
+32604	サーヴァントスピリット・異Ｌ	Servant Spirit (Different) L
+32605	サーヴァントスピリット・異Ｎ	Servant Spirit (Different) N
+32606	サーヴァントスピリット・異Ｃ	Servant Spirit (Different) C
+32607	サーヴァントパペット・異Ｌ	Servant Puppet (Different) L
+32608	サーヴァントパペット・異Ｎ	Servant Puppet (Different) N
+32609	サーヴァントパペット・異Ｃ	Servant Puppet (Different) C
+32626	すごく舞い散る花粉	Heavily Scattering Pollen
+32630	サイエンさんのエクストラＬＶ２	Saien-san's Extra Lv2
+32631	サイエンさんのエクストラＬＶ３	Saien-san's Extra Lv3
+32632	迷える魂・翠招	Lost Soul (Green)
+32648	迷える魂・紫招＋	Lost Soul (Purple)+
+32649	迷える魂・翠招＋	Lost Soul (Green)+
+32652	ブラッドスター	Blood Star
+32654	舞い散る花片	Scattering Petals
+32655	スノウフェザー	Snow Feather
+32656	六花・金	Snowflake (Gold)
+32657	六花・赤	Snowflake (Red)
+32658	六花・緑	Snowflake (Green)
+32659	六花・ピンク	Snowflake (Pink)
+32660	だきつきめぇめぇ	Clinging Baa-Baa
+32661	だきつきめぇめぇ＋１	Clinging Baa-Baa +1
+32662	だきつきめぇめぇ＋２	Clinging Baa-Baa +2
+32663	だきつきめぇめぇ	Clinging Baa-Baa
+32664	だきつきめぇめぇ＋１	Clinging Baa-Baa +1
+32665	だきつきめぇめぇ＋２	Clinging Baa-Baa +2
+32670	クリスタルスクトゥム・Ｄ	Crystal Scutum D
+32671	クリスタルスクトゥム・Ｄ	Crystal Scutum D
+32681	炎嗟・悪心	Intolerable Blaze (Malice)
+32682	粉雪・悪心	Powder Snow (Malice)
+32683	流翔・悪心	Ryusho (Malice)
+32684	セントエルモの火・悪心	St. Elmo's Inferno (Malice)
+32698	異世界の魂魄・Ｌ	Otherworld Soul (L)
+32699	異世界の魂魄・Ｎ	Otherworld Soul (N)
+32700	異世界の魂魄・Ｃ	Otherworld Soul (C)
+32701	リリィベア・雪（４Ｇａｍｅｒ）	Lilly Bear: Snow (4Gamer)
+32702	リリィベア・苺（４Ｇａｍｅｒ）	Lilly Bear: Strawberry (4Gamer)
+32703	オラクル・パペット	Oracle Puppet
+32704	オラクル・ラビット	Oracle Rabbit
+32705	オラクル・ドラゴン	Oracle Dragon
+32706	オラクル・フォックス	Oracle Fox
+32709	クリスタルスクトゥム・翠	Crystal Scutum (Green)
+32710	クリスタルスクトゥム・翠	Crystal Scutum (Green)
+32712	オラクル・パペット＋１	Oracle Puppet +1
+32713	オラクル・ラビット＋１	Oracle Rabbit +1
+32714	オラクル・ドラゴン＋１	Oracle Dragon +1
+32715	オラクル・フォックス＋１	Oracle Fox +1
+32733	クリスタルスクトゥム・緋	Crystal Scutum (Scarlet)
+32734	クリスタルスクトゥム・緋	Crystal Scutum (Scarlet)
+32735	アニマルテイル・リス・白	Animal Tail (Squirrel, White)
+32736	アニマルテイル・リス・白	Animal Tail (Squirrel, White)
+32737	アニマルテイル・キツネ・白	Animal Tail (Fox, White)
+32738	アニマルテイル・キツネ・白	Animal Tail (Fox, White)
+32739	アニマルテイル・ウサギ・白	Animal Tail (Rabbit, White)
+32740	アニマルテイル・ウサギ・白	Animal Tail (Rabbit, White)
+32741	クリスタルスクトゥム・黄	Crystal Scutum (Yellow)
+32742	クリスタルスクトゥム・黄	Crystal Scutum (Yellow)
+32745	ファントムフォックス	Phantom Fox
+32746	ファントムベア	Phantom Bear
+32747	ファントムホース	Phantom Horse
+33128	スプラッタマスク	Splatter Mask
+33129	スプラッタハット	Splatter Hat
+33138	カロルハットα	Carol Hat α
+33139	カロルベレーα	Carol Beret α
+33147	協調と繁栄のハットα	Hat of Harmony and Prosperity α
+33148	神道烏帽子・祓神	Shinto Eboshi (Purifying Deity)
+33149	巫女天冠・祓神	Shrine Maiden Crown (Purifying Deity)
+33150	神道烏帽子・祓神α	Shinto Eboshi (Purifying Deity) α
+33151	巫女天冠・祓神α	Shrine Maiden Crown (Purifying Deity) α
+33152	愚者の帽子・逆	Fool's Hat (Reverse)
+33153	愚者の帽子・逆	Fool's Hat (Reverse)
+33154	愚者の帽子・逆α	Fool's Hat (Reverse) α
+33155	愚者の帽子・逆α	Fool's Hat (Reverse) α
+33156	ディビジョンベレーⅡ	Division Beret II
+33157	ディビジョンベレーⅡ	Division Beret II
+33158	ディビジョンベレーⅡα	Division Beret II α
+33159	ディビジョンベレーⅡα	Division Beret II α
+33160	ムーブランタンハット・歓待	Moving Lantern Hat (Hospitality)
+33161	ムーブランタンハット・歓待	Moving Lantern Hat (Hospitality)
+33162	ホワイトブリム	White Brim
+33163	ホワイトブリムα	White Brim α
+33164	狐面・裏	Fox Mask (Reverse)
+33165	狐面・裏	Fox Mask (Reverse)
+33166	奏でる者の帽子	Performer's Hat
+33167	紡ぐ者の髪飾り	Spinner's Hair Ornament
+33168	奏でる者の帽子α	Performer's Hat α
+33169	紡ぐ者の髪飾りα	Spinner's Hair Ornament α
+33170	シルキーハット	Silky Hat
+33171	シルキーベール	Silky Veil
+33172	ボルディキャップ	Boldy Cap
+33173	ボルディキャップ	Boldy Cap
+33174	ボルディキャップα	Boldy Cap α
+33175	ボルディキャップα	Boldy Cap α
+33177	オーメンオーナメント・黒α	Omen Ornament (Black)α
+33178	Ｒｘ：ブレスドティアラ	Rx: Blessed Tiara
+33179	Ｄ３・ブレスドティアラ	D3 Blessed Tiara
+33182	アニマルイヤー・リス	Animal Ears (Squirrel)
+33183	アニマルイヤー・リス	Animal Ears (Squirrel)
+33184	アニマルイヤー・キツネ	Animal Ears (Fox)
+33185	アニマルイヤー・キツネ	Animal Ears (Fox)
+33186	アニマルイヤー・ウサギ	Animal Ears (Rabbit)
+33187	アニマルイヤー・ウサギ	Animal Ears (Rabbit)
+33188	Ｒｘ：メディックハット	Rx: Medic Hat
+33189	Ｒｘ：メディックキャップ	Rx: Medic Cap
+33190	Ｄ３・メディックハット	D3 Medic Hat
+33191	Ｄ３・メディックキャップ	D3 Medic Cap
+33192	サマーズビートサングラスα	Summer's Beat Sunglasses α
+33193	デビルパイレーツハット・青	Devil Pirates Hat (Blue)
+33194	デビルパイレーツバンダナ・青	Devil Pirates Bandana (Blue)
+33195	デビルパイレーツハット・青α	Devil Pirates Hat (Blue) α
+33196	デビルパイレーツバンダナ・青α	Devil Pirates Bandana (Blue) α
+33197	くったりジャックフロスト	Cuddly Jack Frost
+33198	くったりジャックフロスト	Cuddly Jack Frost
+33200	マジシャンハットα	Magician Hat α
+33201	オニビトの角	Onibito Horns
+33202	オニビトの角	Onibito Horns
+33203	オニビトの角α	Onibito Horns α
+33204	オニビトの角α	Onibito Horns α
+33207	ロリポップホーン	Lollipop Horns
+33208	ロリポップホーン	Lollipop Horns
+33209	ロリポップホーンα	Lollipop Horns α
+33210	ロリポップホーンα	Lollipop Horns α
+33211	Ｒｘ：碧流蘇	Rx: Azure Tassel
+33212	Ｒｘ：蒼流蘇	Rx: Deep Blue Tassel
+33213	Ｒｘ：紅流蘇	Rx: Crimson Tassel
+33214	Ｄ３・碧流蘇	D3 Azure Tassel
+33215	Ｄ３・蒼流蘇	D3 Deep Blue Tassel
+33216	Ｄ３・紅流蘇	D3 Crimson Tassel
+33218	彩狐のヘッドセット	Colorful Fox Head Set
+33219	ウマスク	Horse Mask
+33220	ウマスク	Horse Mask
+33221	シロウマスク	White Horse Mask
+33222	シロウマスク	White Horse Mask
+33223	シマウマスク	Zebra Mask
+33224	シマウマスク	Zebra Mask
+33227	ライディングキャップ・赤α	Riding Cap (Red) α
+33228	ライディングキャップ・赤α	Riding Cap (Red) α
+33229	機動警察ハードスーツ・ヘッド	Mobile Police Hard Suit: Head
+33230	機動警察ハードスーツ・ヘッドα	Mobile Police Hard Suit: Head α
+33231	くったりセツ	Cuddly Setsu
+33232	くったりセツ	Cuddly Setsu
+33233	ディテクティブキャップ・白	Detective Cap (White)
+33234	ディテクティブキャップ・白	Detective Cap (White)
+33235	ディテクティブキャップ・白α	Detective Cap (White) α
+33236	ディテクティブキャップ・白α	Detective Cap (White) α
+33237	バウンサーヘッドセット	Bouncer Headset
+33238	バウンサーヘッドセット	Bouncer Headset
+33239	バウンサーヘッドセットα	Bouncer Headset α
+33240	バウンサーヘッドセットα	Bouncer Headset α
+33245	くったりジャアクフロスト	Cuddly Jaaku Frost
+33246	くったりジャアクフロスト	Cuddly Jaaku Frost
+33259	フルネスキャップ・黒	Fullness Cap (Black)
+33260	フルネストーク・黒	Fullness Toque (Black)
+33261	フルネスキャップ・黒α	Fullness Cap (Black) α
+33262	フルネストーク・黒α	Fullness Toque (Black) α
+33265	教皇の帽子・逆	Pope's Hat (Reverse)
+33266	女教皇のヴェール・逆	Priestess's Veil (Reverse)
+33267	True 教皇の帽子・逆	True Pope's Hat (Reverse)
+33268	True 女教皇のヴェール・逆	True Priestess's Veil (Reverse)
+33269	教皇の帽子・逆α	Pope's Hat (Reverse) α
+33270	女教皇のヴェール・逆α	Priestess's Veil (Reverse) α
+33281	ディヴァインギア・ハルモニア	Divine Gear - Harmonia
+33282	ディヴァインギア・ハルモニア	Divine Gear - Harmonia
+33283	サイブフラワー・紫	Saibu Flower (Purple)
+33284	サイブフラワー・紫α	Saibu Flower (Purple) α
+33285	サロンハット・青	Salon Hat (Blue)
+33286	サロンハット・青	Salon Hat (Blue)
+33287	サロンハット・青α	Salon Hat (Blue) α
+33288	サロンハット・青α	Salon Hat (Blue) α
+33290	スノウエスケープキャップ	Snow Escape Cap
+33291	スノウエスケープキャップ	Snow Escape Cap
+33298	アヌビスの髪飾り	Anubis' Hair Ornament
+33299	アヌビスの髪飾り	Anubis' Hair Ornament
+33300	アヌビスの髪飾り【審判】	Anubis' Hair Ornament [Judgment]
+33301	アヌビスの髪飾り【審判】	Anubis' Hair Ornament [Judgment]
+33302	アヌビスの髪飾り【預言】	Anubis' Hair Ornament [Prophecy]
+33303	アヌビスの髪飾り【預言】	Anubis' Hair Ornament [Prophecy]
+33304	アヌビスの髪飾り【守護】	Anubis' Hair Ornament [Protection]
+33305	アヌビスの髪飾り【守護】	Anubis' Hair Ornament [Protection]
+33309	レガシーハットα	Legacy Hat α
+33310	オニビトの角・赤	Onibito Horns (Red)
+33311	オニビトの角・赤	Onibito Horns (Red)
+33312	オニビトの角・赤α	Onibito Horns (Red) α
+33313	オニビトの角・赤α	Onibito Horns (Red) α
+33314	ブライダルハット・深紅	Bridal Hat (Crimson)
+33315	ブライダルベール・深紅	Bridal Veil (Crimson)
+33316	ブライダルハット・深紅α	Bridal Hat (Crimson) α
+33317	ブライダルベール・深紅α	Bridal Veil (Crimson) α
+33318	オーメンオーナメント・紫	Omen Ornament (Purple)
+33319	オーメンオーナメント・紫α	Omen Ornament (Purple)α
+33320	裁きの魔冠	Demon Crown of Judgment
+33321	裁きの魔冠	Demon Crown of Judgment
+33323	神慮の魔冠	Demon Crown of Divine Providence
+33324	神慮の魔冠	Demon Crown of Divine Providence
+33325	くったりセツα	Cuddly Setsu α
+33326	くったりセツα	Cuddly Setsu α
+33333	愚者の帽子・黄	Fool's Hat (Yellow)
+33334	愚者の帽子・黄	Fool's Hat (Yellow)
+33335	愚者の帽子・黄α	Fool's Hat (Yellow) α
+33336	愚者の帽子・黄α	Fool's Hat (Yellow) α
+33337	ヴァンキッシュヘッドギア	Vanquish Headgear
+33338	ヴァンキッシュヘッドギア	Vanquish Headgear
+33341	ヴァンキッシュヘッドギア＋１	Vanquish Headgear +1
+33342	ヴァンキッシュヘッドギア＋１	Vanquish Headgear +1
+33343	ドルフキャップ	Dolf Cap
+33344	ドルフキャップ	Dolf Cap
+33345	バウンサーヘッドセット・赤	Bouncer Headset (Red)
+33346	バウンサーヘッドセット・赤	Bouncer Headset (Red)
+33349	ロリポップホーン・青	Lollipop Horns (Blue)
+33350	ロリポップホーン・青	Lollipop Horns (Blue)
+33351	ハウンドハット	Hound Hat
+33352	ハウンドハット・裏	Hound Hat (Reverse)
+33353	ハウンドハットα	Hound Hat α
+33368	悪魔のホーン・逆	Demon Horns (Reverse)
+33369	悪魔のホーン・逆	Demon Horns (Reverse)
+33372	アニマルイヤー・リス・白	Animal Ears (Squirrel, White)
+33373	アニマルイヤー・リス・白	Animal Ears (Squirrel, White)
+33374	アニマルイヤー・キツネ・白	Animal Ears (Fox, White)
+33375	アニマルイヤー・キツネ・白	Animal Ears (Fox, White)
+33376	アニマルイヤー・ウサギ・白	Animal Ears (Rabbit, White)
+33377	アニマルイヤー・ウサギ・白	Animal Ears (Rabbit, White)
+33378	ハウンドハット・紺	Hound Hat (Navy)
+33381	ロリポップホーン・青α	Lollipop Horns (Blue) α
+33382	ロリポップホーン・青α	Lollipop Horns (Blue) α
+33383	笹の葉楊枝	Bamboo Leaf Toothpick
+33384	笹の葉楊枝	Bamboo Leaf Toothpick
+33385	アーミーフェイス・黒	Army Face (Black)
+33386	アーミーフェイス・黒	Army Face (Black)
+33387	くったりミカナギ	Cuddly Mikanagi
+33388	くったりミカナギ	Cuddly Mikanagi
+33389	くったり（？）山本長官	Cuddly (?) Commander Yamamoto
+33390	くったり（？）山本長官	Cuddly (?) Commander Yamamoto
+33391	くったりセツ＋	Cuddly Setsu+
+33392	くったりセツ＋	Cuddly Setsu+
+33395	コードライセンス・白	Code License (White)
+33396	コードライセンス・白	Code License (White)
+33399	オネスティキャップ・青	Honesty Cap (Blue)
+33400	オネスティキャップ・青	Honesty Cap (Blue)
+33401	マシーナリーゴーグル	Machinery Goggles
+33402	マシーナリーゴーグル	Machinery Goggles
+33403	マシーナリーゴーグル・裏	Machinery Goggles (Reverse)
+33404	マシーナリーゴーグル・裏	Machinery Goggles (Reverse)
+33405	獅子舞キャップα	Lion Dance Cap α
+33406	獅子舞キャップα	Lion Dance Cap α
+35007	権威の残骸（破壊・仲魔）	Ruler's Corpse (Destruction, Demon)
+35008	権威の残骸（破壊・仲魔）	Ruler's Corpse (Destruction, Demon)
+35085	蛇のネックレス	Snake Necklace
+35086	蛇のネックレス	Snake Necklace
+35089	躍動せし逆鱗のネックレス	Necklace of the Surging Reverse Scale
+35090	躍動せし逆鱗のネックレス	Necklace of the Surging Reverse Scale
+35091	ヤサカニノマガタマ＋１	Yasakani no Magatama +1
+35092	ヤサカニノマガタマ＋２	Yasakani no Magatama +2
+35093	ヤサカニノマガタマ＋３	Yasakani no Magatama +3
+35094	ヤサカニノマガタマ＋１	Yasakani no Magatama +1
+35095	ヤサカニノマガタマ＋２	Yasakani no Magatama +2
+35096	ヤサカニノマガタマ＋３	Yasakani no Magatama +3
+35097	御統珠	Misumaru Jewel
+35098	御統珠	Misumaru Jewel
+35099	ハートフレームネックレス	Heart Frame Necklace
+35100	ハートフレームネックレス	Heart Frame Necklace
+35101	隆盛なるパーティクルシェイカー	Prosperous Particle Shaker
+35102	隆盛なるパーティクルシェイカー	Prosperous Particle Shaker
+35103	ハートピースネックレス	Heart Piece Necklace
+35104	ハートピースネックレス	Heart Piece Necklace
+35105	ハートフルネックレス	Heartful Necklace
+35106	ハートフルネックレス	Heartful Necklace
+35109	黎明の首飾（螺旋）	Carcanet of the Dawn (Spiral)
+35110	黎明の首飾（螺旋）	Carcanet of the Dawn (Spiral)
+35111	シーキングフォブウォッチ	Seeking Fob Watch
+35112	シーキングフォブウォッチ	Seeking Fob Watch
+35113	シーキングキャメラ	Seeking Camera
+35114	シーキングキャメラ	Seeking Camera
+35115	約束された白詰草の首飾り	Necklace of the Promised White Clover
+35116	約束された白詰草の首飾り	Necklace of the Promised White Clover
+35117	螺鈿の首飾り	Mother-of-Pearl Necklace
+35118	螺鈿の首飾り	Mother-of-Pearl Necklace
+35121	ロリポップネックレス	Lollipop Necklace
+35122	ロリポップネックレス	Lollipop Necklace
+35123	ロリポップネックレスα	Lollipop Necklace α
+35124	ロリポップネックレスα	Lollipop Necklace α
+35125	未実装	(Unimplemented)
+35126	未実装	(Unimplemented)
+35127	霊妙なる螺鈿の首飾り	Exquisite Mother-of-Pearl Necklace
+35128	霊妙なる螺鈿の首飾り	Exquisite Mother-of-Pearl Necklace
+35129	大魔導士のペンダント	Archmage's Pendant
+35130	大魔導士のペンダント＋１	Archmage's Pendant +1
+35131	大魔導士のペンダント＋２	Archmage's Pendant +2
+35132	大魔導士のペンダント＋３	Archmage's Pendant +3
+35133	大魔導士のペンダント	Archmage's Pendant
+35134	大魔導士のペンダント＋１	Archmage's Pendant +1
+35135	大魔導士のペンダント＋２	Archmage's Pendant +2
+35136	大魔導士のペンダント＋３	Archmage's Pendant +3
+35139	権威の残骸＋	Ruler's Corpse +
+35140	権威の残骸＋	Ruler's Corpse +
+35141	権威の残骸（破壊・仲魔）＋	Ruler's Corpse (Destruction, Demon) +
+35142	権威の残骸（破壊・仲魔）＋	Ruler's Corpse (Destruction, Demon) +
+35143	罪科の証	Proof of Sin
+35144	罪科の証	Proof of Sin
+35147	姦邪の証	Proof of Wickedness
+35148	姦邪の証	Proof of Wickedness
+35152	太極八卦	Taiji Bagua
+35154	太極八卦＋１	Taiji Bagua +1
+35156	太極八卦＋２	Taiji Bagua +2
+35157	太極八卦＋３	Taiji Bagua +3
+35158	太極八卦＋３	Taiji Bagua +3
+35159	教皇のロザリオ・逆	Priest's Rosario (Reverse)
+35160	女教皇のロザリオ・逆	Priestess's Rosario (Reverse)
+35161	True 教皇のロザリオ・逆	True Priest's Rosario (Reverse)
+35162	True 女教皇のロザリオ・逆	True Priestess's Rosario (Reverse)
+35163	教皇のロザリオ・逆α	Priest's Rosario (Reverse) α
+35164	女教皇のロザリオ・逆α	Priestess's Rosario (Reverse) α
+35169	虚空の霹靂（仲魔）	Thunderbolt from the Void (Demon)
+35170	虚空の霹靂（仲魔）	Thunderbolt from the Void (Demon)
+35171	ソリッドサイン	Solid Sign
+35172	ソリッドサイン	Solid Sign
+35173	リサーチフォブウォッチ＋	Research Fob Watch +
+35174	リサーチフォブウォッチ＋	Research Fob Watch +
+35175	リサーチキャメラ＋	Research Camera +
+35176	リサーチキャメラ＋	Research Camera +
+35177	シーキングフォブウォッチ＋	Seeking Fob Watch +
+35178	シーキングフォブウォッチ＋	Seeking Fob Watch +
+35179	シーキングキャメラ＋	Seeking Camera +
+35180	シーキングキャメラ＋	Seeking Camera +
+35185	乱破手拭・参	Rappa Handkerchief III
+35186	乱破手拭・参	Rappa Handkerchief III
+35187	神に似た者	One Who Is Like God
+35188	神に似た者	One Who Is Like God
+35189	神に似た者＋	One Who Is Like God +
+35190	神に似た者＋	One Who Is Like God +
+35191	勝利と征服	Victory and Conquest
+35192	勝利と征服	Victory and Conquest
+35193	勝利と征服＋	Victory and Conquest +
+35194	勝利と征服＋	Victory and Conquest +
+35195	東勝神洲の守護者	Guardian of Dongsheng Shenzhou
+35196	東勝神洲の守護者	Guardian of Dongsheng Shenzhou
+35197	東勝神洲の守護者＋	Guardian of Dongsheng Shenzhou +
+35198	東勝神洲の守護者＋	Guardian of Dongsheng Shenzhou +
+35215	ロリポップネックレス・青	Lollipop Necklace (Blue)
+35216	ロリポップネックレス・青	Lollipop Necklace (Blue)
+35219	不思議の国の懐中時計	Wonderland Pocket Watch
+35220	不思議の国の懐中時計	Wonderland Pocket Watch
+35221	不思議の国の懐中時計＋１	Wonderland Pocket Watch +1
+35222	不思議の国の懐中時計＋１	Wonderland Pocket Watch +1
+35223	不思議の国の懐中時計＋２	Wonderland Pocket Watch +2
+35224	不思議の国の懐中時計＋２	Wonderland Pocket Watch +2
+35225	不思議の国の懐中時計＋３	Wonderland Pocket Watch +3
+35226	不思議の国の懐中時計＋３	Wonderland Pocket Watch +3
+35231	悪食の十字架	Voracious Cross
+35232	悪食の十字架＋１	Voracious Cross +1
+35233	悪食の十字架＋２	Voracious Cross +2
+35234	悪食の十字架	Voracious Cross
+35235	悪食の十字架＋１	Voracious Cross +1
+35236	悪食の十字架＋２	Voracious Cross +2
+35237	シャムロックのネックレス（真）	Shamrock Necklace (True)
+35238	シャムロックのネックレス（真）	Shamrock Necklace (True)
+35239	ロリポップネックレス・青α	Lollipop Necklace (Blue) α
+35240	ロリポップネックレス・青α	Lollipop Necklace (Blue) α
+35241	チェインライセンス・白	Chain License (White)
+35242	チェインライセンス・白	Chain License (White)
+35300	Ｄ・Ｄ・Ｓ（マージ）	D.D.S (Merge)
+35301	Ｄ・Ｄ・Ｓ（マージ）	D.D.S (Merge)
+35304	インペリアルＣＯＭＰ	Imperial COMP
+35504	愚者の外套・逆	Fool's Cloak (Reverse)
+35505	愚者の外套・逆	Fool's Cloak (Reverse)
+35506	聖職者の翼・速	Cleric's Wings (Speed)
+35507	聖職者の翼・速	Cleric's Wings (Speed)
+35508	聖職者の翼・力	Cleric's Wings (Strength)
+35509	聖職者の翼・力	Cleric's Wings (Strength)
+35510	聖職者の翼・魔	Cleric's Wings (Magic)
+35511	聖職者の翼・魔	Cleric's Wings (Magic)
+35512	聖職者の翼（破壊）・速	Cleric's Wings (Destruction, Speed)
+35513	聖職者の翼（破壊）・速	Cleric's Wings (Destruction, Speed)
+35514	聖職者の翼（破壊）・力	Cleric's Wings (Destruction, Strength)
+35515	聖職者の翼（破壊）・力	Cleric's Wings (Destruction, Strength)
+35516	聖職者の翼（破壊）・魔	Cleric's Wings (Destruction, Magic)
+35517	聖職者の翼（破壊）・魔	Cleric's Wings (Destruction, Magic)
+35520	オーメンウイング・黒α	Omen Wing (Black)α
+35521	オーメンウイング・黒α	Omen Wing (Black)α
+35522	アシッドアーツ・ブラウン	Acid Arts (Brown)
+35523	アシッドアーツ・チョコレート	Acid Arts (Chocolate)
+35524	アシッドアーツ・ピンク	Acid Arts (Pink)
+35525	アシッドアーツ・ブルー	Acid Arts (Blue)
+35526	ブラックレイニーシェル	Black Rainy Shell
+35527	ブラックレイニーシェル	Black Rainy Shell
+35528	ソウル・オブ・Ｔ＋２	Soul of Tridents +2
+35529	スピリッツ・オブ・Ｔ＋２	Spirit of Tridents +2
+35530	聖者の佩剣＋２	Sword of the Saints +2
+35531	聖者の佩剣＋２	Sword of the Saints +2
+35533	盟約のマント＋２	Cloak of Covenant +2
+35534	盟約のマント＋２	Cloak of Covenant +2
+35535	ウイングオブブレシング	Wing of Blessing
+35536	ウイングオブブレシング	Wing of Blessing
+35539	フォースバックアームズ・裏	Force Back Arms (Reverse)
+35540	フォースバックアームズ・裏	Force Back Arms (Reverse)
+35541	フォースバックアームズ・裏α	Force Back Arms (Reverse) α
+35542	フォースバックアームズ・裏α	Force Back Arms (Reverse) α
+35543	月のウイング・逆	Moon Wings (Reverse)
+35544	月のウイング・逆	Moon Wings (Reverse)
+35545	月のウイング・逆α	Moon Wings (Reverse) α
+35546	月のウイング・逆α	Moon Wings (Reverse) α
+35547	背負い絵馬【良縁祈願】	Ema Backpack [Good Match]
+35548	背負い絵馬【無病息災】	Ema Backpack [Good Health]
+35549	背負い絵馬【先手必勝】	Ema Backpack [First Strike Victory]
+35550	背負い絵馬【立身出世】	Ema Backpack [Success in Life]
+35551	背負い絵馬【交通安全】	Ema Backpack [Traffic Safety]
+35552	背負い絵馬【健康祈願】	Ema Backpack [Prayer for Health]
+35553	背負い絵馬【ＵＭＡ】	Ema Backpack [UMA]
+35556	紅玉の翼＋	Ruby Wings+
+35557	紅玉の翼＋	Ruby Wings+
+35558	青金石の翼＋	Lazurite Wings+
+35559	青金石の翼＋	Lazurite Wings+
+35560	瑪瑙の翼＋	Agate Wings+
+35561	瑪瑙の翼＋	Agate Wings+
+35562	緑柱石の翼＋	Beryl Wings+
+35563	緑柱石の翼＋	Beryl Wings+
+35564	黄玉の翼＋	Topaz Wings+
+35565	黄玉の翼＋	Topaz Wings+
+35566	紅玉の翼（仲魔）＋	Ruby Wings (Demon)+
+35567	紅玉の翼（仲魔）＋	Ruby Wings (Demon)+
+35568	青金石の翼（仲魔）＋	Lazurite Wings (Demon)+
+35569	青金石の翼（仲魔）＋	Lazurite Wings (Demon)+
+35570	瑪瑙の翼（仲魔）＋	Agate Wings (Demon)+
+35571	瑪瑙の翼（仲魔）＋	Agate Wings (Demon)+
+35572	黄玉の翼（仲魔）＋	Topaz Wings (Demon)+
+35573	黄玉の翼（仲魔）＋	Topaz Wings (Demon)+
+35574	緑柱石の翼（仲魔）＋	Beryl Wings (Demon)+
+35575	緑柱石の翼（仲魔）＋	Beryl Wings (Demon)+
+35578	煌天の翼	Wings of the Radiant Heaven
+35579	煌天の翼	Wings of the Radiant Heaven
+35580	悪魔のマント	Demon Cloak
+35581	悪魔のマント	Demon Cloak
+35582	悪魔のマントα	Demon Cloak α
+35583	悪魔のマントα	Demon Cloak α
+35604	荒法師の七つ道具	Warrior Monk's Seven Tools
+35605	荒法師の七つ道具	Warrior Monk's Seven Tools
+35606	ウイングオブブレシング＋１	Wing of Blessing +1
+35607	ウイングオブブレシング＋１	Wing of Blessing +1
+35610	フォースバックアームズ・黒	Force Back Arms (Black)
+35611	フォースバックアームズ・黒	Force Back Arms (Black)
+35612	フォースバックアームズ・黒α	Force Back Arms (Black) α
+35613	フォースバックアームズ・黒α	Force Back Arms (Black) α
+35614	トレッキングバッグ	Trekking Bag
+35615	トレッキングバッグ	Trekking Bag
+35616	羊飼い	Shepherd
+35617	ストレイシープ	Stray Sheep
+35618	迷エル子羊ヲ導ク者	One Who Guides the Lost Lambs
+35619	羊飼い	Shepherd
+35620	ストレイシープ	Stray Sheep
+35621	迷エル子羊ヲ導ク者	One Who Guides the Lost Lambs
+35622	クリスタルウイング・Ｄ	Crystal Wing D
+35623	クリスタルウイング・Ｄ	Crystal Wing D
+35624	アヌビスの肩掛け	Anubis' Shawl
+35625	アヌビスの肩掛け	Anubis' Shawl
+35626	アヌビスの肩掛け【審判】	Anubis' Shawl [Judgment]
+35627	アヌビスの肩掛け【審判】	Anubis' Shawl [Judgment]
+35628	アヌビスの肩掛け【預言】	Anubis' Shawl [Prophecy]
+35629	アヌビスの肩掛け【預言】	Anubis' Shawl [Prophecy]
+35630	アヌビスの肩掛け【守護】	Anubis' Shawl [Protection]
+35631	アヌビスの肩掛け【守護】	Anubis' Shawl [Protection]
+35632	アークウイング白・悪心	Arcwing White (Malice)
+35633	アークウイング白・悪心	Arcwing White (Malice)
+35634	紅玉の翼・悪心	Ruby Wings (Malice)
+35635	紅玉の翼・悪心	Ruby Wings (Malice)
+35636	青金石の翼・悪心	Lazurite Wings (Malice)
+35637	青金石の翼・悪心	Lazurite Wings (Malice)
+35638	黄玉の翼・悪心	Topaz Wings (Malice)
+35639	黄玉の翼・悪心	Topaz Wings (Malice)
+35640	瑪瑙の翼・悪心	Agate Wings (Malice)
+35641	瑪瑙の翼・悪心	Agate Wings (Malice)
+35642	アークウイング黒・悪心	Arcwing Black (Malice)
+35643	アークウイング黒・悪心	Arcwing Black (Malice)
+35644	熾天使の翼	Wings of the Seraph
+35647	オーメンウイング・紫	Omen Wing (Purple)
+35648	オーメンウイング・紫	Omen Wing (Purple)
+35649	オーメンウイング・紫α	Omen Wing (Purple) α
+35650	オーメンウイング・紫α	Omen Wing (Purple) α
+35651	燃え盛る熾翼	Blazing Seraph Wings
+35652	凍てつく熾翼	Freezing Seraph Wings
+35653	疾風纏う熾翼	Gale-Clad Seraph Wings
+35654	雷激帯びる熾翼	Thunder-Charged Seraph Wings
+35657	愚者の外套・黄	Fool's Cloak (Yellow)
+35658	愚者の外套・黄	Fool's Cloak (Yellow)
+35661	ウイングオブブレシング＋２	Wing of Blessing +2
+35662	ウイングオブブレシング＋２	Wing of Blessing +2
+35663	クリスタルウイング・翠	Crystal Wing (Green)
+35664	クリスタルウイング・翠	Crystal Wing (Green)
+35673	クリスタルウイング・緋	Crystal Wing (Scarlet)
+35674	クリスタルウイング・緋	Crystal Wing (Scarlet)
+35675	悪魔のマント・逆	Demon Cloak (Reverse)
+35676	悪魔のマント・逆	Demon Cloak (Reverse)
+35681	クイントアーツ	Quint Arts
+36020	Epitaph Parts 【育成の果核】	Epitaph Parts [Growth Cortex]
+36021	Epitaph Parts 【力の果核】	Epitaph Parts [Strength Cortex]
+36022	Epitaph Parts 【魔力の果核】	Epitaph Parts [Magic Cortex]
+36023	Epitaph Parts 【体力の果核】	Epitaph Parts [Vitality Cortex]
+36024	Epitaph Parts 【知力の果核】	Epitaph Parts [Intelligence Cortex]
+36025	Epitaph Parts 【速さの果核】	Epitaph Parts [Speed Cortex]
+36026	Epitaph Parts 【運の果核】	Epitaph Parts [Luck Cortex]
+36042	Debug_エピタフパーツ１	Debug_Epitaph Parts 1
+36043	Debug_エピタフパーツ２	Debug_Epitaph Parts 2
+36044	Debug_エピタフパーツ３	Debug_Epitaph Parts 3
+36121	Epitaph Parts 【百錬自得の果核】	Epitaph Parts [Fruits of Labor Cortex]
+36122	Epitaph Parts 【才気煥発の果核】	Epitaph Parts [Great Wit Cortex]
+36123	Epitaph Parts 【近接の果核】	Epitaph Parts [Close-R Cortex]
+36124	Epitaph Parts 【射撃の果核】	Epitaph Parts [Long-R Cortex]
+36126	Epitaph Parts 【物防の果核】	Epitaph Parts [Physical Defense Cortex]
+36127	Epitaph Parts 【魔防の果核】	Epitaph Parts [Magic Defense Cortex]
+36128	Epitaph Parts 【神族破りの結実】	Epitaph Parts [Fruit of God Breaking]
+36129	Epitaph Parts 【飛天破りの結実】	Epitaph Parts [Fruit of Aerial Breaking]
+36130	Epitaph Parts 【鬼神破りの結実】	Epitaph Parts [Fruit of Guardian Breaking]
+36131	Epitaph Parts 【鬼族破りの結実】	Epitaph Parts [Oni Breaker Fruit]
+36132	Epitaph Parts 【魔族破りの結実】	Epitaph Parts [Fiend Breaker Fruit]
+36133	Epitaph Parts 【鳥族破りの結実】	Epitaph Parts [Avian Breaker Fruit]
+36134	Epitaph Parts 【獣族破りの結実】	Epitaph Parts [Fruit of Beast Breaking]
+36144	Epitaph Parts 【黄界破りの結実】	Epitaph Parts [Fruit of Yellow Realm Breaking]
+36145	Epitaph Parts 【紫界破りの結実】	Epitaph Parts [Fruit of Purple Realm Breaking]
+36146	Epitaph Parts 【赤界破りの結実】	Epitaph Parts [Fruit of Red Realm Breaking]
+36147	Epitaph Parts 【青界破りの結実】	Epitaph Parts [Fruit of Blue Realm Breaking]
+36148	Epitaph Parts 【緑界破りの結実】	Epitaph Parts [Fruit of Green Realm Breaking]
+36149	Epitaph Parts 【経験値上昇】	Epitaph Parts [Experience Up]
+36150	Epitaph Parts 【詠唱時間減少】	Epitaph Parts [Incantation Time Down]
+36152	Epitaph Parts 【即死無効】	Epitaph Parts [Null Instant Death]
+36153	Epitaph Parts 【必殺発生】	Epitaph Parts [Critical Chance]
+36155	Epitaph Parts 【斬撃耐性】	Epitaph Parts [Slash Resistance]
+36156	Epitaph Parts 【突撃耐性】	Epitaph Parts [Thrust Resistance]
+36157	Epitaph Parts 【打撃耐性】	Epitaph Parts [Blunt Resistance]
+36158	Epitaph Parts 【射撃耐性】	Epitaph Parts [Handgun Resistance]
+36159	Epitaph Parts 【貫通耐性】	Epitaph Parts [Penetrate Resistance]
+36160	Epitaph Parts 【散弾耐性】	Epitaph Parts [Spread Resistance]
+36161	Epitaph Parts 【火炎耐性】	Epitaph Parts [Fire Resistance]
+36162	Epitaph Parts 【氷結耐性】	Epitaph Parts [Ice Resistance]
+36163	Epitaph Parts 【電撃耐性】	Epitaph Parts [Electric Resistance]
+36164	Epitaph Parts 【衝撃耐性】	Epitaph Parts [Force Resistance]
+36165	Epitaph Parts 【破魔耐性】	Epitaph Parts [Expel Resistance]
+36166	Epitaph Parts 【呪殺耐性】	Epitaph Parts [Death Resistance]
+36167	Epitaph Parts 【近接攻撃上昇Ⅰ】	Epitaph Parts [Close-Range Attack Up I]
+36168	Epitaph Parts 【射撃攻撃上昇Ⅰ】	Epitaph Parts [Long-Range Attack Up I]
+36169	Epitaph Parts 【魔力耐性】	Epitaph Parts [Mystic Resistance]
+36170	Epitaph Parts 【神経耐性】	Epitaph Parts [Nerve Resistance]
+36171	Epitaph Parts 【精神耐性】	Epitaph Parts [Mind Resistance]
+36172	Epitaph Parts 【斬撃装填数】	Epitaph Parts [Slash Load Count]
+36173	Epitaph Parts 【突撃装填数】	Epitaph Parts [Thrust Load Count]
+36174	Epitaph Parts 【打撃装填数】	Epitaph Parts [Blunt Load Count]
+36175	Epitaph Parts 【射撃装填数】	Epitaph Parts [Handgun Load Count]
+36176	Epitaph Parts 【貫通装填数】	Epitaph Parts [Penetrate Load Count]
+36177	Epitaph Parts 【散弾装填数】	Epitaph Parts [Spread Load Count]
+36178	Epitaph Parts 【火炎装填数】	Epitaph Parts [Fire Load Count]
+36179	Epitaph Parts 【氷結装填数】	Epitaph Parts [Ice Load Count]
+36180	Epitaph Parts 【電撃装填数】	Epitaph Parts [Electric Load Count]
+36181	Epitaph Parts 【衝撃装填数】	Epitaph Parts [Force Load Count]
+36182	Epitaph Parts 【破魔装填数】	Epitaph Parts [Expel Load Count]
+36183	Epitaph Parts 【呪殺装填数】	Epitaph Parts [Death Load Count]
+36184	Epitaph Parts 【回復装填数】	Epitaph Parts [Curative Load Count]
+36185	Epitaph Parts 【補助装填数】	Epitaph Parts [Support Load Count]
+36186	Epitaph Parts 【魔力装填数】	Epitaph Parts [Mystic Load Count]
+36187	Epitaph Parts 【神経装填数】	Epitaph Parts [Nerve Load Count]
+36188	Epitaph Parts 【精神装填数】	Epitaph Parts [Mind Load Count]
+36189	Epitaph Parts 【斬撃詠唱軽減】	Epitaph Parts [Slash Incantation Reduction]
+36190	Epitaph Parts 【突撃詠唱軽減】	Epitaph Parts [Thrust Incantation Reduction]
+36191	Epitaph Parts 【打撃詠唱軽減】	Epitaph Parts [Blunt Incantation Reduction]
+36192	Epitaph Parts 【射撃詠唱軽減】	Epitaph Parts [Handgun Incantation Reduction]
+36193	Epitaph Parts 【貫通詠唱軽減】	Epitaph Parts [Penetrate Incantation Reduction]
+36194	Epitaph Parts 【散弾詠唱軽減】	Epitaph Parts [Spread Incantation Reduction]
+36195	Epitaph Parts 【火炎詠唱軽減】	Epitaph Parts [Fire Incantation Reduction]
+36196	Epitaph Parts 【氷結詠唱軽減】	Epitaph Parts [Ice Incantation Reduction]
+36197	Epitaph Parts 【電撃詠唱軽減】	Epitaph Parts [Electric Incantation Reduction]
+36198	Epitaph Parts 【衝撃詠唱軽減】	Epitaph Parts [Force Incantation Reduction]
+36199	Epitaph Parts 【破魔詠唱軽減】	Epitaph Parts [Expel Incantation Reduction]
+36200	Epitaph Parts 【呪殺詠唱軽減】	Epitaph Parts [Death Incantation Reduction]
+36201	Epitaph Parts 【回復詠唱軽減】	Epitaph Parts [Curative Incantation Reduction]
+36202	Epitaph Parts 【補助詠唱軽減】	Epitaph Parts [Support Incantation Reduction]
+36203	Epitaph Parts 【魔力詠唱軽減】	Epitaph Parts [Mystic Incantation Reduction]
+36204	Epitaph Parts 【神経詠唱軽減】	Epitaph Parts [Nerve Incantation Reduction]
+36205	Epitaph Parts 【精神詠唱軽減】	Epitaph Parts [Mind Incantation Reduction]
+36224	Epitaph Parts 【魔法効果上昇Ⅰ】	Epitaph Parts [Spell Effect Up I]
+36225	未実装	(Unimplemented)
+36229	Epitaph Parts 【必殺の果核】	Epitaph Parts [Critical Cortex]
+36230	Epitaph Parts 【龍族破りの結実】	Epitaph Parts [Dragon Breaker Fruit]
+36231	Epitaph Parts 【凶刃魔窟】	Epitaph Parts [Fiendish Blade Den]
+36232	Epitaph Parts 【凶弾魔窟】	Epitaph Parts [Fiendish Bullet Den]
+36233	Epitaph Parts 【凶咒魔窟】	Epitaph Parts [Fiendish Curse Den]
+36234	Epitaph Heart 【黄界破りの結実】	Epitaph Heart [Fruit of Yellow Realm Breaking]
+36235	Epitaph Heart 【紫界破りの結実】	Epitaph Heart [Fruit of Purple Realm Breaking]
+36236	Epitaph Heart 【赤界破りの結実】	Epitaph Heart [Fruit of Red Realm Breaking]
+36237	Epitaph Heart 【青界破りの結実】	Epitaph Heart [Fruit of Blue Realm Breaking]
+36238	Epitaph Heart 【緑界破りの結実】	Epitaph Heart [Fruit of Green Realm Breaking]
+36241	Epitaph Parts 【塞翁が馬・禍】	Epitaph Parts [Sai Weng's Horse (Misfortune)]
+36242	Epitaph Parts 【塞翁が馬・福】	Epitaph Parts [Sai Weng's Horse (Fortune)]
+36243	Epitaph Parts 【馬耳東風】	Epitaph Parts [Wind in the Horse's Ear]
+36247	Epitaph Parts 【斬撃上限解放】	Epitaph Parts [Slash Limit Release]
+36248	Epitaph Parts 【突撃上限解放】	Epitaph Parts [Thrust Limit Release]
+36249	Epitaph Parts 【打撃上限解放】	Epitaph Parts [Blunt Limit Release]
+36250	Epitaph Parts 【射撃上限解放】	Epitaph Parts [Handgun Limit Release]
+36251	Epitaph Parts 【貫通上限解放】	Epitaph Parts [Penetrate Limit Release]
+36252	Epitaph Parts 【散弾上限解放】	Epitaph Parts [Spread Limit Release]
+36253	Epitaph Parts 【火炎上限解放】	Epitaph Parts [Fire Limit Release]
+36254	Epitaph Parts 【氷結上限解放】	Epitaph Parts [Ice Limit Release]
+36255	Epitaph Parts 【衝撃上限解放】	Epitaph Parts [Force Limit Release]
+36256	Epitaph Parts 【電撃上限解放】	Epitaph Parts [Electric Limit Release]
+36257	Epitaph Parts 【万能上限解放】	Epitaph Parts [Almighty Limit Release]
+36258	Epitaph Parts 【破魔上限解放】	Epitaph Parts [Expel Limit Release]
+36259	Epitaph Parts 【呪殺上限解放】	Epitaph Parts [Death Limit Release]
+36260	Epitaph Parts 【回復上限解放】	Epitaph Parts [Curative Limit Release]
+36261	Epitaph Parts 【魔力上限解放】	Epitaph Parts [Mystic Limit Release]
+36262	Epitaph Parts 【神経上限解放】	Epitaph Parts [Nerve Limit Release]
+36263	Epitaph Parts 【精神上限解放】	Epitaph Parts [Mind Limit Release]
+36264	Epitaph Parts 【破壊の衝動】	Epitaph Parts [Destructive Urge]
+36266	Epitaph Parts 【テクニシャン】	Epitaph Parts [Technician]
+36267	Epitaph Parts 【棘の網】	Epitaph Parts [Net of Thorns]
+36268	Epitaph Heart 【火炎・氷結高揚】	Epitaph Heart [Fire & Ice Exultation]
+36269	Epitaph Heart 【電撃・衝撃高揚】	Epitaph Heart [Electric & Force Exultation]
+36270	Epitaph Parts 【スイマー】	Epitaph Parts [Swimmer]
+36271	Epitaph Parts 【幕ノ内】	Epitaph Parts [Makunouchi]
+36272	Epitaph Parts 【ホワイトノイズ】	Epitaph Parts [White Noise]
+36273	Epitaph Parts 【レインブラック】	Epitaph Parts [Rain Black]
+36276	Epitaph Heart 【破壊の衝動】	Epitaph Heart [Destructive Urge]
+36277	エピタフピース【成長への誘い】	Epitaph Parts [Invitation to Growth]
+36278	Epitaph Parts 【もてあます煩悩】	Epitaph Parts [Unbearable Worldly Desires]
+36279	Epitaph Parts 【リビドー】	Epitaph Parts [Libido]
+36280	Epitaph Parts 【カタい意思】	Epitaph Parts [Hard Resolve]
+36281	Epitaph Parts 【ナニ者でもない】	Epitaph Parts [Nondescript]
+36282	Epitaph Parts 【比類なきモノ】	Epitaph Parts [Peerless Thing]
+36283	Epitaph Parts 【悩殺ボディ】	Epitaph Parts [Bewitching Body]
+36284	Epitaph Parts 【ブラインダー】	Epitaph Parts [Blinder]
+36285	Epitaph Parts 【瘴気纏い】	Epitaph Parts [Miasma Cloak]
+36287	Epitaph Parts 【仁王立ち】	Epitaph Parts [Nio Stance]
+36288	Epitaph Heart 【百錬自得】	Epitaph Heart [Hard-Won Mastery]
+36289	Epitaph Heart 【才気煥発】	Epitaph Heart [Sparkling Talent]
+36290	エピタフピース【戮力一心】	Epitaph Parts [United Effort]
+36291	Epitaph Parts 【国崩し】	Epitaph Parts [Nation Crusher]
+36292	Epitaph Parts 【クイックロード】	Epitaph Parts [Quick Load]
+36293	Epitaph Parts 【刃鳴り】	Epitaph Parts [Clash of Blades]
+36294	Epitaph Parts 【赤鼻の英雄】	Epitaph Parts [Red-Nosed Hero]
+36295	Epitaph Parts 【アンテオケ】	Epitaph Parts [Antioch]
+36296	Epitaph Parts 【静かな夜】	Epitaph Parts [Silent Night]
+36297	Epitaph Parts 【凧揚げ】	Epitaph Parts [Kite Flying]
+36298	Epitaph Parts 【独楽回し】	Epitaph Parts [Top Spinning]
+36299	Epitaph Parts 【かるた】	Epitaph Parts [Karuta]
+36301	Epitaph Parts 【知勇兼備】	Epitaph Parts [Wisdom and Valor]
+36302	Epitaph Parts 【七歩の才】	Epitaph Parts [Seven-Step Genius]
+36320	Epitaph Parts 【審判】	Epitaph Parts [Judgment]
+36321	Epitaph Parts 【預言】	Epitaph Parts [Prophecy]
+36322	Epitaph Parts 【守護】	Epitaph Parts [Protection]
+36323	Epitaph Parts 【審判Ⅱ】	Epitaph Parts [Judgment II]
+36324	Epitaph Parts 【預言Ⅱ】	Epitaph Parts [Prophecy II]
+36325	Epitaph Parts 【守護Ⅱ】	Epitaph Parts [Protection II]
+36327	Epitaph Parts 【破壊の火炎】	Epitaph Parts [Destructive Fire]
+36328	Epitaph Parts 【破壊の氷結】	Epitaph Parts [Destructive Ice]
+36329	Epitaph Parts 【破壊の電撃】	Epitaph Parts [Destructive Electric]
+36330	Epitaph Parts 【破壊の衝撃】	Epitaph Parts [Destructive Force]
+36331	Epitaph Parts 【螺旋の火炎】	Epitaph Parts [Spiral Fire]
+36332	Epitaph Parts 【螺旋の氷結】	Epitaph Parts [Spiral Ice]
+36333	Epitaph Parts 【螺旋の電撃】	Epitaph Parts [Spiral Electric]
+36334	Epitaph Parts 【螺旋の衝撃】	Epitaph Parts [Spiral Force]
+36335	Epitaph Parts 【ジャマー】	Epitaph Parts [Jammer]
+36336	未定品	Undetermined Item
+36337	Epitaph Parts 【サボタージュ】	Epitaph Parts [Sabotage]
+36338	Epitaph Parts 【大聖堂・攻略】	Epitaph Parts [Cathedral - Conquest]
+36339	Epitaph Parts 【決戦者】	Epitaph Parts [Decisive Battler]
+36340	Epitaph Heart 【決戦者】	Epitaph Heart [Decisive Battler]
+36341	エピタフピース【ハピネス】	Epitaph Parts [Happiness]
+36343	Epitaph Parts 【告発者】	Epitaph Parts [Accuser]
+36346	Epitaph Parts 【ＬＢマスタリー】	Epitaph Parts [LB Mastery]
+36347	Epitaph Parts 【震撼】	Epitaph Parts [Terrify]
+36348	Epitaph Parts 【必殺発生上昇Ⅰ】	Epitaph Parts [Critical Chance Up I]
+36349	Epitaph Parts 【ＬＢ発生上昇Ⅰ】	Epitaph Parts [LB Chance Up I]
+36350	Epitaph Parts 【ＴＡ発生上昇Ⅰ】	Epitaph Parts [TA Chance Up I]
+36351	Epitaph Parts 【金剛食いしばり】	Epitaph Parts [Adamant Endurance]
+36352	Epitaph Parts 【秩序の恩恵】	Epitaph Parts [Blessing of Order]
+36353	Epitaph Parts 【均衡の恩恵】	Epitaph Parts [Blessing of Balance]
+36354	Epitaph Parts 【混沌の恩恵】	Epitaph Parts [Blessing of Chaos]
+36357	Epitaph Parts 【行動短縮】	Epitaph Parts [Action Shortening]
+36358	Epitaph Parts 【武士の起源】	Epitaph Parts [Origin of the Samurai]
+36359	エピタフピース【破壊集団】	Epitaph Parts [Destruction Troop]
+36360	エピタフピース【必殺集団】	Epitaph Parts [Critical Troop]
+36361	ペアエピタフ【知恵袋】	Pair Epitaph [Fount of Wisdom]
+36362	ペアエピタフ【用心棒】	Pair Epitaph [Bodyguard]
+36382	Epitaph Parts 【堅忍不抜】	Epitaph Parts [Unyielding Resolve]
+36383	Epitaph Parts 【リベンジャー】	Epitaph Parts [Avenger]
+36384	Epitaph Parts 【啄木鳥】	Epitaph Parts [Woodpecker]
+36386	Epitaph Parts 【国士無双】	Epitaph Parts [Peerless Patriot]
+36387	Epitaph Parts 【金城鉄壁】	Epitaph Parts [Impregnable Fortress]
+36388	Epitaph Heart 【臥竜鳳雛】	Epitaph Heart [Sleeping Dragon, Young Phoenix]
+36389	エピタフピース【善隣友好】	Epitaph Parts [Good Neighbors]
+36390	Epitaph Parts 【魔斥瘴耐性】	Epitaph Parts [Anti-Magic Miasma Resistance]
+36391	Epitaph Parts 【煉獄の主】	Epitaph Parts [Lord of Purgatory]
+36392	Epitaph Heart 【煉獄の主・ＰＣ】	Epitaph Heart [Lord of Purgatory - PC]
+37084	スプラッタグローブ	Splatter Glove
+37085	スプラッタグラップル	Splatter Grapple
+37099	アゴニストハンド	Agonist Hand
+37101	カロルミトンα	Carol Mittens α
+37102	ラヴァーズブレスレット・紫	Lover's Bracelet (Purple)
+37103	ラヴァーズブレスレット・紫	Lover's Bracelet (Purple)
+37104	ラヴァーズブレスレット・紫α	Lover's Bracelet (Purple) α
+37105	ラヴァーズブレスレット・紫α	Lover's Bracelet (Purple) α
+37106	ボルディアーム	Boldi Arm
+37107	ボルディアーム	Boldi Arm
+37108	ボルディアームα	Boldi Arm α
+37109	ボルディアームα	Boldi Arm α
+37112	死神の爪・逆α	Reaper's Talons (Reverse) α
+37113	死神の爪・逆α	Reaper's Talons (Reverse) α
+37114	オーメングローブ・黒	Omen Gloves (Black)
+37115	オーメングローブ・黒α	Omen Gloves (Black) α
+37116	ブラックＧｕｙｓハンド	Black Guys Hand
+37117	ブラックＧｕｙｓバングル	Black Guys Bangle
+37118	ブラックＧｕｙｓハンドα	Black Guys Hand α
+37119	ブラックＧｕｙｓバングルα	Black Guys Bangle α
+37122	夜叉丸手甲α	Yashamaru Gauntlets α
+37123	夜叉丸手甲α	Yashamaru Gauntlets α
+37124	デビルパイレーツシンボル・青	Devil Pirates Symbol (Blue)
+37125	デビルパイレーツシンボル・青	Devil Pirates Symbol (Blue)
+37126	デビルパイレーツシンボル・青α	Devil Pirates Symbol (Blue) α
+37127	デビルパイレーツシンボル・青α	Devil Pirates Symbol (Blue) α
+37130	螺鈿の腕輪	Nacre Bracelet
+37131	螺鈿の腕輪	Nacre Bracelet
+37142	フォースグローブ・裏	Force Glove (Dark)
+37143	フォースグローブ・裏α	Force Glove (Dark) α
+37144	刀匠のワルツグラブ	Swordsmith's Waltz Glove
+37145	刀匠のワルツグラブ	Swordsmith's Waltz Glove
+37146	アームズメイカーのワルツグラブ	Arms Maker's Waltz Glove
+37147	アームズメイカーのワルツグラブ	Arms Maker's Waltz Glove
+37148	融合士のワルツハンド	Synthesis Master's Waltz Hand
+37149	融合士のワルツハンド	Synthesis Master's Waltz Hand
+37150	煉丹術士のワルツグラブ	Craftsman's Waltz Glove
+37151	煉丹術士のワルツグラブ	Craftsman's Waltz Glove
+37152	月のバングル・逆	Moon Bangle (Reverse)
+37153	月のブレスレット・逆	Moon Bracelet (Reverse)
+37154	月のバングル・逆α	Moon Bangle (Reverse) α
+37155	月のブレスレット・逆α	Moon Bracelet (Reverse) α
+37156	霊妙なる螺鈿の腕輪	Ethereal Nacre Bracelet
+37157	霊妙なる螺鈿の腕輪	Ethereal Nacre Bracelet
+37158	ハルシオングローブ	Halcyon Gloves
+37159	ハルシオングローブ	Halcyon Gloves
+37160	ハルシオングローブα	Halcyon Gloves α
+37161	ハルシオングローブα	Halcyon Gloves α
+37162	ソウルブレイカーグローブ・紫	Soulbreaker Gloves (Purple)
+37163	ソウルブレイカーグローブ・紫	Soulbreaker Gloves (Purple)
+37164	ソウルブレイカーグローブ・紫α	Soulbreaker Gloves (Purple) α
+37165	ソウルブレイカーグローブ・紫α	Soulbreaker Gloves (Purple) α
+37168	ライディンググローブ・赤α	Riding Gloves (Red) α
+37169	ライディンググローブ・赤α	Riding Gloves (Red) α
+37172	剛毅のグローブα	Strong-Willed Gloves α
+37173	剛毅のグローブα	Strong-Willed Gloves α
+37174	ヤングソウルブレスレット・緑	Young Soul Bracelet (Green)
+37175	ヤングソウルシュシュ・緑	Young Soul Scrunchie (Green)
+37176	ヤングソウルブレスレット・緑α	Young Soul Bracelet (Green) α
+37177	ヤングソウルシュシュ・緑α	Young Soul Scrunchie (Green) α
+37184	紅玉の籠手＋	Ruby Gauntlets +
+37185	紅玉の籠手＋	Ruby Gauntlets +
+37186	青金石の籠手＋	Lazurite Gauntlets +
+37187	青金石の籠手＋	Lazurite Gauntlets +
+37188	瑪瑙の籠手＋	Agate Gauntlets +
+37189	瑪瑙の籠手＋	Agate Gauntlets +
+37190	緑柱石の籠手＋	Beryl Gauntlets +
+37191	緑柱石の籠手＋	Beryl Gauntlets +
+37192	黄玉の籠手＋	Topaz Gauntlets +
+37193	黄玉の籠手＋	Topaz Gauntlets +
+37194	バウンサーグローブ	Bouncer Gloves
+37195	バウンサーグローブ	Bouncer Gloves
+37196	バウンサーグローブα	Bouncer Gloves α
+37197	バウンサーグローブα	Bouncer Gloves α
+37198	紅玉の籠手（仲魔）＋	Ruby Gauntlets (Demon) +
+37199	紅玉の籠手（仲魔）＋	Ruby Gauntlets (Demon) +
+37200	青金石の籠手（仲魔）＋	Lazurite Gauntlets (Demon) +
+37201	青金石の籠手（仲魔）＋	Lazurite Gauntlets (Demon) +
+37202	瑪瑙の籠手（仲魔）＋	Agate Gauntlets (Demon) +
+37203	瑪瑙の籠手（仲魔）＋	Agate Gauntlets (Demon) +
+37204	黄玉の籠手（仲魔）＋	Topaz Gauntlets (Demon) +
+37205	黄玉の籠手（仲魔）＋	Topaz Gauntlets (Demon) +
+37206	ラヴァーズブレスレット・青＋	Lover's Bracelet (Blue) +
+37207	ラヴァーズブレスレット・青＋	Lover's Bracelet (Blue) +
+37208	アイアース	Ajax
+37209	アイアース	Ajax
+37210	緑柱石の籠手（仲魔）＋	Beryl Gauntlets (Demon) +
+37211	緑柱石の籠手（仲魔）＋	Beryl Gauntlets (Demon) +
+37212	悪魔のハンド	Devil's Hand
+37213	悪魔のハンド	Devil's Hand
+37214	悪魔のハンドα	Devil's Hand α
+37215	悪魔のハンドα	Devil's Hand α
+37220	夜叉丸手甲・白α	Yashamaru Gauntlets (White) α
+37221	夜叉丸手甲・白α	Yashamaru Gauntlets (White) α
+37224	刑死者の手枷α	Handcuffs of the Condemned α
+37225	刑死者の手枷α	Handcuffs of the Condemned α
+37228	グリッドグローブα	Grid Glove α
+37229	グリッドグローブα	Grid Glove α
+37230	フルネスグローブ・黒	Fullness Glove (Black)
+37231	フルネスフリル・黒	Fullness Frill (Black)
+37232	フルネスグローブ・黒α	Fullness Glove (Black) α
+37233	フルネスフリル・黒α	Fullness Frill (Black) α
+37238	デビルドクターグローブ・黒	Devil Doctor Glove (Black)
+37239	デビルドクターグローブ・黒	Devil Doctor Glove (Black)
+37240	アイアース＋	Ajax +
+37241	アイアース＋	Ajax +
+37242	アウトプレッジ＋	Outpledge +
+37243	アウトプレッジ＋	Outpledge +
+37244	アウトリミテーション	Outlimitation
+37245	アウトリミテーション	Outlimitation
+37250	フォースグローブ・黒	Force Glove (Black)
+37251	フォースグローブ・黒α	Force Glove (Black) α
+37252	乱破篭手・参	Rappa Gauntlets 3
+37253	乱破篭手・参	Rappa Gauntlets 3
+37254	クリスタルガントレット・Ｄ	Crystal Gauntlet (D)
+37255	クリスタルガントレット・Ｄ	Crystal Gauntlet (D)
+37258	ヤングソウルブレスレット・青α	Young Soul Bracelet (Blue) α
+37259	ヤングソウルシュシュ・青α	Young Soul Scrunchie (Blue) α
+37262	紅玉の籠手・悪心	Ruby Gauntlets (Evil Heart)
+37263	紅玉の籠手・悪心	Ruby Gauntlets (Evil Heart)
+37264	青金石の籠手・悪心	Lazurite Gauntlets (Evil Heart)
+37265	青金石の籠手・悪心	Lazurite Gauntlets (Evil Heart)
+37266	黄玉の籠手・悪心	Topaz Gauntlets (Evil Heart)
+37267	黄玉の籠手・悪心	Topaz Gauntlets (Evil Heart)
+37268	瑪瑙の籠手・悪心	Agate Gauntlets (Evil Heart)
+37269	瑪瑙の籠手・悪心	Agate Gauntlets (Evil Heart)
+37270	苺チョコガード（４Ｇａｍｅｒ）	Strawberry Choco Guard (4Gamer)
+37271	苺チョコガード（４Ｇａｍｅｒ）	Strawberry Choco Guard (4Gamer)
+37272	オーメングローブ・紫	Omen Gloves (Purple)
+37273	オーメングローブ・紫α	Omen Gloves (Purple) α
+37274	裁きの紋章	Emblem of Judgment
+37275	裁きの紋章	Emblem of Judgment
+37276	叛逆の紋章	Emblem of Rebellion
+37277	叛逆の紋章	Emblem of Rebellion
+37280	愚者の手袋・黄α	Fool's Gloves (Yellow) α
+37281	愚者の手袋・黄α	Fool's Gloves (Yellow) α
+37284	アウトリミテーション＋	Outlimitation +
+37285	アウトリミテーション＋	Outlimitation +
+37288	レイグローブ	Ray Gloves
+37289	レイグローブ	Ray Gloves
+37290	ドルフハンド	Dolph Hand
+37291	ドルフハンド	Dolph Hand
+37292	ピュルテグローブ	Purte Gloves
+37293	バウンサーグローブ・赤	Bouncer Gloves (Red)
+37294	バウンサーグローブ・赤	Bouncer Gloves (Red)
+37295	統治のグラブ・ＥＸ	Ruler's Glove EX
+37298	クリスタルガントレット・翠	Crystal Gauntlet (Green)
+37299	クリスタルガントレット・翠	Crystal Gauntlet (Green)
+37302	ホワイトリリーグローブ	White Lily Gloves
+37303	ホワイトリリーグローブ	White Lily Gloves
+37308	クリスタルガントレット・緋	Crystal Gauntlet (Scarlet)
+37309	クリスタルガントレット・緋	Crystal Gauntlet (Scarlet)
+37310	悪魔のハンド・逆	Devil's Hand (Reverse)
+37311	悪魔のハンド・逆	Devil's Hand (Reverse)
+37322	オネスティアーム・青	Honesty Arm (Blue)
+37323	オネスティアーム・青	Honesty Arm (Blue)
+38000	ヘアカタログ・アシメボブ	Hair Catalog (Asymmetrical Bob)
+38009	Mark of Skill - ブラッドサッカー	Mark of Skill - Bloodsucker
+38010	Mark of Skill - ロマンティックヘル	Mark of Skill - Romantic Hell
+38012	Mark of Skill - スカープランジ	Mark of Skill - Scar Plunge
+38013	Mark of Skill - 天扇弓	Mark of Skill - Heaven's Bow
+38014	Mark of Skill - ピュリプレゲトン	Mark of Skill - Pyriphlegeton
+38015	Mark of Skill - 菩薩掌	Mark of Skill - Buddha's Palm
+38016	闘牛士のコイン	Matador's Coin
+38019	手袋	Gloves
+38020	いい手袋	Nice Gloves
+38021	すごい手袋	Amazing Gloves
+38022	冬の日の思い出	Memory of a Winter Day
+38028	Sacrifice Orb: 血のアンダルシア	Sacrifice Orb: Blood of Andalusia
+38029	Sacrifice Orb: ヘルスピン	Sacrifice Orb: Hell Spin
+38030	Sacrifice Orb: ヘルバーナー	Sacrifice Orb: Hell Burner
+38033	スチームボックス【ＳＰ】α	Steam Box (SP) α
+38034	スチームボックス【ＤＭ】α	Steam Box (DM) α
+38035	ＤＰの香（小）	Incense of DP (Small)
+38066	未定品	Undetermined Item
+38067	未定品	Undetermined Item
+38068	未定品	Undetermined Item
+38070	Bloody Crown of Thorns（譲渡不可）	Bloody Crown of Thorns (Non-Trade)
+38074	ザイオタイト不純物	Ziotite Impurities
+38102	ラブゲッチューＡ（４Ｇａｍｅｒ）	Love Getchu A (4Gamer)
+38103	ラブゲッチューＢ（４Ｇａｍｅｒ）	Love Getchu B (4Gamer)
+38104	ラブゲッチューＣ（４Ｇａｍｅｒ）	Love Getchu C (4Gamer)
+38109	白き業火	White Hellfire
+38115	ＤｉｅＨａｒｄ（１５分）	Die Hard (15 minutes)
+38116	ＤｉｅＨａｒｄ（１５分・仲魔）	Die Hard Demon (15 minutes: Demons)
+38122	８周年アニバーサリーＢＯＸ	8th Anniversary Box
+38126	リユニオン搾取器	Reunion Extractor
+38127	リユニオン搾取器α	Reunion Extractor α
+38128	リユニオン搾取器β	Reunion Extractor β
+38130	古書の切れ端	Scrap of an Ancient Book
+38132	トートのお守り（譲渡不可）	Thoth's Amulet (Non-Trade)
+38137	地下を照らすカンテラ	Lantern Illuminating the Underground
+38152	巡合の香（小・トレード不可）	Incense of Fate (Small, Non-Trade)
+38153	フルールの雫【聖域なる天之岩戸】	Fleur Drop (Sacred Ama-no-Iwato)
+38154	フルールの雫【拮抗なる巡合世界】	Fleur Drop (Antagonistic Fated World)
+38168	補填アイテム引換券	Compensation Item Voucher
+38171	高級スイカ	Premium Watermelon
+38176	エヴォルコード（Jailer）	Evol Code (Jailer)
+38177	エヴォルコード（Reverse Jailer）	Evol Code (Reverse Jailer)
+38183	ヘアカタログ・ソフトツーブロック	Hair Catalog (Soft Two-Block)
+38184	ヘアカタログ・オールドスタイル	Hair Catalog (Old Style)
+38185	ヘアカタログ・サイドパートＳ	Hair Catalog (Side Part S)
+38186	ヘアカタログ・アン	Hair Catalog (Ann)
+38187	ヘアカタログ・艶髪ロング	Hair Catalog (Glossy Long)
+38189	ヘアカタログ・ゆるふわロング	Hair Catalog (Soft Fluffy Long)
+38190	ヘアカタログ・異世界の妹	Hair Catalog (Little Sister from Another World)
+38191	ヘアカタログ・サイドパートＭ	Hair Catalog (Side Part M)
+38192	ヘアカタログ・サイドパートＳ	Hair Catalog (Side Part S)
+38193	ヘアカタログ・異世界の兄	Hair Catalog (Big Brother from Another World)
+38216	Incense of 2016（熟達）	Incense of 2016 (Mastery)
+38218	悪魔カード拡張パック・青	Demon Card Expansion Pack (Blue)
+38219	悪魔カード拡張パック・赤	Demon Card Expansion Pack (Red)
+38220	坤の氷晶	Gon's Ice Crystal
+38221	坤の賽銭	Gon's Offering
+38222	坤のKagami-mochi	Gon's Kagami-mochi
+38237	不思議なナニカ	Mysterious Something
+40094	ちぎれたネクタイ・百貨店限定	Ripped Necktie: Department Stores Only
+43046	霊験の灰（魔具）	Ash of Miracles (Dungeon)
+43047	超回復ドラッグ（魔具）	Super Recovery Drug (Dungeon)
+43048	塗香（魔具）	Powdered Incense (Dungeon)
+43050	兵信魔符・？？遁？（魔具）	Heishin Charm: ??Dun? (Dungeon)
+43051	兵信魔符・？？遁甲（魔具）	Heishin Charm: ??Dunjia (Dungeon)
+43052	兵信魔符・天？遁甲（魔具）	Heishin Charm: Heaven-? Dunjia (Dungeon)
+43053	兵信魔符・天一遁甲（魔具）	Heishin Charm: Taiyi Dunjia (Dungeon)
+45246	アイテム名６７８９０１２３４５６	Item Name 67890123456
+45247	Debug_汎用消耗品２	Debug General Consumable 2
+45248	Debug_汎用消耗品３	Debug General Consumable 3
+45249	Debug_汎用消耗品４	Debug General Consumable 4
+45250	Debug_汎用消耗品５	Debug General Consumable 5
+45251	Debug_汎用消耗品６	Debug General Consumable 6
+45252	Debug_汎用消耗品７	Debug General Consumable 7
+45253	Debug_汎用消耗品８	Debug General Consumable 8
+45254	Debug_リザーブ	Debug Reserve
+45255	Debug_リザーブ	Debug Reserve
+45256	Debug_リザーブ	Debug Reserve
+45257	Debug_リザーブ	Debug Reserve
+45258	Debug_リザーブ	Debug Reserve
+45259	Debug_リザーブ	Debug Reserve
+45260	Debug_リザーブ	Debug Reserve
+45261	Debug_リザーブ	Debug Reserve
+45262	Debug_リザーブ	Debug Reserve
+45263	Debug_リザーブ	Debug Reserve
+45264	Debug_リザーブ	Debug Reserve
+45265	Debug_リザーブ	Debug Reserve
+45266	Debug_リザーブ	Debug Reserve
+48001	ライトシェル	Light Shell
+48006	レイトップス	Ray Top
+48007	レイトップス	Ray Top
+48008	ドルフコート	Dolph Coat
+48009	ドルフコート	Dolph Coat
+48010	ピュルテジャケット	Purte Jacket
+48011	ピュルテドレス	Purte Dress
+48012	バウンサートップス・赤	Bouncer Top (Red)
+48013	バウンサートップス・赤	Bouncer Top (Red)
+48014	ロウディスーツ	Rowdy Suit
+48015	ロウディスーツ	Rowdy Suit
+48016	統治のジャケット・ＥＸ	Ruler's Jacket EX
+48017	神秘のブレザー・ＥＸ	Mystic Blazer EX
+48026	ハウンドアバター	Hound Avatar
+48027	ハウンドアバター	Hound Avatar
+48028	ハウンドアバター・裏	Hound Avatar (Dark)
+48029	ハウンドアバター・裏	Hound Avatar (Dark)
+48030	ハウンドアバターα	Hound Avatar α
+48031	ハウンドアバターα	Hound Avatar α
+48036	片翼の洞察せし者の衣（ＷＭ）	Robe of the One-Winged Seer (WM)
+48037	双翼持つ無垢なる者の衣（ＷＭ）	Robe of the Two-Winged Innocent (WM)
+48050	カーネイジアバター	Carnage Avatar
+48051	カーネイジアバター	Carnage Avatar
+48058	洞察せし者の衣・裏	Robe of the Seer (Dark)
+48059	無垢なる者の衣・裏	Robe of the Innocent (Dark)
+48060	歩み続ける者の衣・裏	Robe of the Ever-Walking One (Dark)
+48061	歩み続ける者の衣・裏	Robe of the Ever-Walking One (Dark)
+48062	ハウンドアバター・紺	Hound Avatar (Navy)
+48063	ハウンドアバター・紺	Hound Avatar (Navy)
+48066	ソウルリンカートップス・黄	Soul Linker Top (Yellow)
+48067	ソウルリンカートップス・黄	Soul Linker Top (Yellow)
+48068	ネメシスクロース	Nemesis Cloth
+48069	マジカルドレス	Magical Dress
+48070	大熊猫スーツ	Giant Panda Suit
+48071	大熊猫スーツ	Giant Panda Suit
+48072	アーミーボディ・黒	Army Body (Black)
+48073	アーミーボディ・黒	Army Body (Black)
+48075	アナザーヒーロークロース・裏	Another Hero Clothes (Dark)
+48076	アナザーヒロインクロース・裏	Another Heroine Clothes (Dark)
+48077	ノードゥスジャケット・青	Nodus Jacket (Blue)
+48078	ノードゥスワンピース・青	Nodus Dress (Blue)
+48079	約束と運命のクロース	Cloth of Promise and Fate
+48080	約束と運命のハット	Hat of Promise and Fate
+48081	オネスティアバター・青	Honesty Avatar (Blue)
+48082	オネスティアバター・青	Honesty Avatar (Blue)
+48083	マシーナリークロース	Machinery Cloth
+48084	マシーナリークロース	Machinery Cloth
+48085	マシーナリークロース・裏	Machinery Cloth (Dark)
+48086	マシーナリークロース・裏	Machinery Cloth (Dark)
+49060	契の玉・蝮蛇	Orb of Promise (Viper)
+49061	契の玉・大蛇	Orb of Promise (Great Serpent)
+49062	契の玉・蒼穹	Orb of Promise (Azure Sky)
+49063	契の玉・翠嶺	Orb of Promise (Emerald Peak)
+49064	契の玉・紅霞	Orb of Promise (Crimson Haze)
+49065	契の玉・猛追	Orb of Promise (Relentless Pursuit)
+49066	契の玉・上弦	Orb of Promise (First Quarter)
+49067	契の玉・下弦	Orb of Promise (Last Quarter)
+49068	契の玉・上弦（ＰＣ）	Orb of Promise (First Quarter - PC)
+49069	契の玉・下弦（ＰＣ）	Orb of Promise (Last Quarter - PC)
+49070	契の玉・壊撃（ＰＣ）	Orb of Promise (Shattering Blow - PC)
+49071	契の玉・会心需（ＰＣ）	Orb of Promise (Critical Need - PC)
+49072	契の玉・火炎＆氷結（ＰＣ）	Orb of Promise (Fire & Ice - PC)
+49073	契の玉・電撃＆衝撃（ＰＣ）	Orb of Promise (Electric & Force - PC)
+49078	契の玉・五光（ＰＣ）	Orb of Promise (Five Lights - PC)
+49079	契の玉・三光（ＰＣ）	Orb of Promise (Three Lights - PC)
+49080	契の玉・五光	Orb of Promise (Five Lights)
+49081	契の玉・三光	Orb of Promise (Three Lights)
+49082	契の玉・奇門遁甲	Orb of Promise (Qimen Dunjia)
+49083	契の玉・八門遁甲	Orb of Promise (Eight Gates Dunjia)
+49085	スヘジュのステラ	Stela of Suheju
+49086	ケネルのステラ	Stela of Kenel
+49087	ネチェルのステラ	Stela of Netjer
+49088	理の砂・常盤	Sand of Logic (Evergreen)
+49089	理の砂・羽蝶	Sand of Logic (Winged Butterfly)
+49090	理の砂・桔梗	Sand of Logic (Bellflower)
+49091	理の砂・蓬	Sand of Logic (Mugwort)
+49092	理の砂・薄雪	Sand of Logic (Light Snow)
+49093	理の砂・水葵	Sand of Logic (Water Hollyhock)
+49094	理の砂・蓮華	Sand of Logic (Lotus)
+49095	理の砂・二輪	Sand of Logic (Twin Blooms)
+49096	理の砂・浅葱	Sand of Logic (Pale Teal)
+49097	理の砂・木槿	Sand of Logic (Rose of Sharon)
+49098	契の玉・炎旋需	Orb of Promise (Flame Spiral Need)
+49099	契の玉・氷旋需	Orb of Promise (Ice Spiral Need)
+49100	契の玉・雷旋需	Orb of Promise (Lightning Spiral Need)
+49101	契の玉・衝旋需	Orb of Promise (Force Spiral Need)
+49102	契の玉・魔旋需	Orb of Promise (Mystic Spiral Need)
+49103	契の玉・斬旋需	Orb of Promise (Slash Spiral Need)
+49104	契の玉・背水	Orb of Promise (Back to the Wall)
+49105	契の玉・炎破需	Orb of Promise (Flame Break Need)
+49106	契の玉・氷破需	Orb of Promise (Ice Break Need)
+49107	契の玉・雷破需	Orb of Promise (Lightning Break Need)
+49108	契の玉・衝破需	Orb of Promise (Force Break Need)
+49109	契の玉・魔破需	Orb of Promise (Mystic Break Need)
+49110	契の玉・斬破需	Orb of Promise (Slash Break Need)
+49111	契の玉・炎防需	Orb of Promise (Flame Guard Need)
+49112	契の玉・氷防需	Orb of Promise (Ice Guard Need)
+49113	契の玉・雷防需	Orb of Promise (Lightning Guard Need)
+49114	契の玉・衝防需	Orb of Promise (Force Guard Need)
+49115	契の玉・星影	Orb of Promise (Starlight)
+49116	契の玉・輪舞曲	Orb of Promise (Rondo)
+49117	契の玉・リフレクトガード	Orb of Promise (Reflect Guard)
+49130	Orb of Promise離為火	Orb of Promise - Li (Fire)
+49131	Orb of Promise坎為水	Orb of Promise - Kan (Water)
+49132	契の玉・震為雷	Orb of Promise - Zhen (Thunder)
+49133	Orb of Promise 巽為風	Orb of Promise - Xun (Wind)
